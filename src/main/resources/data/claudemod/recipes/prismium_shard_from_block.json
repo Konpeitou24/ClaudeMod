@@ -1,0 +1,13 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        {
+            "item": "claudemod:prismium_block"
+        }
+    ],
+    "result": {
+        "item": "claudemod:prismium_shard",
+        "count": 9
+    }
+}

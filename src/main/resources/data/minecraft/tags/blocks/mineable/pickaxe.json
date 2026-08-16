@@ -1,0 +1,8 @@
+{
+    "replace": false,
+    "values": [
+        "claudemod:prismium_ore",
+        "claudemod:deepslate_prismium_ore",
+        "claudemod:prismium_block"
+    ]
+}

@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:block/cube_all",
+    "textures": {
+        "all": "claudemod:block/deepslate_prismium_ore"
+    }
+}
