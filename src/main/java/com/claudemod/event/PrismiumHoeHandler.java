@@ -14,33 +14,44 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Session 6: the Hoe's gimmick, the fourth of the five Prismium tools to
- * get one (see {@link PrismiumMiningHandler} for the Pickaxe/Axe/Shovel
- * gimmicks and {@link PrismiumSwordHandler} for the Sword's).
+ * Session 6 (revised): the Hoe's gimmick, the fourth of the five Prismium
+ * tools to get one (see {@link PrismiumMiningHandler} for the
+ * Pickaxe/Axe/Shovel gimmicks and {@link PrismiumSwordHandler} for the
+ * Sword's).
  *
  * <p>Right-clicking any {@link BonemealableBlock} (crops, saplings, etc.
  * - the same interface vanilla Bone Meal itself checks) with the Prismium
  * Hoe in hand attempts to grow it exactly like using a Bone Meal item,
- * without consuming one. This is a deliberately conservative design: it
- * reuses {@code isValidBonemealTarget}/{@code isBonemealSuccess}/
- * {@code performBonemeal} verbatim, so the odds of a successful growth
- * tick per use are identical to vanilla Bone Meal's own odds (no new
- * balance surface to invent) - the "gimmick" is purely not needing to
- * carry/craft Bone Meal, which fits the Hoe's existing
- * PROGRESS.md-suggested theme ("growth speed bonus"). No cooldown or NBT
- * state is tracked; spamming right-click is equivalent to spamming Bone
- * Meal by hand, which vanilla already allows.
+ * without consuming one. No cooldown or NBT state is tracked; spamming
+ * right-click is equivalent to spamming Bone Meal by hand, which vanilla
+ * already allows.
  *
- * <p><b>API verification (this session, via Forge/Mojang mappings, not
- * guessed)</b>: {@link BonemealableBlock#isValidBonemealTarget} takes
- * {@code (LevelReader, BlockPos, BlockState)} - 3 args, no trailing
- * boolean (older 1.18-era docs floating around search results show a
- * different, outdated signature; cross-checked against 1.20.2 mappings to
- * be sure, since PROGRESS.md section 4-8 specifically warns that
- * long-standing APIs tend to surface stale versioned docs in search
- * results). {@code isBonemealSuccess(Level, RandomSource, BlockPos,
- * BlockState)} and {@code performBonemeal(ServerLevel, RandomSource,
- * BlockPos, BlockState)} were confirmed the same way.
+ * <p><b>Revision (this session, after a real CI build failure)</b>: the
+ * first version of this handler also called
+ * {@code BonemealableBlock#isValidBonemealTarget} as a pre-check before
+ * rolling {@code isBonemealSuccess}. That push broke the real GitHub
+ * Actions build (see PROGRESS.md session 6 notes). Root cause could not be
+ * pinned down with certainty from this sandbox (no local Forge/Gradle
+ * classpath available to reproduce the exact javac error - see
+ * PROGRESS.md section 2-1), but {@code isValidBonemealTarget} was the
+ * newest and least-proven API surface in this push - its exact arg count
+ * changed between Minecraft versions (a trailing {@code boolean} was
+ * removed at some point in the 1.19.x -> 1.20.x range), unlike
+ * {@code isBonemealSuccess}/{@code performBonemeal} whose
+ * {@code (Level/ServerLevel, RandomSource, BlockPos, BlockState)} shape
+ * was confirmed identical across every version's docs checked (1.18.2
+ * through 1.20.2). To de-risk this without being able to compile-check
+ * locally, this revision drops the {@code isValidBonemealTarget} call
+ * entirely and relies only on the two stable methods. Practical effect:
+ * the Hoe will occasionally attempt {@code performBonemeal} on a target
+ * that would have failed the pre-check too (e.g. a crop already at max
+ * growth stage); vanilla growable blocks are expected to no-op safely in
+ * that case since bonemeal spam against a fully-grown crop is already
+ * normal, always-safe player behavior. This is a deliberate
+ * safety-over-completeness tradeoff pending the next session confirming
+ * (via CI) whether this was really the fix, or whether the real cause was
+ * elsewhere in this push (see PROGRESS.md "next steps" for what to check
+ * if Run 17 is still red).
  *
  * <p><b>Unverified</b>: like every other gimmick in this mod, this has
  * not been playtested in a running game (no Minecraft client in this
@@ -71,9 +82,6 @@ public class PrismiumHoeHandler {
         BlockPos pos = event.getPos();
         BlockState state = level.getBlockState(pos);
         if (!(state.getBlock() instanceof BonemealableBlock bonemealable)) {
-            return;
-        }
-        if (!bonemealable.isValidBonemealTarget(level, pos, state)) {
             return;
         }
         RandomSource random = level.getRandom();
