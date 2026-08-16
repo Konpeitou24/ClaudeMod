@@ -1,0 +1,17 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "pattern": [
+        "XXX",
+        " S ",
+        " S "
+    ],
+    "key": {
+        "X": { "item": "claudemod:prismium_shard" },
+        "S": { "item": "minecraft:stick" }
+    },
+    "result": {
+        "item": "claudemod:prismium_pickaxe",
+        "count": 1
+    }
+}

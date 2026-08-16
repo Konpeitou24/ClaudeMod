@@ -5,5 +5,11 @@
     "block.claudemod.deepslate_prismium_ore": "深層プリズミウム鉱石",
     "block.claudemod.prismium_block": "プリズミウムブロック",
 
-    "item.claudemod.prismium_shard": "プリズミウムの欠片"
+    "item.claudemod.prismium_shard": "プリズミウムの欠片",
+
+    "item.claudemod.prismium_pickaxe": "プリズミウムのツルハシ",
+    "item.claudemod.prismium_axe": "プリズミウムの斧",
+    "item.claudemod.prismium_shovel": "プリズミウムのシャベル",
+    "item.claudemod.prismium_hoe": "プリズミウムのクワ",
+    "item.claudemod.prismium_sword": "プリズミウムの剣"
 }
