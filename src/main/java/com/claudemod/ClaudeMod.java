@@ -1,5 +1,6 @@
 package com.claudemod;
 
+import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModCreativeTabs;
 import com.claudemod.registry.ModItems;
@@ -27,6 +28,7 @@ public class ClaudeMod {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
         ModBlocks.register(modEventBus);
+        ModBlockEntities.register(modEventBus);
         ModItems.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
 

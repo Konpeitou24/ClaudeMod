@@ -5,6 +5,7 @@
     "block.claudemod.prismium_block": "Block of Prismium",
     "block.claudemod.prismium_core": "Prismium Core",
     "block.claudemod.prismium_lantern": "Prismium Lantern",
+    "block.claudemod.prismium_cell": "Prismium Cell",
     "item.claudemod.prismium_shard": "Prismium Shard",
     "item.claudemod.prismium_pickaxe": "Prismium Pickaxe",
     "item.claudemod.prismium_axe": "Prismium Axe",
@@ -15,5 +16,8 @@
     "item.claudemod.prismium_chestplate": "Prismium Chestplate",
     "item.claudemod.prismium_leggings": "Prismium Leggings",
     "item.claudemod.prismium_boots": "Prismium Boots",
-    "item.claudemod.prismium_grappling_hook": "Prismium Grappling Hook"
+    "item.claudemod.prismium_grappling_hook": "Prismium Grappling Hook",
+    "message.claudemod.prismium_cell.status": "Prismium Cell: %1$s / %2$s FE",
+    "message.claudemod.prismium_cell.charged": "Charged Prismium Cell: %1$s / %2$s FE",
+    "message.claudemod.prismium_cell.full": "Prismium Cell is already full"
 }

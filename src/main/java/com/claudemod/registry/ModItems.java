@@ -48,6 +48,11 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_LANTERN_ITEM = ITEMS.register("prismium_lantern",
             () -> new BlockItem(ModBlocks.PRISMIUM_LANTERN.get(), new Item.Properties()));
 
+    // Prismium Cell (session 8): BlockItem for the mod's first block
+    // entity/energy storage block. See ModBlocks.PRISMIUM_CELL.
+    public static final RegistryObject<Item> PRISMIUM_CELL_ITEM = ITEMS.register("prismium_cell",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CELL.get(), new Item.Properties()));
+
     // Prismium tool set (session 2): stats sit just above diamond, repaired
     // with Prismium Shard. See ModToolTiers for the tier definition.
     public static final RegistryObject<Item> PRISMIUM_PICKAXE = ITEMS.register("prismium_pickaxe",

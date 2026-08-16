@@ -1,6 +1,7 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.block.PrismiumCellBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -80,6 +81,20 @@ public class ModBlocks {
                     .strength(3.5f, 3.5f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 15)));
+
+    // Prismium Cell (session 8): the mod's first block entity, and the
+    // opening move of the long-dormant "Prismium Energy" roadmap pillar
+    // (see PROGRESS.md section 1, item 2 - untouched since session 1).
+    // Stores Forge Energy (FE) via a capability, no GUI yet. See
+    // com.claudemod.block.PrismiumCellBlock and
+    // com.claudemod.blockentity.PrismiumCellBlockEntity for the
+    // implementation, and PROGRESS.md for what's still unverified.
+    public static final RegistryObject<Block> PRISMIUM_CELL = BLOCKS.register("prismium_cell",
+            () -> new PrismiumCellBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 5)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

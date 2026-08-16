@@ -5,6 +5,7 @@
     "block.claudemod.prismium_block": "プリズミウムブロック",
     "block.claudemod.prismium_core": "プリズミウムコア",
     "block.claudemod.prismium_lantern": "プリズミウムランタン",
+    "block.claudemod.prismium_cell": "プリズミウムセル",
     "item.claudemod.prismium_shard": "プリズミウムの欠片",
     "item.claudemod.prismium_pickaxe": "プリズミウムのツルハシ",
     "item.claudemod.prismium_axe": "プリズミウムの斧",
@@ -15,5 +16,8 @@
     "item.claudemod.prismium_chestplate": "プリズミウムのチェストプレート",
     "item.claudemod.prismium_leggings": "プリズミウムのレギンス",
     "item.claudemod.prismium_boots": "プリズミウムのブーツ",
-    "item.claudemod.prismium_grappling_hook": "プリズミウムのグラップリングフック"
+    "item.claudemod.prismium_grappling_hook": "プリズミウムのグラップリングフック",
+    "message.claudemod.prismium_cell.status": "プリズミウムセル: %1$s / %2$s FE",
+    "message.claudemod.prismium_cell.charged": "プリズミウムセルを充電した: %1$s / %2$s FE",
+    "message.claudemod.prismium_cell.full": "プリズミウムセルは満タンです"
 }
