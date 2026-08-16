@@ -18,6 +18,8 @@ jobs:
     if: "!contains(github.event.head_commit.message, '[skip ci]')"
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -64,15 +66,40 @@ jobs:
         if: always()
         env:
           WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RESULT_STATUS: ${{ steps.result.outputs.status }}
+          BEFORE_SHA: ${{ github.event.before }}
+          AFTER_SHA: ${{ github.sha }}
+          RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
           if [ -z "$WEBHOOK_URL" ]; then
             echo "DISCORD_WEBHOOK_URL secret is not set; skipping notification."
             exit 0
           fi
-          COMMIT_MSG=$(git log -1 --pretty=%s | sed 's/"/\\"/g')
-          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          PAYLOAD=$(printf '{"content": "%s  ClaudeMod ビルド結果\\nコミット: %s\\n詳細: %s"}' "${{ steps.result.outputs.status }}" "$COMMIT_MSG" "$RUN_URL")
-          curl -s -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK_URL"
+
+          # Build a bullet-point summary of every commit included in this push
+          # (falls back to just the latest commit if the range can't be resolved,
+          # e.g. first push or history rewrite).
+          if [ -n "$BEFORE_SHA" ] && git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
+            RANGE="$BEFORE_SHA..$AFTER_SHA"
+          else
+            RANGE="-1 $AFTER_SHA"
+          fi
+
+          CHANGES=$(git log $RANGE --no-merges --pretty=format:'• %s' 2>/dev/null | grep -v '\[skip ci\]' | head -n 10)
+          if [ -z "$CHANGES" ]; then
+            CHANGES="• $(git log -1 --pretty=%s)"
+          fi
+
+          CONTENT=$(printf '%s  ClaudeMod ビルド結果\n%s\n詳細: %s' "$RESULT_STATUS" "$CHANGES" "$RUN_URL" | cut -c1-1900)
+          PAYLOAD=$(jq -n --arg content "$CONTENT" '{content: $content}')
+
+          HTTP_CODE=$(curl -s -o /tmp/discord_response.txt -w "%{http_code}" -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK_URL")
+          echo "Discord response HTTP $HTTP_CODE:"
+          cat /tmp/discord_response.txt
+          echo
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::warning::Discord notification failed with HTTP $HTTP_CODE"
+          fi
 
       - name: Fail the job if the Gradle build failed
         if: steps.build.outcome != 'success'
