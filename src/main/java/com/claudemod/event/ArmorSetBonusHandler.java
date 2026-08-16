@@ -12,48 +12,40 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
 /**
- * Session 4: the Prismium armor set's first gameplay hook beyond raw stats.
- * PROGRESS.md (session 3, section 4-3) flagged that the armor set was a pure
- * stat upgrade with no unique ability, and section 5 asked for a simple set
- * bonus as the first concrete step.
+ * Session 4 added the Prismium armor set's first gameplay hook beyond raw
+ * stats: full-set Night Vision. Session 5 builds on it in two ways flagged
+ * in PROGRESS.md's "next candidates" list (section 5):
+ * <ol>
+ *   <li>A second full-set effect, Water Breathing, making the set a genuine
+ *   "explore anywhere" package (dark caves + underwater) rather than a
+ *   single-trick pony.</li>
+ *   <li>A server-side-only guard, now that {@code Entity#level()} /
+ *   {@code Level#isClientSide} were confirmed against MinecraftForge's own
+ *   1.20.x branch source (ForgeEventFactory.java uses both
+ *   {@code entity.level()} as a method call and {@code level.isClientSide}
+ *   as a plain field access - no parentheses on the field). Session 4 had
+ *   deliberately skipped this guard because the accessor names were
+ *   unverified at the time; this session confirms them and adds the guard
+ *   as the "safe optimization" that was called out as a good next step.</li>
+ * </ol>
  *
  * <p>Wearing a full Prismium set (helmet + chestplate + leggings + boots,
- * all crafted from {@link ModArmorMaterials#PRISMIUM}) grants a permanent,
- * icon-hidden Night Vision effect. This ties into the set's existing
- * crystal/light theme (Prismium Block glows at light level 6, Prismium Core
- * at 10) and previews the kind of "helps you explore the dark" utility the
- * mod wants Prism Realm gear to lean into later.
- *
- * <p>Implementation notes:
- * <ul>
- *   <li>Re-applies the effect every server tick with a short buffer duration
- *   ({@link #EFFECT_DURATION_TICKS}, well over 1 tick) so it never runs out
- *   while the set stays on, without needing to detect equip/unequip events.
- *   This is the same "always-on gear effect" pattern used by many Forge
- *   mods for things like light-source armor or breathing gear.</li>
- *   <li>{@code ambient = true} makes the effect's particle border faint
- *   (matches how beacon effects render) and {@code showIcon = false} keeps
- *   it out of the player's HUD effect list, since this is meant to read as
- *   a passive property of the armor rather than a "buff" the player has to
- *   track.</li>
- *   <li>Runs on both logical sides (no {@code isClientSide} guard): calling
- *   {@link Player#addEffect} on the client is redundant once the server's
- *   effect syncs down, but harmless, and skipping the guard avoids relying
- *   on an unverified {@code Level} accessor name in this offline session.
- *   If a later session confirms the exact accessor, restricting this to the
- *   server side would be a minor, safe optimization.</li>
- * </ul>
+ * all crafted from {@link ModArmorMaterials#PRISMIUM}) grants permanent,
+ * icon-hidden Night Vision and Water Breathing. Both effects share the same
+ * "re-apply every server tick with a short buffer duration" pattern so
+ * neither needs explicit equip/unequip detection.
  *
  * <p><b>Unverified</b>: like the rest of the armor set (see PROGRESS.md),
  * this has not been playtested in a running game in this sandbox (no
- * Minecraft client available here). The API shapes used
- * ({@code TickEvent.PlayerTickEvent}, {@code MobEffectInstance}'s 6-arg
- * constructor, {@code ArmorItem#getMaterial()}, {@code Inventory#armor})
- * were each cross-checked against Forge 1.20.1 javadocs during this session,
- * but only a real build/playtest can confirm the effect actually feels good
- * and doesn't, say, fight with vanilla Night Vision from potions/spectral
- * arrows in a confusing way (e.g. amplifier stacking, effect being
- * overwritten early when the buffer briefly lapses on lag spikes).
+ * Minecraft client available here). The server-only guard added this
+ * session is a compile-level API confirmation, not a playtest - it has not
+ * been confirmed that skipping client-side calls to
+ * {@link Player#addEffect} avoids any visible desync/flicker versus the
+ * previous both-sides behavior. Also unverified: how Water Breathing here
+ * interacts with vanilla sources of the same effect (potions, turtle shell
+ * helmet - though a Prismium helmet replaces the turtle shell slot outright
+ * so that particular overlap can't happen), and whether the 220-tick
+ * refresh buffer is short enough to avoid ever "running out" visibly.
  */
 @Mod.EventBusSubscriber(modid = ClaudeMod.MOD_ID)
 public class ArmorSetBonusHandler {
@@ -68,9 +60,19 @@ public class ArmorSetBonusHandler {
             return;
         }
         Player player = event.player;
+        // Server-only: effects synced from the server reach the client
+        // automatically, so re-applying them client-side too was redundant
+        // work every tick for every player. See class javadoc for the
+        // source confirming `level.isClientSide` is a plain field.
+        if (player.level().isClientSide) {
+            return;
+        }
         if (hasFullPrismiumSet(player)) {
             player.addEffect(new MobEffectInstance(
                     MobEffects.NIGHT_VISION, EFFECT_DURATION_TICKS, 0,
+                    true, false, false));
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.WATER_BREATHING, EFFECT_DURATION_TICKS, 0,
                     true, false, false));
         }
     }
