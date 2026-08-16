@@ -73,3 +73,11 @@ jobs:
           RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           PAYLOAD=$(printf '{"content": "%s  ClaudeMod ビルド結果\\nコミット: %s\\n詳細: %s"}' "${{ steps.result.outputs.status }}" "$COMMIT_MSG" "$RUN_URL")
           curl -s -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK_URL"
+
+      - name: Fail the job if the Gradle build failed
+        if: steps.build.outcome != 'success'
+        run: |
+          echo "Build with Gradle step failed (outcome=${{ steps.build.outcome }})."
+          echo "Failing this job now so the workflow's pass/fail status (badge, commit check, run list) is trustworthy."
+          echo "Earlier steps used continue-on-error on the build step so the jar-publish and Discord-notify steps could still run/skip cleanly; this step restores an honest overall result."
+          exit 1
