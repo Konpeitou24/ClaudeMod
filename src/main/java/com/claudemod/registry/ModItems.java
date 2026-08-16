@@ -3,6 +3,7 @@ package com.claudemod.registry;
 import com.claudemod.ClaudeMod;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
+import com.claudemod.item.PrismiumGrapplingHookItem;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
@@ -80,6 +81,12 @@ public class ModItems {
 
     public static final RegistryObject<Item> PRISMIUM_BOOTS = ITEMS.register("prismium_boots",
             () -> new ArmorItem(ModArmorMaterials.PRISMIUM, ArmorItem.Type.BOOTS, new Item.Properties()));
+
+    // Prismium Grappling Hook (session 7): the mod's first accessory-style
+    // item, not a stat-stick tool. See PrismiumGrapplingHookItem for the
+    // raycast-and-pull implementation and API notes.
+    public static final RegistryObject<Item> PRISMIUM_GRAPPLING_HOOK = ITEMS.register("prismium_grappling_hook",
+            () -> new PrismiumGrapplingHookItem(new Item.Properties().durability(250)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
