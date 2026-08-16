@@ -3,8 +3,10 @@ package com.claudemod.event;
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModItems;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -18,38 +20,43 @@ import java.util.concurrent.ThreadLocalRandom;
  * ability, unlike the armor set which got a set bonus in session 4. This is
  * a first, deliberately small step for the Pickaxe specifically: mining
  * Prismium Ore or Deepslate Prismium Ore with a Prismium Pickaxe has a
- * {@value #BONUS_SHARD_CHANCE}-in-1 chance to drop one extra Prismium
- * Shard on top of whatever the block's own loot table already rolled
- * (including any Fortune bonus - this handler runs after loot table drops
- * are computed, so it stacks additively rather than replacing anything).
+ * {@value #BONUS_SHARD_CHANCE}-in-1 chance to spawn one extra Prismium
+ * Shard alongside the block's normal loot-table drops.
  *
- * <p>Implementation notes:
- * <ul>
- *   <li>Uses {@link net.minecraftforge.event.level.BlockEvent.HarvestDropsEvent},
- *   confirmed to live under the {@code net.minecraftforge.event.level}
- *   package (not the older {@code net.minecraftforge.event.world}) for
- *   Forge 1.20.x by checking the import list of MinecraftForge's own
- *   {@code ForgeEventFactory.java} on the {@code 1.20.x} branch during this
- *   session.</li>
- *   <li>Deliberately uses {@link ThreadLocalRandom} instead of a
- *   Minecraft-specific {@code RandomSource} to keep this event handler's
- *   API surface entirely within plain Java, since the exact accessor for a
- *   world-seeded random from inside this event was not worth the extra
- *   verification risk for a cosmetic drop-chance roll (i.e. this roll is
- *   not deterministic/seed-based, unlike vanilla loot tables).</li>
- *   <li>Guards on {@code harvester.level().isClientSide} the same way
- *   {@link ArmorSetBonusHandler} now does, for consistency, even though
- *   drop resolution is expected to be server-authoritative already.</li>
- * </ul>
+ * <p><b>Revision history / a build-failure lesson learned this session</b>:
+ * the first draft of this handler subscribed to
+ * {@code BlockEvent.HarvestDropsEvent} and mutated {@code event.getDrops()}.
+ * That draft passed local review but <i>failed the real GitHub Actions
+ * build</i> (Run 11) - the first confirmed real compile failure caught via
+ * the CI pipeline described in PROGRESS.md section 2-4. Follow-up research
+ * this same session strongly suggests {@code HarvestDropsEvent} was
+ * replaced by {@code BlockEvent.GenerateLootEvent} /
+ * {@code BlockEvent.DropLootEvent} starting around Minecraft 1.15 (Forge PR
+ * #5871, "Replace HarvestDropsEvent with GenerateLootEvent and
+ * DropLootEvent"), so it likely no longer exists as a class in Forge
+ * 1.20.1/47.4.0, which would explain a compile error. Rather than gamble on
+ * unverified exact signatures for the newer loot-event pair (which carry a
+ * {@code LootContext} and are non-trivial to construct/inspect correctly),
+ * this rewrite sidesteps the whole loot-table event pipeline: it hooks
+ * {@link BlockEvent.BreakEvent} instead (fired server-side when a player
+ * breaks a block - confirmed to still live under
+ * {@code net.minecraftforge.event.level.BlockEvent} in 1.20.1-era javadocs
+ * found this session) and spawns the bonus shard as an independent
+ * {@link ItemEntity} in the world, with zero dependency on however the
+ * block's own loot table/drops event pipeline is currently shaped. This is
+ * a strictly smaller, more conservative API surface, at the cost of the
+ * bonus shard not being affected by things like Fortune (acceptable for a
+ * "lucky pickaxe" flavor mechanic).
  *
- * <p><b>Unverified</b>: {@link BlockEvent.HarvestDropsEvent#getState()},
- * {@code #getHarvester()} and {@code #getDrops()} were cross-checked against
- * publicly documented usage examples of this event (the shape has been
- * stable across many Forge versions), but this exact handler has not been
- * compiled or playtested in this sandbox. If it turns out
- * {@code getHarvester()} is null more often than expected (e.g. certain
- * automated mining tools from other mods), the bonus would simply never
- * trigger for those cases rather than error - low risk either way.
+ * <p><b>Still unverified</b> (this rewrite has not itself been confirmed by
+ * a green CI run as of writing): {@link BlockEvent.BreakEvent#getPlayer()},
+ * {@code #getState()} and {@code #getPos()} (inherited from
+ * {@link BlockEvent}), plus the {@link ItemEntity} 5-arg
+ * (level, x, y, z, stack) constructor and {@link Level#addFreshEntity}.
+ * These are long-standing, widely-used APIs so the risk is low, but
+ * PROGRESS.md should record whether Run 12 (or whatever this push becomes)
+ * actually goes green, since that is the only real confirmation available
+ * in this sandbox.
  */
 @Mod.EventBusSubscriber(modid = ClaudeMod.MOD_ID)
 public class PrismiumMiningHandler {
@@ -58,9 +65,13 @@ public class PrismiumMiningHandler {
     private static final float BONUS_SHARD_CHANCE = 0.25f;
 
     @SubscribeEvent
-    public static void onHarvestDrops(BlockEvent.HarvestDropsEvent event) {
-        Player harvester = event.getHarvester();
-        if (harvester == null || harvester.level().isClientSide) {
+    public static void onBlockBreak(BlockEvent.BreakEvent event) {
+        Player player = event.getPlayer();
+        if (player == null) {
+            return;
+        }
+        Level level = player.level();
+        if (level.isClientSide) {
             return;
         }
         boolean isPrismiumOre = event.getState().is(ModBlocks.PRISMIUM_ORE.get())
@@ -68,11 +79,18 @@ public class PrismiumMiningHandler {
         if (!isPrismiumOre) {
             return;
         }
-        if (harvester.getMainHandItem().getItem() != ModItems.PRISMIUM_PICKAXE.get()) {
+        if (player.getMainHandItem().getItem() != ModItems.PRISMIUM_PICKAXE.get()) {
             return;
         }
-        if (ThreadLocalRandom.current().nextFloat() < BONUS_SHARD_CHANCE) {
-            event.getDrops().add(new ItemStack(ModItems.PRISMIUM_SHARD.get(), 1));
+        if (ThreadLocalRandom.current().nextFloat() >= BONUS_SHARD_CHANCE) {
+            return;
         }
+        ItemStack bonus = new ItemStack(ModItems.PRISMIUM_SHARD.get(), 1);
+        ItemEntity bonusEntity = new ItemEntity(level,
+                event.getPos().getX() + 0.5,
+                event.getPos().getY() + 0.5,
+                event.getPos().getZ() + 0.5,
+                bonus);
+        level.addFreshEntity(bonusEntity);
     }
 }
