@@ -35,6 +35,10 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_AXE.get());
                         output.accept(ModItems.PRISMIUM_SHOVEL.get());
                         output.accept(ModItems.PRISMIUM_HOE.get());
+                        output.accept(ModItems.PRISMIUM_HELMET.get());
+                        output.accept(ModItems.PRISMIUM_CHESTPLATE.get());
+                        output.accept(ModItems.PRISMIUM_LEGGINGS.get());
+                        output.accept(ModItems.PRISMIUM_BOOTS.get());
                     })
                     .build());
 

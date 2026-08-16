@@ -1,0 +1,15 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "pattern": [
+        "XXX",
+        "X X"
+    ],
+    "key": {
+        "X": { "item": "claudemod:prismium_shard" }
+    },
+    "result": {
+        "item": "claudemod:prismium_helmet",
+        "count": 1
+    }
+}

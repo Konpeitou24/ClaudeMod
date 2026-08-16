@@ -1,7 +1,9 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.HoeItem;
@@ -56,6 +58,22 @@ public class ModItems {
 
     public static final RegistryObject<Item> PRISMIUM_SWORD = ITEMS.register("prismium_sword",
             () -> new SwordItem(ModToolTiers.PRISMIUM, 3, -2.4f, new Item.Properties()));
+
+    // Prismium armor set (session 3): defense sits at diamond/netherite
+    // parity by design (no flat armor-value power creep), but with higher
+    // durability, toughness, knockback resistance and enchantability. See
+    // ModArmorMaterials for the full rationale.
+    public static final RegistryObject<Item> PRISMIUM_HELMET = ITEMS.register("prismium_helmet",
+            () -> new ArmorItem(ModArmorMaterials.PRISMIUM, ArmorItem.Type.HELMET, new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_CHESTPLATE = ITEMS.register("prismium_chestplate",
+            () -> new ArmorItem(ModArmorMaterials.PRISMIUM, ArmorItem.Type.CHESTPLATE, new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_LEGGINGS = ITEMS.register("prismium_leggings",
+            () -> new ArmorItem(ModArmorMaterials.PRISMIUM, ArmorItem.Type.LEGGINGS, new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_BOOTS = ITEMS.register("prismium_boots",
+            () -> new ArmorItem(ModArmorMaterials.PRISMIUM, ArmorItem.Type.BOOTS, new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
