@@ -83,6 +83,16 @@ grep -noE 'aria-label="[^"]*Run [0-9]+ of <workflow name>[^"]*"' page.html
 ### 3-1. CI/ワークフローの信頼性確認(実装ではなく調査)
 §2-4に詳細。GitHub Actionsの実行結果を非ログイン・API不要で確認する方法を確立し、これまで「未検証」とされてきたコード(セッション#1・#2の全内容 + 並行セッションのPrismium Core)が実際にビルドを通ることを確認した。
 
+### 3-2. Prismium Core(このセクションは並行セッションの記述の補足 — 実装した本人による詳細)
+セッション#3中に並行して動いていたもう一つのセッション(このファイルを最終更新したセッションとは別)が実装。既知の課題「Prismiumツールがステ上位互換止まりで専用の採掘対象が無い」(セッション#2から継続)を解消する目的。
+
+- `com.claudemod.registry.ModBlockTags`: 新規タグ `claudemod:needs_prismium_tool`, `claudemod:incorrect_for_prismium_tool` を定義。
+- `ModToolTiers.PRISMIUM` の `ForgeTier` 第6引数を、従来の `BlockTags.INCORRECT_FOR_DIAMOND_TOOL`(バニラのタグをそのまま流用)から `ModBlockTags.INCORRECT_FOR_PRISMIUM_TOOL`(独自タグ、中身は今のところ空)に変更。**理由**: 同じタグをダイヤと共有すると、新ブロックをそのタグに追加してダイヤを弾いた瞬間に Prismium 自身も弾かれてしまうため(`DiggerItem#isCorrectToolForDrops` はレベル3同士の識別を各ティア固有の「不正タグ」membership でしか行えない、ハードコードされたレベル判定は0〜2止まりで3以上は各ティアのタグ任せ)。
+- 新ブロック `prismium_core`(強度8.0/爆発耐性20.0、lightLevel 10、SoundType.AMETHYST)を `minecraft:needs_diamond_tool` と `minecraft:incorrect_for_diamond_tool` の両方に追加(ダイヤ以下を弾く)。Prismium 側の独自タグには追加しない(Prismiumだけ採掘可能、というのがこの機構の肝)。
+- クラフト: Prismium Block ×4 + Amethyst Shard ×1 → Prismium Core ×1(shapeless)。lightLevel 10 で常時発光するため、将来のPrism Realmポータル素材としても機能しそうな見た目。
+- テクスチャー(`scripts/textures/gen_prismium_core.py`): 既存 `prismium_block.png` と同じ対角グラデーション技法・パレットを踏襲しつつ、中央に明るい放射コア(lightLevel 10 を意識した視覚的差別化)を追加。
+  - **自己レビュー実施済み**: 1回目のドラフトは紫の光る破片を密に散らす手法で描いたが、プレビュー画像(等倍・4倍拡大の両方)を目視した結果「ノイズが多くごちゃついて見える、既存の prismium_block と統一感が薄い」と判断して破棄。`prismium_block.png` と同じ対角バンド構造ベースに描き直し、放射コアだけを主な差別化点に絞ったところ、等倍でも4倍拡大でもシルエットが明瞭になった。最終版を採用。この「派手にしすぎたら家族(既存テクスチャー群)のスタイルに立ち返って描き直す」判断は今後のテクスチャー作成でも参考にできる。
+
 ### 3-2. Prismiumアーマー一式(ヘルメット・チェストプレート・レギンス・ブーツ)
 - `com.claudemod.item.ModArmorMaterials`: `enum ... implements ArmorMaterial` パターン(Forge 1.20.X系列の実際のチュートリアルリポジトリ [Tutorials-By-Kaupenjoe/Forge-Tutorial-1.20.X, 16-armorブランチ] のソースをWeb fetchで直接参照し、`getDurabilityForType`/`getDefenseForType`/`ArmorItem.Type` の実メソッドシグネチャを確認した上で実装。ツール群と同じ「防御力はダイヤ/ネザライト据え置き、耐久・靭性・ノックバック耐性・エンチャント適正で差別化」という設計方針)。
   - durabilityMultiplier 40 (ネザライトの37より上)、defense {3,8,6,3}(ダイヤ/ネザライトと同値)、enchantmentValue 14(ツールと揃えた)、toughness 3.5、knockbackResistance 0.1、修理はPrismium Shard。
@@ -132,6 +142,8 @@ grep -noE 'aria-label="[^"]*Run [0-9]+ of <workflow name>[^"]*"' page.html
 
 ### コミット/プッシュ状況
 このセッションの変更は2つのコミット(テクスチャー、アーマー本体)に分けてコミット、他セッションとのpush競合をrebaseで解消した上でpush済み。最終的に `ci: update built jar [skip ci]` コミットが追加され、ビルド成功を実証済み(§2-4参照)。
+
+(追記: 上記と同じ時間帯にもう一つ別のセッションが動いており、こちらは Prismium Core の実装とCIワークフロー修正(§2-4)を担当、その後 §3-2 の詳細説明を本ファイルに追記した。3セッションが同時並行していたことになる。今回は全てファストフォワード/軽微なrebaseで解消できたが、§2-5の注意点は今後も有効。)
 
 ### 通知状況
 Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、Run 6成功時に(Secretが設定済みであれば)送信されているはず。
