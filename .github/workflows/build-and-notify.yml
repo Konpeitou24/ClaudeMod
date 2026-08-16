@@ -1,0 +1,75 @@
+name: Build and Notify
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+concurrency:
+  group: build-and-notify
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    if: "!contains(github.event.head_commit.message, '[skip ci]')"
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        id: build
+        run: ./gradlew build --stacktrace
+        continue-on-error: true
+
+      - name: Determine result text
+        id: result
+        run: |
+          if [ "${{ steps.build.outcome }}" = "success" ]; then
+            echo "status=✅ ビルド成功" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=❌ ビルド失敗" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Find built jar
+        if: steps.build.outcome == 'success'
+        id: jar
+        run: |
+          JAR=$(find build/libs -maxdepth 1 -name "*.jar" ! -name "*-sources.jar" | head -n 1)
+          echo "path=$JAR" >> "$GITHUB_OUTPUT"
+
+      - name: Publish latest jar to repo
+        if: steps.build.outcome == 'success' && steps.jar.outputs.path != ''
+        run: |
+          mkdir -p builds
+          cp "${{ steps.jar.outputs.path }}" builds/ClaudeMod-latest.jar
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add builds/ClaudeMod-latest.jar
+          git diff --cached --quiet || git commit -m "ci: update built jar [skip ci]"
+          git push
+
+      - name: Notify Discord
+        if: always()
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL secret is not set; skipping notification."
+            exit 0
+          fi
+          COMMIT_MSG=$(git log -1 --pretty=%s | sed 's/"/\\"/g')
+          RUN_URL="https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          PAYLOAD=$(printf '{"content": "%s  ClaudeMod ビルド結果\\nコミット: %s\\n詳細: %s"}' "${{ steps.result.outputs.status }}" "$COMMIT_MSG" "$RUN_URL")
+          curl -s -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK_URL"
