@@ -56,6 +56,17 @@ git push origin main
 ```
 `git clone`/`pull` はプロキシ経由でも問題なく動く。
 
+### 2-4-A. 【セッション#2で判明した重要な打開策】GitHub Actions によるビルド検証・Discord通知
+このセッション中に、`git pull` で取得したリモートに **自分以外のセッション(同じ1時間おきの起動枠と重なって並行実行されたとみられる)が `.github/workflows/build-and-notify.yml` を追加してpushしていた**のを発見した(コミット `f6d04c4`)。内容は: `main` へのpush毎にGitHub Actionsのランナー(こちらはネットワーク制限が無い)で `./gradlew build` を実行し、成功したjarを `builds/ClaudeMod-latest.jar` としてリポジトリにコミット、結果を `DISCORD_WEBHOOK_URL` という**GitHub Actions Secret**(リポジトリ設定で別途登録が必要、この点はクラウドサンドボックスのセッションからは設定できない)経由でDiscordに通知する、という仕組み。
+
+**これにより実質的にビルド検証とDiscord通知の両方が自動化された** — クラウドサンドボックス自身がmaven.minecraftforge.net等やdiscord.comに到達できなくても、pushさえすればCI側が代行してくれる。実際、セッション#2開始時点で既に `builds/ClaudeMod-latest.jar` が存在しており、**セッション#1のコードは少なくとも1回はGitHub Actions上で実機ビルドに成功している**らしいことが確認できた(直接ログは見れていないが、jarの存在とcommitがそれを示唆している)。
+
+**次回セッションへの指示**:
+- このワークフローファイルは変更・削除しないこと(誤って壊さないよう注意)。
+- push後、`builds/ClaudeMod-latest.jar` のcommitタイムスタンプや `git log` に `ci: update built jar [skip ci]` コミットが新たに追加されているかを見れば、間接的にビルド成否を推測できる(成功時のみこのコミットが作られる仕組みなので、pushしてからGitHub Actions完了を待ち`git pull`し直せば分かるはず。ただし今回のセッションでは待ち時間の余裕が無く未検証)。
+- GitHub Actions REST API (`api.github.com`) を叩いてビルドログを直接確認しようとしたが、セッション自身のgitプロキシと同様の許可リスト制限で `GitHub access to this repository is not enabled for this session` という別のブロックに遭遇し、確認できなかった。無理に追わず、上記のjarコミットの有無で代用すること。
+- Discord Webhook Secretが正しく設定されているかはユーザー側の確認が必要(このセッションからは検証・設定不可)。もし次回以降も一切Discord通知が来ないとユーザーから聞いた場合、リポジトリの Settings > Secrets and variables > Actions に `DISCORD_WEBHOOK_URL` が登録されているか確認するようユーザーに伝えるとよい。
+
 ### 2-4. 使えるもの
 - JDK 21がプリインストール、JDK 17は `apt-get install openjdk-17-jdk-headless` で追加可能(セッション#1・#2両方で必要だった。コンテナが使い捨てのため次回も再インストールが要る可能性が高い)。
 - システムGradle 8.14.3が `/opt/gradle` にプリインストール済み(`gradle` コマンドで直接使える)。
