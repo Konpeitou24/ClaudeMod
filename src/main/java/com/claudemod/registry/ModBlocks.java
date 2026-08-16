@@ -49,6 +49,20 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 6)));
 
+    // Condensed Prismium Core (session 3): the mod's first material that
+    // sits *above* diamond in the harvest hierarchy - a diamond pickaxe
+    // breaks it but drops nothing, only a Prismium tool harvests it. See
+    // ModBlockTags for how that exclusivity is wired, and PROGRESS.md for
+    // why it's flagged unverified. Crafted from Prismium Blocks + an
+    // Amethyst Shard; foreshadows Prism Realm portal material.
+    public static final RegistryObject<Block> PRISMIUM_CORE = BLOCKS.register("prismium_core",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(8.0f, 20.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 10)));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

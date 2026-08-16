@@ -1,15 +1,13 @@
 {
     "itemGroup.claudemod.claudemod_tab": "ClaudeMod",
-
     "block.claudemod.prismium_ore": "Prismium Ore",
     "block.claudemod.deepslate_prismium_ore": "Deepslate Prismium Ore",
     "block.claudemod.prismium_block": "Block of Prismium",
-
     "item.claudemod.prismium_shard": "Prismium Shard",
-
     "item.claudemod.prismium_pickaxe": "Prismium Pickaxe",
     "item.claudemod.prismium_axe": "Prismium Axe",
     "item.claudemod.prismium_shovel": "Prismium Shovel",
     "item.claudemod.prismium_hoe": "Prismium Hoe",
-    "item.claudemod.prismium_sword": "Prismium Sword"
+    "item.claudemod.prismium_sword": "Prismium Sword",
+    "block.claudemod.prismium_core": "Prismium Core"
 }

@@ -37,6 +37,9 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_BLOCK_ITEM = ITEMS.register("prismium_block",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK.get(), new Item.Properties()));
 
+    public static final RegistryObject<Item> PRISMIUM_CORE_ITEM = ITEMS.register("prismium_core",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CORE.get(), new Item.Properties()));
+
     // Prismium tool set (session 2): stats sit just above diamond, repaired
     // with Prismium Shard. See ModToolTiers for the tier definition.
     public static final RegistryObject<Item> PRISMIUM_PICKAXE = ITEMS.register("prismium_pickaxe",

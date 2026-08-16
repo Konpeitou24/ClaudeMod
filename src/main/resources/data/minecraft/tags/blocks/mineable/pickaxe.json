@@ -3,6 +3,7 @@
     "values": [
         "claudemod:prismium_ore",
         "claudemod:deepslate_prismium_ore",
-        "claudemod:prismium_block"
+        "claudemod:prismium_block",
+        "claudemod:prismium_core"
     ]
 }
