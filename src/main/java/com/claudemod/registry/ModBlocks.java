@@ -63,6 +63,24 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 10)));
 
+    // Prismium Lantern (session 4): the mod's first purely-utility
+    // exploration block, not gated behind a tool tier. Deliberately modeled
+    // on vanilla Lantern's own stats (hardness/resistance 3.5, breakable by
+    // hand but efficient with a pickaxe via the mineable/pickaxe tag - see
+    // data/minecraft/tags/blocks/mineable/pickaxe.json) rather than reusing
+    // Prismium Block/Core's tool-gated strength values, since the point of
+    // this block is to be crafted in bulk and placed liberally to light up
+    // dungeons/caves during exploration. Max light level (15) distinguishes
+    // it from Prismium Block (6) and Prismium Core (10). No
+    // requiresCorrectToolForDrops(): like vanilla Lantern, it always drops
+    // itself regardless of what (if anything) broke it.
+    public static final RegistryObject<Block> PRISMIUM_LANTERN = BLOCKS.register("prismium_lantern",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(3.5f, 3.5f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 15)));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

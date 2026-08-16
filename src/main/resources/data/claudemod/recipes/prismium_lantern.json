@@ -1,0 +1,15 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "claudemod:prismium_shard" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "minecraft:torch" }
+    ],
+    "result": {
+        "item": "claudemod:prismium_lantern",
+        "count": 1
+    }
+}

@@ -42,6 +42,11 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_CORE_ITEM = ITEMS.register("prismium_core",
             () -> new BlockItem(ModBlocks.PRISMIUM_CORE.get(), new Item.Properties()));
 
+    // Prismium Lantern (session 4): a cheap, tool-tier-independent light
+    // source block for exploration. See ModBlocks for the block stats.
+    public static final RegistryObject<Item> PRISMIUM_LANTERN_ITEM = ITEMS.register("prismium_lantern",
+            () -> new BlockItem(ModBlocks.PRISMIUM_LANTERN.get(), new Item.Properties()));
+
     // Prismium tool set (session 2): stats sit just above diamond, repaired
     // with Prismium Shard. See ModToolTiers for the tier definition.
     public static final RegistryObject<Item> PRISMIUM_PICKAXE = ITEMS.register("prismium_pickaxe",
@@ -62,7 +67,8 @@ public class ModItems {
     // Prismium armor set (session 3): defense sits at diamond/netherite
     // parity by design (no flat armor-value power creep), but with higher
     // durability, toughness, knockback resistance and enchantability. See
-    // ModArmorMaterials for the full rationale.
+    // ModArmorMaterials for the full rationale. Session 4 added a full-set
+    // Night Vision bonus - see event.ArmorSetBonusHandler.
     public static final RegistryObject<Item> PRISMIUM_HELMET = ITEMS.register("prismium_helmet",
             () -> new ArmorItem(ModArmorMaterials.PRISMIUM, ArmorItem.Type.HELMET, new Item.Properties()));
 
