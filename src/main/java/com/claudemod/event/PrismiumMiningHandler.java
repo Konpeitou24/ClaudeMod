@@ -3,10 +3,14 @@ package com.claudemod.event;
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModItems;
+import net.minecraft.tags.BlockTags;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
@@ -14,55 +18,53 @@ import net.minecraftforge.fml.common.Mod;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
- * Session 5: the first tool-specific gimmick for the Prismium tool set.
- * PROGRESS.md (session 4, section 5 "議論したい論点") flagged that all five
- * Prismium tools were still pure stat upgrades over diamond with no unique
- * ability, unlike the armor set which got a set bonus in session 4. This is
- * a first, deliberately small step for the Pickaxe specifically: mining
- * Prismium Ore or Deepslate Prismium Ore with a Prismium Pickaxe has a
- * {@value #BONUS_SHARD_CHANCE}-in-1 chance to spawn one extra Prismium
- * Shard alongside the block's normal loot-table drops.
+ * Block-break-triggered gimmicks for the Prismium tool set.
  *
- * <p><b>Revision history / a build-failure lesson learned this session</b>:
- * the first draft of this handler subscribed to
+ * <p>Session 5 introduced the pattern here (originally Pickaxe-only, see
+ * the revision history below for the {@code HarvestDropsEvent} ->
+ * {@code BlockEvent.BreakEvent} lesson learned that session). Session 6
+ * reuses the same proven, low-risk pattern - subscribe to
+ * {@link BlockEvent.BreakEvent}, check the tool and the broken block, and
+ * on success spawn a bonus {@link ItemEntity} independent of the block's
+ * own loot table - to give the Axe and Shovel their first gimmicks too, so
+ * every "digging/breaking" tool in the set (Pickaxe, Axe, Shovel) now has
+ * one. The Hoe (an interact-based gimmick, see
+ * {@link PrismiumHoeHandler}) and Sword (an on-hit gimmick, see
+ * {@link PrismiumSwordHandler}) needed different event types entirely and
+ * so live in their own classes; see PROGRESS.md session 6 notes for why
+ * every tool now has exactly one gimmick apiece.
+ *
+ * <p><b>Revision history (session 5, kept for context)</b>: the first
+ * draft of the Pickaxe gimmick subscribed to
  * {@code BlockEvent.HarvestDropsEvent} and mutated {@code event.getDrops()}.
  * That draft passed local review but <i>failed the real GitHub Actions
- * build</i> (Run 11) - the first confirmed real compile failure caught via
- * the CI pipeline described in PROGRESS.md section 2-4. Follow-up research
- * this same session strongly suggests {@code HarvestDropsEvent} was
- * replaced by {@code BlockEvent.GenerateLootEvent} /
- * {@code BlockEvent.DropLootEvent} starting around Minecraft 1.15 (Forge PR
- * #5871, "Replace HarvestDropsEvent with GenerateLootEvent and
- * DropLootEvent"), so it likely no longer exists as a class in Forge
- * 1.20.1/47.4.0, which would explain a compile error. Rather than gamble on
- * unverified exact signatures for the newer loot-event pair (which carry a
- * {@code LootContext} and are non-trivial to construct/inspect correctly),
- * this rewrite sidesteps the whole loot-table event pipeline: it hooks
- * {@link BlockEvent.BreakEvent} instead (fired server-side when a player
- * breaks a block - confirmed to still live under
- * {@code net.minecraftforge.event.level.BlockEvent} in 1.20.1-era javadocs
- * found this session) and spawns the bonus shard as an independent
- * {@link ItemEntity} in the world, with zero dependency on however the
- * block's own loot table/drops event pipeline is currently shaped. This is
- * a strictly smaller, more conservative API surface, at the cost of the
- * bonus shard not being affected by things like Fortune (acceptable for a
- * "lucky pickaxe" flavor mechanic).
- *
- * <p><b>Still unverified</b> (this rewrite has not itself been confirmed by
- * a green CI run as of writing): {@link BlockEvent.BreakEvent#getPlayer()},
- * {@code #getState()} and {@code #getPos()} (inherited from
- * {@link BlockEvent}), plus the {@link ItemEntity} 5-arg
- * (level, x, y, z, stack) constructor and {@link Level#addFreshEntity}.
- * These are long-standing, widely-used APIs so the risk is low, but
- * PROGRESS.md should record whether Run 12 (or whatever this push becomes)
- * actually goes green, since that is the only real confirmation available
- * in this sandbox.
+ * build</i> (Run 11) - {@code HarvestDropsEvent} was replaced by
+ * {@code BlockEvent.GenerateLootEvent}/{@code DropLootEvent} around
+ * Minecraft 1.15 and no longer exists in Forge 1.20.1. The fix (and the
+ * pattern every gimmick below now follows) was to hook
+ * {@link BlockEvent.BreakEvent} instead and spawn bonus items as
+ * independent {@link ItemEntity}s, with zero dependency on the block's own
+ * loot-table event pipeline.
  */
 @Mod.EventBusSubscriber(modid = ClaudeMod.MOD_ID)
 public class PrismiumMiningHandler {
 
-    // 1 in 4 chance per ore block mined with the Prismium Pickaxe.
+    // Pickaxe (session 5): mining Prismium Ore with the Prismium Pickaxe
+    // has a 1-in-4 chance of an extra Prismium Shard.
     private static final float BONUS_SHARD_CHANCE = 0.25f;
+
+    // Axe (session 6): felling any log block with the Prismium Axe has a
+    // 1-in-5 chance of an extra copy of that exact log (a "lumberjack"
+    // perk - encourages using the axe on trees rather than just as a combat
+    // stat stick).
+    private static final float BONUS_LOG_CHANCE = 0.20f;
+
+    // Shovel (session 6): digging Gravel with the Prismium Shovel has a
+    // 50/50 chance of an extra Flint, on top of whatever the block's normal
+    // loot table already rolls (a "prospector" perk - flavor text: the
+    // shovel is good at sifting gravel for flint). Deliberately not 100%:
+    // a guaranteed bonus felt too strong for a resource this common.
+    private static final float BONUS_FLINT_CHANCE = 0.5f;
 
     @SubscribeEvent
     public static void onBlockBreak(BlockEvent.BreakEvent event) {
@@ -74,23 +76,44 @@ public class PrismiumMiningHandler {
         if (level.isClientSide) {
             return;
         }
-        boolean isPrismiumOre = event.getState().is(ModBlocks.PRISMIUM_ORE.get())
-                || event.getState().is(ModBlocks.DEEPSLATE_PRISMIUM_ORE.get());
-        if (!isPrismiumOre) {
+        BlockState state = event.getState();
+        ItemStack heldItem = player.getMainHandItem();
+
+        if (heldItem.getItem() == ModItems.PRISMIUM_PICKAXE.get()) {
+            boolean isPrismiumOre = state.is(ModBlocks.PRISMIUM_ORE.get())
+                    || state.is(ModBlocks.DEEPSLATE_PRISMIUM_ORE.get());
+            if (isPrismiumOre && rollSuccess(BONUS_SHARD_CHANCE)) {
+                spawnBonus(level, event.getPos(), new ItemStack(ModItems.PRISMIUM_SHARD.get(), 1));
+            }
             return;
         }
-        if (player.getMainHandItem().getItem() != ModItems.PRISMIUM_PICKAXE.get()) {
+
+        if (heldItem.getItem() == ModItems.PRISMIUM_AXE.get()) {
+            if (state.is(BlockTags.LOGS) && rollSuccess(BONUS_LOG_CHANCE)) {
+                // The block itself, as an item, is the matching log/stem
+                // item (e.g. minecraft:oak_log -> minecraft:oak_log item).
+                spawnBonus(level, event.getPos(), new ItemStack(state.getBlock(), 1));
+            }
             return;
         }
-        if (ThreadLocalRandom.current().nextFloat() >= BONUS_SHARD_CHANCE) {
-            return;
+
+        if (heldItem.getItem() == ModItems.PRISMIUM_SHOVEL.get()) {
+            if (state.is(Blocks.GRAVEL) && rollSuccess(BONUS_FLINT_CHANCE)) {
+                spawnBonus(level, event.getPos(), new ItemStack(Items.FLINT, 1));
+            }
         }
-        ItemStack bonus = new ItemStack(ModItems.PRISMIUM_SHARD.get(), 1);
+    }
+
+    private static boolean rollSuccess(float chance) {
+        return ThreadLocalRandom.current().nextFloat() < chance;
+    }
+
+    private static void spawnBonus(Level level, net.minecraft.core.BlockPos pos, ItemStack stack) {
         ItemEntity bonusEntity = new ItemEntity(level,
-                event.getPos().getX() + 0.5,
-                event.getPos().getY() + 0.5,
-                event.getPos().getZ() + 0.5,
-                bonus);
+                pos.getX() + 0.5,
+                pos.getY() + 0.5,
+                pos.getZ() + 0.5,
+                stack);
         level.addFreshEntity(bonusEntity);
     }
 }
