@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-18 (セッション #28)
+最終更新: 2026-08-18 (セッション #29)
 
 ---
 
@@ -29,7 +29,7 @@
 2. **新エネルギーシステム**: 「Prismium Energy(仮称)」。発電機・ケーブル・蓄電ブロック・機械(粉砕機、精錬機など)を実装し、FE(Forge Energy)ベースで組む想定。セッション#8で蓄電ブロック Prismium Cell(IEnergyStorage capability公開、GUI無し、手動チャージ機構)に着手。**セッション#9で Prismium Generator(MOD初のBlockEntityTicker、Prismiumの欠片を燃焼して隣接ブロックへFEを自動送電) を追加し、CellとGeneratorをペアで置くことで初めて「自動化された発電→送電」ループが成立するようになった**。ケーブル(離れたブロック間の中継)・GUI・複数ブロックにまたがる大規模送電網はまだ無い。
 3. **新ディメンション**: 「Prism Realm(仮称)」。Prismiumで動くポータル(枠ブロック+起動アイテム)で行き来する異空間。専用地形生成、専用鉱石、専用バイオーム。**セッション#14で最初の一歩に着手**: データパック駆動のディメンション(地形はバニラのオーバーワールド設定+固定バイオームcherry_groveを流用、専用地形はまだ)と、テレポート用アイテム(Prismium Rift Shard、ポータルブロックの代わりの最小実装)を追加。専用地形・専用鉱石・専用バイオーム・本格的なポータルブロックはまだ無い。**セッション#15でビルド失敗と判明、原因(存在しないシンボル2つ、後述§3N)を特定・修正しビルド成功を確認済み**(§3N参照)。ただしコンパイルが通ることの確認に留まり、実プレイでの検証はまだ無い。
 4. **新MOB**: Prism Realm を含む探索先に生息する敵対/中立MOB。ボス级の1体を最終的に用意したい。**セッション#12で最初の1体、Prismium Wraith(敵対、洞窟に生息しPrismium鉱石を守るイメージ)を追加**。ボス級はまだ無い。
-5. **新装備**: Prismium製ツール/アーマー(特殊能力付き)、探索を楽しくするアクセサリ的アイテム(グラップリングフック、探知アイテムなど)。ツール5種(セッション#2)・アーマー4種(セッション#3)実装済み。セッション#4でアーマーにフルセット効果(暗視、常時)を追加。セッション#5でアーマーのセット効果に水中呼吸を追加(2つ目の効果)、かつツール側にも初のギミック(Prismiumツルハシの鉱石ボーナスドロップ)を追加し、「ツールが純粋なステ上位互換のまま」という課題に着手。**セッション#7で、長らく手つかずだったアクセサリ系の最初の1個としてPrismiumグラップリングフックを追加**(視線方向のブロックへ引き寄せられる、レイキャスト+速度書き換え方式、飛翔エンティティ無し)。**セッション#16で探知アイテムの最初の1個、Prismium Locatorを追加**(右クリックで周囲41x41x41ブロックを走査し、最も近いPrismium鉱石の方角・距離・上下を行動バーに表示。専用の飛翔エンティティやコンパス針モデルは持たず、メッセージ表示のみの最小実装)。
+5. **新装備**: Prismium製ツール/アーマー(特殊能力付き)、探索を楽しくするアクセサリ的アイテム(グラップリングフック、探知アイテムなど)。ツール5種(セッション#2)・アーマー4種(セッション#3)実装済み。セッション#4でアーマーにフルセット効果(暗視、常時)を追加。セッション#5でアーマーのセット効果に水中呼吸を追加(2つ目の効果)、かつツール側にも初のギミック(Prismiumツルハシの鉱石ボーナスドロップ)を追加し、「ツールが純粋なステ上位互換のまま」という課題に着手。**セッション#7で、長らく手つかずだったアクセサリ系の最初の1個としてPrismiumグラップリングフックを追加**(視線方向のブロックへ引き寄せられる、レイキャスト+速度書き換え方式、飛翔エンティティ無し)。**セッション#16で探知アイテムの最初の1個、Prismium Locatorを追加**(右クリックで周囲41x41x41ブロックを走査し、最も近いPrismium鉱石の方角・距離・上下を行動バーに表示。専用の飛翔エンティティやコンパス針モデルは持たず、メッセージ表示のみの最小実装)。**セッション#28で初のブロッキング装備Prismium Shieldを追加**(vanilla ShieldItemを継承せず、UseAnim.BLOCKのみでブロッキング機能を再現)。**セッション#29でその対となる初の遠距離武器Prismium Bowを追加**(vanilla BowItemを直接継承し、customArrowフックで全弾に自弓では通常得られないPiercing 1相当を付与)。
 6. **新ブロック/ギミック**: 装飾ブロック、罠、ダンジョン用ギミックブロックなど。Prismium Core(セッション#3中に並行セッションが追加)はギミックというより「ツールの存在意義付け」の1st ステップ。セッション#4で Prismium Lantern(ツール非依存の量産可能な光源ブロック、光レベル15)を追加、「探索を照らす」実用ブロックの最初の1個。
 
 「完成」を目指さず、常に肉付けし続ける。各要素は最初は最小実装で入れて、後のセッションで機能・バランス・ビジュアルを磨き込む前提。
@@ -923,6 +923,44 @@ session 24-27で繰り返し保留されていた「横展開を続けるより�
 
 1コミット(`e6f9eec`: Prismium Shield一式 - `PrismiumShieldItem.java`新規、`ModItems.java`・`ModCreativeTabs.java`更新、lang(en/ja)更新、`models/item/prismium_shield.json`・`data/claudemod/recipes/prismium_shield.json`・`textures/item/prismium_shield.png`・`scripts/textures/gen_prismium_shield.py`新規、計9ファイル)。§3AA-1のQAレビューはコード変更が発生しなかったため別コミットにはしていない。push前に`git fetch origin main`で差分無し(並行セッションとの衝突は検知せず、直前は`4465839`のまま)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`c35be6c`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(172,764→175,038バイト)、および`actions/workflows/build-and-notify.yml/badge.svg`が"passing"であることの両方を確認 - 本物のビルド成功。
 
+## 3AB. セッション#29で実装した内容: Prismium Bow(MOD初の遠距離武器、Shieldとの対)
+
+### 3AB-0. セッション開始時の状況確認
+
+クローン先は `/tmp/fzc_session/ClaudeMod`(このセッションでの一意パス)。今回も `/tmp/work`・`/tmp/work2` 等の旧固定名ディレクトリが別セッション由来の `nobody:nogroup` 所有ファイルで `rm -rf` すら `Permission denied` になることを再確認したため、即座に一意な新パスへ切り替えた(session 17以降繰り返し有効だった対処をそのまま踏襲)。
+
+ビルド結果確認は `git clone` 直後の `git log --oneline` で、直前セッション(#28)の最終コミット `09d3bdd`(PROGRESS.md更新)の直後に `ci: update built jar [skip ci]` コミット `61a728e` が付いていること、jarサイズが175,038バイト(§3AA-4記載の値と一致)であること、`badge.svg` が "passing" であることの3点で確認した(本物のビルド成功)。
+
+GitHub issue確認: `issues-repo-tab-count` が一度だけ "1" を返す場面に遭遇したが、これは§2-7で既知のプロキシキャッシュ現象と判断し、キャッシュバスティング用クエリを変えて再取得したところ即座に "2" に戻った。個別ページ `/issues/1`・`/issues/2` もともに `"state":"OPEN"` で、内容(顔穴の件・ツール見た目の件)もセッション#9・#13で対応済みの既知issueのままであることを確認した。新規issueは無し。
+
+**今回新たに判明したこと**: `mcp__workspace__bash` 経由の `curl` は `nekoyue.github.io`(Forge Javadocミラー)へ到達できない(`HTTP:000`)一方、Claude Cowork側の `mcp__workspace__web_fetch` ツールは同じURLに問題なく到達できた。過去セッションが「`api.github.com` はプロキシのアローリストで到達不可」と繰り返し記録してきたのは主に `bash` 経由の `curl` の話であり、`web_fetch` ツールは別経路を通っている(少なくとも一部の外部サイトについては、`bash` の `curl` より到達範囲が広い)ことが今回のAPI裏取り作業で分かった。次回以降、外部ドキュメントの裏取りをしたい時は、まず `web_fetch` を試し、それが(§4-10記載の)provenance制限で弾かれた場合にのみ `bash` の `curl`(`github.com` 等アローリスト内のみ)に切り替える、という優先順位が効率的と思われる。
+
+§5(session 28 handoff)item 6(a)「装備面のさらなる拡充: 盾と対になる遠距離武器」に着手した。
+
+### 3AB-1. 実装: Prismium Bow(MOD初の遠距離武器)
+
+- `PrismiumBowItem`(新規、`item`パッケージ): vanilla `BowItem` を直接継承(Shieldが `ShieldItem` を継承しなかったのとは対照的な判断 - `BowItem` には `ShieldItem` のような専用インハンドレンダラーの縛りが無く、継承のデメリットが無いため)。
+- 固有ギミック: `customArrow(AbstractArrow arrow)` をオーバーライドし、生成された矢に無条件で `setPierceLevel((byte) 1)` を設定。Web検索(session 29、Forge 1.19.3 javadoc)で `BowItem#customArrow` が `releaseUsing` 内で矢エンティティ生成直後・ワールド追加前に呼ばれる公式の拡張ポイントであることを確認した上で採用。vanillaのPiercingエンチャントはクロスボウにしか適用できない(弓は対象外)ため、「常に1体貫通する弓」は他に代替手段が無い、本物の差別化ギミックになっている。新規イベントハンドラやNBTタギングは一切不要で、このフック1つだけで完結した。
+- `ModItems` に `durability(460)`(vanilla弓の384より上、他の全装備と同じ「耐久等は一段上、フラットな性能インフレはしない」方針)で登録、`ModCreativeTabs` にも追加。
+- レシピ新規(`prismium_bow.json`、shaped 3x3): `minecraft:stick` x2(対角) + `minecraft:string` x3(縦) + `claudemod:prismium_shard` x1(左中央)。グラップリングフック(鉄+Prismium Shard+糸)と同じ「複数素材を混ぜ、Prismium Shardを動力核として配置する」構成方針を踏襲。
+- 独自の修理素材(Prismium Shardでの追加修理)は今回も実装しなかった(Shield・グラップリングフックと同じ「通常のアンビル修理のみ」という既存方針の継続)。
+- lang(en/ja)に `item.claudemod.prismium_bow` を追加。
+
+### 3AB-2. 実装: pulling/pull item model と ItemProperties登録
+
+- `models/item/prismium_bow.json`: `minecraft:item/generated` を親に、vanilla弓と同じ `overrides` 配列(`{"pulling":1}` → `_pulling_0`、`{"pulling":1,"pull":0.65}` → `_pulling_1`、`{"pulling":1,"pull":0.9}` → `_pulling_2`)を追加。3つの `pulling_N` モデルはそれぞれ対応するテクスチャーへの `layer0` 差し替えのみのシンプルな `item/generated` 継承。
+- `ClientModEvents#registerScreens`(既存のFMLClientSetupEvent、`enqueueWork` ブロック)に、`ItemProperties.register` によるPrismium Bowの `"pull"`/`"pulling"` 述語登録を追加。vanillaはこの2つの述語をアイテムインスタンスごとに個別登録しており(`BowItem` サブクラスに自動で継承されない)、計算式もvanillaの `Items.BOW` 用の実装をそのまま踏襲した(`pull` = 経過使用tick / 20、`pulling` = 使用中かつ対象スタック一致で1.0)。MenuScreens登録と同じ `enqueueWork` 内に置いたのは、`ItemProperties.register` 自体がスレッドセーフかどうか未確認のため安全側に倒した判断で、これが本当に必要かどうかの裏取りはしていない(§4参照)。
+
+### 3AB-3. テクスチャー: Prismium Bowの4状態アイコン(`scripts/textures/gen_prismium_bow.py`)
+
+垂直なCカーブ(中央でx=3まで左に膨らみ、上下端がx=9-10に収束)を「弓の骨格」として定義し、STEEL_*(ツール・盾と共通の中立スチール)で塗った上に、中央のグリップ部分(row 7-8)だけWOOD_*(盾の面と共通のウッドブラウン)を巻いた。弦はPrismium Accentパープル(全アクセサリ共通のファミリーカラー)で、上下端から中央へ滑らかに湾曲する連続線として実装。矢(pulling_1・pulling_2のみ)は木の矢柄+スチールの鏃+Prismium Accentの羽根、という3素材構成でファミリー感を持たせた。
+
+**自己レビューで実際にバグを1つ発見・修正した**: 初稿では弦の各行のx座標を手作業でハードコードした辞書(行ごとに個別の値、単調に変化しない値も混在)で実装したところ、`outputs` フォルダ経由でReadツールにより4状態を横並びプレビュー(16倍拡大)した際、弦が「上・中央・下の3つに分断された点線」のように見えるバグを発見した(隣接する行同士のx座標が不連続に飛んでいたため)。原因はハードコードした値が単調に変化していなかったこと。中心行からの距離に基づく線形補間(`t = 1 - |y - 7.5| / 6.5`、`x = round(10 - t * (10 - mid_x))`)に書き直したところ、4状態すべてで弦が滑らかな連続線になることを確認した。加えて実インベントリスロットに近いサイズ(6倍拡大、vanillaスロット背景色 `#8b8b8b` に合成)でも再度目視確認し、4状態それぞれが「弓が引かれていく」動きとして判別できること、矢のフレッチングの紫アクセントが背景に埋没していないことを確認した。作り直しは弦の部分のみで、全体を破棄して描き直すことにはならなかった。
+
+### 3AB-4. commit・push・ビルド確認
+
+1コミット(`df07f34`: Prismium Bow一式 - `PrismiumBowItem.java`新規、`ModItems.java`・`ModCreativeTabs.java`・`ClientModEvents.java`更新、lang(en/ja)更新、`models/item/prismium_bow*.json` x4新規、`textures/item/prismium_bow*.png` x4新規、`gen_prismium_bow.py`新規、`data/claudemod/recipes/prismium_bow.json`新規、計16ファイル)。push前に `git fetch origin main` で差分無し(並行セッションとの衝突は検知せず、直前は `61a728e` のまま)を確認、素の `git push origin main` が一度で成功(プロキシ回避策は不要だった)。push後 `git fetch` のポーリング(30秒間隔、最大約9分)で `ci: update built jar [skip ci]` コミット(`c982f6b`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c` でビルド済みjarのサイズ増加(175,038→179,702バイト)、および `actions/workflows/build-and-notify.yml/badge.svg` が "passing" であることの両方を確認 - 本物のビルド成功。
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
 
 
@@ -1085,36 +1123,41 @@ session 24-27で繰り返し保留されていた「横展開を続けるより�
     - `durability(420)`・レシピの材料構成(板6+Prismium Shard1+鉄1)はいずれもバランス未検証の初期値で、他の新規アイテム同様、体感で強すぎ/弱すぎ/入手コストが不適切という可能性がある。
     - 独自の修理素材(Prismium Shardでの追加修理等)は今回実装しなかった(grappling hookと同じく通常のアンビル修理のみ) - 将来的にPrismium系装備として統一的な修理手段を用意すべきか検討の余地がある(下記申し送り参照)。
 
+
+43. 【セッション#29で新規発覚】Prismium Bow(§3AB)は以下すべて未検証・既知の割り切り:
+    - MOD初の遠距離武器であり、CIビルドが通ること以上の検証(実際に右クリックで構え、離すと矢が発射されるか、pulling/pull item model overrideが正しいフレームに切り替わるか、矢が本当にPrismium Bowから発射されたものと認識されるか)は一度もできていない。
+    - `customArrow`での`setPierceLevel(1)`は「弓は本来Piercingを付与できない」という前提のWeb検索裏取りに基づく設計だが、実際に貫通挙動が発生するかは未確認。API裏取りは1.19.3時点のjavadocに基づいており、1.20.1で完全に同一シグネチャ・同一挙動かは(このモッドの他の初出API同様)最終的にはCIビルドが通ったことまでしか裏付けられていない。
+    - `durability(460)`、レシピ材料(棒2・糸3・Prismium Shard1)はいずれもバランス未検証の初期値。
+    - 独自の修理素材(Prismium Shardでの追加修理)は今回も実装しなかった - Shield・グラップリングフックと合わせて「専用の修理経路を持たないPrismium装備」が3種類に増えた(§4-42で触れた修理手段統一化の論点がさらに重みを増している)。
+    - `ItemProperties.register`をMenuScreens登録と同じ`FMLClientSetupEvent#enqueueWork`ブロックに入れた判断(§3AB-2)は安全側に倒しただけで、本当にそこに置く必要があるか(直接呼び出しでも安全なAPIではないか)は未検証のまま。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#28終了時点では、`e6f9eec`(Prismium Shield追加)の直後に`c35be6c`が付いており、ビルド成功(jarサイズ172,764→175,038バイト増加を`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`で確認、加えて`actions/workflows/build-and-notify.yml/badge.svg`が"passing"であることも確認)済み。
-2. 【継続、環境まわり】`api.github.com`は引き続き到達不可という前提で作業してよい(セッション#28で改めてプロキシあり/なし両方で`HTTP:000`になることを再確認済み)。ビルド結果の確認は、`git fetch`によるci commitのポーリングに加え、`badge.svg`の"passing"/"failing"を見る方法を主たる確認手段として引き続き推奨する。
-3. 【継続、環境まわり、重要】固定パスの作業ディレクトリが別セッション由来の`nobody:nogroup`所有ファイルで`Permission denied`になる問題は今回も`/tmp/work`・`/tmp/work2`で発生した。今回はホームディレクトリ直下(`$HOME/repo`)への切り替えで解決し、`$HOME`直下は`nobody:nogroup`汚染が無く書き込み可能であることを確認できた。**加えて今回新たに判明した注意点**: `/tmp`配下は同様に別セッション由来のファイルが残っていて特定のファイル名(例えば`/tmp/progress_head.md`のような作業用一時ファイル名)が既に`nobody:nogroup`所有で存在している場合、それへの書き込みだけが`Permission denied`で黙って失敗し、後続コマンド(`cat`等)がその失敗に気づかないまま古い内容を使い続けてしまう事故が今回発生した(PROGRESS.md更新作業中に一度誤って古いセッション#17時点の内容と新しい内容を混ぜてしまい、`git checkout -- PROGRESS.md`で復旧してから作業をやり直した)。教訓: **`/tmp`配下に一時ファイルを作る際も固定名を避け、`$HOME`配下の専用ディレクトリ(例: `mkdir -p $HOME/scratch`)を使うか、コマンドの終了コード・出力サイズを都度確認してから次のコマンドに進むこと。** 複数コマンドを一度に投げる際は特に、途中の一コマンドが失敗しても後続がそのまま実行されてしまう(`&&`で繋いでいない限り)点に注意する。
-4. 【新規、最優先候補】Prismium Shield(セッション#28、§3AA)は実プレイ未検証の新規装備。5機種GUIのセルフQAレビュー(§3AA-1)ではコードレビューだけで見つかる問題は無かったため、次に何かを検証できる機会があれば、GUI 5機種よりもむしろこのShieldの方が「本当に構え動作に入るか」「ダメージが軽減されるか」という一次的な機能検証すら済んでいない分、優先度が高いと考えられる。
-5. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Cable(接続モデル)・全5GUI(Cell/Generator/Pylon/Restorer/Wardstone)・Prismium Shield(本セッション)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
-6. 【新規、次の展開候補】セッション#28で「新規コンテンツへの回帰」の第一弾(Shield)を実施した。この路線を続けるか、他の候補に切り替えるかは次回の判断に委ねるが、選択肢を挙げておく:
-   - (a) 装備面のさらなる拡充: 盾と対になる遠距離武器(弓相当、vanilla`BowItem`を継承すれば矢の発射自体はvanillaの仕組みを再利用でき、実装コストは比較的低いはずだが、`pulling`/`pull`のモデルpredicateまわりは今回のShieldより検証すべき点が多い可能性がある)。
-   - (b) §5(旧、session 27)item 5(a): Prismium Cell/Generator/Pylon/Restorer/Wardstoneの欠片チャージ操作そのものをGUIのスロットに置き換える(`SlotItemHandler`等、MOD未踏み込みのAPI領域)。
-   - (c) Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックなど、GUI以外で長く未着手のままの既存機能の作り込み。
-   - (d) Prismium系装備(ツール・防具・Shield)の修理手段の統一化(§4-42で触れた通り、Shieldは現状Prismium Shardでの専用修理を持たない)。
-7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 28では他セッションとの並行は検知しなかったが、毎回確認すること。
+1. **【最優先、恒例】まず`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#29終了時点では、`df07f34`(Prismium Bow追加)の直後に`c982f6b`が付いており、ビルド成功(jarサイズ175,038→179,702バイト増加、`badge.svg`が"passing")を確認済み。
+2. 【継続、環境まわり、重要な訂正】`bash`経由の`curl`が到達できないホスト(`nekoyue.github.io`等)でも、`mcp__workspace__web_fetch`ツールなら到達できる場合があることが今回判明した(§3AB-0参照)。外部ドキュメントの裏取りをしたい時は、まず`web_fetch`を試し、それがprovenance制限(§4-10)で弾かれた場合にのみ`bash`の`curl`(`github.com`等アローリスト内のみ)に切り替えるとよい。「`api.github.com`はプロキシのアローリストで到達不可」という過去の記述は、あくまで`bash`の`curl`経由の話として読むこと。
+3. 【継続、環境まわり】固定パスの作業ディレクトリが別セッション由来の`nobody:nogroup`所有ファイルで`Permission denied`になる問題は今回も`/tmp/work`等で発生を確認(今回は実際には使わず、最初から一意パス`/tmp/fzc_session/ClaudeMod`を使って回避)。固定パスに当たったら無理せず即座に一意な新しいパスへ切り替えること。
+4. 【新規、優先度高】Prismium Bow(セッション#29、§3AB)は実プレイ未検証の新規武器。次に何かを検証できる機会があれば、GUI 5機種や既存装備よりも、Bowの一次機能検証(本当に矢が飛ぶか、pulling/pullのフレーム切り替えが正しいか、ピアスが実際に貫通するか)を優先候補に。Shield(セッション#28)と合わせて、「機能するかどうか自体が未検証」な新規装備が2つ積み上がっている。
+5. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Cable(接続モデル)・全5GUI・Prismium Shield・Prismium Bow(本セッション)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
+6. 【新規、次の展開候補】
+   - (a) Prismium Arrow: Bowと組み合わせる専用矢(`ArrowItem`継承、`createArrow`で独自`AbstractArrow`サブクラスを返す設計)。専用エンティティ+レンダラーが必要になるためBow本体より実装コストは高いが、「弓矢がセットで揃う」自然な次の一歩。今回は時間の都合でBow本体のみに絞り、矢は既存のvanilla矢をそのまま使う設計にとどめた。
+   - (b) §5(旧、session 28)item 6(b)〜(d): GUIスロット化(`SlotItemHandler`等、未踏み込みのAPI領域)、Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックの作り込み、Prismium系装備(ツール・防具・Shield・Bow・グラップリングフック)の修理手段統一化(現状5系統中3系統が専用修理無し)。
+   - (c) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)、あるいは移動強化系アクセサリ(ダッシュブーツ的なアイテム)の追加で「てんこ盛り」路線をさらに広げる。
+7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。セッション#29では他セッションとの並行は検知しなかったが、毎回確認すること。
 
 ### 議論したい論点・改善案
 
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。GUI 5機種に続き、Shieldという「機能するかどうか」自体が未検証の新規アイテムも積み上がった。次にプレイフィードバックが得られた際は、新規コンテンツの追加よりもこの検証を最優先すべきという声(継続)がさらに強くなっている。
-- **`ShieldItem`を継承しない選択の妥当性(新規)**: セッション#28では3Dインハンドモデルの実装コストを避けるため、あえてvanilla`ShieldItem`を継承しない設計にした(§3AA-2)。この判断自体は「機能を先に確立し、見た目の作り込みは後回しにする」という本MODの既存方針(グラップリングフック・ロケーター等)と一貫しているが、装備品としては見た目のインパクトが小さい(インベントリでは通常のアイテムアイコンと変わらず見える)というトレードオフがある。将来、3Dモデル対応の優先度を上げるべきかは検討の余地がある。
-- **GUIパターンの再利用性(継続、完全に実証された)**: Cell→Generator→Pylon→Restorer→Wardstoneの5例とも`ContainerData`のスロット数・追加ゲッター・`AbstractContainerMenu`の定型配線をコピーするだけで完結し、新規のAPI裏取りは一度も必要にならなかった。セッション#28のセルフQAレビュー(§3AA-1)でもこの5例間の実装に不整合は見つからず、パターンの健全性が改めて裏付けられた。
-- **消費ブロックの見分けやすさ、GUIにも波及(完了)**: Cell/Generator(ティール)・Pylon(紫)・Restorer(金)・Wardstone(赤)という、ブロック本体のアクセント色をGUIの縁取り色にそのまま持ち込む戦略が5機種全てに行き渡った。次に新しい電力ブロックを追加する際は「まだ使われていない5色目のアクセント」を意識して選ぶ余地がある(継続)。
-- **短命な数値同期の一般化(継続)**: Cellの`ENERGY_SYNC_DIVISOR`、Generatorの`BURN_TIME_SYNC_CAP`、Pylon/Wardstoneの`active`フラグint化(0/1)、Restorerの「3つ目のスロットを持たない」という4パターンが出そろった。5機種分の実装が完了した今、共通ヘルパー(例えば`AbstractEnergyContainerData`のような基底クラス)への切り出しを検討する材料は十分にある - ただしプレイテストが一件も済んでいない状況でリファクタリングを優先するかは判断が分かれるところ(継続)。
-- **探知アイテムの発展余地(継続)**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19-28では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
-- **「てんこ盛り」路線への回帰(セッション#28で着手、継続)**: session 23-27の5セッション連続でGUI関連の実装のみが行われていた状態から、セッション#28でShield(新規装備)を追加して方向転換した。MODコンセプト(コンテンツ量の多い「てんこ盛り」)に立ち返るなら、この路線(新規ブロック・アイテム・MOB等の追加)を次回以降も継続する価値がある。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。Bow追加でさらに「機能するかどうか自体が未検証」なコンテンツ(Shield・Bow)が積み上がった。次にプレイフィードバックが得られた際は、新規コンテンツの追加よりもこの検証を最優先すべきという声がさらに強くなっている(継続)。
+- **vanillaの拡張ポイントに乗るコストの低さ(新規)**: Bowは`BowItem`継承+`customArrow`オーバーライド1つだけで、新規イベントハンドラやNBTタギングを一切書かずに固有ギミック(常時貫通)を追加できた。Shield(`UseAnim.BLOCK`のみで盾機能を再現)と合わせて、「vanillaの少ないコードで乗れる拡張ポイントを探す」のが実装コスト対効果の良い新規コンテンツの選び方だと分かってきた。次回以降もこの視点で候補を探すとよい。
+- **修理手段の不統一(継続、重みが増した)**: Prismium系装備のうちツール・防具はPrismium Shardでの専用修理を持つが、グラップリングフック・Shield・Bowの3つはいずれも通常のアンビル修理のみ。装備が増えるほどこの不統一が目立ってきており、そろそろ統一パターン(例えば「durabilityを持つ全Prismiumアイテムに`isValidRepairItem`をオーバーライドしてShardでの部分修理を許可する」共通ヘルパー)を検討する価値がある。
+- **外部ドキュメント裏取りの経路の使い分け(新規)**: §3AB-0で判明した`web_fetch`と`bash`の`curl`の到達範囲の違いは、今後のAPI裏取り全般の効率に関わる。次回以降、この使い分けが本当に安定した挙動か(毎回`web_fetch`が`bash`より到達範囲が広いのか、単に今回のホストがたまたまそうだっただけか)を意識して検証していくとよい。
+- **「てんこ盛り」路線の継続(継続)**: セッション#28のShieldに続き、セッション#29でBowを追加し、2セッション連続で新規装備が増えた。次回以降もこの路線(新規ブロック・アイテム・MOB等の追加)を継続するか、GUIスロット化やCableの作り込みといった「既存機能を深める」路線に一度戻るかは判断が分かれるところ(継続)。
 
 ### コミット/プッシュ状況
 
-このセッションの変更は1コミット: `e6f9eec`(Prismium Shield追加: `PrismiumShieldItem.java`新規、`ModItems.java`・`ModCreativeTabs.java`更新、lang(en/ja)更新、`models/item/prismium_shield.json`・`data/claudemod/recipes/prismium_shield.json`・`textures/item/prismium_shield.png`・`scripts/textures/gen_prismium_shield.py`新規)。5機種GUIのセルフQAレビュー(§3AA-1)はコード変更が発生しなかったため、コミットとしては現れていない(レビューのみで問題が見つからなかった旨は本ファイルの記録のみに残る)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`4465839`のまま)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`c35be6c`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(172,764→175,038バイト)、および`badge.svg`が"passing"であることの両方を確認して、本物のビルド成功を確定させた。新規アイテムテクスチャーは`outputs`フォルダ経由で目視レビュー(暗背景合成、16倍拡大)を実施済み(§3AA-3参照)。GitHub issueの確認はセッション開始時・終了時の両方で実施し、Open issue数が2件のまま(新規issue無し)であることを確認した。
+このセッションの変更は1コミット: `df07f34`(Prismium Bow追加: `PrismiumBowItem.java`新規、`ModItems.java`・`ModCreativeTabs.java`・`ClientModEvents.java`更新、lang(en/ja)更新、`models/item/prismium_bow*.json` x4新規、`textures/item/prismium_bow*.png` x4新規、`gen_prismium_bow.py`新規、`data/claudemod/recipes/prismium_bow.json`新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`61a728e`のまま)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`c982f6b`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(175,038→179,702バイト)、および`badge.svg`が"passing"であることの両方を確認して、本物のビルド成功を確定させた。新規アイテムテクスチャーは`outputs`フォルダ経由で目視レビュー(16倍拡大・実スロットサイズ相当の6倍拡大の両方)を実施済み(§3AB-3参照、弦が点線状に見えるバグを1つ発見・修正)。GitHub issueの確認はセッション開始時に実施し、Open issue数が2件のまま(新規issue無し)であることを確認した。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、`c35be6c`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、`c982f6b`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
