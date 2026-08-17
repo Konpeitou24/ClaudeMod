@@ -4,6 +4,7 @@ import com.claudemod.ClaudeMod;
 import com.claudemod.blockentity.PrismiumCableBlockEntity;
 import com.claudemod.blockentity.PrismiumCellBlockEntity;
 import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
+import com.claudemod.blockentity.PrismiumPylonBlockEntity;
 import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
@@ -154,6 +155,13 @@ public class ModItems {
     // Realm surface decoration - see ModBlocks.PRISMIUM_SPIKE.
     public static final RegistryObject<Item> PRISMIUM_SPIKE_ITEM = ITEMS.register("prismium_spike",
             () -> new BlockItem(ModBlocks.PRISMIUM_SPIKE.get(), new Item.Properties()));
+
+    // Prismium Pylon (session 19): BlockItem for the mod's first FE
+    // consumer. See ModBlocks.PRISMIUM_PYLON. Same EnergyStorageBlockItem
+    // persistence/tooltip treatment as Cell/Generator/Cable (session 11).
+    public static final RegistryObject<Item> PRISMIUM_PYLON_ITEM = ITEMS.register("prismium_pylon",
+            () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_PYLON.get(), new Item.Properties(),
+                    PrismiumPylonBlockEntity.CAPACITY));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

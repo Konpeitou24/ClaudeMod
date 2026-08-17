@@ -46,5 +46,10 @@
     "direction.claudemod.here": "真下",
     "direction.claudemod.above": "上方",
     "direction.claudemod.below": "下方",
-    "direction.claudemod.level": "同じ高さ"
+    "direction.claudemod.level": "同じ高さ",
+    "block.claudemod.prismium_pylon": "プリズミウムパイロン",
+    "message.claudemod.prismium_pylon.status_active": "プリズミウムパイロン: %1$s / %2$s FE (放射中)",
+    "message.claudemod.prismium_pylon.status_idle": "プリズミウムパイロン: %1$s / %2$s FE (待機中)",
+    "message.claudemod.prismium_pylon.charged": "プリズミウムパイロンを充電した: %1$s / %2$s FE",
+    "message.claudemod.prismium_pylon.full": "プリズミウムパイロンは満タンです"
 }

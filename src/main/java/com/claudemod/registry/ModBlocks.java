@@ -5,6 +5,7 @@ import com.claudemod.block.PrismiumBloomBlock;
 import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
+import com.claudemod.block.PrismiumPylonBlock;
 import com.claudemod.block.PrismiumSpikeBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -170,6 +171,21 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .lightLevel(state -> 7)
                     .noOcclusion()));
+
+    // Prismium Pylon (session 19): the mod's first FE *consumer*, closing
+    // the loop the Cell/Generator/Cable trio (sessions 8-10) opened but
+    // never finished - see PrismiumPylonBlock / PrismiumPylonBlockEntity
+    // for the full design rationale. Same "machine" family stats as
+    // Cell/Generator (strength, AMETHYST sound); LIT drives light level
+    // exactly like Generator (0 idle, here 9 while radiating - slightly
+    // brighter than Generator's 8 to read as a more overtly "magical"
+    // effect than a burning fuel source).
+    public static final RegistryObject<Block> PRISMIUM_PYLON = BLOCKS.register("prismium_pylon",
+            () -> new PrismiumPylonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 9 : 0)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

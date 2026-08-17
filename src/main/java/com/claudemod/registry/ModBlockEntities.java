@@ -4,6 +4,7 @@ import com.claudemod.ClaudeMod;
 import com.claudemod.blockentity.PrismiumCableBlockEntity;
 import com.claudemod.blockentity.PrismiumCellBlockEntity;
 import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
+import com.claudemod.blockentity.PrismiumPylonBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -36,6 +37,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("prismium_cable",
                     () -> BlockEntityType.Builder.of(PrismiumCableBlockEntity::new,
                             ModBlocks.PRISMIUM_CABLE.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<PrismiumPylonBlockEntity>> PRISMIUM_PYLON =
+            BLOCK_ENTITIES.register("prismium_pylon",
+                    () -> BlockEntityType.Builder.of(PrismiumPylonBlockEntity::new,
+                            ModBlocks.PRISMIUM_PYLON.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

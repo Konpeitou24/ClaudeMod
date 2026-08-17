@@ -36,6 +36,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_CELL_ITEM.get());
                         output.accept(ModItems.PRISMIUM_GENERATOR_ITEM.get());
                         output.accept(ModItems.PRISMIUM_CABLE_ITEM.get());
+                        output.accept(ModItems.PRISMIUM_PYLON_ITEM.get());
                         output.accept(ModItems.PRISMIUM_SWORD.get());
                         output.accept(ModItems.PRISMIUM_PICKAXE.get());
                         output.accept(ModItems.PRISMIUM_AXE.get());

@@ -8,6 +8,7 @@
         "claudemod:prismium_lantern",
         "claudemod:prismium_cell",
         "claudemod:prismium_generator",
-        "claudemod:prismium_cable"
+        "claudemod:prismium_cable",
+        "claudemod:prismium_pylon"
     ]
 }

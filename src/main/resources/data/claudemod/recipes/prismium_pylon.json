@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "S": { "item": "claudemod:prismium_shard" },
+        "G": { "item": "minecraft:glowstone" },
+        "C": { "item": "claudemod:prismium_cell" }
+    },
+    "pattern": [
+        "SGS",
+        "GCG",
+        "SGS"
+    ],
+    "result": {
+        "item": "claudemod:prismium_pylon",
+        "count": 1
+    }
+}

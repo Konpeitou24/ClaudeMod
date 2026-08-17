@@ -46,5 +46,10 @@
     "direction.claudemod.here": "right here",
     "direction.claudemod.above": "above you",
     "direction.claudemod.below": "below you",
-    "direction.claudemod.level": "at your level"
+    "direction.claudemod.level": "at your level",
+    "block.claudemod.prismium_pylon": "Prismium Pylon",
+    "message.claudemod.prismium_pylon.status_active": "Prismium Pylon: %1$s / %2$s FE (radiating)",
+    "message.claudemod.prismium_pylon.status_idle": "Prismium Pylon: %1$s / %2$s FE (idle)",
+    "message.claudemod.prismium_pylon.charged": "Charged Prismium Pylon: %1$s / %2$s FE",
+    "message.claudemod.prismium_pylon.full": "Prismium Pylon is already full"
 }
