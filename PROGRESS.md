@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-17 (セッション #22)
+最終更新: 2026-08-18 (セッション #24)
 
 ---
 
@@ -764,6 +764,36 @@ GitHub issue #1・#2の状況もPROGRESS.md記載の手順(github.comのHTMLペ�
 
 ---
 
+## 3W. セッション#24で実装した内容: Prismium GeneratorのGUI(MOD2種類目のMenu/Screen)
+
+### 3W-0. セッション開始時の状況確認
+
+`git clone`は`$HOME/tmp/ClaudeMod`(一意ではない固定パスだが今回は空いていた)を使用。`git log`で直前セッション(#23, `7f2710a`)の直後に`ci: update built jar`コミット`29cdb45`が付いていることを確認 - 本物のビルド成功。GitHub issue確認は今回`https://github.com/Konpeitou24/ClaudeMod/issues`および個別issueページ(`/issues/1`, `/issues/2`)を`curl`で取得しようとしたが、**今回はどちらも一貫して`404 Not Found`(9バイトのプレーンテキスト応答)が返り続けた**(User-Agentをブラウザ相当に変えても同じ)。一方リポジトリのトップページ(`github.com/Konpeitou24/ClaudeMod`)自体は正常に取得でき、そのHTML内の`issues-repo-tab-count`要素から**Open issue数が2件のまま(既知のissue #1・#2から増減なし)**であることは確認できた。個別issueページが404になる現象は過去セッションでは未報告の新しい制約で、次回への申し送り(§5)に記載する。
+
+`api.github.com`はプロキシ経由・`https_proxy`等を空にした直接接続の両方で相変わらず到達不可(`Could not resolve host`/プロキシ403)。
+
+§5(旧、session 23時点)の選択肢のうち、(a)「同じMenu/Screenパターンを他のFE関連ブロックに展開する。特にGeneratorは燃焼ゲージという2つ目の同期すべき値があり、Cellより一段複雑なGUIの練習になる」を選んだ。
+
+### 3W-1. 実装: Prismium GeneratorのGUI(MOD2種類目)
+
+- `PrismiumGeneratorBlockEntity`が`MenuProvider`を実装。`ContainerData`は**3スロット**(Cellの2スロットより1つ多い): index0=現在FE、index1=最大FE(容量8,000は`Short.MAX_VALUE`に対し余裕があるため、Cellのような`ENERGY_SYNC_DIVISOR`は不要と判断)、index2=`burnTime`(新設の`BURN_TIME_SYNC_CAP`定数 = `Short.MAX_VALUE`でクランプ)。
+- **`burnTime`は`addFuel()`で無制限に加算され続ける**(このブロック自体に元々上限が無い)ため、大量のプリズミウムのかけらを立て続けに投入すると生の値がshort範囲(32,767)を超えうる - これはセッション23でCellのFE値について発見・対処したのと同種の「短縮切り捨てバグ」で、今回は事前にコードレビューで気づいて`Math.min(burnTime, BURN_TIME_SYNC_CAP)`で対処した(実装前に気づけたバグという点で、セッション23の教訓(実装前のAPI裏取り・値域確認の習慣)が実際に活きた)。
+- `PrismiumGeneratorMenu`(新規、Cellの`PrismiumCellMenu`とほぼ同型): スロット無し、ステータス表示のみ。`getBurnFraction()`は`min(1, burnTime / BURN_TIME_PER_SHARD)`という独自の簡略化(バニラのかまどの「現在の燃料アイテムの残り時間が尽きたら次のアイテムに切り替えてゲージが全回復する」という挙動とは異なり、このMODの`burnTime`はアイテム単位の区切りを持たない累積カウンタのため、ゲージは「現在何個分のかけらの燃料が溜まっているか(1個分でカンスト)」という意味になる)。この意図的な簡略化はクラスjavadocに明記し、将来「バニラ風に修正」しようとする前に一度トレードオフを検討させる設計にした。
+- `PrismiumGeneratorScreen`(新規): 176x110(Cellの176x90より高い) - 上部に縦方向の「炎ゲージ」(下から上へ充填、ブロック本体のLIT時テクスチャーで確立済みのエンバー配色`EMBER_LIT_WARM`/`EMBER_LIT_HOT`/`EMBER_LIT_CORE`をそのまま再利用)、下部にCellと同じ横方向のエネルギーバー(teal配色)という2ゲージ構成。両ゲージともテクスチャーには「トラック(窪み)」だけを焼き込み、実際の塗りつぶしはCellと同じくコード側で毎フレーム描画する設計を踏襲。
+- `PrismiumGeneratorBlock#use`の空手右クリック分岐を、旧来のアクションバー状態表示メッセージから`NetworkHooks.openScreen`によるGUIオープンに置き換えた(Cellがセッション23で行ったのと同じ置き換え、`message.claudemod.prismium_generator.status`langキー自体は削除せず残置 - Cellの`prismium_cell.status`キーが未削除のまま残っている既存の前例に倣った)。
+- `ModMenuTypes`に`PRISMIUM_GENERATOR_MENU`を追加、`ClientModEvents#registerScreens`に2件目の`MenuScreens.register`呼び出しを追加。
+- 新規lang key: `gui.claudemod.burn_seconds`(en/ja)。
+
+### 3W-2. テクスチャー: Generator GUI背景(2枚目のGUIカテゴリテクスチャー)
+
+`scripts/textures/gen_prismium_cell_gui.py`をベースに`scripts/textures/gen_prismium_generator_gui.py`を新規作成。256x256キャンバス、実際に描画される範囲は176x110。ブロック本体と同じCASING_DARK/CASING_MID+PRISMIUM_OUTLINEの金属ケーシングに、炎ゲージ用の縦長トラック(暖色の`EMBER_TRACK_DARK`、エネルギーバー用の冷色`TRACK_DARK`とは意図的に異なる色にして、空の状態でも「これは暖色系のゲージ」と分かるようにした)とエネルギーバー用の横長トラックの2つの窪みを描画。
+
+自己レビュー: (1)256x256全体を市松模様背景に重ねたプレビューで、176x110の外側が完全に透過(意図しないピクセル無し)であることを確認。(2)176x110部分の2倍・4倍拡大プレビューで、ケーシングの縁取り・ハイライト線・2つのトラックのコントラストが小さい表示でも視認できることを確認。(3)**今回新たに、コード側の塗りつぶしロジック(炎ゲージ60%・エネルギーバー72%を想定)をPython側で再現したモックアッププレビューも作成し**、実際にゲーム内で塗りつぶされた状態に近い見た目を事前確認した - 炎ゲージ(オレンジ系、上部にホットコアの明るい帯)とエネルギーバー(ティール系、上部にハイライト帯)が明確に区別でき、色の衝突や視認性の問題は無いことを確認した。作り直しは発生しなかった。全ピクセルalpha=255(透過崩れ無し)もPIL側の描画ロジック(`draw.rectangle`で塗りつぶした範囲は常に不透明)から保証されている。
+
+### 3W-3. commit・push・ビルド確認
+
+1コミット(`80e6639`: Prismium GeneratorのGUI一式)。push前に`git fetch origin main`で差分無し(並行セッションとの衝突は検知せず、直前は`2d2926e`のまま)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`ad1a4e9`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(148,032→154,552バイト)も確認 - 本物のビルド成功。
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
 
 
@@ -893,36 +923,42 @@ GitHub issue #1・#2の状況もPROGRESS.md記載の手順(github.comのHTMLペ�
     - 新しく発見した`mcp__workspace__web_fetch`経由での`api.github.com`到達性(次回への申し送り参照)は、今回はActionsのruns一覧でしか試しておらず、返ってきたデータも明らかに古い/不完全だった(total_count:3等、実際のコミット数と矛盾)。原因(キャッシュ、provenance制限の影響、別の何か)は未調査のまま。
     - GitHub issue #1・#2・新規Issueの確認は今回未着手(§0参照)。
 
+38. 【セッション#24で新規発覚】Prismium GeneratorのGUI(§3W)は以下すべて未検証・既知の割り切り:
+    - MOD2種類目のMenu/Screen実装であり、CIビルドが通ること以上の検証(実際に空手右クリックでGUIが開くか、炎ゲージ・エネルギーバーが正しい割合で塗りつぶされるか、燃焼中にゲージがリアルタイムに動くか)は一度もできていない。
+    - `getBurnFraction()`の「アイテム単位の区切りを持たない累積ゲージ」という簡略化(§3W-1参照)が、実際にプレイヤーの目にはどう映るか(バニラのかまどに慣れたプレイヤーが違和感を覚えないか)は未検証。
+    - `BURN_TIME_SYNC_CAP`(Short.MAX_VALUE)によるクランプは理論上安全なはずだが、実際に大量のかけらを投入して短時間でクランプ値に到達するケースを実地で試したことは無い。
+    - GUI背景テクスチャー(176x110)は目視レビュー・コード再現モックアップの両方を行ったが、実際にゲーム内でタイトル文字・燃料テキスト・FEテキストと重なった時の見た目は未確認。
+    - GitHub issueの個別ページ(`/issues/1`, `/issues/2`)が今回`curl`で一貫して404を返した(§3W-0参照、過去セッションには無かった新しい制約)原因は未調査のまま。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#23終了時点では、`7f2710a`(Prismium CellのGUI追加)の直後に`29cdb45`が付いており、ビルド成功(jarサイズ139,580→148,032バイト増加も`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`で確認)済み。
-2. **【新規、要検証】今回`mcp__workspace__web_fetch`経由で`https://api.github.com/repos/Konpeitou24/ClaudeMod/actions/runs?per_page=1`が実際に取得できることを発見した**(bashの`curl`では相変わらず到達不可 - `Could not resolve host`/プロキシ403、この制約は変わらず)。ただし返ってきた内容(`total_count: 3`、古いコミットのhead_sha)は実際のコミット履歴と明らかに矛盾しており、信用できるデータではなかった。この`web_fetch`のprovenance制限(会話に一度も出てきていないURLは直接fetchできない)は今回のスケジュールタスクのプロンプト文中に該当URLが literal に書かれていたために回避できていた可能性が高く、次回以降プロンプトが変わると同じ手が使えるとは限らない。もし次回このURLが素直に使えるなら、まず`WebSearch`等でこのURLを一度会話に登場させてからfetchを試す、あるいはRun IDを変えて(例えば最新の`29cdb45`に対応するcheck run等)再現性を確認し、信頼できるデータが返るかどうかを見極める価値がある。現状では**`git fetch`によるjarコミット確認が唯一の確実な主手段**であることに変わりはない。
-3. **【新規、重要な方法論】GUI等、MOD内に前例のない新規API領域を実装する際は、実装前に`WebSearch`+`mcp__workspace__web_fetch`でForge公式docs(docs.minecraftforge.net)を確認する価値が高いことが今回実証された(§3V-2参照)。** 特に、Forgeのdocsサイトには`1.20.x`/`latest`という「その時点の最新」を指す一般ページと、`1.20.1`のような厳密固定バージョンのページが別々に存在し、1.20.2等で破壊的変更があったAPI領域(今回は`NetworkHooks.openScreen` vs `ServerPlayer#openMenu`)では両者の内容が食い違う。**このMODは`forge_version=47.4.0`(Minecraft 1.20.1固定)なので、今後も何か新しいAPIを使う前には必ず`docs.minecraftforge.net/en/1.20.1/...`という厳密固定バージョンのURLを明示的に確認すること**(一般ページだけを読んで実装すると、1.20.2以降専用の非互換APIを使ってしまいコンパイルが通らない恐れがある)。また`ContainerData`/`DataSlot`のshort値域制限のように、docsの警告文(Warning/Note)を読み飛ばさないことも実際にバグを1件防いだ。
-4. 【継続、環境まわりの実務上の注意】`git clone`は固定パスではなく一意なパスに対して行うことが引き続き推奨される(今回は`$HOME/work/ClaudeMod`で問題無く空いていたが、`mktemp -d`等の一意パスの方が並行セッションとの衝突リスクが低い)。`Read`/`Edit`/`Write`ツールはWindowsホスト側のマウント(`outputs`等)しか見えず、`mcp__workspace__bash`でcloneしたリポジトリには直接アクセスできない制約も継続 - 今回もJavaファイル・Pythonスクリプトはいったん`outputs`に書いてから`cp`でリポジトリへ持ち込んだ。
-5. **【新規、優先度中〜高】Prismium CellのGUI(session 23)により、§5(旧、session 22時点)item 4「(c) GUIの導入」に初めて着手できた。** ただし今回はまだ「1つのブロックに最小限のステータス表示GUIを付けただけ」の段階(§3V-1・§4-37参照)。次の一手として考えられる案:
-   - (a) 同じMenu/Screenパターンを他のFE関連ブロック(Generator・Pylon・Restorer・Wardstone)に展開する。特にGeneratorは燃焼ゲージ(バーン時間)という2つ目の同期すべき値があり、Cellより一段複雑なGUIの練習になる。
-   - (b) Prismium Cellの欠片チャージ操作そのものをGUI化する(スロットを追加し、欠片をドラッグ&ドロップで投入できるようにする) - これは今回あえて見送った「GUIにスロットを持たせる」領域(`SlotItemHandler`等)に初めて踏み込むことになる。
-   - (c) 今回のGUI実装が実際にゲーム内で正しく動くかのプレイフィードバックを待ってから、次の展開を判断する(§4-37の未検証項目が多いため、闇雲に横展開するより先に1件を検証しきる方が手堅いかもしれない)。
-6. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Pylon・Prismium Restorer・Prismium Wardstone・Prismium Cable(接続モデル)・Prismium CellのGUI(今回)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。GUIは特に「開くか・数字が正しいか・見た目が破綻していないか」がひと目で分かる部類なので、フィードバックが来ていたら最優先で見ること。
-7. 【継続、優先度中】GitHub issue #1・#2の状態確認は今回も着手しなかった(実装とAPI裏取りに時間を優先したため)。次回、item 2で発見した`web_fetch`経由の`api.github.com`到達性が issue エンドポイント(`/issues`)でも通用するか試す価値がある - 今回は`/actions/runs`でしか試していない。
-8. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 23では他セッションとの並行は検知しなかったが、毎回確認すること。
+1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#24終了時点では、`80e6639`(Prismium GeneratorのGUI追加)の直後に`ad1a4e9`が付いており、ビルド成功(jarサイズ148,032→154,552バイト増加も`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`で確認)済み。
+2. **【新規】GitHub issueの個別ページ(`/issues/<番号>`)が今回、User-Agentを変えても一貫して`404 Not Found`(9バイトのプレーンテキスト)を返した。** 一方でリポジトリのトップページ(`github.com/<owner>/<repo>`)のHTML内`issues-repo-tab-count`要素からOpen issue数(現在2件、既知の#1・#2のまま増減無し)は引き続き取得できる。次回、もし個別issueページへの到達性が回復していれば内容を確認すること。回復していなければ、少なくともタブカウントの増減だけは毎回追跡し、「2件から増えた」ら新規issueの存在を検知できる、という最低限の代替監視として使うとよい。
+3. 【継続、重要な方法論】GUI等、MOD内に前例のない新規API領域を実装する際は、実装前に`WebSearch`+`mcp__workspace__web_fetch`でForge公式docs(`docs.minecraftforge.net/en/1.20.1/...`という**厳密固定バージョン**のページ)を確認する価値が高いことがセッション#23・#24と2回連続で実証されている(セッション#24ではGeneratorの`burnTime`が無制限加算されうる点に実装前のコードレビューで気づき、`BURN_TIME_SYNC_CAP`で対処 - セッション#23で確立した「shortの値域制限を疑う」習慣がそのまま活きた)。今後もこの習慣は継続すること。
+4. 【継続、環境まわりの実務上の注意】今回`$HOME/tmp/ClaudeMod`という固定パスを使ったが問題無く空いていた。ただし`/tmp/work`・`/tmp/work2`等の使い回されたパスは今回も`nobody:nogroup`所有で使用不可(`rm`すら`Permission denied`)だったため、**固定パスで`Permission denied`に当たったら即座に別の一意なパスへ切り替える**方針は引き続き有効。`Read`/`Edit`/`Write`ツールはWindowsホスト側のマウント(`outputs`等)しか見えず、`mcp__workspace__bash`でcloneしたリポジトリには直接アクセスできない制約も継続。**今回はJavaファイル・Pythonスクリプトを`outputs`経由で持ち込む代わりに、bashのpython heredocで文字列置換パッチを当てる方式に切り替えた**(`$HOME/tmp/scripts/*.py`に一時スクリプトを書いて`old_string`の`assert`チェック付きで置換 - Editツールの「置換前文字列が一意に存在するか」チェックと似た安全策を自前で再現した)。この方式は往復が減り効率的だったので、次回以降も選択肢として使ってよい(テクスチャー等の画像確認だけは引き続き`outputs`経由でのRead必須、コード編集はどちらでも可)。
+5. **【新規、優先度中〜高】Prismium Generator(session 24)により、§5(旧、session 23時点)item 5の案(a)「GUIパターンを他のFEブロックへ展開」に2機種目として着手できた。** 残る展開先・選択肢:
+   - (a) 同じMenu/Screenパターンを消費ブロック3種(Pylon・Restorer・Wardstone)へさらに展開する。いずれもCellと同型の「スロット無し、ステータス表示のみ」で実装できるはず(Pylon/Wardstoneは`LIT`状態を持つのでGeneratorに近い設計、Restorerは`LIT`が無くCellに近い設計)。
+   - (b) Prismium Cell/Generatorの欠片チャージ操作そのものをGUI化する(スロット追加、`SlotItemHandler`等の未踏み込み領域)。
+   - (c) 今回・前回のGUI実装が実際にゲーム内で正しく動くかのプレイフィードバックを待ってから、次の展開を判断する(§4-37・§4-38の未検証項目が多いため、横展開を続けるより先に1件を検証しきる方が手堅い可能性は引き続き残る)。
+6. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Pylon・Prismium Restorer・Prismium Wardstone・Prismium Cable(接続モデル)・Prismium Cell/GeneratorのGUI(2機種)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
+7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 24では他セッションとの並行は検知しなかったが、毎回確認すること。
 
 ### 議論したい論点・改善案
 
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。GUI(session 23)は「開いて数字を読む」という最も基本的な検証すらできておらず、Cableの接続見た目(session 22)と並んでこのMODの中でも特にプレイフィードバックの価値が高い部類が2つに増えた。
-- **web_fetchでの一次情報確認という新しい方法論**: 今回、実装前にForge公式docsを確認する進め方が2件の潜在バグ(§3V-2)を防いだ。これは「MOD内の既存パターンを転用してリスクを下げる」という従来戦略が使えない新規API領域(GUI、ネットワーキング、データ生成等)に踏み込む際の標準手順として、次回以降も明示的に推奨したい。バージョン固定ページの重要性(上記「すぐやるべきこと」3番)も合わせて。
-- **エネルギーシステムの完成度**: Cell(蓄電、GUI追加)・Generator(発電)・Cable(送電、接続見た目あり)・Pylon(消費#1)・Restorer(消費#2)・Wardstone(消費#3)で「発電→送電→3種類の消費→見た目→GUI(1機種のみ)」まで揃った。残る発展先は他機種へのGUI展開、GUIへのスロット(アイテム入出力)追加、あるいは全く新しい方向性(4種類目の消費ブロック、送電網の可視化ツール等)。
-- **GUIのスコープ判断**: 今回「スロット無し、ステータス表示のみ」という最小スコープを選んだことで、Menu/MenuType/Screenという3つの新規API領域を同時に検証しつつリスクを抑えられた。次にGUIへスロットを追加する際は、この最小実装が土台として使える(`AbstractContainerMenu`のコンストラクタ・`stillValid`・`ContainerLevelAccess`の配線はそのまま流用できるはず)。
-- **短命な数値同期の一般化**: `ENERGY_SYNC_DIVISOR`による量子化(§3V-2)は他のFEブロック(特にGenerator・Pylon・Restorer・Wardstoneも将来GUI化する場合、容量20,000〜30,000FEなので同様にshort制限に引っかかる)にもそのまま使えるパターンとして確立した。次回GUIを展開する際はこの定数命名・ドキュメントコメントの型を踏襲するとよい。
-- **消費ブロックの見分けやすさ(継続)**: Restorer(金)・Wardstone(赤)・Pylon(紫〜シアン)の配色戦略、Cable(中立色)の設計方針は変更なし。GUI側の配色は今回ブロック本体のケーシング色をそのまま流用したが、複数機種にGUIを展開する場合、ブロックごとにGUIパネルの配色も変えるべきか(見分けやすさ向上)、それとも統一UIとして揃えるべきか(一貫性向上)は未検討の論点。
-- **探知アイテムの発展余地(継続)**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19-23では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。GUIは今やCell・Generatorの2機種になったが、どちらも「開くか・数字が正しいか」すら一度も実地確認できていない。
+- **web_fetch/curlでの一次情報確認という方法論**: セッション#23・#24と2回連続で、実装前にForge公式docs(厳密固定バージョンページ)を確認する進め方が潜在バグを防いだ。新規API領域に踏み込む際の標準手順として定着させたい。
+- **エネルギーシステムの完成度**: Cell(蓄電、GUIあり)・Generator(発電、GUIあり、今回)・Cable(送電、接続見た目あり)・Pylon(消費#1)・Restorer(消費#2)・Wardstone(消費#3)で「発電→送電→3種類の消費→見た目→GUI(2機種)」まで揃った。残る発展先はPylon/Restorer/WardstoneへのGUI展開、GUIへのスロット(アイテム入出力)追加、あるいは4種類目の消費ブロックや送電網の可視化ツールといった新方向。
+- **GUIパターンの再利用性**: CellからGeneratorへの展開は、`ContainerData`のスロット数を2→3に増やし、`getBurnFraction()`のような追加のゲッターを足すだけで済み、`AbstractContainerMenu`のコンストラクタ・`stillValid`・`ContainerLevelAccess`の配線、`quickMoveStack`の空実装は完全にコピー元と同型だった。この「型」は残り3機種(Pylon/Restorer/Wardstone)にもそのまま使えるはずで、次回以降のGUI展開はセッション#23よりもさらに短時間で終わる見込み。
+- **短命な数値同期の一般化**: Cellの`ENERGY_SYNC_DIVISOR`、Generatorの`BURN_TIME_SYNC_CAP`と、機種ごとに微妙に異なる「short安全化」の実装(割り算 vs クランプ)が生まれつつある。次にPylon/Restorer/WardstoneをGUI化する際(いずれも容量20,000〜30,000FEでshort超え確定)は、割り算・クランプのどちらの方式が読みやすいか、あるいは共通ヘルパーメソッドに切り出すべきかを検討する価値がある。
+- **消費ブロックの見分けやすさ(継続)**: Restorer(金)・Wardstone(赤)・Pylon(紫〜シアン)の配色戦略は変更なし。GUIパネルの配色をブロックごとに変えるか統一するかは未検討のまま(今回もGeneratorは自身のエンバー配色をそのまま使い、Cellのteal配色とは意図的に別系統にした)。
+- **探知アイテムの発展余地(継続)**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19-24では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
 
 ### コミット/プッシュ状況
 
-このセッションの変更は1コミット: `7f2710a`(Prismium CellのGUI追加: `ModMenuTypes.java`・`PrismiumCellMenu.java`・`PrismiumCellScreen.java`新規、`PrismiumCellBlockEntity.java`・`PrismiumCellBlock.java`・`ClaudeMod.java`・`ClientModEvents.java`更新、GUI背景テクスチャー新規、`gui.claudemod.fe_amount`lang key新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリング(約150秒後)で`ci: update built jar [skip ci]`コミット(`29cdb45`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(139,580→148,032バイト)も確認して、本物のビルド成功を確定させた。新規GUI背景テクスチャーは`outputs`フォルダ経由で目視レビュー済み(§3V-3参照)。issue #1・#2・新規Issueの有無は今回未確認。
+このセッションの変更は1コミット: `80e6639`(Prismium GeneratorのGUI追加: `PrismiumGeneratorMenu.java`・`PrismiumGeneratorScreen.java`新規、`PrismiumGeneratorBlockEntity.java`・`PrismiumGeneratorBlock.java`・`ModMenuTypes.java`・`ClientModEvents.java`更新、GUI背景テクスチャー新規、`gui.claudemod.burn_seconds`lang key新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`2d2926e`のまま)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`ad1a4e9`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(148,032→154,552バイト)も確認して、本物のビルド成功を確定させた。新規GUI背景テクスチャーは`outputs`フォルダ経由で目視レビュー・コード再現モックアップの両方を実施済み(§3W-2参照)。issue #1・#2は個別ページが404だったため内容未確認、タブカウント経由で「2件のまま増減無し」のみ確認(§3W-0参照)。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`29cdb45`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`ad1a4e9`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
