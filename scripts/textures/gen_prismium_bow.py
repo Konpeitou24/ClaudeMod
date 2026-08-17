@@ -19,20 +19,31 @@ variety. The bowstring uses the mod's Prismium accent purple
 (PRISMIUM_ACCENT/_HILITE) instead of plain white/grey - an "energy
 string" that reads as part of the Prismium family at a glance, the same
 "one accent color ties it together" strategy used by every other
-accessory item in the mod. The string's draw point moves left (toward
-the limb) across the four frames to sell the pull motion, and a wood
-(shaft) + steel (head) + prismium-accent (fletching) arrow appears,
-progressively further nocked, in the two most-drawn frames.
+accessory item in the mod. The string's draw point moves right (AWAY
+from the grip/limb) across the four frames to sell the pull motion, and
+a wood (shaft) + steel (head) + prismium-accent (fletching) arrow
+appears, progressively further nocked, in the two most-drawn frames -
+the head stays fixed just past the grip on the shot-direction (left)
+side while the fletched nock end tracks the string outward (right).
 
-Self-review note: an early draft kept the string perfectly straight in
-all four frames and only moved the arrow, which read as "arrow floating
-in front of a static bow" rather than "bow being drawn" once previewed
-at 16x16 - bending the string's own midpoint inward per frame (in
-addition to the arrow) was necessary to sell the motion, matching how
-vanilla's own bow_pulling_*.png frames work. Confirmed by generating a
-4-frame side-by-side comparison strip and inspecting it directly (see
-this script's __main__ block / the session's self-review notes in
-PROGRESS.md for the outcome).
+Self-review note (round 1): an early draft kept the string perfectly
+straight in all four frames and only moved the arrow, which read as
+"arrow floating in front of a static bow" rather than "bow being drawn"
+once previewed at 16x16 - bending the string's own midpoint per frame
+(in addition to the arrow) was necessary to sell the motion.
+
+Self-review note (round 2, caught after a user looked at the rendered
+preview): that same early draft bent the string toward the grip (left,
+same side as the limb's belly) as the draw increased, which reads as
+physically backwards - drawing a bow pulls the string away from the
+grip/riser toward the archer, not into the bow. The fix was purely a
+sign flip (draw_string's mid_x now grows past the resting/brace value of
+10 instead of shrinking toward the grip's x=3), plus swapping which end
+of the arrow is fixed (head, near the grip) versus which end moves with
+the string (the fletched nock). This is the mistake to watch for if this
+script is ever copied as a template for another bow-like item: always
+sanity-check "does the string bend away from the grip, not into it?"
+before calling a draw-state texture done.
 
 Deterministic (no RNG - every pixel is placed explicitly). Run from repo
 root: python3 scripts/textures/gen_prismium_bow.py
@@ -160,22 +171,27 @@ def draw_string(px, mid_x, limb_pts):
     return string_x
 
 
-def draw_arrow(px, nock_x, nock_y_range, tip_x, limb_pts):
-    """A horizontal arrow: wood shaft, a steel head at the far (right)
-    end, and a small Prismium-accent fletching flare at the nock end."""
+def draw_arrow(px, head_x, nock_x, nock_y_range, limb_pts):
+    """A horizontal arrow resting across the grip: a steel head at the
+    far (left) end pointing past the limb toward the shot direction, a
+    wood shaft, and a Prismium-accent fletching flare at the nock end
+    (right), which sits on the string and therefore must be the end that
+    moves as the bow is drawn further - see draw_string / make_frame for
+    why "further drawn" means "nock_x grows", not shrinks."""
     mid_row = (nock_y_range[0] + nock_y_range[-1]) // 2
-    for x in range(nock_x, tip_x):
-        if (x, mid_row) in limb_pts:
-            continue
+    for x in range(head_x, nock_x):
+        # Unlike draw_string, the arrow is drawn *over* the grip rather
+        # than stopping at it - a nocked arrow visually rests on top of
+        # the riser, it does not vanish behind it.
         set_px(px, x, mid_row, W_BASE)
-    set_px(px, tip_x, mid_row, S_HILITE)
-    set_px(px, tip_x - 1, mid_row - 1, S_BASE)
-    set_px(px, tip_x - 1, mid_row + 1, S_BASE)
+    set_px(px, head_x, mid_row, S_HILITE)
+    set_px(px, head_x + 1, mid_row - 1, S_BASE)
+    set_px(px, head_x + 1, mid_row + 1, S_BASE)
     # Fletching flare at the nock end (2 pixels, above/below the shaft).
-    if nock_x - 1 >= 0 and (nock_x - 1, mid_row - 1) not in limb_pts:
-        set_px(px, nock_x - 1, mid_row - 1, ACCENT)
-    if nock_x - 1 >= 0 and (nock_x - 1, mid_row + 1) not in limb_pts:
-        set_px(px, nock_x - 1, mid_row + 1, ACCENT)
+    if (nock_x + 1, mid_row - 1) not in limb_pts:
+        set_px(px, nock_x + 1, mid_row - 1, ACCENT)
+    if (nock_x + 1, mid_row + 1) not in limb_pts:
+        set_px(px, nock_x + 1, mid_row + 1, ACCENT)
 
 
 def make_frame(mid_x, arrow=None):
@@ -184,8 +200,8 @@ def make_frame(mid_x, arrow=None):
     limb_pts = draw_limb(px)
     draw_string(px, mid_x, limb_pts)
     if arrow is not None:
-        nock_x, tip_x = arrow
-        draw_arrow(px, nock_x, GRIP_ROWS, tip_x, limb_pts)
+        head_x, nock_x = arrow
+        draw_arrow(px, head_x, nock_x, GRIP_ROWS, limb_pts)
     return img
 
 
@@ -193,11 +209,17 @@ def main():
     out_dir = ASSETS / "item"
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    # mid_x grows (string bends further right, AWAY from the grip at
+    # x=3) as the draw progresses - see draw_string's docstring and the
+    # session's self-review note above for why the earlier draft had
+    # this backwards. head_x/nock_x for the arrow: the head stays fixed
+    # just past the grip (pointing toward the shot direction, left) while
+    # nock_x tracks the string's own rightward pull.
     frames = {
-        "prismium_bow": make_frame(mid_x=11, arrow=None),
-        "prismium_bow_pulling_0": make_frame(mid_x=9, arrow=None),
-        "prismium_bow_pulling_1": make_frame(mid_x=7, arrow=(7, 12)),
-        "prismium_bow_pulling_2": make_frame(mid_x=5, arrow=(5, 15)),
+        "prismium_bow": make_frame(mid_x=10, arrow=None),
+        "prismium_bow_pulling_0": make_frame(mid_x=11, arrow=None),
+        "prismium_bow_pulling_1": make_frame(mid_x=13, arrow=(1, 13)),
+        "prismium_bow_pulling_2": make_frame(mid_x=15, arrow=(1, 15)),
     }
     for name, img in frames.items():
         out_path = out_dir / f"{name}.png"
