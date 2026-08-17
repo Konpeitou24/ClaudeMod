@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-18 (セッション #29)
+最終更新: 2026-08-18 (セッション #30)
 
 ---
 
@@ -961,6 +961,45 @@ GitHub issue確認: `issues-repo-tab-count` が一度だけ "1" を返す場面�
 
 1コミット(`df07f34`: Prismium Bow一式 - `PrismiumBowItem.java`新規、`ModItems.java`・`ModCreativeTabs.java`・`ClientModEvents.java`更新、lang(en/ja)更新、`models/item/prismium_bow*.json` x4新規、`textures/item/prismium_bow*.png` x4新規、`gen_prismium_bow.py`新規、`data/claudemod/recipes/prismium_bow.json`新規、計16ファイル)。push前に `git fetch origin main` で差分無し(並行セッションとの衝突は検知せず、直前は `61a728e` のまま)を確認、素の `git push origin main` が一度で成功(プロキシ回避策は不要だった)。push後 `git fetch` のポーリング(30秒間隔、最大約9分)で `ci: update built jar [skip ci]` コミット(`c982f6b`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c` でビルド済みjarのサイズ増加(175,038→179,702バイト)、および `actions/workflows/build-and-notify.yml/badge.svg` が "passing" であることの両方を確認 - 本物のビルド成功。
 
+## 3AC. セッション#30で実装した内容: 修理素材統一 + Prismium Guardian Charm(MOD初のcheat-death装備)
+
+### 3AC-0. セッション開始時の状況確認
+
+クローン先は `/tmp/clademod_fresh_<epoch秒>`(一意パス、session 18以降の教訓通り)。今回も `/tmp/work`・`/tmp/work2` 固定名ディレクトリが別セッション由来の `nobody:nogroup` 所有で `rm -rf` すら `Permission denied` になることを再確認(§4-30と全く同じ現象、繰り返し有効)。
+
+ビルド結果確認は `git log --oneline origin/main` で、直前セッション(#29)の最終コミット `162b84c`(PROGRESS.md更新)の直後に `ci: update built jar` (`c0576c8`)が付いており、さらにその後にセッション#29終了後の追加修正コミット `f49c7e4`(「Fix Prismium Bow string bend direction (user-reported)」)とその直後の `ci: update built jar`(`76b9605`)が付いていることを確認した。`git show <commit>:builds/ClaudeMod-latest.jar | wc -c` でjarサイズが179,702→179,704バイトとわずかに増加(PNG差し替えのみなので妥当)していることも確認し、**セッション#29終了後に行われたBowの弦修正まで含めて、直前のmainは実際にビルド成功している**と判断した。
+
+GitHub issue確認: `/issues/1`・`/issues/2` を個別にcurlで取得し、両方とも `"state":"OPEN"`・コメント `"totalCount":0`(新規コメント無し)であることを確認。`/issues/3`・`/issues/4` は404で新規issueも無し。つまりissue #1(顔が見えない、session 9で対応済み)・#2(ツールの見た目、session 13で対応済み)とも状況に変化無し。
+
+**新たに分かったこと(訂正)**: `f49c7e4`のコミットメッセージに「Fix ... (user-reported)」とあったため、GitHub issue経由の新規フィードバックかと思い `/issues/3` 以降も確認したが、該当する新規issueは見つからなかった(404のまま)。つまりこの「user-reported」は本セッション開始時点で確認できる形跡(Issue)としては残っておらず、フィードバックの経路は不明なまま(次回への申し送り参照)。
+
+### 3AC-1. 実装: 修理素材統一(§4-42・session 29 handoffの解消)
+
+Prismium Grappling Hook(session 7)・Shield(session 28)・Bow(session 29)の3つはいずれも `Tier`/`ArmorMaterial` を持たないプレーンな `Item`/`BowItem` サブクラスで、ツール・防具と違って専用の修理素材ルートを一切持っていなかった(アンビルでの完全上書きしかできなかった)。この不統一はsession 28・29のPROGRESS.mdで繰り返し「そろそろ統一すべき」と指摘されていた。
+
+対応: 3クラスそれぞれに `isValidRepairItem(ItemStack, ItemStack)` をオーバーライドし、`repair.is(ModItems.PRISMIUM_SHARD.get())` を返すよう追加。`ModToolTiers`/`ModArmorMaterials`(同じ`item`パッケージ)が既に `ModItems.PRISMIUM_SHARD` を参照している前例があったため、パッケージ間の参照方向は安全と判断(循環参照だが、静的初期化ではなくメソッド本体内の遅延評価なのでデッドロックの心配は無い)。Bowのクラスjavadocに残っていた「意図的に修理素材を追加しない」という古い記述も、この変更に合わせて書き換えた。
+
+### 3AC-2. 実装: Prismium Guardian Charm(MOD初のcheat-death装備)
+
+§5(session 29 handoff)item 6(c)「移動強化系アクセサリの追加」の代わりに、同じ6(c)に含まれていた「てんこ盛り路線の継続」の一環として、vanillaのTotem of Undyingに相当する独自装備を追加した。
+
+- **API調査**: vanillaのトーテム発動は `LivingEntity#checkTotemDeathProtection` 内で `stack.is(Items.TOTEM_OF_UNDYING)` にハードコードされており、Forgeの `LivingUseTotemEvent` はその発動を**キャンセルする**ことしかできず、別アイテムに差し替えることはできない(推測ではなく、実際にMinecraftForgeの公式リポジトリを `git clone --depth 1 --branch 1.20.1` して `patches/minecraft/net/minecraft/world/entity/LivingEntity.java.patch` を直接読んで確認した - session 21の`git grep`手法、session 12の「実在の公開リポジトリを丸ごとcloneしてgrepする」手法の応用)。そのため独自アイテムでの「死亡回避」は `LivingDeathEvent`(死亡確定時、vanillaのトーテム判定より後に発火)をキャンセルして自前で再現する方式を採った。これは他の多くのMODでも使われている確立されたパターン。
+- 新規 `PrismiumGuardianCharmItem`(`item`パッケージ): ロジックを一切持たないプレーンな`Item`(Shield/Bowと違い、フックできるvanillaのアイテムメソッドが存在しないため)。
+- 新規 `PrismiumGuardianCharmHandler`(`event`パッケージ、`@Mod.EventBusSubscriber` デフォルトのFORGEバス): `LivingDeathEvent` を購読。`DamageTypeTags.BYPASSES_INVULNERABILITY`(void・`/kill`等)はvanillaのトーテム同様に対象外とし、メイン/オフハンドにCharmがあれば消費してイベントをキャンセル、`setHealth(1.0F)` + Regeneration II(900tick)/Absorption II(100tick)/Fire Resistance I(800tick、いずれもvanillaトーテムと同じ数値)を付与、`ParticleTypes.TOTEM_OF_UNDYING` パーティクルと `SoundEvents.TOTEM_USE` サウンドを再生する。vanillaのアイテムアクティベーション画面フラッシュ(トーテムの顔がドーンと表示される演出)は、トーテムアイテム専用にハードコードされている可能性が高いため意図的に再現していない(§4参照)。
+- `ModItems` に `stacksTo(1)` で登録(vanillaトーテムと同じスタック仕様)、`ModCreativeTabs` にも追加。
+- レシピ新規(`prismium_guardian_charm.json`、shaped 3x3、`GAG/ACA/GAG`): 金インゴットx4(vanillaトーテムへのオマージュとして金基調を採用) + アメジストの欠片x4 + Prismium Corex1(中央)。「死亡を1回無効化する」強力な効果に見合うよう、Prismium Core(4 Prismium Block相当)を要求する意図的に高コストなレシピにした。
+- lang(en/ja)に `item.claudemod.prismium_guardian_charm` を追加。
+
+### 3AC-3. テクスチャー: Prismium Guardian Charmのアイテムアイコン(`scripts/textures/gen_prismium_guardian_charm.py`)
+
+これまでの全アイテムがteal系のPrismium結晶シルエット(shard系)か、スチール/木製の道具シルエットだったのに対し、今回は初めて「ペンダント/お守り」の形状(上部に首飾りの輪、下部に六角形の宝石台座)を採用した。金色トリム(GOLD_*、vanillaトーテムへのオマージュ)の台座に、既存のPrismium Accentパープル(グラップリングフック・Rift Shardと共通)の小さな宝石を中央に埋め込み、「金色トリムでトーテムを連想させつつ、紫の宝石でPrismiumファミリーの一員だと分かる」配色にした。
+
+自己レビュー: `build/preview_prismium_guardian_charm.png`(4x/8x/16x拡大のチェッカーボード背景プレビュー)を生成し、`outputs`フォルダ経由でReadツールにより目視確認した。4倍拡大の時点でも「輪っか付きの金色ペンダント、中央に紫の宝石」というシルエットが明瞭に読み取れ、意図しないノイズや透過崩れ(alpha値は{0, 255}の2値のみ)も無かったため、作り直しは不要と判断した。ただし、これも他の全アイテム同様、実際のインベントリ/ホットバー表示(16x16ネイティブサイズ)での見え方はプレビュー画像上の確認に留まる(§4参照)。
+
+### 3AC-4. commit・push・ビルド確認
+
+2コミット: `a764071`(修理素材統一、3ファイル変更)、`a991781`(Prismium Guardian Charm一式、10ファイル新規/変更: `PrismiumGuardianCharmItem.java`・`PrismiumGuardianCharmHandler.java`新規、`ModItems.java`・`ModCreativeTabs.java`・lang(en/ja)更新、`models/item/prismium_guardian_charm.json`・`textures/item/prismium_guardian_charm.png`・`data/claudemod/recipes/prismium_guardian_charm.json`・`gen_prismium_guardian_charm.py`新規)。push前に `git fetch origin main` で差分無し(並行セッションとの衝突は検知せず、直前は `76b9605` のまま)を確認、素の `git push origin main` が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch` のポーリングで `ci: update built jar [skip ci]` コミット(`018decc`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c` でビルド済みjarのサイズ増加(179,704→184,179バイト)を確認 - 本物のビルド成功。GitHub Actionsの `badge.svg` 直接確認は今回は行わず、jarサイズ増加のみで判断した(過去セッションでも十分な根拠として使われてきた手法)。
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
 
 
@@ -1121,43 +1160,54 @@ GitHub issue確認: `issues-repo-tab-count` が一度だけ "1" を返す場面�
     - MOD初のブロッキング装備であり、CIビルドが通ること以上の検証(実際に右クリックで構え動作(`UseAnim.BLOCK`)に入るか、防御中にダメージが実際に軽減されるか、斧持ちの敵に一定時間無効化されるか)は一度もできていない。
     - `ShieldItem`を継承せずインハンド3Dモデルを持たない設計(§3AA-2参照)により、手に持った際は通常アイテムと同じフラットな2Dスプライトとして描画される見込みだが、これも実際のレンダリング結果は未確認 - 見た目が不自然(例えば構えモーション中に平面が不自然に見える等)にならないかは次回以降の実プレイ待ち。
     - `durability(420)`・レシピの材料構成(板6+Prismium Shard1+鉄1)はいずれもバランス未検証の初期値で、他の新規アイテム同様、体感で強すぎ/弱すぎ/入手コストが不適切という可能性がある。
-    - 独自の修理素材(Prismium Shardでの追加修理等)は今回実装しなかった(grappling hookと同じく通常のアンビル修理のみ) - 将来的にPrismium系装備として統一的な修理手段を用意すべきか検討の余地がある(下記申し送り参照)。
+    - ~~独自の修理素材(Prismium Shardでの追加修理等)は今回実装しなかった(grappling hookと同じく通常のアンビル修理のみ) - 将来的にPrismium系装備として統一的な修理手段を用意すべきか検討の余地がある(下記申し送り参照)。~~ **【セッション#30で解決】** `isValidRepairItem`オーバーライドでPrismium Shardによる修理に対応した(§3AC-1参照)。
 
 
 43. 【セッション#29で新規発覚】Prismium Bow(§3AB)は以下すべて未検証・既知の割り切り:
     - MOD初の遠距離武器であり、CIビルドが通ること以上の検証(実際に右クリックで構え、離すと矢が発射されるか、pulling/pull item model overrideが正しいフレームに切り替わるか、矢が本当にPrismium Bowから発射されたものと認識されるか)は一度もできていない。
     - `customArrow`での`setPierceLevel(1)`は「弓は本来Piercingを付与できない」という前提のWeb検索裏取りに基づく設計だが、実際に貫通挙動が発生するかは未確認。API裏取りは1.19.3時点のjavadocに基づいており、1.20.1で完全に同一シグネチャ・同一挙動かは(このモッドの他の初出API同様)最終的にはCIビルドが通ったことまでしか裏付けられていない。
     - `durability(460)`、レシピ材料(棒2・糸3・Prismium Shard1)はいずれもバランス未検証の初期値。
-    - 独自の修理素材(Prismium Shardでの追加修理)は今回も実装しなかった - Shield・グラップリングフックと合わせて「専用の修理経路を持たないPrismium装備」が3種類に増えた(§4-42で触れた修理手段統一化の論点がさらに重みを増している)。
+    - ~~独自の修理素材(Prismium Shardでの追加修理)は今回も実装しなかった - Shield・グラップリングフックと合わせて「専用の修理経路を持たないPrismium装備」が3種類に増えた(§4-42で触れた修理手段統一化の論点がさらに重みを増している)。~~ **【セッション#30で解決】** Shield・グラップリングフックと合わせて3種すべてに`isValidRepairItem`を追加し、Prismium Shardでの修理に対応した(§3AC-1参照)。
     - `ItemProperties.register`をMenuScreens登録と同じ`FMLClientSetupEvent#enqueueWork`ブロックに入れた判断(§3AB-2)は安全側に倒しただけで、本当にそこに置く必要があるか(直接呼び出しでも安全なAPIではないか)は未検証のまま。
+
+44. 【セッション#30で新規発覚】修理素材統一(§3AC-1)は以下未検証:
+    - `isValidRepairItem`が実際にアンビルUI上でPrismium Shardを右側スロットに置いた時に「修理」として認識されるか(耐久値が回復するプレビュー表示が出るか、経験値コストの計算が意図通りか)は、CIビルドが通ること以上の検証ができていない。
+    - Grappling Hook/Shield/Bowの3アイテムすべてで同一の挙動になるはず(同じ1行の実装パターンを3クラスにコピーしただけ)だが、3つとも個別に動作確認したわけではない。
+
+45. 【セッション#30で新規発覚】Prismium Guardian Charm(§3AC-2・§3AC-3)は以下すべて未検証・既知の割り切り:
+    - MOD初のcheat-death装備であり、CIビルドが通ること以上の検証(実際に致死ダメージを受けた瞬間にキャンセルが機能するか、体力が1に設定され効果が正しく付与されるか、アイテムが1個消費されるか、パーティクル・サウンドが再生されるか)は一度もできていない。
+    - `LivingDeathEvent`のキャンセルでvanillaの死亡処理を完全に止められるという設計は、MinecraftForgeの実ソース(`LivingEntity.java.patch`)を読んで`ForgeHooks.onLivingDeath`が`die()`の一番最初で呼ばれることまでは確認したが、それ以外の死亡関連の副作用(統計・実績トリガー、`Entity#remove`系のクリーンアップ等)が本当に一切走っていないかまでは確認できていない。
+    - `ParticleTypes.TOTEM_OF_UNDYING`・`SoundEvents.TOTEM_USE`のフィールド名は高い確信度に基づく記憶からの実装で、Bowのpierce仕様やdeath-eventの発火順のように実ソースを直接読んで裏取りはしていない(§3AC-2参照)。フィールド名が違っていた場合、CIビルド自体がコンパイルエラーで失敗するはずなので、次回セッション開始時のビルド結果確認で一発で判明する。
+    - vanillaトーテムのアイテムアクティベーション画面フラッシュ(発動時に持っているアイテムの絵が大きく表示される演出)は意図的に再現していない - 「発動したこと自体」がプレイヤーに伝わりにくい(パーティクル・サウンドのみでは地味に感じる)可能性がある。
+    - `Monster`クラス限定スキャンのWardstone(§4-35)同様、この機能は`LivingEntity`全般(Mobにも)に効くよう実装したが、実質的にプレイヤー用アイテムとして設計されており、Mob(例えばテイム済みオオカミ等)が拾って発動するケースは想定・検証していない。
+    - レシピ(金インゴット4+アメジストの欠片4+Prismium Core1)のコストバランスは初期見積もりで、「死亡回避1回」の価値に対して高すぎる/安すぎるかは全くの未検討。
 
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-1. **【最優先、恒例】まず`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#29終了時点では、`df07f34`(Prismium Bow追加)の直後に`c982f6b`が付いており、ビルド成功(jarサイズ175,038→179,702バイト増加、`badge.svg`が"passing")を確認済み。
-2. 【継続、環境まわり、重要な訂正】`bash`経由の`curl`が到達できないホスト(`nekoyue.github.io`等)でも、`mcp__workspace__web_fetch`ツールなら到達できる場合があることが今回判明した(§3AB-0参照)。外部ドキュメントの裏取りをしたい時は、まず`web_fetch`を試し、それがprovenance制限(§4-10)で弾かれた場合にのみ`bash`の`curl`(`github.com`等アローリスト内のみ)に切り替えるとよい。「`api.github.com`はプロキシのアローリストで到達不可」という過去の記述は、あくまで`bash`の`curl`経由の話として読むこと。
-3. 【継続、環境まわり】固定パスの作業ディレクトリが別セッション由来の`nobody:nogroup`所有ファイルで`Permission denied`になる問題は今回も`/tmp/work`等で発生を確認(今回は実際には使わず、最初から一意パス`/tmp/fzc_session/ClaudeMod`を使って回避)。固定パスに当たったら無理せず即座に一意な新しいパスへ切り替えること。
-4. 【新規、優先度高】Prismium Bow(セッション#29、§3AB)は実プレイ未検証の新規武器。次に何かを検証できる機会があれば、GUI 5機種や既存装備よりも、Bowの一次機能検証(本当に矢が飛ぶか、pulling/pullのフレーム切り替えが正しいか、ピアスが実際に貫通するか)を優先候補に。Shield(セッション#28)と合わせて、「機能するかどうか自体が未検証」な新規装備が2つ積み上がっている。
-5. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Cable(接続モデル)・全5GUI・Prismium Shield・Prismium Bow(本セッション)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
+1. **【最優先、恒例】まず`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#30終了時点では、`a991781`(Prismium Guardian Charm追加)の直後に`018decc`が付いており、ビルド成功(jarサイズ179,704→184,179バイト増加)を確認済み。
+2. 【継続、恒例】GitHub Issue確認(`/issues/1`〜`/issues/4`個別ページ直叩き)を必ずステップ1で行うこと。セッション#30終了時点でOpen issueは#1・#2の2件のまま(いずれも過去セッションで対応済み、ユーザー側のクローズ待ち)、新規issueは無し。
+3. 【継続、環境まわり】固定パスの作業ディレクトリ(`/tmp/work`・`/tmp/work2`等)は今回も`nobody:nogroup`所有で`Permission denied`だった。`mktemp -d`相当の一意パス(例: `/tmp/clademod_fresh_$(date +%s)`)を最初から使うこと。
+4. 【新規、優先度高】Prismium Guardian Charm(セッション#30、§3AC-2)は実プレイ未検証の新規cheat-death装備。次に何かを検証できる機会があれば、致死ダメージを受けた際に本当に発動するか(体力1固定・効果付与・アイテム消費・パーティクル/サウンド)を最優先で確認したい。特に`ParticleTypes.TOTEM_OF_UNDYING`/`SoundEvents.TOTEM_USE`のフィールド名は記憶ベースの実装で実ソース裏取りをしていない(§4-45参照) - もしCIビルドがコンパイルエラーで落ちていたら、まずこの2つのフィールド名を疑うこと。
+5. 【継続、優先度高】Prism Realm/Rift Shard・Wraith・Locator・Bloom/Spike・Cable(接続モデル)・全5GUI・Shield・Bow・Guardian Charm(本セッション)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
 6. 【新規、次の展開候補】
-   - (a) Prismium Arrow: Bowと組み合わせる専用矢(`ArrowItem`継承、`createArrow`で独自`AbstractArrow`サブクラスを返す設計)。専用エンティティ+レンダラーが必要になるためBow本体より実装コストは高いが、「弓矢がセットで揃う」自然な次の一歩。今回は時間の都合でBow本体のみに絞り、矢は既存のvanilla矢をそのまま使う設計にとどめた。
-   - (b) §5(旧、session 28)item 6(b)〜(d): GUIスロット化(`SlotItemHandler`等、未踏み込みのAPI領域)、Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックの作り込み、Prismium系装備(ツール・防具・Shield・Bow・グラップリングフック)の修理手段統一化(現状5系統中3系統が専用修理無し)。
-   - (c) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)、あるいは移動強化系アクセサリ(ダッシュブーツ的なアイテム)の追加で「てんこ盛り」路線をさらに広げる。
-7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。セッション#29では他セッションとの並行は検知しなかったが、毎回確認すること。
+   - (a) Prismium Arrow: Bowと組み合わせる専用矢。今回検討したが、`AbstractArrow`のカスタムレンダリング(`ArrowRenderer`継承)はvanillaの`arrow.png`と全く同じUVレイアウト(頂点座標に対するテクスチャー座標の割り当て)に依存しており、そのUVレイアウトの正確な値をこのサンドボックスから裏取りする決定的な方法が見つからなかった(Web検索・MinecraftForge公式リポジトリのgit clone のいずれも、パッチファイルのみでレンダラーの実装そのものは含まれていなかった)。誤ったUVで実装すると「テクスチャーが千切れて見える/歪んで見える」という視認では気づきにくいバグになるリスクがあるため、今回は見送った。次回挑戦する場合は、Yarn/MCPマッピングの完全な逆コンパイル済みソース(パッチではなく完成品)を提供する公開リポジトリを探すか、あるいは`ArrowRenderer`を継承せず自前の`EntityRenderer`を書いて完全にオリジナルなレンダリング方式(例:向きに応じたビルボードだが頂点を自前計算)にするなど、vanillaのUV前提に依存しない設計を検討する価値がある。
+   - (b) §5(旧、session 28〜29)item 6(b): GUIスロット化(`SlotItemHandler`等、未踏み込みのAPI領域)、Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックの作り込み。
+   - (c) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。ただし今回のArrow検討で判明した通り、カスタムエンティティ+レンダラーはこのサンドボックスからのAPI裏取りが難しい領域 - 挑戦する場合はWraith(session 12)が実際にどう乗り越えたかをまず読み返す価値がある(Wraithはカスタムモデル+レンダラーを既に実装済みなので、参考実装として使える)。
+   - (d) Guardian Charmと同様の「vanillaの拡張ポイントに乗るコストの低さ」を活かした、まだ手を付けていないForgeイベント(`LivingFallEvent`で落下ダメージ軽減アクセサリ、`AnvilRepairEvent`、`PlayerXpEvent`等)を使った新規装備の追加。
 
 ### 議論したい論点・改善案
 
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。Bow追加でさらに「機能するかどうか自体が未検証」なコンテンツ(Shield・Bow)が積み上がった。次にプレイフィードバックが得られた際は、新規コンテンツの追加よりもこの検証を最優先すべきという声がさらに強くなっている(継続)。
-- **vanillaの拡張ポイントに乗るコストの低さ(新規)**: Bowは`BowItem`継承+`customArrow`オーバーライド1つだけで、新規イベントハンドラやNBTタギングを一切書かずに固有ギミック(常時貫通)を追加できた。Shield(`UseAnim.BLOCK`のみで盾機能を再現)と合わせて、「vanillaの少ないコードで乗れる拡張ポイントを探す」のが実装コスト対効果の良い新規コンテンツの選び方だと分かってきた。次回以降もこの視点で候補を探すとよい。
-- **修理手段の不統一(継続、重みが増した)**: Prismium系装備のうちツール・防具はPrismium Shardでの専用修理を持つが、グラップリングフック・Shield・Bowの3つはいずれも通常のアンビル修理のみ。装備が増えるほどこの不統一が目立ってきており、そろそろ統一パターン(例えば「durabilityを持つ全Prismiumアイテムに`isValidRepairItem`をオーバーライドしてShardでの部分修理を許可する」共通ヘルパー)を検討する価値がある。
-- **外部ドキュメント裏取りの経路の使い分け(新規)**: §3AB-0で判明した`web_fetch`と`bash`の`curl`の到達範囲の違いは、今後のAPI裏取り全般の効率に関わる。次回以降、この使い分けが本当に安定した挙動か(毎回`web_fetch`が`bash`より到達範囲が広いのか、単に今回のホストがたまたまそうだっただけか)を意識して検証していくとよい。
-- **「てんこ盛り」路線の継続(継続)**: セッション#28のShieldに続き、セッション#29でBowを追加し、2セッション連続で新規装備が増えた。次回以降もこの路線(新規ブロック・アイテム・MOB等の追加)を継続するか、GUIスロット化やCableの作り込みといった「既存機能を深める」路線に一度戻るかは判断が分かれるところ(継続)。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。Guardian Charm追加でさらに「機能するかどうか自体が未検証」なコンテンツが積み上がった(Shield・Bow・Guardian Charmの3つ)。次にプレイフィードバックが得られた際は、新規コンテンツの追加よりもこの検証を最優先すべきという声がさらに強くなっている(継続)。
+- **実ソースを直接読む裏取り手法の使い分け(新規、重要な教訓)**: 今回、Web検索だけでは埋まらなかった「vanillaの死亡処理の内部フロー」を、MinecraftForgeの公式リポジトリを`git clone --depth 1 --branch 1.20.1`して`patches/`ディレクトリのdiffを直接読むことで確認できた(§3AC-2参照)。一方、同じ手法をPrismium Arrow用の`ArrowRenderer`のUVレイアウト裏取りに使おうとしたところ、パッチファイルには「変更された部分」しか含まれておらず、変更されていないメソッド本体(レンダリングのUV座標計算そのもの)は入っていなかったため通用しなかった(§5 item 6(a)参照)。**この手法は「vanillaの挙動がForgeによって変更されている箇所」の裏取りには極めて有効だが、「vanilla自体の未変更ロジック」の裏取りには使えない**という重要な使い分けの教訓が今回得られた。後者が必要な場合は、パッチではなく完成品の逆コンパイル済みソースを提供するリポジトリを探す必要がある。
+- **修理手段の不統一(セッション#30で解消)**: Prismium系装備のうちツール・防具はTier/ArmorMaterial経由、Grappling Hook・Shield・Bowは今回追加した`isValidRepairItem`経由で、全ての耐久値付きPrismium装備がPrismium Shardでの部分修理に対応した。次回以降、新しい耐久値付きアイテムを追加する際は、最初からこのパターン(`isValidRepairItem`オーバーライド)をセットで実装すること。
+- **「てんこ盛り」路線の継続(継続)**: セッション#28のShield・#29のBowに続き、#30でGuardian Charmを追加し、3セッション連続で新規装備が増えた。次回以降もこの路線を継続するか、GUIスロット化やCableの作り込みといった「既存機能を深める」路線に一度戻るかは判断が分かれるところ(継続)。
 
 ### コミット/プッシュ状況
 
-このセッションの変更は1コミット: `df07f34`(Prismium Bow追加: `PrismiumBowItem.java`新規、`ModItems.java`・`ModCreativeTabs.java`・`ClientModEvents.java`更新、lang(en/ja)更新、`models/item/prismium_bow*.json` x4新規、`textures/item/prismium_bow*.png` x4新規、`gen_prismium_bow.py`新規、`data/claudemod/recipes/prismium_bow.json`新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`61a728e`のまま)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`c982f6b`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(175,038→179,702バイト)、および`badge.svg`が"passing"であることの両方を確認して、本物のビルド成功を確定させた。新規アイテムテクスチャーは`outputs`フォルダ経由で目視レビュー(16倍拡大・実スロットサイズ相当の6倍拡大の両方)を実施済み(§3AB-3参照、弦が点線状に見えるバグを1つ発見・修正)。GitHub issueの確認はセッション開始時に実施し、Open issue数が2件のまま(新規issue無し)であることを確認した。
+このセッションの変更は2コミット: `a764071`(修理素材統一: `PrismiumGrapplingHookItem.java`・`PrismiumShieldItem.java`・`PrismiumBowItem.java`の3ファイルに`isValidRepairItem`オーバーライドを追加)、`a991781`(Prismium Guardian Charm一式: `PrismiumGuardianCharmItem.java`・`PrismiumGuardianCharmHandler.java`新規、`ModItems.java`・`ModCreativeTabs.java`・lang(en/ja)更新、`models/item/prismium_guardian_charm.json`・`textures/item/prismium_guardian_charm.png`・`data/claudemod/recipes/prismium_guardian_charm.json`・`gen_prismium_guardian_charm.py`新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`76b9605`のまま)、素の`git push origin main`が2回とも一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`018decc`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(179,704→184,179バイト)を確認して、本物のビルド成功を確定させた。新規アイテムテクスチャーは`outputs`フォルダ経由で目視レビュー(4x/8x/16x拡大のプレビューシート)を実施済み(§3AC-3参照)。GitHub issueの確認はセッション開始時に実施し、Open issue数が2件のまま(新規issue無し)であることを確認した。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、`c982f6b`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、`018decc`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
