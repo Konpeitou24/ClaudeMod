@@ -29,6 +29,22 @@ Produces two kinds of assets:
    onto a worn armor model. Flag any visual glitches in-game to the next
    session.
 
+SESSION 9 UPDATE (GitHub issue #1): a player reported that wearing the
+helmet hides the whole face, and asked for it to stay visible ("the face
+is an important part that identifies the player"). The original
+make_layer1() filled the head box's front face fully opaque like vanilla
+helmets do - correct per vanilla convention, but not what was asked for
+here. open_face()/helmet_front() now punch the front face transparent
+below a thin 2-row "brim" band at the top, so the skin layer's actual
+face shows through underneath while the piece still reads as a helmet
+from the front (brim) and fully as one from every other angle (top/
+sides/back are untouched). Only the helmet's worn-layer front face is
+affected - the item icon and the other three armor pieces are unchanged.
+Self-reviewed with a checkerboard-backed upscaled preview (see
+PROGRESS.md session 9) to confirm the cutout lands exactly where
+intended and doesn't leak into neighboring UV regions; not yet confirmed
+in an actual in-game render, same caveat as the note above.
+
 Run from repo root: python3 scripts/textures/gen_prismium_armor.py
 """
 from pathlib import Path
@@ -279,10 +295,35 @@ def crystal_front_detail(px, x0, y0, w, h):
     gem_accent(px, x0, y0, w, h)
 
 
+def open_face(px, x0, y0, w, h, brim_rows=2):
+    """Punches the player's face open on a helmet's front-face UV region
+    (GitHub issue #1, addressed session 9): fill_box() draws the front
+    face of the head box fully opaque, which - combined with the vanilla
+    armor layer always rendering on top of the skin layer - completely
+    hides the wearer's face. Vanilla helmets do the same thing, but a
+    player specifically flagged it as unwelcome for this mod ("the face
+    is an important part that identifies the player; it seems wrong for
+    armor to hide it"), so unlike vanilla we deliberately leave most of
+    the front face transparent so the skin layer's face shows through,
+    keeping only a thin opaque "brim" band across the top few rows (a
+    coronet/circlet look) so the piece still visually reads as a helmet
+    from the front rather than looking like nothing was drawn there at
+    all. x0/y0/w/h are the front face's own rect as passed to fill_box's
+    front_extra callback (i.e. already offset by ux+d, uy+d)."""
+    for y in range(y0 + brim_rows, y0 + h):
+        for x in range(x0, x0 + w):
+            px[x, y] = (0, 0, 0, 0)
+
+
+def helmet_front(px, x0, y0, w, h):
+    crystal_front_detail(px, x0, y0, w, h)
+    open_face(px, x0, y0, w, h)
+
+
 def make_layer1():
     img = new_img(64, 32)
     px = img.load()
-    fill_box(px, 0, 0, 8, 8, 8, CRYSTAL_FRONT_COLORS, crystal_front_detail)
+    fill_box(px, 0, 0, 8, 8, 8, CRYSTAL_FRONT_COLORS, helmet_front)
     fill_box(px, 0, 16, 4, 12, 4, CRYSTAL_FRONT_COLORS, crystal_front_detail)
     fill_box(px, 16, 16, 8, 12, 4, CRYSTAL_FRONT_COLORS, crystal_front_detail)
     fill_box(px, 40, 16, 4, 12, 4, PLATE_COLORS, gem_accent)
