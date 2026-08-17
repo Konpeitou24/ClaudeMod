@@ -147,13 +147,13 @@ public class PrismiumRiftShardItem extends Item {
         save.putFloat("pitch", player.getXRot());
         player.getPersistentData().put(RETURN_TAG_KEY, save);
 
-        int landingY = realmLevel.getHeight(Heightmap.Types.MOTION_TOP, REALM_ANCHOR.getX(), REALM_ANCHOR.getZ());
+        int landingY = realmLevel.getHeight(Heightmap.Types.MOTION_BLOCKING, REALM_ANCHOR.getX(), REALM_ANCHOR.getZ());
         double destX = REALM_ANCHOR.getX() + 0.5;
         double destZ = REALM_ANCHOR.getZ() + 0.5;
 
         player.teleportTo(realmLevel, destX, landingY, destZ, Set.of(), player.getYRot(), player.getXRot());
         realmLevel.playSound(null, destX, landingY, destZ,
-                SoundEvents.END_PORTAL_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
+                SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
         return true;
     }
 
@@ -185,7 +185,7 @@ public class PrismiumRiftShardItem extends Item {
             BlockPos spawn = overworld.getSharedSpawnPos();
             destX = spawn.getX() + 0.5;
             destZ = spawn.getZ() + 0.5;
-            destY = overworld.getHeight(Heightmap.Types.MOTION_TOP, spawn.getX(), spawn.getZ());
+            destY = overworld.getHeight(Heightmap.Types.MOTION_BLOCKING, spawn.getX(), spawn.getZ());
         }
 
         ServerLevel destLevel = server.getLevel(destDim);
@@ -200,7 +200,7 @@ public class PrismiumRiftShardItem extends Item {
 
         player.teleportTo(destLevel, destX, destY, destZ, Set.of(), yaw, pitch);
         destLevel.playSound(null, destX, destY, destZ,
-                SoundEvents.END_PORTAL_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
+                SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
         return true;
     }
 }
