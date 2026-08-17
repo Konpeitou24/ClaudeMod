@@ -6,6 +6,7 @@
     "block.claudemod.prismium_core": "Prismium Core",
     "block.claudemod.prismium_lantern": "Prismium Lantern",
     "block.claudemod.prismium_cell": "Prismium Cell",
+    "block.claudemod.prismium_generator": "Prismium Generator",
     "item.claudemod.prismium_shard": "Prismium Shard",
     "item.claudemod.prismium_pickaxe": "Prismium Pickaxe",
     "item.claudemod.prismium_axe": "Prismium Axe",
@@ -19,5 +20,7 @@
     "item.claudemod.prismium_grappling_hook": "Prismium Grappling Hook",
     "message.claudemod.prismium_cell.status": "Prismium Cell: %1$s / %2$s FE",
     "message.claudemod.prismium_cell.charged": "Charged Prismium Cell: %1$s / %2$s FE",
-    "message.claudemod.prismium_cell.full": "Prismium Cell is already full"
+    "message.claudemod.prismium_cell.full": "Prismium Cell is already full",
+    "message.claudemod.prismium_generator.status": "Prismium Generator: %1$ss fuel, %2$s / %3$s FE",
+    "message.claudemod.prismium_generator.fueled": "Fed Prismium Generator: %1$ss of fuel remaining"
 }

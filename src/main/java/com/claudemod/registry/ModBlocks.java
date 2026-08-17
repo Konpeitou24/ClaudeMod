@@ -2,9 +2,11 @@ package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.block.PrismiumCellBlock;
+import com.claudemod.block.PrismiumGeneratorBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.material.MapColor;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -95,6 +97,23 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 5)));
+
+    // Prismium Generator (session 9): burns Prismium Shards over time to
+    // fill a small internal buffer with FE, then automatically pushes it
+    // into any adjacent block exposing the Forge Energy capability (e.g.
+    // a Prismium Cell placed next to it). The mod's first
+    // BlockEntityTicker and first genuine block-to-block automatic
+    // energy transfer - closes the loop Prismium Cell opened in session
+    // 8. LIT (reused vanilla property, same one furnace/campfire use)
+    // drives both the model swap and the light level: 8 while burning, 0
+    // while idle. See PrismiumGeneratorBlock / PrismiumGeneratorBlockEntity
+    // and PROGRESS.md for the full design rationale and what's unverified.
+    public static final RegistryObject<Block> PRISMIUM_GENERATOR = BLOCKS.register("prismium_generator",
+            () -> new PrismiumGeneratorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 8 : 0)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

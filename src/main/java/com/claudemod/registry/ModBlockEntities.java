@@ -2,6 +2,7 @@ package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.blockentity.PrismiumCellBlockEntity;
+import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -24,6 +25,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("prismium_cell",
                     () -> BlockEntityType.Builder.of(PrismiumCellBlockEntity::new,
                             ModBlocks.PRISMIUM_CELL.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<PrismiumGeneratorBlockEntity>> PRISMIUM_GENERATOR =
+            BLOCK_ENTITIES.register("prismium_generator",
+                    () -> BlockEntityType.Builder.of(PrismiumGeneratorBlockEntity::new,
+                            ModBlocks.PRISMIUM_GENERATOR.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

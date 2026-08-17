@@ -5,6 +5,8 @@
         "claudemod:deepslate_prismium_ore",
         "claudemod:prismium_block",
         "claudemod:prismium_core",
-        "claudemod:prismium_lantern"
+        "claudemod:prismium_lantern",
+        "claudemod:prismium_cell",
+        "claudemod:prismium_generator"
     ]
 }
