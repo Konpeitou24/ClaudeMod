@@ -5,6 +5,7 @@ import com.claudemod.block.PrismiumBloomBlock;
 import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
+import com.claudemod.block.PrismiumSpikeBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -151,6 +152,23 @@ public class ModBlocks {
                     .instabreak()
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .lightLevel(state -> 5)
+                    .noOcclusion()));
+
+    // Prismium Spike (session 18): the mod's second surface decoration,
+    // a tall narrow crystal shard sibling to Prismium Bloom (session 17) -
+    // see PrismiumSpikeBlock for the full design rationale. Same
+    // noCollission()/instabreak()/noOcclusion() treatment as Bloom so it
+    // behaves like a walk-through, one-hit-pop decorative prop rather
+    // than a mineable block. Slightly brighter light level (7 vs Bloom's
+    // 5) to read as a distinct "glowing crystal" accent rather than a
+    // palette-swapped duplicate.
+    public static final RegistryObject<Block> PRISMIUM_SPIKE = BLOCKS.register("prismium_spike",
+            () -> new PrismiumSpikeBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 7)
                     .noOcclusion()));
 
     public static void register(IEventBus eventBus) {

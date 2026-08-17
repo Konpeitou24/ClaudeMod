@@ -150,6 +150,11 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));
 
+    // Prismium Spike (session 18): BlockItem for the mod's second Prism
+    // Realm surface decoration - see ModBlocks.PRISMIUM_SPIKE.
+    public static final RegistryObject<Item> PRISMIUM_SPIKE_ITEM = ITEMS.register("prismium_spike",
+            () -> new BlockItem(ModBlocks.PRISMIUM_SPIKE.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
