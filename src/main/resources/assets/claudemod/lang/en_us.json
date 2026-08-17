@@ -21,6 +21,7 @@
     "item.claudemod.prismium_grappling_hook": "Prismium Grappling Hook",
     "entity.claudemod.prismium_wraith": "Prismium Wraith",
     "item.claudemod.prismium_wraith_spawn_egg": "Prismium Wraith Spawn Egg",
+    "item.claudemod.prismium_rift_shard": "Prismium Rift Shard",
     "message.claudemod.prismium_cell.status": "Prismium Cell: %1$s / %2$s FE",
     "message.claudemod.prismium_cell.charged": "Charged Prismium Cell: %1$s / %2$s FE",
     "message.claudemod.prismium_cell.full": "Prismium Cell is already full",

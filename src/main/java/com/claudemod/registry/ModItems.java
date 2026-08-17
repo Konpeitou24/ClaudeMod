@@ -8,6 +8,7 @@ import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumGrapplingHookItem;
+import com.claudemod.item.PrismiumRiftShardItem;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
@@ -118,6 +119,13 @@ public class ModItems {
     // raycast-and-pull implementation and API notes.
     public static final RegistryObject<Item> PRISMIUM_GRAPPLING_HOOK = ITEMS.register("prismium_grappling_hook",
             () -> new PrismiumGrapplingHookItem(new Item.Properties().durability(250)));
+
+    // Prismium Rift Shard (session 14): the mod's first way in/out of the
+    // Prism Realm dimension. Not consumed on use (stacksTo(1), reusable
+    // "key" item rather than a one-shot). See PrismiumRiftShardItem for
+    // the teleport logic and known caveats.
+    public static final RegistryObject<Item> PRISMIUM_RIFT_SHARD = ITEMS.register("prismium_rift_shard",
+            () -> new PrismiumRiftShardItem(new Item.Properties().stacksTo(1)));
 
     // Prismium Wraith spawn egg (session 12): uses Forge's ForgeSpawnEggItem
     // rather than vanilla SpawnEggItem because the latter needs the
