@@ -6,6 +6,7 @@ import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
 import com.claudemod.block.PrismiumPylonBlock;
+import com.claudemod.block.PrismiumRestorerBlock;
 import com.claudemod.block.PrismiumSpikeBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
@@ -186,6 +187,18 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 9 : 0)));
+
+    // Prismium Restorer (session 20): the mod's second FE *consumer*,
+    // after Prismium Pylon (session 19). See PrismiumRestorerBlock /
+    // PrismiumRestorerBlockEntity for the repair-on-right-click design.
+    // No LIT property here - like Prismium Cell (session 8), this block
+    // has no BlockEntityTicker and thus no "idle vs active" state to
+    // render, just a single static texture.
+    public static final RegistryObject<Block> PRISMIUM_RESTORER = BLOCKS.register("prismium_restorer",
+            () -> new PrismiumRestorerBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

@@ -1,0 +1,121 @@
+package com.claudemod.block;
+
+import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
+import com.claudemod.energy.PrismiumEnergyStorage;
+import com.claudemod.registry.ModItems;
+import net.minecraft.network.chat.Component;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.InteractionResult;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BaseEntityBlock;
+import net.minecraft.world.level.block.RenderShape;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.phys.BlockHitResult;
+
+import javax.annotation.Nullable;
+
+/**
+ * Block for Prismium Restorer (session 20). See
+ * {@link PrismiumRestorerBlockEntity} for the energy-storage side; this
+ * class is the block shell plus the player-facing interaction, following
+ * the exact same {@code BaseEntityBlock} + no-GUI/action-bar-status shape
+ * every other Prismium Energy machine already uses (Cell/Generator/Cable/
+ * Pylon, sessions 8-10 and 19).
+ *
+ * <p>Right-click with an empty hand: report current/max FE, same as every
+ * other machine.
+ * <p>Right-click holding a Prismium Shard: manually add
+ * {@link PrismiumRestorerBlockEntity#SHARD_CHARGE_AMOUNT} FE, same shape
+ * as {@link PrismiumCellBlock} / {@link PrismiumPylonBlock}.
+ * <p>Right-click holding any other damaged, damageable item: spend FE to
+ * restore some of its durability (this block's actual purpose - the
+ * second FE consumer after the Pylon).
+ */
+public class PrismiumRestorerBlock extends BaseEntityBlock {
+
+    public PrismiumRestorerBlock(Properties properties) {
+        super(properties);
+    }
+
+    @Override
+    public RenderShape getRenderShape(BlockState state) {
+        return RenderShape.MODEL;
+    }
+
+    @Nullable
+    @Override
+    public BlockEntity newBlockEntity(BlockPos pos, BlockState state) {
+        return new PrismiumRestorerBlockEntity(pos, state);
+    }
+
+    @Override
+    public InteractionResult use(BlockState state, Level level, BlockPos pos, Player player,
+                                  InteractionHand hand, BlockHitResult hit) {
+        if (level.isClientSide) {
+            return InteractionResult.SUCCESS;
+        }
+        if (!(level.getBlockEntity(pos) instanceof PrismiumRestorerBlockEntity restorer)) {
+            return InteractionResult.PASS;
+        }
+
+        ItemStack held = player.getItemInHand(hand);
+        Item prismiumShard = ModItems.PRISMIUM_SHARD.get();
+        PrismiumEnergyStorage storage = restorer.getEnergyStorage();
+
+        if (held.is(prismiumShard)) {
+            int accepted = storage.receiveEnergy(PrismiumRestorerBlockEntity.SHARD_CHARGE_AMOUNT, true);
+            if (accepted <= 0) {
+                player.displayClientMessage(
+                        Component.translatable("message.claudemod.prismium_restorer.full"), true);
+                return InteractionResult.CONSUME;
+            }
+            storage.receiveEnergy(accepted, false);
+            if (!player.getAbilities().instabuild) {
+                held.shrink(1);
+            }
+            restorer.setChanged();
+            player.displayClientMessage(
+                    Component.translatable("message.claudemod.prismium_restorer.charged",
+                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+            return InteractionResult.CONSUME;
+        }
+
+        if (held.isEmpty()) {
+            player.displayClientMessage(
+                    Component.translatable("message.claudemod.prismium_restorer.status",
+                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+            return InteractionResult.CONSUME;
+        }
+
+        if (held.isDamageableItem() && held.getDamageValue() > 0) {
+            int damage = held.getDamageValue();
+            int wanted = Math.min(damage, PrismiumRestorerBlockEntity.MAX_DURABILITY_PER_USE);
+            int affordable = storage.getEnergyStored() / PrismiumRestorerBlockEntity.FE_PER_DURABILITY;
+            int repaired = Math.min(wanted, affordable);
+
+            if (repaired <= 0) {
+                player.displayClientMessage(
+                        Component.translatable("message.claudemod.prismium_restorer.no_charge"), true);
+                return InteractionResult.CONSUME;
+            }
+
+            int cost = repaired * PrismiumRestorerBlockEntity.FE_PER_DURABILITY;
+            held.setDamageValue(damage - repaired);
+            storage.setEnergy(storage.getEnergyStored() - cost);
+            restorer.setChanged();
+            player.displayClientMessage(
+                    Component.translatable("message.claudemod.prismium_restorer.repaired",
+                            repaired, cost, storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+            return InteractionResult.CONSUME;
+        }
+
+        player.displayClientMessage(
+                Component.translatable("message.claudemod.prismium_restorer.not_damaged"), true);
+        return InteractionResult.CONSUME;
+    }
+}

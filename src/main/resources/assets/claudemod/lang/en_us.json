@@ -51,5 +51,13 @@
     "message.claudemod.prismium_pylon.status_active": "Prismium Pylon: %1$s / %2$s FE (radiating)",
     "message.claudemod.prismium_pylon.status_idle": "Prismium Pylon: %1$s / %2$s FE (idle)",
     "message.claudemod.prismium_pylon.charged": "Charged Prismium Pylon: %1$s / %2$s FE",
-    "message.claudemod.prismium_pylon.full": "Prismium Pylon is already full"
+    "message.claudemod.prismium_pylon.full": "Prismium Pylon is already full",
+
+    "block.claudemod.prismium_restorer": "Prismium Restorer",
+    "message.claudemod.prismium_restorer.status": "Prismium Restorer: %1$s / %2$s FE",
+    "message.claudemod.prismium_restorer.charged": "Charged Prismium Restorer: %1$s / %2$s FE",
+    "message.claudemod.prismium_restorer.full": "Prismium Restorer is already full",
+    "message.claudemod.prismium_restorer.repaired": "Repaired %1$s durability (%2$s FE) - %3$s / %4$s FE left",
+    "message.claudemod.prismium_restorer.no_charge": "Prismium Restorer has no charge",
+    "message.claudemod.prismium_restorer.not_damaged": "That item is not damaged"
 }
