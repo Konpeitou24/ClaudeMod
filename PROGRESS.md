@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-18 (セッション #24)
+最終更新: 2026-08-18 (セッション #28)
 
 ---
 
@@ -885,6 +885,44 @@ PROGRESS.md末尾の申し送り(セッション#26)に従い、§5(旧)item 5�
 
 1コミット(`bfa33aa`: Prismium WardstoneのGUI一式: `PrismiumWardstoneMenu.java`・`PrismiumWardstoneScreen.java`新規、`PrismiumWardstoneBlockEntity.java`・`PrismiumWardstoneBlock.java`・`ModMenuTypes.java`・`ClientModEvents.java`・lang 2件更新(Pylon分の掃除も含む)、GUI背景テクスチャー新規、`gen_prismium_wardstone_gui.py`新規)。push前に`git fetch origin main`で差分無し(並行セッションとの衝突は検知せず、直前は`c789547`のまま)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`8087d4d`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(166,651→172,764バイト)、および`actions/workflows/build-and-notify.yml/badge.svg`が"passing"であることの両方を確認 - 本物のビルド成功。
 
+## 3AA. セッション#28で実装した内容: Prismium Shield(MOD初の新規装備アイテム、GUI連続実装からの方向転換)
+
+### 3AA-0. セッション開始時の状況確認
+
+`$HOME/repo`(このセッションでは一意パスとして`$HOME`直下、既存の固定名ディレクトリと衝突しない値を使用)に`git clone`。`api.github.com`は今回も`X-Proxy-Error: blocked-by-allowlist`(403)でプロキシ経由・プロキシ非経由(`https_proxy`等を空にする回避策込み)のどちらでも到達不可(`HTTP:000`)であることを再確認した - 引き続き到達不可の前提で作業してよいことが確定的になった。ビルド結果の確認は`git log`で直前セッション(#27)最終コミット`07bbdd6`(PROGRESS.md更新)の直後に`ci: update built jar [skip ci]`コミット`4465839`が付いていることを確認し、本物のビルド成功と判断(§3Zまでの手法を踏襲)。GitHub issue確認は`github.com/Konpeitou24/ClaudeMod`トップページの`issues-repo-tab-count`が"2"のままであること(新規issue無し、既知の#1・#2から増減なし)をセッション開始時と終了時の両方で確認した。
+
+### 3AA-1. 実装: 5機種GUIのセルフQAレビュー(§5 session 27 handoff item 4「最重要」への対応)
+
+session 24-27で繰り返し保留されていた「横展開を続けるより先に1件を検証しきる」の代替として推奨されていた、5機種(Cell/Generator/Pylon/Restorer/Wardstone)横断のレビューのみのセルフQAを実施した。確認した観点と結果:
+
+- **`ContainerData`のインデックス順序**: 全5機種で`Menu`側の`data.get(N)`呼び出しと`BlockEntity`側の`containerData.get(int index)`実装(`switch`式)の`case`番号が完全に一致していることを確認(Cell/Restorerは2要素、Generator/Pylon/Wardstoneは3要素、それぞれ`checkContainerDataCount`の引数とも一致)。不整合なし。
+- **`stillValid`の距離判定**: 全5機種とも`AbstractContainerMenu.stillValid(access, player, block)`という同一のvanilla静的ヘルパー呼び出しで統一されており、独自の距離計算は存在しない。vanillaの標準実装(furnace等と同じ)をそのまま使っているだけなので、判定ロジック自体に不整合・バグの余地はないと判断。
+- **GUI開閉時のリスナー登録漏れ**: `Menu`/`Screen`/`BlockEntity`の該当ファイルを`grep`したところ、そもそも独自の`Listener`/`addListener`の類は一つも存在しなかった(`ContainerData`+`addDataSlots`というvanilla標準の同期機構のみで完結しており、手動でリスナーを登録・解除するコードが元々無い)。よってリークの懸念自体が該当しないことが判明 - session 27時点での「等」という曖昧な懸念事項だったが、実際には杞憂だったと結論できる。
+- **`getDisplayName()`の翻訳キー**: 全5機種とも独自の`container.claudemod.*`キーではなく、ブロック自体の既存キー(`block.claudemod.prismium_*`、既にlang両言語に存在確認済み)を再利用しており、キー欠落の心配なし。
+- **`ModMenuTypes`の5エントリ**: いずれも`IForgeMenuType.create`+`extraData.readBlockPos()`+対応する`Menu`コンストラクタ呼び出しという同一パターンで、命名(`prismium_cell`/`prismium_generator`/`prismium_pylon`/`prismium_restorer`/`prismium_wardstone`)もBlockEntity/Block側の`NetworkHooks.openScreen(serverPlayer, be, buf -> buf.writeBlockPos(pos))`呼び出しパターンとも一貫していることを確認。
+
+**結論: 5機種のGUI実装に不整合・バグは発見されなかった。** コード変更は一切行っていない(レビューのみ)。既存の未検証事項(§4記載のバランス数値・実プレイでの見た目等)はコードレビューだけでは検証できないため、引き続き未解決のまま(下記§5参照)。
+
+### 3AA-2. 実装: Prismium Shield(MOD初の新規装備スロットアイテム、Rift Shard(session 14)以来)
+
+§5(session 27 handoff)item 5(c)「GUI連続実装からの方向転換、新規コンテンツの追加を再開」を受けて着手。session 23-27の5セッション連続でGUI関連の実装のみが行われていたため、「てんこ盛り」路線への回帰として、MOD初のブロッキング(盾)機能付き装備を追加した。
+
+- `PrismiumShieldItem`(新規、`item`パッケージ): vanilla`ShieldItem`を継承せず、素の`Item`で`getUseAnimation`(`UseAnim.BLOCK`を返す)・`getUseDuration`(72000)・`use`(`player.startUsingItem(hand)`して`InteractionResultHolder.consume`)のみをオーバーライドするパターンを採用。理由はセッション内でWeb検索(クエリ: "Forge 1.20.1 custom shield item UseAnim.BLOCK getUseDuration example not extending ShieldItem")で裏取り済み: vanillaの`ShieldItem`はバナー柄を焼き込む専用の3Dインハンドモデル(`BlockEntityWithoutLevelRenderer`経由、`shield_base(_nopattern).png`前提のテクスチャレイアウト)を要求するため、それを継承すると本来不要なレンダラー実装まで必要になる。`LivingEntity#isBlocking`は`getUseItem().getUseAnimation() == UseAnim.BLOCK`しか見ておらず、`ShieldItem`のサブクラスかどうかは問わないため、この方法でも斧による無効化やブロック時のノックバック等、vanillaのブロッキング機能はそのまま働く(代償はインハンド表示が3Dモデルではなく通常のフラットな2Dアイコンになる点のみ - `PrismiumGrapplingHookItem`/`PrismiumLocatorItem`も同様にインハンド専用モデルを持たない前例があるため、この妥協は本MODの既存方針と一致)。
+- `ModItems`に`PRISMIUM_SHIELD`として登録(`durability(420)`、vanillaの盾の336より高い耐久 - `ModArmorMaterials`/`ModToolTiers`と同じ「フラットな性能インフレはしないが耐久・関連ステータスは一段上」という方針を踏襲、独自の修理素材オーバーライドはgrappling hookと同様に行っていない=通常のアンビル修理のみ)。`ModCreativeTabs`にも追加。
+- レシピ新規(`prismium_shield.json`、shaped 3x3): `oak_planks`(外周6箇所)+`prismium_shard`(中央上)+`iron_ingot`(中央)。vanillaの盾レシピ(板6+鉄1)を踏襲しつつ、板1枚をPrismium Shardに置き換える構成。
+- lang(en/ja)に`item.claudemod.prismium_shield`を追加。
+- モデルJSON(`models/item/prismium_shield.json`)は他の全アイテムと同じ`minecraft:item/generated`+`layer0`パターン。
+
+### 3AA-3. テクスチャー: Prismium Shieldのアイテムアイコン
+
+`scripts/textures/gen_prismium_shield.py`(新規)で16x16のフラットな正面向きヒーターシールド(丸みを帯びた上部→本体→下部の一点への先細り)を生成。パレットは既存アイテム群との統一感を優先し、外周リムは工具/グラップリングフックと同じスチール色(`STEEL_*`)、盾面はグラップリングフックのロープより濃く彩度の高いウッドブラウン(`WOOD_*`、素材の書き分け)、中央のボス(突起)には全アイテム共通のPrismiumアクセント紫(`PRISMIUM_ACCENT`/`_HILITE`)を、輪郭線付きの菱形+左上1〜2pxのハイライトのみという非対称な光沢で表現した。
+
+自己レビュー: 生成直後に`outputs`フォルダ経由(このサンドボックスの制約上、`/tmp`上のリポジトリはReadツールで直接開けないため、暗背景合成+16倍拡大のプレビューPNGを`outputs`にコピーする、session 25以降確立済みの手順)でReadツールにより目視確認した。結果: 盾のシルエットは16x16でも「盾」と明確に判別でき、外周のスチール(グレー)と盾面のウッド(ブラウン)の色の書き分けも視認できた。中央のPrismiumボスは濃い輪郭とハイライトのおかげで背景の木目に埋没せず独立したパーツとして読める。透過崩れ・意図しないノイズは無し。作り直しは発生しなかった(初稿をそのまま採用)。なお、生成スクリプト内に実質何もしないデッドコード(no-opループ)が紛れていたのを発見し、ピクセル出力に影響しないことを確認した上で削除・再生成して最終版とした。
+
+### 3AA-4. commit・push・ビルド確認
+
+1コミット(`e6f9eec`: Prismium Shield一式 - `PrismiumShieldItem.java`新規、`ModItems.java`・`ModCreativeTabs.java`更新、lang(en/ja)更新、`models/item/prismium_shield.json`・`data/claudemod/recipes/prismium_shield.json`・`textures/item/prismium_shield.png`・`scripts/textures/gen_prismium_shield.py`新規、計9ファイル)。§3AA-1のQAレビューはコード変更が発生しなかったため別コミットにはしていない。push前に`git fetch origin main`で差分無し(並行セッションとの衝突は検知せず、直前は`4465839`のまま)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`c35be6c`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(172,764→175,038バイト)、および`actions/workflows/build-and-notify.yml/badge.svg`が"passing"であることの両方を確認 - 本物のビルド成功。
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
 
 
@@ -1041,34 +1079,42 @@ PROGRESS.md末尾の申し送り(セッション#26)に従い、§5(旧)item 5�
     - ランプの配色をPylonの紫/シアンから血赤に変更した判断(§3Z-1参照)自体は、ブロック本体のルーン発光色と一致させる目的のコードレビューに基づくが、実際にGUIを開いた状態でランプの赤とエネルギーバーのティールが同一パネル上で視覚的に衝突しないか(彩度・輝度のコントラストが強すぎて落ち着かない配色にならないか)は未検証。
     - これでPylon・Restorer・Wardstoneの消費ブロック3種全てにGUIが揃った。§5(旧、session 24〜26)で繰り返し保留されてきた選択肢(c)「横展開を続けるより先に1件を検証しきる」に、次回以降は本当に踏み切るべきタイミングに来ている(下記申し送り参照)。
 
+42. 【セッション#28で新規発覚】Prismium Shield(§3AA)は以下すべて未検証・既知の割り切り:
+    - MOD初のブロッキング装備であり、CIビルドが通ること以上の検証(実際に右クリックで構え動作(`UseAnim.BLOCK`)に入るか、防御中にダメージが実際に軽減されるか、斧持ちの敵に一定時間無効化されるか)は一度もできていない。
+    - `ShieldItem`を継承せずインハンド3Dモデルを持たない設計(§3AA-2参照)により、手に持った際は通常アイテムと同じフラットな2Dスプライトとして描画される見込みだが、これも実際のレンダリング結果は未確認 - 見た目が不自然(例えば構えモーション中に平面が不自然に見える等)にならないかは次回以降の実プレイ待ち。
+    - `durability(420)`・レシピの材料構成(板6+Prismium Shard1+鉄1)はいずれもバランス未検証の初期値で、他の新規アイテム同様、体感で強すぎ/弱すぎ/入手コストが不適切という可能性がある。
+    - 独自の修理素材(Prismium Shardでの追加修理等)は今回実装しなかった(grappling hookと同じく通常のアンビル修理のみ) - 将来的にPrismium系装備として統一的な修理手段を用意すべきか検討の余地がある(下記申し送り参照)。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#27終了時点では、`bfa33aa`(Prismium WardstoneのGUI追加)の直後に`8087d4d`が付いており、ビルド成功(jarサイズ166,651→172,764バイト増加を`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`で確認、加えて`actions/workflows/build-and-notify.yml/badge.svg`が"passing"であることも確認)済み。
-2. 【継続、環境まわり】`api.github.com`は引き続き到達不可という前提で作業してよい(今回は`badge.svg` + `git log`のポーリングのみで十分だったため改めての検証はしていない)。ビルド結果の確認は、`git fetch`によるci commitのポーリングに加え、`https://github.com/<owner>/<repo>/actions/workflows/<file>.yml/badge.svg`を`curl`で取得して"passing"/"failing"の文字列を見る方法を主たる確認手段として引き続き推奨する。
-3. 【継続、環境まわり、重要】固定パスの作業ディレクトリ(`/tmp/ClaudeMod`等)が別セッション由来の`nobody:nogroup`所有ファイルで`Permission denied`になるケースは今回も発生した。`mktemp -d`等で一意なパスを生成するのが最も安全(セッション#25以来繰り返し推奨されている)。今回は`/tmp/ClaudeMod_work`という別名に手動で切り替えて解決したが、次回は最初から一意パスを使うことを改めて推奨する。
-4. **【最重要、区切り】これでPrismium Cell(#23)・Generator(#24)・Pylon(#25)・Restorer(#26)・Wardstone(#27、本セッション)の全5種の電力ブロックにGUIが揃った。§5(session 24〜26)で繰り返し保留されてきた選択肢(c)「横展開を続けるより先に1件を検証しきる」に、次回は本当に踏み切ることを強く推奨する。** 具体的には、実際にプレイフィードバック(GitHub Issue等)が来ていなくても、少なくともコードレビューだけで発見できる筋の悪さ(例: `ContainerData`のインデックス順序の一貫性、`stillValid`の距離判定、GUI開閉時のメモリリーク的なリスナー登録漏れ等)を5機種横断でもう一度棚卸しする「レビューのみでのセルフQA」だけでも次のステップとして価値がある。
-5. 【新規、次の展開候補】GUI横展開が一段落したので、次に着手する余地がある領域(優先度は次回の判断に委ねる):
-   - (a) §5(旧)item 5(b): Prismium Cell/Generator/Pylon/Restorer/Wardstoneの欠片チャージ操作そのものをGUIのスロットに置き換える(`SlotItemHandler`等、MOD未踏み込みのAPI領域)。
-   - (b) Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックなど、GUI以外で長く未着手のままの既存機能の作り込み。
-   - (c) 新規コンテンツ(ブロック・アイテム・MOB等)の追加を再開し、「てんこ盛り」路線に戻る - GUI4連続・5連続で純粋な新規コンテンツ追加が止まっていた自覚がある(session 23-27は全てGUI関連)。
-6. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Cable(接続モデル)・全5GUI(Cell/Generator/Pylon/Restorer/Wardstone)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
-7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 27では他セッションとの並行は検知しなかったが、毎回確認すること。
+1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#28終了時点では、`e6f9eec`(Prismium Shield追加)の直後に`c35be6c`が付いており、ビルド成功(jarサイズ172,764→175,038バイト増加を`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`で確認、加えて`actions/workflows/build-and-notify.yml/badge.svg`が"passing"であることも確認)済み。
+2. 【継続、環境まわり】`api.github.com`は引き続き到達不可という前提で作業してよい(セッション#28で改めてプロキシあり/なし両方で`HTTP:000`になることを再確認済み)。ビルド結果の確認は、`git fetch`によるci commitのポーリングに加え、`badge.svg`の"passing"/"failing"を見る方法を主たる確認手段として引き続き推奨する。
+3. 【継続、環境まわり、重要】固定パスの作業ディレクトリが別セッション由来の`nobody:nogroup`所有ファイルで`Permission denied`になる問題は今回も`/tmp/work`・`/tmp/work2`で発生した。今回はホームディレクトリ直下(`$HOME/repo`)への切り替えで解決し、`$HOME`直下は`nobody:nogroup`汚染が無く書き込み可能であることを確認できた。**加えて今回新たに判明した注意点**: `/tmp`配下は同様に別セッション由来のファイルが残っていて特定のファイル名(例えば`/tmp/progress_head.md`のような作業用一時ファイル名)が既に`nobody:nogroup`所有で存在している場合、それへの書き込みだけが`Permission denied`で黙って失敗し、後続コマンド(`cat`等)がその失敗に気づかないまま古い内容を使い続けてしまう事故が今回発生した(PROGRESS.md更新作業中に一度誤って古いセッション#17時点の内容と新しい内容を混ぜてしまい、`git checkout -- PROGRESS.md`で復旧してから作業をやり直した)。教訓: **`/tmp`配下に一時ファイルを作る際も固定名を避け、`$HOME`配下の専用ディレクトリ(例: `mkdir -p $HOME/scratch`)を使うか、コマンドの終了コード・出力サイズを都度確認してから次のコマンドに進むこと。** 複数コマンドを一度に投げる際は特に、途中の一コマンドが失敗しても後続がそのまま実行されてしまう(`&&`で繋いでいない限り)点に注意する。
+4. 【新規、最優先候補】Prismium Shield(セッション#28、§3AA)は実プレイ未検証の新規装備。5機種GUIのセルフQAレビュー(§3AA-1)ではコードレビューだけで見つかる問題は無かったため、次に何かを検証できる機会があれば、GUI 5機種よりもむしろこのShieldの方が「本当に構え動作に入るか」「ダメージが軽減されるか」という一次的な機能検証すら済んでいない分、優先度が高いと考えられる。
+5. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Cable(接続モデル)・全5GUI(Cell/Generator/Pylon/Restorer/Wardstone)・Prismium Shield(本セッション)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
+6. 【新規、次の展開候補】セッション#28で「新規コンテンツへの回帰」の第一弾(Shield)を実施した。この路線を続けるか、他の候補に切り替えるかは次回の判断に委ねるが、選択肢を挙げておく:
+   - (a) 装備面のさらなる拡充: 盾と対になる遠距離武器(弓相当、vanilla`BowItem`を継承すれば矢の発射自体はvanillaの仕組みを再利用でき、実装コストは比較的低いはずだが、`pulling`/`pull`のモデルpredicateまわりは今回のShieldより検証すべき点が多い可能性がある)。
+   - (b) §5(旧、session 27)item 5(a): Prismium Cell/Generator/Pylon/Restorer/Wardstoneの欠片チャージ操作そのものをGUIのスロットに置き換える(`SlotItemHandler`等、MOD未踏み込みのAPI領域)。
+   - (c) Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックなど、GUI以外で長く未着手のままの既存機能の作り込み。
+   - (d) Prismium系装備(ツール・防具・Shield)の修理手段の統一化(§4-42で触れた通り、Shieldは現状Prismium Shardでの専用修理を持たない)。
+7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 28では他セッションとの並行は検知しなかったが、毎回確認すること。
 
 ### 議論したい論点・改善案
 
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。GUIは5機種(Cell・Generator・Pylon・Restorer・Wardstone)全て出揃ったが、いずれも「開くか・数字が正しいか・ランプ/ゲージが正しく切り替わるか」すら一度も実地確認できていない。次にプレイフィードバックが得られた際は、新規コンテンツの追加よりもこの検証を最優先すべきという声(§5-4)が今回さらに強くなった。
-- **GUIパターンの再利用性(継続、完全に実証された)**: Cell→Generator→Pylon→Restorer→Wardstoneの5例とも`ContainerData`のスロット数・追加ゲッター・`AbstractContainerMenu`の定型配線をコピーするだけで完結し、新規のAPI裏取りは一度も必要にならなかった。パターンは「ticking active状態を持つか否か」で2系統に分岐する(Pylon/Wardstone=3スロット+ランプ、Cell/Restorer=2スロットのみ、Generatorのみ独自の燃焼ゲージで3系統目)ことが5例通して実証され、次に電力ブロックを追加する際はこの2〜3系統のどれに当てはまるかを最初に判断すればよい状態になった。
-- **消費ブロックの見分けやすさ、GUIにも波及(完了)**: Cell/Generator(ティール)・Pylon(紫)・Restorer(金)・Wardstone(赤、本セッションで完成)という、ブロック本体のアクセント色をGUIの縁取り色にそのまま持ち込む戦略が5機種全てに行き渡った。4色が出揃ったことで、次に新しい電力ブロックを追加する際は「まだ使われていない5色目のアクセント」を意識して選ぶ余地が生まれた。
-- **短命な数値同期の一般化(継続)**: Cellの`ENERGY_SYNC_DIVISOR`、Generatorの`BURN_TIME_SYNC_CAP`、Pylon/Wardstoneの`active`フラグint化(0/1)、Restorerの「3つ目のスロットを持たない」という4パターンが出そろった。5機種分の実装が完了した今、共通ヘルパー(例えば`AbstractEnergyContainerData`のような基底クラス)への切り出しを検討する材料は十分にある - ただしプレイテストが一件も済んでいない状況でリファクタリングを優先するかは判断が分かれるところ(§5-4参照)。
-- **探知アイテムの発展余地(継続)**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19-27では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
-- **GUI連続実装からの方向転換(新規)**: session 23-27の5セッション連続でGUI関連の実装のみが行われ、新規コンテンツ(ブロック・アイテム・MOB等)の追加はsession 22(Cableの接続モデル)を最後に止まっている。MODコンセプト(「てんこ盛り」)に立ち返るなら、次回以降は新規コンテンツ追加への回帰も検討価値がある(§5-5(c)参照)。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。GUI 5機種に続き、Shieldという「機能するかどうか」自体が未検証の新規アイテムも積み上がった。次にプレイフィードバックが得られた際は、新規コンテンツの追加よりもこの検証を最優先すべきという声(継続)がさらに強くなっている。
+- **`ShieldItem`を継承しない選択の妥当性(新規)**: セッション#28では3Dインハンドモデルの実装コストを避けるため、あえてvanilla`ShieldItem`を継承しない設計にした(§3AA-2)。この判断自体は「機能を先に確立し、見た目の作り込みは後回しにする」という本MODの既存方針(グラップリングフック・ロケーター等)と一貫しているが、装備品としては見た目のインパクトが小さい(インベントリでは通常のアイテムアイコンと変わらず見える)というトレードオフがある。将来、3Dモデル対応の優先度を上げるべきかは検討の余地がある。
+- **GUIパターンの再利用性(継続、完全に実証された)**: Cell→Generator→Pylon→Restorer→Wardstoneの5例とも`ContainerData`のスロット数・追加ゲッター・`AbstractContainerMenu`の定型配線をコピーするだけで完結し、新規のAPI裏取りは一度も必要にならなかった。セッション#28のセルフQAレビュー(§3AA-1)でもこの5例間の実装に不整合は見つからず、パターンの健全性が改めて裏付けられた。
+- **消費ブロックの見分けやすさ、GUIにも波及(完了)**: Cell/Generator(ティール)・Pylon(紫)・Restorer(金)・Wardstone(赤)という、ブロック本体のアクセント色をGUIの縁取り色にそのまま持ち込む戦略が5機種全てに行き渡った。次に新しい電力ブロックを追加する際は「まだ使われていない5色目のアクセント」を意識して選ぶ余地がある(継続)。
+- **短命な数値同期の一般化(継続)**: Cellの`ENERGY_SYNC_DIVISOR`、Generatorの`BURN_TIME_SYNC_CAP`、Pylon/Wardstoneの`active`フラグint化(0/1)、Restorerの「3つ目のスロットを持たない」という4パターンが出そろった。5機種分の実装が完了した今、共通ヘルパー(例えば`AbstractEnergyContainerData`のような基底クラス)への切り出しを検討する材料は十分にある - ただしプレイテストが一件も済んでいない状況でリファクタリングを優先するかは判断が分かれるところ(継続)。
+- **探知アイテムの発展余地(継続)**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19-28では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
+- **「てんこ盛り」路線への回帰(セッション#28で着手、継続)**: session 23-27の5セッション連続でGUI関連の実装のみが行われていた状態から、セッション#28でShield(新規装備)を追加して方向転換した。MODコンセプト(コンテンツ量の多い「てんこ盛り」)に立ち返るなら、この路線(新規ブロック・アイテム・MOB等の追加)を次回以降も継続する価値がある。
 
 ### コミット/プッシュ状況
 
-このセッションの変更は1コミット: `bfa33aa`(Prismium WardstoneのGUI追加: `PrismiumWardstoneMenu.java`・`PrismiumWardstoneScreen.java`新規、`PrismiumWardstoneBlockEntity.java`・`PrismiumWardstoneBlock.java`・`ModMenuTypes.java`・`ClientModEvents.java`・lang(en/ja)更新(Pylonの不要キー削除も含む)、GUI背景テクスチャー新規、`gen_prismium_wardstone_gui.py`新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`c789547`のまま)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`8087d4d`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(166,651→172,764バイト)、および`badge.svg`が"passing"であることの両方を確認して、本物のビルド成功を確定させた。新規GUI背景テクスチャーは`outputs`フォルダ経由で目視レビュー(176x90切り出し、暗背景合成、4倍拡大)を実施済み(§3Z-2参照)。GitHub issueの確認は今回未着手(§3Z-0参照、次回は個別ページ・タブカウント双方の確認を推奨)。
+このセッションの変更は1コミット: `e6f9eec`(Prismium Shield追加: `PrismiumShieldItem.java`新規、`ModItems.java`・`ModCreativeTabs.java`更新、lang(en/ja)更新、`models/item/prismium_shield.json`・`data/claudemod/recipes/prismium_shield.json`・`textures/item/prismium_shield.png`・`scripts/textures/gen_prismium_shield.py`新規)。5機種GUIのセルフQAレビュー(§3AA-1)はコード変更が発生しなかったため、コミットとしては現れていない(レビューのみで問題が見つからなかった旨は本ファイルの記録のみに残る)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`4465839`のまま)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`c35be6c`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(172,764→175,038バイト)、および`badge.svg`が"passing"であることの両方を確認して、本物のビルド成功を確定させた。新規アイテムテクスチャーは`outputs`フォルダ経由で目視レビュー(暗背景合成、16倍拡大)を実施済み(§3AA-3参照)。GitHub issueの確認はセッション開始時・終了時の両方で実施し、Open issue数が2件のまま(新規issue無し)であることを確認した。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`8087d4d`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、`c35be6c`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
