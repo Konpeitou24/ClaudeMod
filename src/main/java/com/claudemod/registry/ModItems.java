@@ -13,6 +13,7 @@ import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumLocatorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
+import com.claudemod.item.PrismiumShieldItem;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
@@ -123,6 +124,16 @@ public class ModItems {
     // raycast-and-pull implementation and API notes.
     public static final RegistryObject<Item> PRISMIUM_GRAPPLING_HOOK = ITEMS.register("prismium_grappling_hook",
             () -> new PrismiumGrapplingHookItem(new Item.Properties().durability(250)));
+
+    // Prismium Shield (session 28): the mod's first blocking-capable
+    // gear item, and its first brand-new equipment slot since the Rift
+    // Shard (session 14) - see PrismiumShieldItem for why this is a
+    // plain Item overriding getUseAnimation/use rather than a subclass
+    // of vanilla ShieldItem. durability(420) sits above vanilla's shield
+    // (336), matching the "higher durability, no flat power creep"
+    // philosophy already used by ModArmorMaterials/ModToolTiers.
+    public static final RegistryObject<Item> PRISMIUM_SHIELD = ITEMS.register("prismium_shield",
+            () -> new PrismiumShieldItem(new Item.Properties().durability(420)));
 
     // Prismium Rift Shard (session 14): the mod's first way in/out of the
     // Prism Realm dimension. Not consumed on use (stacksTo(1), reusable
