@@ -16,6 +16,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.SwordItem;
+import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
@@ -117,6 +118,17 @@ public class ModItems {
     // raycast-and-pull implementation and API notes.
     public static final RegistryObject<Item> PRISMIUM_GRAPPLING_HOOK = ITEMS.register("prismium_grappling_hook",
             () -> new PrismiumGrapplingHookItem(new Item.Properties().durability(250)));
+
+    // Prismium Wraith spawn egg (session 12): uses Forge's ForgeSpawnEggItem
+    // rather than vanilla SpawnEggItem because the latter needs the
+    // EntityType eagerly at construction time, before ModEntities'
+    // RegistryObject has resolved. Colors: dark violet base echoing the
+    // "machine casing" dark palette used by Cell/Generator/Cable, with the
+    // same cyan accent (PRISMIUM_ACCENT, see scripts/textures/common
+    // palette notes in past sessions) as highlight spots, so the egg reads
+    // as part of the Prismium family in the creative inventory.
+    public static final RegistryObject<Item> PRISMIUM_WRAITH_SPAWN_EGG = ITEMS.register("prismium_wraith_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_WRAITH, 0x2b1033, 0x39e6d6, new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

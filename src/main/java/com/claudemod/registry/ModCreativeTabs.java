@@ -44,6 +44,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_LEGGINGS.get());
                         output.accept(ModItems.PRISMIUM_BOOTS.get());
                         output.accept(ModItems.PRISMIUM_GRAPPLING_HOOK.get());
+                        output.accept(ModItems.PRISMIUM_WRAITH_SPAWN_EGG.get());
                     })
                     .build());
 

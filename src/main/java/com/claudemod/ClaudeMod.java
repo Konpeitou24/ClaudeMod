@@ -3,6 +3,7 @@ package com.claudemod;
 import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModCreativeTabs;
+import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModItems;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
@@ -29,6 +30,7 @@ public class ClaudeMod {
 
         ModBlocks.register(modEventBus);
         ModBlockEntities.register(modEventBus);
+        ModEntities.register(modEventBus);
         ModItems.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
 

@@ -19,6 +19,8 @@
     "item.claudemod.prismium_leggings": "プリズミウムのレギンス",
     "item.claudemod.prismium_boots": "プリズミウムのブーツ",
     "item.claudemod.prismium_grappling_hook": "プリズミウムのグラップリングフック",
+    "entity.claudemod.prismium_wraith": "プリズミウムレイス",
+    "item.claudemod.prismium_wraith_spawn_egg": "プリズミウムレイスのスポーンエッグ",
     "message.claudemod.prismium_cell.status": "プリズミウムセル: %1$s / %2$s FE",
     "message.claudemod.prismium_cell.charged": "プリズミウムセルを充電した: %1$s / %2$s FE",
     "message.claudemod.prismium_cell.full": "プリズミウムセルは満タンです",
