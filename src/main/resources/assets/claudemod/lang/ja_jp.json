@@ -53,7 +53,6 @@
     "message.claudemod.prismium_pylon.charged": "プリズミウムパイロンを充電した: %1$s / %2$s FE",
     "message.claudemod.prismium_pylon.full": "プリズミウムパイロンは満タンです",
     "block.claudemod.prismium_restorer": "プリズミウム修復機",
-    "message.claudemod.prismium_restorer.status": "プリズミウム修復機: %1$s / %2$s FE",
     "message.claudemod.prismium_restorer.charged": "プリズミウム修復機を充電した: %1$s / %2$s FE",
     "message.claudemod.prismium_restorer.full": "プリズミウム修復機は満タンです",
     "message.claudemod.prismium_restorer.repaired": "耐久値を%1$s回復した(%2$s FE消費) - 残り%3$s / %4$s FE",

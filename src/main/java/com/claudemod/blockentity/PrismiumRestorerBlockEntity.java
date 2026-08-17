@@ -1,10 +1,18 @@
 package com.claudemod.blockentity;
 
 import com.claudemod.energy.PrismiumEnergyStorage;
+import com.claudemod.menu.PrismiumRestorerMenu;
 import com.claudemod.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraftforge.common.capabilities.Capability;
@@ -39,8 +47,17 @@ import javax.annotation.Nullable;
  * cost and per-use durability cap below feel good in play, and whether
  * repairing armor/tools this way interacts correctly with enchantments
  * (e.g. Mending) - only compiled and code-reviewed, not playtested.
+ *
+ * <p>Session 26 adds a GUI (see {@link PrismiumRestorerMenu}), the mod's
+ * fourth after Prismium Cell (session 23), Prismium Generator (session
+ * 24) and Prismium Pylon (session 25). Unlike Pylon this block has no
+ * ticking "active" state to expose (all of its behaviour is a synchronous
+ * response to a right-click, see class doc above) - so its
+ * {@link ContainerData} mirrors {@link PrismiumCellBlockEntity}'s minimal
+ * shape almost exactly (2 ints: current/max energy, no third slot),
+ * rather than Pylon's 3-int shape with its extra boolean.
  */
-public class PrismiumRestorerBlockEntity extends BlockEntity {
+public class PrismiumRestorerBlockEntity extends BlockEntity implements MenuProvider {
 
     /** Total FE capacity. */
     public static final int CAPACITY = 30_000;
@@ -63,12 +80,58 @@ public class PrismiumRestorerBlockEntity extends BlockEntity {
     private final PrismiumEnergyStorage energyStorage = new PrismiumEnergyStorage(CAPACITY, MAX_RECEIVE, 0);
     private final LazyOptional<IEnergyStorage> energyOptional = LazyOptional.of(() -> energyStorage);
 
+    /** Backs this block entity's GUI (session 26). {@link PrismiumRestorerBlockEntity#CAPACITY}
+     * (30,000) is, like Pylon's (20,000) and Generator's (8,000), safely
+     * under {@code Short.MAX_VALUE} (32,767) on its own - so unlike
+     * Prismium Cell (100,000 capacity) no {@code ENERGY_SYNC_DIVISOR}-style
+     * scaling is needed here, the raw FE values can be synced directly.
+     * {@code set} is a no-op, same reasoning as every other machine's
+     * {@code ContainerData}: the screen only ever reads, the underlying
+     * state changes through {@link com.claudemod.block.PrismiumRestorerBlock#use}
+     * (and the energy capability) only. */
+    private final ContainerData containerData = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> energyStorage.getEnergyStored();
+                case 1 -> energyStorage.getMaxEnergyStored();
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            // Read-only from the screen's perspective, see field doc.
+        }
+
+        @Override
+        public int getCount() {
+            return 2;
+        }
+    };
+
+    public ContainerData getContainerData() {
+        return containerData;
+    }
+
     public PrismiumRestorerBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PRISMIUM_RESTORER.get(), pos, state);
     }
 
     public PrismiumEnergyStorage getEnergyStorage() {
         return energyStorage;
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("block.claudemod.prismium_restorer");
+    }
+
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int windowId, Inventory inventory, Player player) {
+        return new PrismiumRestorerMenu(windowId, inventory, containerData,
+                ContainerLevelAccess.create(level, worldPosition));
     }
 
     @Override

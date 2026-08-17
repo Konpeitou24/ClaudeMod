@@ -4,6 +4,7 @@ import com.claudemod.ClaudeMod;
 import com.claudemod.menu.PrismiumCellMenu;
 import com.claudemod.menu.PrismiumGeneratorMenu;
 import com.claudemod.menu.PrismiumPylonMenu;
+import com.claudemod.menu.PrismiumRestorerMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;
@@ -63,6 +64,16 @@ public class ModMenuTypes {
             MENU_TYPES.register("prismium_pylon", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
                 BlockPos pos = extraData.readBlockPos();
                 return new PrismiumPylonMenu(windowId, inv, pos);
+            }));
+
+    /** Session 26: the mod's fourth GUI, see {@link PrismiumRestorerMenu}
+     * for why Restorer was picked next and what's different from the
+     * other three menus (no third "active" int, closest to Cell's
+     * shape). */
+    public static final RegistryObject<MenuType<PrismiumRestorerMenu>> PRISMIUM_RESTORER_MENU =
+            MENU_TYPES.register("prismium_restorer", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
+                BlockPos pos = extraData.readBlockPos();
+                return new PrismiumRestorerMenu(windowId, inv, pos);
             }));
 
     public static void register(IEventBus eventBus) {

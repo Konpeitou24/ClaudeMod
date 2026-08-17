@@ -5,6 +5,7 @@ import com.claudemod.energy.PrismiumEnergyStorage;
 import com.claudemod.registry.ModItems;
 import net.minecraft.network.chat.Component;
 import net.minecraft.core.BlockPos;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -16,6 +17,7 @@ import net.minecraft.world.level.block.RenderShape;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
@@ -27,14 +29,22 @@ import javax.annotation.Nullable;
  * every other Prismium Energy machine already uses (Cell/Generator/Cable/
  * Pylon, sessions 8-10 and 19).
  *
- * <p>Right-click with an empty hand: report current/max FE, same as every
- * other machine.
+ * <p>Right-click with an empty hand: opens Prismium Restorer's GUI
+ * (session 26, see {@link com.claudemod.menu.PrismiumRestorerMenu}),
+ * which reports current/max FE - previously (sessions 20-25) this was an
+ * action-bar status message only, same
+ * {@code NetworkHooks.openScreen} replacement pattern already applied to
+ * {@link PrismiumCellBlock} (session 23), {@link PrismiumGeneratorBlock}
+ * (session 24) and {@link PrismiumPylonBlock} (session 25).
  * <p>Right-click holding a Prismium Shard: manually add
  * {@link PrismiumRestorerBlockEntity#SHARD_CHARGE_AMOUNT} FE, same shape
  * as {@link PrismiumCellBlock} / {@link PrismiumPylonBlock}.
  * <p>Right-click holding any other damaged, damageable item: spend FE to
  * restore some of its durability (this block's actual purpose - the
- * second FE consumer after the Pylon).
+ * second FE consumer after the Pylon). Unlike the empty-hand case this
+ * stays an action-bar message, not folded into the GUI - repairing is a
+ * one-shot action tied to whatever item is currently in the player's
+ * hand, not an ongoing status the GUI's {@code ContainerData} tracks.
  */
 public class PrismiumRestorerBlock extends BaseEntityBlock {
 
@@ -86,9 +96,14 @@ public class PrismiumRestorerBlock extends BaseEntityBlock {
         }
 
         if (held.isEmpty()) {
-            player.displayClientMessage(
-                    Component.translatable("message.claudemod.prismium_restorer.status",
-                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+            // Session 26: open Restorer's GUI instead of printing a status
+            // message - see class doc. The old action-bar status message
+            // (current/max FE) is removed rather than kept alongside the
+            // GUI, same call as Cell/Generator/Pylon: the GUI is a
+            // strictly more capable replacement for "check current status".
+            if (player instanceof ServerPlayer serverPlayer) {
+                NetworkHooks.openScreen(serverPlayer, restorer, buf -> buf.writeBlockPos(pos));
+            }
             return InteractionResult.CONSUME;
         }
 
