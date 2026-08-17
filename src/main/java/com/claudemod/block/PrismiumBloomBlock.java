@@ -1,7 +1,9 @@
 package com.claudemod.block;
 
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.shapes.CollisionContext;
@@ -24,14 +26,26 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * intentional simplification (see PROGRESS.md).
  *
  * Deliberately does NOT extend {@code BushBlock} / implement
- * {@code BonemealableBlock}: no "must be planted on dirt/grass" survival
- * check and no bonemeal growth. It behaves like a purely decorative prop
- * placed directly by worldgen (see
+ * {@code BonemealableBlock}: no bonemeal growth. It behaves like a
+ * purely decorative prop placed directly by worldgen (see
  * data/claudemod/worldgen/{configured_feature,placed_feature}/prismium_bloom*.json)
  * rather than a farmable plant - deliberately the smallest slice that
  * still reads as "alien flora" in the world. A future session could grow
  * this into a real BushBlock if survival/bonemeal behaviour turns out to
  * matter once someone can actually play-test the dimension.
+ *
+ * Session 18 addition: {@link #canSurvive} now requires a sturdy-topped
+ * block directly below, mirroring vanilla flowers' own placement rule
+ * (see {@code net.minecraft.world.level.block.state.BlockBehaviour.BlockStateBase#isFaceSturdy}).
+ * The {@code minecraft:simple_block} worldgen feature used by
+ * prismium_bloom.json does NOT consult canSurvive() on its own (it just
+ * force-places the state), so this override only matters for (a) the
+ * mod's first use of the "wouldSurvive" block predicate in
+ * prismium_bloom_placed.json, which now filters out worldgen candidate
+ * positions where this returns false, and (b) manual player placement of
+ * the BlockItem. This addresses the known issue flagged in PROGRESS.md
+ * §4-29 (blooms could previously generate floating over cliffs/water).
+ * Not yet play-tested (see PROGRESS.md session 18 notes).
  */
 public class PrismiumBloomBlock extends Block {
 
@@ -44,5 +58,12 @@ public class PrismiumBloomBlock extends Block {
     @Override
     public VoxelShape getShape(BlockState state, BlockGetter level, BlockPos pos, CollisionContext context) {
         return SHAPE;
+    }
+
+    @Override
+    public boolean canSurvive(BlockState state, LevelReader level, BlockPos pos) {
+        BlockPos below = pos.below();
+        BlockState belowState = level.getBlockState(below);
+        return belowState.isFaceSturdy(level, below, Direction.UP);
     }
 }
