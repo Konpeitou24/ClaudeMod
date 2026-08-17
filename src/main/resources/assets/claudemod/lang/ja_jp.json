@@ -66,5 +66,6 @@
     "gui.claudemod.pylon_status_idle": "待機中",
     "gui.claudemod.wardstone_status_active": "結界展開中",
     "gui.claudemod.wardstone_status_idle": "待機中",
-    "item.claudemod.prismium_bow": "プリズミウムの弓"
+    "item.claudemod.prismium_bow": "プリズミウムの弓",
+    "item.claudemod.prismium_guardian_charm": "プリズミウムの護符"
 }

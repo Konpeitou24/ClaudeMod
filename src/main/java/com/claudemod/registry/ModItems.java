@@ -12,6 +12,7 @@ import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumBowItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
+import com.claudemod.item.PrismiumGuardianCharmItem;
 import com.claudemod.item.PrismiumLocatorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
 import com.claudemod.item.PrismiumShieldItem;
@@ -145,6 +146,14 @@ public class ModItems {
     // item (tools/armor/shield).
     public static final RegistryObject<Item> PRISMIUM_BOW = ITEMS.register("prismium_bow",
             () -> new PrismiumBowItem(new Item.Properties().durability(460)));
+
+    // Prismium Guardian Charm (session 30): the mod's first "cheat death"
+    // item. stacksTo(1) mirrors vanilla's own Totem of Undying - see
+    // PrismiumGuardianCharmItem / PrismiumGuardianCharmHandler for why
+    // this item class carries no logic itself (all of it lives in the
+    // LivingDeathEvent handler).
+    public static final RegistryObject<Item> PRISMIUM_GUARDIAN_CHARM = ITEMS.register("prismium_guardian_charm",
+            () -> new PrismiumGuardianCharmItem(new Item.Properties().stacksTo(1)));
 
     // Prismium Rift Shard (session 14): the mod's first way in/out of the
     // Prism Realm dimension. Not consumed on use (stacksTo(1), reusable

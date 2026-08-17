@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "G": { "item": "minecraft:gold_ingot" },
+        "A": { "item": "minecraft:amethyst_shard" },
+        "C": { "item": "claudemod:prismium_core" }
+    },
+    "pattern": [
+        "GAG",
+        "ACA",
+        "GAG"
+    ],
+    "result": {
+        "item": "claudemod:prismium_guardian_charm",
+        "count": 1
+    }
+}
