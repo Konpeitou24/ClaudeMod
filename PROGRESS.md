@@ -621,6 +621,30 @@ push前に`git fetch origin main`で差分無し(他セッションとの並行�
 
 ---
 
+## 3R. セッション#19で実装した内容
+
+### 3R-0. セッション開始時の状況確認
+`git fetch`によるコミット確認(セッション#18の`8017ed8`直後に`cba675a`)で直前ビルドが成功していたことをまず確認(PROGRESS.md更新コミット`e9961fe`のpushでも追加のビルドが走り、`8ee32f7`として成功済みだったことも後で判明)。GitHub issue #1(顔が見えない、session 9で対応済み)・#2(ツールの見た目が似すぎる、session 13で対応済み)のbodyをHTML経由(github.com/.../issues/<番号>のページから`"bodyHTML":"..."`をJSON文字列として抽出する、session 12発見の手法)で再確認したが、どちらも新規コメントは無く、session 9・13の対応後のフィードバックはまだ付いていない。新規Issueも無し。以上を踏まえ、既存の未対応課題の多くがプレイテスト待ちで着手不能な中、コンパイルのみで前進できる新規コンテンツとして§5(旧・次回への申し送り)item 7「Prismium Cable・Generator・Cellの3点セットに実際の消費先(sink)が無い」を今回のテーマに選んだ。
+
+### 3R-1. Prismium Pylon: MOD初のFE消費ブロック
+Prismium Cell(session 8、蓄電)・Generator(session 9、発電)・Cable(session 10、送電)の3点セットは、これまでFEを実際に「消費して何かする」ブロックが一つも無く、§4(旧item多数)・§5で繰り返し「発電→送電→蓄電の3点セットを実際に組んで動作確認したセッションはまだゼロ」と指摘され続けていた。今回追加したPrismium Pylonは、この欠けていた「シンク」の役割を担う、MOD初のFE消費ブロック。
+
+- 設計: 10tickごと(0.5秒)に自身を中心とした半径6ブロック以内のプレイヤーを`Level#getEntitiesOfClass(Player.class, AABB)`で走査し、1人あたり20FEを消費して`MobEffectInstance(MobEffects.REGENERATION, 30tick, amplifier0, ambient=true, visible=false, icon=false)`を付与する。これは`ArmorSetBonusHandler`(session 4・5)がアーマーセット効果の常時暗視/水中呼吸で既に使っているのと全く同じAPI呼び出し(`Player#addEffect`)であり、新規に裏取りが必要なシンボルを増やさない、というsession 16以降繰り返し実践してきたリスク低減方針をそのまま踏襲した。バニラのBeacon(ビーコン)を、ピラミッド+星ではなくこのMOD自前のFEネットワークで動かす、という立ち位置。
+- エネルギーストレージ: 容量20,000FE・maxReceive 2,000FE(自動送電・手動チャージ双方の要求を確実に通すため余裕を持たせた値)・maxExtract 0(GeneratorのmaxReceive 0=発電源専用、と対称的な「消費専用」設計)。tick処理はGeneratorの発電処理と同じく`PrismiumEnergyStorage#setEnergy`で直接残量を減算する(receiveEnergy/extractEnergy経由ではなく)。
+- ブロック/ブロックエンティティ: `PrismiumPylonBlock`(`BaseEntityBlock`+`BlockStateProperties.LIT`再利用、Generatorと全く同じ骨格)、`PrismiumPylonBlockEntity`(`BlockEntityTicker`、Generatorが確立した`createTickerHelper`パターンを再利用)。空手右クリックで状態(FE残量・放射中か否か)をアクションバー表示、Prismiumのかけら右クリックでCellと同じ手動チャージ(2,000FE/個)ができ、Cable網が無くても単体で試せるようにした。
+- ブロックアイテム: 既存の`EnergyStorageBlockItem`をそのまま再利用(Cell/Generator/Cable、session 11で確立)し、破壊時のFE引き継ぎ(loot tableの`copy_nbt`)・ツールチップ表示も他の3機種と同じ仕組みで対応した。
+- クラフトレシピ: プリズミウムセルを中心に、かけら4個+グロウストーン4個を周囲に配置する形(`SGS/GCG/SGS`)。「発光する石」であるグロウストーンを、放射する光/オーラのイメージで素材に選んだ。
+- クリエイティブタブ・`mineable/pickaxe`タグ・en_us/ja_jp langにも登録済み。
+- テクスチャー: `scripts/textures/gen_prismium_pylon.py`。Cell/Generator/Cableと同じ金属ケーシング(CASING_DARK/CASING_MID + PRISMIUM_OUTLINE)を土台に、ソケット部分にBloom/Spike(session 17・18)と同系統のファセット結晶シルエットを新規に描いた。非発光時はくすんだティール、発光時は紫(PRISMIUM_ACCENT、Wraithのスポーンエッグ等でも使われてきたMOD既存の「充填済みクリスタル」色)からシアン(Spikeの寒色アクセントと同じ)へのグラデーションで発光させ、さらにケーシング四辺の中点に小さいシアンの「パルス」ドットを発光時のみ追加して「外へオーラが広がっている」印象を狙った。
+
+### 3R-2. テクスチャー自己レビュー
+生成した2枚(`prismium_pylon.png`/`prismium_pylon_lit.png`)を16倍拡大+暗いインベントリスロット風背景の2種のプレビュー画像として`outputs`フォルダに書き出し、Readツールで実際に目視確認した(このサンドボックスの制約上、リポジトリは`/tmp`上のbashサンドボックスにしかクローンできず、Readツールで直接開けないため、`outputs`マウント経由での間接確認という新しい手順を踏んだ — 次回セッションへの申し送り§5参照)。非発光/発光とも結晶シルエットが小さいサイズでも明瞭に判別でき、発光時のパルスドットもケーシングのハイライトと視覚的に混同しない、透過崩れも無いことを確認。作り直しは発生しなかった。
+
+### 3R-3. commit・push・ビルド確認
+1コミット(`164c31e`: Prismium Pylonの実装一式)。push前に`git fetch origin main`で差分無し(並行セッションとの衝突は検知せず)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`をポーリングし、`ci: update built jar [skip ci]`コミット(`237df4c`)の到着とビルド済みjarのサイズ増加(110,672→119,911バイト)を確認 — 本物のビルド成功。
+
+---
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
 
 
@@ -710,38 +734,37 @@ push前に`git fetch origin main`で差分無し(他セッションとの並行�
     - `#minecraft:is_overworld`タグ経由でPrism Realm側にも本当に生成されるかは、Ore/Bloom/Wraith同様まだ未確認(§4-24)。
 
 
+33. 【セッション#19で新規発覚】Prismium Pylon(§3R)は以下すべて未検証・既知の割り切り:
+    - MOD初のFE消費ブロックであり、CIビルドが通ること以上の検証(実際に近くに立って本当にRegenerationが付与されるか、10tickごとのパルスで見た目のちらつきが無いか)は一度もできていない。
+    - 半径6ブロック・パルス間隔10tick・1人あたり20FE/パルス・容量20,000FE・LIT時の光レベル9は、すべて初期見積もりの数値で実プレイでのバランス調整は一切していない。
+    - Generator→Cable→Pylonという自動送電経路(発電→送電→消費のフルセット)は、このMOD史上初めて「発電源から消費先まで完結する」構成になるはずだが、実際に3ブロックを並べて動作確認したセッションはまだゼロ(§4-7・§4-18から継続する課題の解消はまだ「配線が理論上繋がるはず」の段階)。
+    - Prismium Shardによる手動チャージ(2,000FE/個)と自動受電(maxReceive 2,000FE)の経路は、コードレビューではCell/Generatorと同型のため安全と考えているが、実際にゲーム内でツールチップのFE表示や充電メッセージが正しく出るかは未確認。
+    - LIT切り替え(非発光/発光の2テクスチャー)が実機で正しく表示されるかは、Generator(session 9)以来繰り返し「未確認」と書き続けている同種の課題がここでも継続している。
+    - AABBでのプレイヤー走査を10tickごとに行う設計だが、複数のPylonを密集して置いた場合の負荷は未計測(ArmorSetBonusHandlerの毎tick全プレイヤー処理よりは軽いはずだが、比較検証はしていない)。
+
 ---
 
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
-1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#18終了時点では、`8017ed8`(Prismium Spike追加、その前に`e67fc93`のBloom修正)の直後に`cba675a`が付いており、ビルド成功を確認済み。`mcp__workspace__bash`経由の`curl`での`api.github.com`は今回も(プロキシ経由・直接接続とも)不可だった。`git fetch`によるjarコミット確認が最も確実な主手段であることに変わりはない。
-2. **【継続、環境まわりの実務上の注意】§4-30参照。`git clone`は固定パスではなく一意なパスに対して行うこと。** 今回は`/tmp/cmwork_$(date +%s)`という一意パスを使い問題無く動作した。同時に`/tmp/work2`という以前使われたと思しき固定名が今回も`nobody:nogroup`所有で使用不可だったことを確認した(§4-30)ので、次回以降も固定パスは避けること。
-3. 【新規、優先度中】Prismium Bloomの浮遊生成バグはセッション#18で対応済み(`canSurvive()`+`would_survive`フィルタ、§3Q-2・§4-31)だが、**実際に効果があったかはまだプレイテストで確認できていない**。次にPrism Realm方面を触るセッションは、可能であればユーザーのプレイフィードバックでこの点を優先的に拾うこと。
-4. 【継続、優先度高】Prism Realm/Prismium Rift Shardはコンパイルが通ることは実証済み(session 15、§3N)だが、実プレイでの検証はまだ一切無い(§4-24・§4-25参照)。次にこの方面を触るなら:
-   - `server.getLevel(claudemod:prism_realm)`が実際に解決できるか(Forge issue #8552の再現有無を含む)
-   - Prismium Rift Shardで実際に行き来できるか、着地点(0, ~surface, 0)が安全か
-   - Prismium鉱石・Prismium Wraith・Prismium Bloom・Prismium Spike(session 17・18で追加)が本当にPrism Realm側でも生成/スポーンするか
-   これらはいずれもプレイテストでしか確認できない。ユーザー側でのプレイフィードバックを最優先で拾うこと(§0-2の運用ルールに準じ、GitHub Issueで報告があれば最優先対応)。
-5. 【継続、優先度高】Prismium Locator(§3O-3、session 16)は実際に使ってみてどう感じるか一切未検証(§4-28)。探索半径・クールダウン・デッドゾーンの数値調整、あるいは行動バーメッセージだけで十分かはプレイフィードバック待ち。
-6. 【継続、優先度高】Prismium Wraith(§3K、session 12)は実際にスポーンするか・AIが正常に動くか・テクスチャーが3Dモデルに正しく貼られるかは一切未検証のまま(§4-20)。まだ「1体だけ」の状態でもあるので、(a) 2体目の追加、(b) 既存Wraithへの独自AI Goal追加、のどちらかが次の一歩として自然。
-7. 【継続、優先度高】Prismium Cable・Generator・Cellを組み合わせた「発電→送電→蓄電」の3点セットは、実際にゲーム内で並べて動作確認したセッションはまだゼロ(session 10から持ち越し、8セッション経過)。
-8. **ロードマップ§1の4本柱のうち、Prism Realmは専用地形・専用バイオーム・本格ポータルブロックがまだ無い**(§4-24参照)。専用地表ブロックはBloom(session 17)・Spike(session 18)の2種類まで積み上がったので、次は(a) 本格的なポータルブロック+フレーム検知(§3M-2で意図的に先送りした部分)、(b) 専用バイオームの追加、(c) 3種類目以降の地表装飾、のいずれかが自然な発展先。ただし上記4の実プレイ検証(基本的な行き来ができるか)を優先すべき。
-9. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`(§2-5)。session 18では他セッションとの並行は検知しなかったが、毎回確認すること。
-10. issueのbodyを取得する際は`github.com/<owner>/<repo>/issues/<番号>?nocache=<ts>`のHTMLから`"body":"..."`のJSON文字列を`python3`の文字列探索で抜き出す方法が引き続き有効。
-11. **【新規、重要な設計上の教訓】`minecraft:simple_block`のようなforce-place系のworldgen featureを使うブロックを新規追加する際は、`canSurvive()`のJava実装と`would_survive`のplacement filterを"最初からセットで"実装すること(§4-31参照)。** Bloom(session 17)はこれを後から追加する形になったが、Spike(session 18)以降は最初から両方入れる方が手戻りが無い。
+1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#19終了時点では、`164c31e`(Prismium Pylon追加)の直後に`237df4c`が付いており、ビルド成功(jarサイズ増加も確認)済み。`mcp__workspace__bash`経由の`curl`での`api.github.com`は今回も(プロキシ経由・直接接続とも)不可だった。`git fetch`によるjarコミット確認が最も確実な主手段であることに変わりはない。
+2. **【継続、環境まわりの実務上の注意】`git clone`は固定パスではなく一意なパスに対して行うこと。** 今回も`/tmp/cm_$(date +%s%N)`という一意パスを使い問題無く動作した。同時に`/tmp/work`・`/tmp/work2`という以前使われたと思しき固定名が今回も`nobody:nogroup`所有で使用不可(`rm`すら`Permission denied`)だったことを再確認した。固定パスに当たったら即座に一意な新しいパスへ切り替えること。
+3. **【セッション#19で新規発見、重要】このサンドボックスでは`Read`/`Edit`/`Write`/`Grep`ツールはWindowsホスト側のマウント(`outputs`/`uploads`/`skills`)しか見えず、`mcp__workspace__bash`でcloneしたリポジトリ(`/tmp/...`)には直接アクセスできない。** そのためリポジトリ内のファイル操作(コード編集・JSON編集・grep等)は全て`mcp__workspace__bash`経由のPython/sed/catで行う必要がある。**唯一の例外は「生成したテクスチャーPNGの目視確認」**: `outputs`フォルダ(bash側`/sessions/<session>/mnt/outputs/`)にPNGをコピーしてから、Windows側のパスを`Read`ツールに渡せば閲覧できる(今回はこの手順でPrismium Pylonのテクスチャーを確認した)。次回以降もこの手順を踏襲すること。
+4. **【新規、優先度高】Prismium Pylon(§3R、session 19)によって、Generator→Cable→Pylonという「発電→送電→消費」のフルセットが理論上初めて完成した。** §4-7・§4-18で繰り返し指摘されてきた「3点セットを並べて動かしたセッションがゼロ」という課題は、これで「配線が繋がるはずの機種が揃った」段階まで進んだが、実際にゲーム内で3つ並べて動作確認したセッションはまだ無い。次にこの方面を触るなら、まずはこの3ブロック+Cellも合わせた4ブロック構成が理論通り動くかのコードレビュー的な再確認(特にCable→Pylonの受け渡しがCableの1tick1ホップ設計と噛み合っているか)を優先すると良い。
+5. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spikeは、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
+6. 【継続、優先度中】GitHub issue #1(顔が見えない、session 9で対応済み)・#2(ツールの見た目、session 13で対応済み)は、session 19時点でも新規コメント無し・Open のまま。修正が効いたのか、まだ様子見なのかは不明。次回セッション開始時にも必ず再チェックすること(手順はissueのbodyをHTML経由で取得する方法、§4-10/旧手法参照 — 今回はcurlの書き込み先ファイルパスが`nobody`所有ディレクトリと衝突して失敗する場面があったので、書き込み先は必ずcloneした一意な作業ディレクトリ配下にすること)。
+7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 19では他セッションとの並行は検知しなかったが、毎回確認すること。
 
 ### 議論したい論点・改善案
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。ユーザー側でビルド済みjar(`builds/ClaudeMod-latest.jar`、session 18のビルド成功分)を時々プレイし、フィードバック(できればGitHub Issueの形で)を残していただけると、次回以降のセッションがそれを最優先で拾える。特にPrism Realm/Prismium Rift Shard、Prismium Wraith、Prismium Locator、Prismium Bloom/Spikeは「コンパイルは通るが本当に動くか一切未確認」という段階のものが積み上がっているので、フィードバックの価値が大きい。
-- **エネルギーシステムの設計方針の続き**: Prismium Cell/Generator/Cableの数値関係は、session 10時点の初期見積もりのまま。
-- **Prism Realm ディメンションの雰囲気**: 「桜並木バイオーム固定+常時正午」という最小構成に、session 17でPrismium Bloom、session 18でPrismium Spikeという専用地表装飾を積み増した(現在2種類)。もっと「異空間らしい」専用ビジュアル(空の色、専用パーティクル、3種類目以降の地表ブロック)を今後も積み増していきたい。
-- **Prismium Rift Shardのポータル化**: 現状はアイテム直接テレポートのみ。フレームブロック+`ITeleporter`による「本物のポータル」への発展はまだ方針未確定(§3M-2)。もしポータルフレームを作るなら、Prismium Bloom/Spikeと同じく新規クライアント専用コードを増やさずJSON側(`render_type`等)で完結させる設計を優先する方向で検討するとリスクを抑えられる。
-- **新しいシンボル未検証バグの教訓(§3N-3、session 16〜18で継続実践)**: 「このMOD内で既に動いている実例があるAPIパターン」は目視レビューでも比較的安全に裏取りできるが、「このセッションで初めて(かつ唯一)使う定数・enum値・JSONスキーマ」は要注意。session 18では`would_survive`ブロック述語と`block_predicate_filter`placement modifierを初採用する前にMinecraft Wikiで両方のJSONスキーマを個別に裏取りした。加えて「`simple_block`featureは`canSurvive()`を見ない」という、コードレビューだけでは気づきにくい落とし穴も今回発見できた(§4-31)。この種の「featureごとの暗黙の挙動差」は今後も注意する価値がある。
-- **探知アイテムの発展余地**: Prismium Locator(session 16)はメッセージ表示のみの最小実装。将来的に(a) バニラコンパスのようなアイテムモデルpredicateで針を実際に回転させる、(b) Prismium Wraithなど鉱石以外の対象も検知できるようにする、(c) Prism Realm内での探知、などの拡張が考えられる。
-- **GitHubファイル閲覧の新手法(§4-21、Kaupenjoe氏のチュートリアルリポジトリを`git clone`して実コードを読む手法含む)**: 引き続き有効。§3N-2で見つけた`/commit/<sha>/checks`ページの手法と合わせて、次回以降のデバッグツールキットとして活用すること。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。特にPrismium Pylon(session 19)は「FEを実際に使い切って効果を出す」というこのMOD最初の本格的な自動化ペイオフなので、動作を見てもらえると次のバランス調整(半径・コスト・パルス間隔)の判断材料になる。
+- **エネルギーシステムの完成度**: Cell(蓄電)・Generator(発電)・Cable(送電)・Pylon(消費、session 19)で一通りの役割が揃った。次の自然な発展先は (a) 2種類目の消費ブロック(例: FEで高速に鉱石を精錬する装置、FEで耐久を回復する装置等)、(b) ケーブルの接続見た目(マルチパートblockstate、§4-18で既知の割り切りとして残っている)、(c) GUIの導入(現状全機種が「右クリックでアクションバー表示」止まり)のいずれか。
+- **Prism Realm ディメンションの雰囲気**: 「桜並木バイオーム固定+常時正午」に、Bloom(session 17)・Spike(session 18)という専用地表装飾が2種類積み上がった。Prismium Pylonのような「魔法的な光る設置物」は、Prism Realm内の拠点作りを盛り上げる要素としても相性が良いかもしれない(現状はどこにでも置ける汎用ブロックとして実装している)。
+- **Prismium Rift Shardのポータル化**: 現状はアイテム直接テレポートのみ。フレームブロック+`ITeleporter`による「本物のポータル」への発展はまだ方針未確定。
+- **新しいシンボル未検証バグの教訓(継続)**: 「このMOD内で既に動いている実例があるAPIパターン」を再利用する方針は今回のPylon(`ArmorSetBonusHandler`のaddEffect呼び出しをそのまま流用)でも有効に機能した。今後も新規ブロック/アイテムを追加する際は、まず「似た挙動を持つ既存クラスが無いか」を先に探すこと。
+- **探知アイテムの発展余地**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
 
 ### コミット/プッシュ状況
-このセッションの変更は2コミット: `e67fc93`(Prismium Bloomの浮遊生成バグ修正)、`8017ed8`(Prismium Spikeの実装一式: コード・アセット・worldgen・テクスチャー・lang)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`cba675a`)の到着を確認し、本物のビルド成功を確定させた。issue #1・#2ともOpenのまま変化無し、新規Issueも無し(§3Q-1)。
+このセッションの変更は1コミット: `164c31e`(Prismium Pylonの実装一式: コード・アセット・レシピ・loot table・lang・テクスチャー)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`237df4c`)の到着とビルド済みjarのサイズ増加(110,672→119,911バイト)を確認し、本物のビルド成功を確定させた。issue #1・#2ともOpenのまま変化無し、新規Issueも無し(§3R-0)。
 
 ### 通知状況
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`cba675a`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`237df4c`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
