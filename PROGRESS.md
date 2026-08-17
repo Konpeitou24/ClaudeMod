@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-17 (セッション #17)
+最終更新: 2026-08-17 (セッション #21)
 
 ---
 
@@ -673,6 +673,27 @@ Prismium Pylon(session 19)がこのMOD初のFE消費ブロックだったのに�
 ### 3S-4. commit・push・ビルド確認
 1コミット(`653617a`: Prismium Restorerの実装一式)。push前に`git fetch origin main`で差分無し(並行セッションとの衝突は検知せず)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`314b017`)の到着とビルド済みjarのサイズ増加(119,911→126,851バイト)を確認 - 本物のビルド成功。
 
+### 3T. Prismium Wardstone(session 21): 3種類目のFE消費ブロック
+
+§5(旧)item 4で挙がっていた「3種類目の消費ブロック」を実装した。Pylon(session 19、プレイヤーに常時Regeneration付与)・Restorer(session 20、右クリックでアイテム耐久回復)に続く3種類目は、逆方向の効果を持つ「防御用の結界」として設計した: 半径8ブロック以内の敵Mob(`net.minecraft.world.entity.monster.Monster`)を20tickごとに走査し、1体あたり30FEを消費してWeakness II + Slowness IIを付与する。
+
+- ブロック/ブロックエンティティ: `PrismiumWardstoneBlock`/`PrismiumWardstoneBlockEntity`は、`PrismiumPylonBlock`/`PrismiumPylonBlockEntity`(session 19)をほぼそのまま複製する形で実装した(同じ`BaseEntityBlock`+`BlockStateProperties.LIT`+空手右クリックでステータス表示/かけら右クリックで手動チャージという骨格)。意図的に変えたのは走査対象(`Player`→`Monster`)と付与効果(Regeneration→Weakness+Slowness)のみ。
+- 設計上の判断として、ダメージを直接与える実装(`DamageSource`を自前で構築して`hurt()`を呼ぶ)はあえて避けた。このMODでは`DamageSource`を「読む」箇所(`PrismiumSwordHandler`がイベント経由で取得)はあるが「作る」箇所は一つも無く、新規API領域になってしまうため。既にPylonで実証済みの`addEffect`によるステータス効果付与だけで完結させ、新しいシンボルの検証範囲を最小限に抑えた。
+- `Monster`クラスでの走査は`Slime`/`MagmaCube`(`Mob`は継承するが`Monster`は継承しない)を除外する、という既知の割り切りがある(詳細は§4参照)。
+- 容量20,000FE・maxReceive 2,000FE・かけら1個あたり2,000FEの手動チャージは、Pylon/Restorerと完全に同じ数値(このMOD内のFE消費ブロックの「標準値」として定着しつつある)。半径(8、Pylonの6より広い)・パルス間隔(20tick、Pylonの10tickより長い)・コスト(30FE/体/パルス)はWardstone独自の新規見積もり。
+- クラフトレシピ: プリズミウムセルを中心に、かけら4個+黒曜石4個を周囲に配置(`SOS/OCO/SOS`)。黒曜石を「結界・防御」の象徴素材として選定、Pylonのグロウストーン・Restorerの鉄とは異なる第3の周辺素材にした。
+- クリエイティブタブ・`mineable/pickaxe`タグ・en_us/ja_jp langにも登録済み。loot tableは既存5機種と同じ`copy_nbt`でEnergyを引き継ぐ形で最初から実装した(session 11の修正を待たず、新規ブロックは最初から正しい形で追加する)。
+- テクスチャー: `scripts/textures/gen_prismium_wardstone.py`。既存5機種と同じ金属ケーシング(CASING_DARK/CASING_MID + PRISMIUM_OUTLINE)を土台に、ソケット部分に「閉じた六角形のルーン(結界)」という新規グリフを描いた。Pylonの開いた菱形クリスタル・Restorerの十字とは異なり、あえて閉じた輪郭にすることで「防御・封じ込め」を視覚的に示す狙い。色もこのエネルギー系統で初めての赤系(クリムゾン)を採用し、既存の紫〜シアン(Pylon)・金(Restorer)と混同しないようにした。LIT状態を持つため(BlockEntityTickerあり)非発光/発光の2枚を生成した。
+
+### 3T-2. テクスチャー自己レビュー
+
+生成した`prismium_wardstone.png`/`prismium_wardstone_lit.png`を16倍拡大+暗いインベントリスロット風背景のプレビュー、および3倍拡大(ホットバーサイズ想定)の計4ファイルを`outputs`フォルダ経由でReadツールにより目視確認した(session 19以降と同じ手順)。六角形のルーン輪郭は大きい表示・小さい表示のいずれでも明瞭に判別でき、非発光時は暗い赤、発光時は明るい赤〜白のコアとはっきり区別できることを確認した。全ピクセルalpha=255(透過崩れ無し)もコードで確認済み。作り直しは発生しなかった。
+
+### 3T-3. commit・push・ビルド確認
+
+1コミット(`12b9785`: Prismium Wardstoneの実装一式)。push前に`git fetch origin main`で差分無し(並行セッションとの衝突は検知せず)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`のポーリング(4回目、約100秒後)で`ci: update built jar [skip ci]`コミット(`4907a87`)の到着を確認し、`git pull`でjarサイズの増加(126,851→136,246バイト)も確認した - 本物のビルド成功。
+
+GitHub issue #1・#2の状況もPROGRESS.md記載の手順(github.comのHTMLページを直接curl)で確認を試みたが、issuesの一覧ページは(Actionsのrunsページ同様)Reactのクライアントサイドレンダリングで、静的HTML取得では「Open」等の断片的な文字列しか拾えず件数・タイトルの確認はできなかった(§4-9で既知の制約の再確認、新規の発見ではない)。次回以降も同じ制約が続く前提で臨むこと。
 
 ---
 
@@ -782,28 +803,37 @@ Prismium Pylon(session 19)がこのMOD初のFE消費ブロックだったのに�
     - Cable→Restorerの自動受電経路は§3S-2でコードレビューベースの確認は行ったが、実際にCableのネットワーク経由でRestorerが充電されるかは(Pylon同様)未検証のまま。
     - `held.setDamageValue()`によるアイテムの耐久直接書き換えが、エンチャントの耐久関連効果(Unbreaking等の確率的耐久消費軽減)や、カスタムNBTを持つアイテムと衝突しないかは、コードレビューの範囲でしか裏取りできていない。
 
+35. 【セッション#21で新規発覚】Prismium Wardstone(§3T)は以下すべて未検証・既知の割り切り:
+    - MOD3種類目のFE消費ブロックであり、CIビルドが通ること以上の検証(実際に敵Mobに近づいてWeakness/Slownessが本当に付与されるか、範囲8ブロックが体感通りか)は一度もできていない。
+    - 半径8・パルス間隔20tick・1体あたり30FE・容量20,000FE・maxReceive 2,000FEは全て初期見積もりの数値で、実プレイでのバランス調整は一切していない。特に「敵の湧きやすい拠点周辺に置いて安全地帯を作る」という想定用途に対し、範囲・コストが強すぎる/弱すぎるかは全くの未知数。
+    - `Monster`クラスでの走査により、`Slime`・`MagmaCube`(`Mob`は継承するが`Monster`は継承しない)が対象から漏れる。これは実装時に把握した上での意図的な割り切りだが、プレイヤーから見れば「一部の敵だけ効かない」という分かりにくい挙動になり得るため、次回以降`Enemy`インターフェース等より広い判定への切り替えを検討する価値がある。
+    - Weakness/Slownessの付与が実際にMob側で正しく反映されるか(`LivingEntity#addEffect`はPylonでPlayerに対しては「コードレビュー上は安全」としているが、敵Mob、特にAIを持つ`Monster`サブクラスに対しても同様に機能するかは、このMOD初めての「Mobに直接効果を付与する」コードであり、Playerで実証済みの経路の単純な延長という前提に留まる)。
+    - Cable→Wardstoneの自動受電経路は、Pylon/Restorerと同型のためコードレビュー上は安全と考えているが、実際にCable経由で充電されるかは検証できていない(Pylon/Restorer同様の既知の制約)。
+    - 黒曜石を使ったレシピ(`SOS/OCO/SOS`)は、黒曜石の入手難度(ダイヤモンドツルハシ以上が必要)がPylon(グロウストーン)・Restorer(鉄)より明確に高く、"3番目の消費ブロックほど強くしたい/レア度を上げたい"という意図があったが、これが実際のプログレッション上ちょうど良い難度かは未検討。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
-1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#20終了時点では、`653617a`(Prismium Restorer追加)の直後に`314b017`が付いており、ビルド成功(jarサイズ119,911→126,851バイト増加も確認)済み。`mcp__workspace__bash`経由の`curl`での`api.github.com`は今回も(プロキシ経由・`https_proxy`等を空にした直接接続・`all_proxy`まで空にした場合とも)`Could not resolve host`で不可だった。`git fetch`によるjarコミット確認が最も確実な主手段であることに変わりはない。
-2. **【継続、環境まわりの実務上の注意】`git clone`は固定パスではなく一意なパスに対して行うこと。** 今回も`/tmp/cm_$(date +%s%N)`という一意パスを使い問題無く動作した。同時に`/tmp/work`・`/tmp/work2`という以前使われたと思しき固定名が今回も`nobody:nogroup`所有で使用不可(`rm`すら`Permission denied`)だったことを再確認した。固定パスに当たったら即座に一意な新しいパスへ切り替えること。
-3. **【継続】このサンドボックスでは`Read`/`Edit`/`Write`/`Grep`ツールはWindowsホスト側のマウント(`outputs`/`uploads`/`skills`)しか見えず、`mcp__workspace__bash`でcloneしたリポジトリ(`/tmp/...`)には直接アクセスできない。** リポジトリ内のファイル操作は全て`mcp__workspace__bash`経由のPython/sed/catで行うこと(今回もEditツールを誤ってWindows側の別ファイルに対して呼び出しかけて即座にエラーで気づいた場面があった - 次回以降も要注意)。テクスチャーPNGの目視確認だけは`outputs`フォルダ経由でReadツールを使う、という手順は今回も踏襲した(`outputs/preview/`配下に4ファイル残存、削除は許可が要るため今回は放置 - 次回以降も無理に消そうとしなくてよい、実害はない)。
-4. **【新規、優先度中〜高】Prismium Restorer(§3S、session 20)により、FE消費ブロックが2種類(Pylon=エリア効果、Restorer=アイテム修理)に増えた。** §5(旧)item 4で挙げられていた3つの発展先のうち(a)は今回で一歩進んだ(2種類目の消費ブロックの実装)。残る(b)ケーブルの接続見た目(マルチパートblockstate)、(c)GUIの導入は依然として未着手。次にこの方面を触るなら、(a)をさらに一歩進めて「3種類目の消費ブロック」(例: FEでMobを召喚から守る結界、FEでブロックを瞬間採掘する装置等)を追加するか、(b)/(c)のどちらかに着手するかの二択になる。
-5. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Pylon・Prismium Restorerは、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
-6. 【継続、優先度中】GitHub issue #1(顔が見えない、session 9で対応済み)・#2(ツールの見た目、session 13で対応済み)は、session 20時点でも新規コメント無し・Open のまま。次回セッション開始時にも必ず再チェックすること(手順はissueのbodyをHTML経由で取得する方法、§3S-0参照)。
-7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 20では他セッションとの並行は検知しなかったが、毎回確認すること。
+1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#21終了時点では、`12b9785`(Prismium Wardstone追加)の直後に`4907a87`が付いており、ビルド成功(jarサイズ126,851→136,246バイト増加も確認)済み。`mcp__workspace__bash`経由の`curl`での`api.github.com`は今回も(プロキシ経由・`https_proxy`等を空にした直接接続とも)`Could not resolve host`で不可だった。`git fetch`によるjarコミット確認が最も確実な主手段であることに変わりはない。
+2. **【継続、環境まわりの実務上の注意】`git clone`は固定パスではなく一意なパスに対して行うこと。** 今回は`/tmp/ClaudeMod`と`/tmp/work`(`/tmp/work2`ではなく`/tmp/work`)の両方が`nobody:nogroup`所有で`Permission denied`(`rm`すら不可)だった。session 17の推奨通り`mktemp -d`等で一意パスを作るのが本来最も安全だが、今回は簡便に`$HOME/work/ClaudeMod`(ホーム直下の固定パス)へ切り替えて解決した - これも固定パスである以上、将来的に同時実行セッションと衝突する可能性はゼロではない点に注意。次回、もし`$HOME/work/ClaudeMod`で`Permission denied`に当たったら、即座に`mktemp -d`の一意パスへ切り替えること。
+3. **【継続】このサンドボックスでは`Read`/`Edit`/`Write`/`Grep`ツールはWindowsホスト側のマウント(`outputs`/`uploads`/`skills`)しか見えず、`mcp__workspace__bash`でcloneしたリポジトリには直接アクセスできない。** リポジトリ内のファイル操作は全て`mcp__workspace__bash`経由のPython/heredoc/catで行うこと。テクスチャーPNGの目視確認だけは、`outputs`フォルダにプレビュー画像をコピーしてからReadツールで見る、という手順を今回も踏襲した。
+4. **【新規、優先度中〜高】Prismium Wardstone(§3T、session 21)により、FE消費ブロックが3種類(Pylon=プレイヤー支援、Restorer=アイテム修理、Wardstone=敵Mob弱体化)に増えた。** §5(旧)item 4で挙げられていた3つの発展先のうち(a)は今回でひとまず完了した(3種類目の消費ブロックの実装)。残るのは(b)ケーブルの接続見た目(マルチパートblockstate)と(c)GUIの導入の二択。次にこの方面を触るなら、(a)をさらに増やす(4種類目の消費ブロック)よりも、そろそろ(b)か(c)に着手する方が「てんこ盛り」に加えて完成度の底上げになる段階だと思われる。
+5. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Pylon・Prismium Restorer・Prismium Wardstoneは、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
+6. 【継続、優先度中】GitHub issue #1(顔が見えない、session 9で対応済み)・#2(ツールの見た目、session 13で対応済み)の状態確認を今回も試みたが、issuesの一覧ページがReactのクライアントサイドレンダリングになっており、静的HTML取得(`curl`)では件数・タイトルを確認できなかった(§3T-3参照)。次回以降も同じ壁に当たる可能性が高い - もし確実に確認したいなら、セッション#12の手法(`github.com/.../blob/...`ページの`"rawLines"`抽出)がissueページにも応用できないか試す価値があるかもしれない(未検証の提案)。
+7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 21では他セッションとの並行は検知しなかったが、毎回確認すること。
 
 ### 議論したい論点・改善案
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。Prismium Restorer(session 20)は「アイテムの耐久を実際に回復できるか」がこのMOD最初の「アイテムスタックを直接書き換える」FE消費ギミックなので、動作を見てもらえると`setDamageValue`アプローチの妥当性そのものの検証材料になる。
-- **エネルギーシステムの完成度**: Cell(蓄電)・Generator(発電)・Cable(送電)・Pylon(消費#1、session 19)・Restorer(消費#2、session 20)で「発電→送電→複数種の消費」という形が一通り揃ってきた。次の自然な発展先は引き続き (a) 3種類目の消費ブロック、(b) ケーブルの接続見た目(マルチパートblockstate)、(c) GUIの導入のいずれか。
-- **消費ブロックの見分けやすさ**: Restorerでは意図的に既存4機種と異なる暖色(金)アクセントを採用した。この「同じケーシング+アクセント色だけ変える」戦略が実際にプレイヤーにとって見分けやすいかは未検証だが、うまくいけば今後の消費ブロック追加でも同じパターン(ケーシング共通+固有アクセント色)を踏襲する価値がある。
-- **Prism Realm ディメンションの雰囲気**: 「桜並木バイオーム固定+常時正午」に、Bloom(session 17)・Spike(session 18)という専用地表装飾が2種類積み上がっている。Restorerのような「拠点系」ブロックも、Prism Realm内の探索拠点作りを盛り上げる要素として相性が良いかもしれない(現状はPylon同様どこにでも置ける汎用ブロックとして実装している)。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。特にPrismium Wardstone(session 21)は初めて「Mobに直接効果を付与する」コードなので、Playerに対してしか実証されていない`addEffect`の経路が本当にMonsterサブクラスでも機能するかは、プレイフィードバックが一番欲しい部分。
+- **エネルギーシステムの完成度**: Cell(蓄電)・Generator(発電)・Cable(送電)・Pylon(消費#1)・Restorer(消費#2)・Wardstone(消費#3、session 21)で「発電→送電→3種類の消費」という形が揃った。次の自然な発展先は (b) ケーブルの接続見た目(マルチパートblockstate)、(c) GUIの導入のいずれか - 消費ブロックをこれ以上増やすより、既存システムの完成度を上げる段階に入りつつあると思われる。
+- **消費ブロックの見分けやすさ**: Restorer(金)・Wardstone(赤)と、Pylonの紫〜シアンに対してそれぞれ異なるアクセント色を割り当てる戦略を3機種目でも継続した。この「ケーシング共通+アクセント色で識別」という視覚言語がプレイヤーに実際に伝わるかは、3機種分まとまった時点でこそ検証しがいがあるはず。
+- **Wardstoneの効果デザイン**: PylonはPlayerへのバフ、RestorerはPlayerの持ち物への作用、Wardstoneは初めて「他のエンティティ(敵Mob)」に作用するブロックになった。この方向性(拠点周辺の環境そのものに影響を与えるFE消費ブロック)は、例えば「範囲内の作物成長を早める」「範囲内のMobスポーンそのものを抑制する(SpawnPlacementEvent等を使う、新規API領域)」のような発展も考えられる。
+- **Prism Realm ディメンションの雰囲気**: 「桜並木バイオーム固定+常時正午」に、Bloom・Spikeという専用地表装飾が2種類積み上がっている。拠点系ブロック(Pylon/Restorer/Wardstone)がPrism Realm内の探索拠点作りを盛り上げる要素として相性が良いかもしれない(現状はいずれもどこにでも置ける汎用ブロックとして実装している)。
 - **Prismium Rift Shardのポータル化**: 現状はアイテム直接テレポートのみ。フレームブロック+`ITeleporter`による「本物のポータル」への発展はまだ方針未確定。
-- **新しいシンボル未検証バグの教訓(継続)**: 「このMOD内で既に動いている実例があるAPIパターン」を再利用する方針は今回のRestorer(Cellの「tickなし受動バッファ」形状+Pylon/Cellの右クリック分岐パターンをそのまま流用)でも有効に機能した。今後も新規ブロック/アイテムを追加する際は、まず「似た挙動を持つ既存クラスが無いか」を先に探すこと。
-- **探知アイテムの発展余地**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19・20では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
+- **新しいシンボル未検証バグの教訓(継続)**: 「このMOD内で既に動いている実例があるAPIパターン」を再利用する方針は今回のWardstone(Pylonの骨格をほぼそのまま複製)でも有効に機能した。今後も新規ブロック/アイテムを追加する際は、まず「似た挙動を持つ既存クラスが無いか」を先に探すこと。ただしWardstoneのMonster走査+addEffectのように「既存パターンの延長だが対象が変わる」ケースは、コンパイルが通っても挙動面では実質未検証な新規領域であることも忘れないこと。
+- **探知アイテムの発展余地**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19-21では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
 
 ### コミット/プッシュ状況
-このセッションの変更は1コミット: `653617a`(Prismium Restorerの実装一式: コード・アセット・レシピ・loot table・lang・テクスチャー)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`314b017`)の到着とビルド済みjarのサイズ増加(119,911→126,851バイト)を確認し、本物のビルド成功を確定させた。issue #1・#2ともOpenのまま変化無し、新規Issueも無し(§3S-0)。
+このセッションの変更は1コミット: `12b9785`(Prismium Wardstoneの実装一式: コード・アセット・レシピ・loot table・lang・テクスチャー)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリング(4回目、約100秒後)で`ci: update built jar [skip ci]`コミット(`4907a87`)の到着を確認し、`git pull`でビルド済みjarのサイズ増加(126,851→136,246バイト)も確認して、本物のビルド成功を確定させた。issue #1・#2の状態は今回未確認(§3T-3、上記「すぐやるべきこと」6番参照)、新規Issueの有無も同様に未確認。
 
 ### 通知状況
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`314b017`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`4907a87`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
