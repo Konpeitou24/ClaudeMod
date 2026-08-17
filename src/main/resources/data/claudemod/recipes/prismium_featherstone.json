@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "F": { "item": "minecraft:feather" },
+        "M": { "item": "minecraft:phantom_membrane" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        " F ",
+        "MSM",
+        " F "
+    ],
+    "result": {
+        "item": "claudemod:prismium_featherstone",
+        "count": 1
+    }
+}

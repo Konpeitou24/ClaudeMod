@@ -11,6 +11,7 @@ import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumBowItem;
+import com.claudemod.item.PrismiumFeatherstoneItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumGuardianCharmItem;
 import com.claudemod.item.PrismiumLocatorItem;
@@ -209,6 +210,14 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_WARDSTONE_ITEM = ITEMS.register("prismium_wardstone",
             () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_WARDSTONE.get(), new Item.Properties(),
                     PrismiumWardstoneBlockEntity.CAPACITY));
+
+    // Prismium Featherstone (session 31): the mod's first purely passive
+    // accessory - see PrismiumFeatherstoneItem / PrismiumFeatherstoneHandler.
+    // Deliberately left at the default stack size (not stacksTo(1)) - see
+    // PrismiumFeatherstoneItem's javadoc for why this differs from the
+    // Rift Shard/Locator/Guardian Charm pattern.
+    public static final RegistryObject<Item> PRISMIUM_FEATHERSTONE = ITEMS.register("prismium_featherstone",
+            () -> new PrismiumFeatherstoneItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
