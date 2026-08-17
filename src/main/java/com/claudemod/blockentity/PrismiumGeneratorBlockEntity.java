@@ -1,5 +1,6 @@
 package com.claudemod.blockentity;
 
+import com.claudemod.energy.EnergyPushHelper;
 import com.claudemod.energy.PrismiumEnergyStorage;
 import com.claudemod.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
@@ -68,7 +69,10 @@ import javax.annotation.Nullable;
  * {@code level.getBlockEntity(neighborPos).getCapability(ForgeCapabilities.ENERGY,
  * direction.getOpposite())} - the passed side is which face of the
  * *neighbor* is being touched, i.e. the side facing back towards this
- * generator, not this generator's own side.
+ * generator, not this generator's own side. Session 10 pulled this
+ * neighbor-pushing logic out into {@link EnergyPushHelper#pushToNeighbors}
+ * so {@link com.claudemod.blockentity.PrismiumCableBlockEntity} could reuse
+ * it verbatim instead of copy-pasting a third time; behavior is unchanged.
  */
 public class PrismiumGeneratorBlockEntity extends BlockEntity {
 
@@ -142,7 +146,7 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity {
         }
 
         if (generator.energyStorage.getEnergyStored() > 0) {
-            if (generator.pushEnergyToNeighbors(level, pos)) {
+            if (EnergyPushHelper.pushToNeighbors(level, pos, generator.energyStorage, MAX_EXTRACT)) {
                 changed = true;
             }
         }
@@ -157,35 +161,6 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity {
         }
     }
 
-    /** Distributes up to {@link #MAX_EXTRACT} FE across the six
-     * neighboring blocks that expose the energy capability. Returns
-     * whether any energy actually moved. */
-    private boolean pushEnergyToNeighbors(Level level, BlockPos pos) {
-        int budget = Math.min(MAX_EXTRACT, energyStorage.getEnergyStored());
-        boolean moved = false;
-        for (Direction direction : Direction.values()) {
-            if (budget <= 0) {
-                break;
-            }
-            BlockEntity neighbor = level.getBlockEntity(pos.relative(direction));
-            if (neighbor == null) {
-                continue;
-            }
-            LazyOptional<IEnergyStorage> cap = neighbor.getCapability(ForgeCapabilities.ENERGY, direction.getOpposite());
-            IEnergyStorage neighborStorage = cap.orElse(null);
-            if (neighborStorage == null || !neighborStorage.canReceive()) {
-                continue;
-            }
-            int toSend = Math.min(budget, energyStorage.getEnergyStored());
-            int accepted = neighborStorage.receiveEnergy(toSend, false);
-            if (accepted > 0) {
-                energyStorage.extractEnergy(accepted, false);
-                budget -= accepted;
-                moved = true;
-            }
-        }
-        return moved;
-    }
 
     @Override
     protected void saveAdditional(CompoundTag tag) {

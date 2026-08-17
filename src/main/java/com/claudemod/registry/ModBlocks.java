@@ -1,6 +1,7 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
 import net.minecraft.world.level.block.Block;
@@ -114,6 +115,23 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 8 : 0)));
+
+    // Prismium Cable (session 10): a relay block for the Prismium Energy
+    // pillar. Carries FE between a source (e.g. Prismium Generator) and a
+    // sink (e.g. Prismium Cell) that aren't directly touching - the gap
+    // the session 9 handoff notes flagged as the next obvious step. The
+    // mod's first non-full-cube block; light strength/sound values kept
+    // in line with the rest of the "machine" family (Cell/Generator)
+    // rather than the tool-gated resource blocks. See
+    // PrismiumCableBlock / PrismiumCableBlockEntity for the shape and
+    // relay logic, and PROGRESS.md for what's unverified.
+    public static final RegistryObject<Block> PRISMIUM_CABLE = BLOCKS.register("prismium_cable",
+            () -> new PrismiumCableBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 4)
+                    .noOcclusion()));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

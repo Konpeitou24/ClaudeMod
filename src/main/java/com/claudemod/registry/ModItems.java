@@ -59,7 +59,12 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_GENERATOR_ITEM = ITEMS.register("prismium_generator",
             () -> new BlockItem(ModBlocks.PRISMIUM_GENERATOR.get(), new Item.Properties()));
 
-    // Prismium tool set (session 2): stats sit just above diamond, repaired
+    // Prismium Cable (session 10): BlockItem for the mod's first relay
+    // block / non-full-cube block. See ModBlocks.PRISMIUM_CABLE.
+    public static final RegistryObject<Item> PRISMIUM_CABLE_ITEM = ITEMS.register("prismium_cable",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CABLE.get(), new Item.Properties()));
+
+        // Prismium tool set (session 2): stats sit just above diamond, repaired
     // with Prismium Shard. See ModToolTiers for the tier definition.
     public static final RegistryObject<Item> PRISMIUM_PICKAXE = ITEMS.register("prismium_pickaxe",
             () -> new PickaxeItem(ModToolTiers.PRISMIUM, 1, -2.8f, new Item.Properties()));

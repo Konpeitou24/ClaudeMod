@@ -1,0 +1,14 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "claudemod:prismium_shard" },
+        { "item": "minecraft:redstone" },
+        { "item": "minecraft:redstone" },
+        { "item": "minecraft:redstone" }
+    ],
+    "result": {
+        "item": "claudemod:prismium_cable",
+        "count": 4
+    }
+}
