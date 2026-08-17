@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-18 (セッション #30)
+最終更新: 2026-08-18 (セッション #31)
 
 ---
 
@@ -29,7 +29,7 @@
 2. **新エネルギーシステム**: 「Prismium Energy(仮称)」。発電機・ケーブル・蓄電ブロック・機械(粉砕機、精錬機など)を実装し、FE(Forge Energy)ベースで組む想定。セッション#8で蓄電ブロック Prismium Cell(IEnergyStorage capability公開、GUI無し、手動チャージ機構)に着手。**セッション#9で Prismium Generator(MOD初のBlockEntityTicker、Prismiumの欠片を燃焼して隣接ブロックへFEを自動送電) を追加し、CellとGeneratorをペアで置くことで初めて「自動化された発電→送電」ループが成立するようになった**。ケーブル(離れたブロック間の中継)・GUI・複数ブロックにまたがる大規模送電網はまだ無い。
 3. **新ディメンション**: 「Prism Realm(仮称)」。Prismiumで動くポータル(枠ブロック+起動アイテム)で行き来する異空間。専用地形生成、専用鉱石、専用バイオーム。**セッション#14で最初の一歩に着手**: データパック駆動のディメンション(地形はバニラのオーバーワールド設定+固定バイオームcherry_groveを流用、専用地形はまだ)と、テレポート用アイテム(Prismium Rift Shard、ポータルブロックの代わりの最小実装)を追加。専用地形・専用鉱石・専用バイオーム・本格的なポータルブロックはまだ無い。**セッション#15でビルド失敗と判明、原因(存在しないシンボル2つ、後述§3N)を特定・修正しビルド成功を確認済み**(§3N参照)。ただしコンパイルが通ることの確認に留まり、実プレイでの検証はまだ無い。
 4. **新MOB**: Prism Realm を含む探索先に生息する敵対/中立MOB。ボス级の1体を最終的に用意したい。**セッション#12で最初の1体、Prismium Wraith(敵対、洞窟に生息しPrismium鉱石を守るイメージ)を追加**。ボス級はまだ無い。
-5. **新装備**: Prismium製ツール/アーマー(特殊能力付き)、探索を楽しくするアクセサリ的アイテム(グラップリングフック、探知アイテムなど)。ツール5種(セッション#2)・アーマー4種(セッション#3)実装済み。セッション#4でアーマーにフルセット効果(暗視、常時)を追加。セッション#5でアーマーのセット効果に水中呼吸を追加(2つ目の効果)、かつツール側にも初のギミック(Prismiumツルハシの鉱石ボーナスドロップ)を追加し、「ツールが純粋なステ上位互換のまま」という課題に着手。**セッション#7で、長らく手つかずだったアクセサリ系の最初の1個としてPrismiumグラップリングフックを追加**(視線方向のブロックへ引き寄せられる、レイキャスト+速度書き換え方式、飛翔エンティティ無し)。**セッション#16で探知アイテムの最初の1個、Prismium Locatorを追加**(右クリックで周囲41x41x41ブロックを走査し、最も近いPrismium鉱石の方角・距離・上下を行動バーに表示。専用の飛翔エンティティやコンパス針モデルは持たず、メッセージ表示のみの最小実装)。**セッション#28で初のブロッキング装備Prismium Shieldを追加**(vanilla ShieldItemを継承せず、UseAnim.BLOCKのみでブロッキング機能を再現)。**セッション#29でその対となる初の遠距離武器Prismium Bowを追加**(vanilla BowItemを直接継承し、customArrowフックで全弾に自弓では通常得られないPiercing 1相当を付与)。
+5. **新装備**: Prismium製ツール/アーマー(特殊能力付き)、探索を楽しくするアクセサリ的アイテム(グラップリングフック、探知アイテムなど)。ツール5種(セッション#2)・アーマー4種(セッション#3)実装済み。セッション#4でアーマーにフルセット効果(暗視、常時)を追加。セッション#5でアーマーのセット効果に水中呼吸を追加(2つ目の効果)、かつツール側にも初のギミック(Prismiumツルハシの鉱石ボーナスドロップ)を追加し、「ツールが純粋なステ上位互換のまま」という課題に着手。**セッション#7で、長らく手つかずだったアクセサリ系の最初の1個としてPrismiumグラップリングフックを追加**(視線方向のブロックへ引き寄せられる、レイキャスト+速度書き換え方式、飛翔エンティティ無し)。**セッション#16で探知アイテムの最初の1個、Prismium Locatorを追加**(右クリックで周囲41x41x41ブロックを走査し、最も近いPrismium鉱石の方角・距離・上下を行動バーに表示。専用の飛翔エンティティやコンパス針モデルは持たず、メッセージ表示のみの最小実装)。**セッション#28で初のブロッキング装備Prismium Shieldを追加**(vanilla ShieldItemを継承せず、UseAnim.BLOCKのみでブロッキング機能を再現)。**セッション#29でその対となる初の遠距離武器Prismium Bowを追加**(vanilla BowItemを直接継承し、customArrowフックで全弾に自弓では通常得られないPiercing 1相当を付与)。**セッション#30で修理素材統一(Prismium Shardで一括修理可能に)と初のcheat-death装備Prismium Guardian Charmを追加**。**セッション#31で初の完全パッシブ・アクセサリPrismium Featherstoneを追加**(装備スロット不要、インベントリのどこかに所持しているだけでLivingFallEventで落下ダメージを25%に軽減。下記§3AD参照)。
 6. **新ブロック/ギミック**: 装飾ブロック、罠、ダンジョン用ギミックブロックなど。Prismium Core(セッション#3中に並行セッションが追加)はギミックというより「ツールの存在意義付け」の1st ステップ。セッション#4で Prismium Lantern(ツール非依存の量産可能な光源ブロック、光レベル15)を追加、「探索を照らす」実用ブロックの最初の1個。
 
 「完成」を目指さず、常に肉付けし続ける。各要素は最初は最小実装で入れて、後のセッションで機能・バランス・ビジュアルを磨き込む前提。
@@ -1000,6 +1000,25 @@ Prismium Grappling Hook(session 7)・Shield(session 28)・Bow(session 29)の3つ
 
 2コミット: `a764071`(修理素材統一、3ファイル変更)、`a991781`(Prismium Guardian Charm一式、10ファイル新規/変更: `PrismiumGuardianCharmItem.java`・`PrismiumGuardianCharmHandler.java`新規、`ModItems.java`・`ModCreativeTabs.java`・lang(en/ja)更新、`models/item/prismium_guardian_charm.json`・`textures/item/prismium_guardian_charm.png`・`data/claudemod/recipes/prismium_guardian_charm.json`・`gen_prismium_guardian_charm.py`新規)。push前に `git fetch origin main` で差分無し(並行セッションとの衝突は検知せず、直前は `76b9605` のまま)を確認、素の `git push origin main` が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch` のポーリングで `ci: update built jar [skip ci]` コミット(`018decc`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c` でビルド済みjarのサイズ増加(179,704→184,179バイト)を確認 - 本物のビルド成功。GitHub Actionsの `badge.svg` 直接確認は今回は行わず、jarサイズ増加のみで判断した(過去セッションでも十分な根拠として使われてきた手法)。
 
+## 3AD. セッション#31で実装した内容: Prismium Featherstone(初の完全パッシブ・アクセサリ)
+
+### 背景・設計判断
+これまでの装備系アイテムは全て「装備スロットに着ける」(ツール/アーマー/Shield/Bow)か「手に持って能動的に使う」(グラップリングフック/Locator/Rift Shard、あるいはGuardian Charmの"手に持っている時だけ発動"判定)のいずれかだった。Featherstoneはそのどちらでもない、MOD初の**「インベントリのどこかに入っているだけで効果が働く」**アイテム。Curios等のトリンケットスロットAPIへの依存を避け、`Inventory`の`items`/`armor`/`offhand`(いずれも`public final NonNullList<ItemStack>`、Web検索+Forge 1.19.3 javadocミラーで確認済み)を素朴に3つとも走査する方式にした。
+
+効果は`LivingFallEvent`(`Cancelable`、`getDistance/setDistance`・`getDamageMultiplier/setDamageMultiplier`を持つ。Web検索+Forge 1.19.2 javadocミラーで確認、1.20.x本体のソースはこのセッションでも到達不可だった)をリッスンし、既存の`damageMultiplier`に0.25を掛ける(=75%軽減)。**完全無効化ではなくmultiplier方式にした理由**: 常時所持・消費無し・クールダウン無しの受動効果で完全無効化まで許すとGuardian Charm(消費型)より明らかに強すぎる。multiplier方式なら他MODの同種効果とも乗算で共存できる。
+
+### 実装ファイル
+- `PrismiumFeatherstoneItem.java`: ロジック無しの空クラス(Guardian Charmと同じ設計)。スタック数はデフォルト(64)のまま — stacksTo(1)にしなかった理由は、Rift Shard/Locator/Guardian Charmが「唯一性のあるキー/道具/トーテム」なのに対し、Featherstoneは「持っているかどうか」だけが意味を持つので複数持つ意味自体が薄く、素材寄りの扱いにした(クラスjavadoc参照)。
+- `PrismiumFeatherstoneHandler.java`: `@Mod.EventBusSubscriber`の`LivingFallEvent`リスナー。サーバーサイドのみ・`Player`のみ対象、距離0以下は無視。3つのNonNullListを走査するヘルパーを実装。
+- レシピ: 羽根x2 + ファントムの残骸x2 + Prismium Shardx1、プラス字型配置(既存アイテムと同じ`crafting_shaped`形式)。
+- lang: en `Prismium Featherstone` / ja `プリズミウムの羽石`。
+- クリエイティブタブ・アイテムモデル(`minecraft:item/generated`継承)も他アイテムと同一パターンで追加。
+
+### テクスチャー(`scripts/textures/gen_prismium_featherstone.py`)
+丸い小石(ペブル)の上に対角線状の羽根が乗り、羽根の先端が石に触れる位置にPrismiumのティール色ジェム(`gen_prismium.py`のPRISMIUM_BASE/PRISMIUM_HILITEを流用)が埋め込まれている、という構図。石の質感はGuardian Charmの金属フレームとは違う中間グレーの石トーンで新規に起こした。
+
+**自己レビュー実施済み**: 初稿は羽根が2px幅のまっすぐな対角バンドで、4x/8x/16xプレビューで見ると「羽根」というよりPrismium Shard(既存の結晶シャード群)にしか見えないと判断し、羽根の左側(バーブ側)エッジに2箇所ノッチ(透明の切れ込み)を入れて羽根らしい分節感を出す修正を加えた。ただし**この修正後も、16x16という解像度の制約もあり、依然として「羽根というより細い結晶」に近い見た目に留まっている**(ノッチがこの解像度ではほぼ視認できない) — 完全に満足はしていないが、シルエットが明瞭でノイズや透過崩れが無いことは確認済みなので今回はこれで採用し、次回以降さらに手を入れる余地として素直に申し送る(§5参照)。アルファ値は`{0, 255}`のみで中間透過や意図しないにじみは無いことをスクリプト内で確認済み。
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
 
 
@@ -1182,32 +1201,40 @@ Prismium Grappling Hook(session 7)・Shield(session 28)・Bow(session 29)の3つ
     - `Monster`クラス限定スキャンのWardstone(§4-35)同様、この機能は`LivingEntity`全般(Mobにも)に効くよう実装したが、実質的にプレイヤー用アイテムとして設計されており、Mob(例えばテイム済みオオカミ等)が拾って発動するケースは想定・検証していない。
     - レシピ(金インゴット4+アメジストの欠片4+Prismium Core1)のコストバランスは初期見積もりで、「死亡回避1回」の価値に対して高すぎる/安すぎるかは全くの未検討。
 
+46. 【セッション#31で新規発覚】Prismium Featherstone(§3AD)は以下すべて未検証・既知の割り切り:
+    - MOD初の完全パッシブ・アクセサリであり、CIビルドが通ること以上の検証(実際に高所から落下してダメージが本当に25%になるか、`LivingFallEvent`が1.20.1でも1.19.x同様に発火するか)は一度もできていない。
+    - `DAMAGE_MULTIPLIER = 0.25F`(75%軽減)という数値は初期見積もりで、常時・無消費・クールダウン無しの効果として強すぎる/弱すぎるかは全くの未検討。バニラのFeather Falling(エンチャント)のダメージ軽減式との比較検討もしていない。
+    - `Inventory#items`/`armor`/`offhand`の3リストを毎落下ごとに走査する設計は、落下自体の発生頻度がMOD内の毎tick処理(ArmorSetBonusHandler等)より遥かに低いため性能上の懸念は薄いと考えているが、実測はしていない。
+    - テクスチャーが「羽根」というより「小さな結晶」寄りに見える件(§3AD参照)は自己レビューで発見済みだが、今回は解像度制約を理由に許容して採用した - 次回以降、羽根の形状表現(バーブのノッチをもっと大きく・多く入れる、あるいは羽根の向きや太さを見直す)を再検討する価値がある。
+    - `stacksTo(1)`にしなかった判断(§3AD参照)自体、実際にプレイヤーが複数個持つ状況(例えば予備として)が実用上どう扱われるか(邪魔にならないか等)は未検討。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-1. **【最優先、恒例】まず`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#30終了時点では、`a991781`(Prismium Guardian Charm追加)の直後に`018decc`が付いており、ビルド成功(jarサイズ179,704→184,179バイト増加)を確認済み。
-2. 【継続、恒例】GitHub Issue確認(`/issues/1`〜`/issues/4`個別ページ直叩き)を必ずステップ1で行うこと。セッション#30終了時点でOpen issueは#1・#2の2件のまま(いずれも過去セッションで対応済み、ユーザー側のクローズ待ち)、新規issueは無し。
-3. 【継続、環境まわり】固定パスの作業ディレクトリ(`/tmp/work`・`/tmp/work2`等)は今回も`nobody:nogroup`所有で`Permission denied`だった。`mktemp -d`相当の一意パス(例: `/tmp/clademod_fresh_$(date +%s)`)を最初から使うこと。
-4. 【新規、優先度高】Prismium Guardian Charm(セッション#30、§3AC-2)は実プレイ未検証の新規cheat-death装備。次に何かを検証できる機会があれば、致死ダメージを受けた際に本当に発動するか(体力1固定・効果付与・アイテム消費・パーティクル/サウンド)を最優先で確認したい。特に`ParticleTypes.TOTEM_OF_UNDYING`/`SoundEvents.TOTEM_USE`のフィールド名は記憶ベースの実装で実ソース裏取りをしていない(§4-45参照) - もしCIビルドがコンパイルエラーで落ちていたら、まずこの2つのフィールド名を疑うこと。
-5. 【継続、優先度高】Prism Realm/Rift Shard・Wraith・Locator・Bloom/Spike・Cable(接続モデル)・全5GUI・Shield・Bow・Guardian Charm(本セッション)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
-6. 【新規、次の展開候補】
-   - (a) Prismium Arrow: Bowと組み合わせる専用矢。今回検討したが、`AbstractArrow`のカスタムレンダリング(`ArrowRenderer`継承)はvanillaの`arrow.png`と全く同じUVレイアウト(頂点座標に対するテクスチャー座標の割り当て)に依存しており、そのUVレイアウトの正確な値をこのサンドボックスから裏取りする決定的な方法が見つからなかった(Web検索・MinecraftForge公式リポジトリのgit clone のいずれも、パッチファイルのみでレンダラーの実装そのものは含まれていなかった)。誤ったUVで実装すると「テクスチャーが千切れて見える/歪んで見える」という視認では気づきにくいバグになるリスクがあるため、今回は見送った。次回挑戦する場合は、Yarn/MCPマッピングの完全な逆コンパイル済みソース(パッチではなく完成品)を提供する公開リポジトリを探すか、あるいは`ArrowRenderer`を継承せず自前の`EntityRenderer`を書いて完全にオリジナルなレンダリング方式(例:向きに応じたビルボードだが頂点を自前計算)にするなど、vanillaのUV前提に依存しない設計を検討する価値がある。
-   - (b) §5(旧、session 28〜29)item 6(b): GUIスロット化(`SlotItemHandler`等、未踏み込みのAPI領域)、Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックの作り込み。
-   - (c) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。ただし今回のArrow検討で判明した通り、カスタムエンティティ+レンダラーはこのサンドボックスからのAPI裏取りが難しい領域 - 挑戦する場合はWraith(session 12)が実際にどう乗り越えたかをまず読み返す価値がある(Wraithはカスタムモデル+レンダラーを既に実装済みなので、参考実装として使える)。
-   - (d) Guardian Charmと同様の「vanillaの拡張ポイントに乗るコストの低さ」を活かした、まだ手を付けていないForgeイベント(`LivingFallEvent`で落下ダメージ軽減アクセサリ、`AnvilRepairEvent`、`PlayerXpEvent`等)を使った新規装備の追加。
+1. **【最優先、恒例】まず`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#31終了時点では、`3ef327a`(Prismium Featherstone追加)の直後に`21d0ac0`が付いており、ビルド成功(jarサイズ184,179→187,595バイト増加)を確認済み。プロキシ回避策は今回も不要で、素の`git push origin main`が一度で成功した。
+2. 【継続、恒例】GitHub Issue確認(`/issues/1`〜`/issues/5`個別ページ直叩き)を必ずステップ1で行うこと。セッション#31開始時点でOpen issueは#1・#2の2件のまま(いずれも過去セッションで対応済み、ユーザー側のクローズ待ち)、`/issues/3`は404で新規issue無しを確認した。
+3. 【継続、環境まわり】固定パスの作業ディレクトリ(`/tmp/work`・`/tmp/work2`)は今回も`nobody:nogroup`所有で使用不可だった。`/tmp/cm_$(date +%s)_$RANDOM`のような一意パスを最初から使うこと(今回はこれで問題なく動作)。
+4. 【新規、優先度中】Prismium Featherstone(セッション#31、§3AD)は実プレイ未検証の新規パッシブアイテム。次に何かを検証できる機会があれば、実際に高所から落下してダメージが軽減されるか(`LivingFallEvent`が本当に発火し`damageMultiplier`が効くか)を確認したい。もしCIビルドがコンパイルエラーで落ちていたら、まず`getDamageMultiplier`/`setDamageMultiplier`や`Inventory.items/armor/offhand`のフィールド名を疑うこと(§3AD参照、いずれも1.19.xミラーでの確認に留まる)。
+5. 【継続、優先度高】Prism Realm/Rift Shard・Wraith・Locator・Bloom/Spike・Cable(接続モデル)・全5GUI・Shield・Bow・Guardian Charm・Featherstoneは、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
+6. 【継続、次の展開候補】
+   - (a) Prismium Featherstoneのテクスチャー再検討(§4-46): 羽根がまだ結晶シャードっぽく見える件、時間があれば別アプローチ(例えばバーブをもっと明確に分離する、羽根の色相を石と大きく変える等)を試す価値がある。
+   - (b) Prismium Arrow: session 30で見送った(ArrowRendererのUVレイアウトをこのサンドボックスから裏取りする決定的な方法が見つからなかった)。次回挑戦する場合は、vanillaのUV前提に依存しない独自レンダリング方式を検討するか、逆コンパイル済みソースを提供するリポジトリを探すこと(§5旧item 6(a)、session 30参照)。
+   - (c) GUIスロット化(`SlotItemHandler`等)、Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックの作り込み。
+   - (d) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。カスタムエンティティ+レンダラーはAPI裏取りが難しい領域 - 挑戦する場合はWraithの実装を参考にすること。
+   - (e) Guardian Charm・Featherstoneに続く、まだ手を付けていないForgeイベント(`AnvilRepairEvent`、`PlayerXpEvent`、`LivingHealEvent`等)を使った新規パッシブ/セミパッシブ装備の追加。Featherstoneで実証した「イベントリスナー1個+インベントリ走査」というパターンは低リスクで再利用しやすいので、今後もこの路線の横展開は続けやすい。
 
 ### 議論したい論点・改善案
 
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。Guardian Charm追加でさらに「機能するかどうか自体が未検証」なコンテンツが積み上がった(Shield・Bow・Guardian Charmの3つ)。次にプレイフィードバックが得られた際は、新規コンテンツの追加よりもこの検証を最優先すべきという声がさらに強くなっている(継続)。
-- **実ソースを直接読む裏取り手法の使い分け(新規、重要な教訓)**: 今回、Web検索だけでは埋まらなかった「vanillaの死亡処理の内部フロー」を、MinecraftForgeの公式リポジトリを`git clone --depth 1 --branch 1.20.1`して`patches/`ディレクトリのdiffを直接読むことで確認できた(§3AC-2参照)。一方、同じ手法をPrismium Arrow用の`ArrowRenderer`のUVレイアウト裏取りに使おうとしたところ、パッチファイルには「変更された部分」しか含まれておらず、変更されていないメソッド本体(レンダリングのUV座標計算そのもの)は入っていなかったため通用しなかった(§5 item 6(a)参照)。**この手法は「vanillaの挙動がForgeによって変更されている箇所」の裏取りには極めて有効だが、「vanilla自体の未変更ロジック」の裏取りには使えない**という重要な使い分けの教訓が今回得られた。後者が必要な場合は、パッチではなく完成品の逆コンパイル済みソースを提供するリポジトリを探す必要がある。
-- **修理手段の不統一(セッション#30で解消)**: Prismium系装備のうちツール・防具はTier/ArmorMaterial経由、Grappling Hook・Shield・Bowは今回追加した`isValidRepairItem`経由で、全ての耐久値付きPrismium装備がPrismium Shardでの部分修理に対応した。次回以降、新しい耐久値付きアイテムを追加する際は、最初からこのパターン(`isValidRepairItem`オーバーライド)をセットで実装すること。
-- **「てんこ盛り」路線の継続(継続)**: セッション#28のShield・#29のBowに続き、#30でGuardian Charmを追加し、3セッション連続で新規装備が増えた。次回以降もこの路線を継続するか、GUIスロット化やCableの作り込みといった「既存機能を深める」路線に一度戻るかは判断が分かれるところ(継続)。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック(継続)。Featherstone追加でさらに「機能するかどうか自体が未検証」なコンテンツが積み上がった。次にプレイフィードバックが得られた際は、新規コンテンツの追加よりもこの検証を最優先すべきという声がさらに強くなっている(継続)。
+- **「装備しなくても効くアイテム」という新しいカテゴリ(新規)**: Featherstoneは、この MOD で初めて「所持しているだけで効くアイテム」という設計を導入した。Curios等のトリンケットAPIに依存せず`Inventory`の3リストを直接走査する方式は実装コストが低く、今後も同種のパッシブ効果(例えば「所持しているだけで暗闇での視界が良くなる」等)を増やしやすい反面、プレイヤーからは「なぜ効いているのか」が分かりにくくなるリスクもある(Guardian Charmのような明示的な発動演出が無いため)。次回以降、このカテゴリのアイテムを増やす場合、何らかの視覚的フィードバック(例えばHUD表示やパーティクル)を検討する価値があるかもしれない。
+- **修理手段・パッシブ効果の設計パターンの蓄積**: session 30の修理素材統一、session 31のFeatherstoneのように、「1つのイベントリスナー+シンプルな判定」という低リスクなパターンが本MODでも積み上がってきた。次回以降、新規アイテムを検討する際はまずこの「軽量イベントフック」路線が使えないか確認すると、API裏取りの手間を抑えつつコンテンツを増やしやすい(継続的な教訓として明記)。
+- **「てんこ盛り」路線の継続(継続)**: セッション#28のShield・#29のBow・#30のGuardian Charmに続き、#31でFeatherstoneを追加し、4セッション連続で新規装備/アクセサリが増えた。次回以降もこの路線を継続するか、GUIスロット化やCableの作り込みといった「既存機能を深める」路線に一度戻るかは判断が分かれるところ(継続)。
 
 ### コミット/プッシュ状況
 
-このセッションの変更は2コミット: `a764071`(修理素材統一: `PrismiumGrapplingHookItem.java`・`PrismiumShieldItem.java`・`PrismiumBowItem.java`の3ファイルに`isValidRepairItem`オーバーライドを追加)、`a991781`(Prismium Guardian Charm一式: `PrismiumGuardianCharmItem.java`・`PrismiumGuardianCharmHandler.java`新規、`ModItems.java`・`ModCreativeTabs.java`・lang(en/ja)更新、`models/item/prismium_guardian_charm.json`・`textures/item/prismium_guardian_charm.png`・`data/claudemod/recipes/prismium_guardian_charm.json`・`gen_prismium_guardian_charm.py`新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`76b9605`のまま)、素の`git push origin main`が2回とも一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`018decc`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(179,704→184,179バイト)を確認して、本物のビルド成功を確定させた。新規アイテムテクスチャーは`outputs`フォルダ経由で目視レビュー(4x/8x/16x拡大のプレビューシート)を実施済み(§3AC-3参照)。GitHub issueの確認はセッション開始時に実施し、Open issue数が2件のまま(新規issue無し)であることを確認した。
+このセッションの変更は1コミット: `3ef327a`(Prismium Featherstone一式: `PrismiumFeatherstoneItem.java`・`PrismiumFeatherstoneHandler.java`新規、`ModItems.java`・`ModCreativeTabs.java`・lang(en/ja)更新、`models/item/prismium_featherstone.json`・`textures/item/prismium_featherstone.png`・`data/claudemod/recipes/prismium_featherstone.json`・`gen_prismium_featherstone.py`新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`21d0ac0`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(184,179→187,595バイト)を確認して、本物のビルド成功を確定させた。新規アイテムテクスチャーは`outputs`フォルダ経由で目視レビュー(4x/8x/16x拡大のプレビューシート)を実施し、1回設計を修正(羽根にバーブノッチ追加)した上で採用した(§3AD参照)。GitHub issueの確認はセッション開始時に実施し、Open issue数が2件のまま(新規issue無し)であることを確認した。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、`018decc`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、`21d0ac0`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
