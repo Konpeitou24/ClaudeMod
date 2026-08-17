@@ -8,6 +8,7 @@ import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumGrapplingHookItem;
+import com.claudemod.item.PrismiumLocatorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
@@ -126,6 +127,14 @@ public class ModItems {
     // the teleport logic and known caveats.
     public static final RegistryObject<Item> PRISMIUM_RIFT_SHARD = ITEMS.register("prismium_rift_shard",
             () -> new PrismiumRiftShardItem(new Item.Properties().stacksTo(1)));
+
+    // Prismium Locator (session 16): the mod's first detection item,
+    // filling the other half of the "accessory items" roadmap wishlist
+    // that the grappling hook (session 7) started. See
+    // PrismiumLocatorItem for the block-scan implementation. stacksTo(1)
+    // like the rift shard - this is a reusable tool, not a consumable.
+    public static final RegistryObject<Item> PRISMIUM_LOCATOR = ITEMS.register("prismium_locator",
+            () -> new PrismiumLocatorItem(new Item.Properties().stacksTo(1)));
 
     // Prismium Wraith spawn egg (session 12): uses Forge's ForgeSpawnEggItem
     // rather than vanilla SpawnEggItem because the latter needs the

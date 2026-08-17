@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "pattern": [
+        " P ",
+        "IPI",
+        " C "
+    ],
+    "key": {
+        "P": { "item": "claudemod:prismium_shard" },
+        "I": { "item": "minecraft:iron_ingot" },
+        "C": { "item": "minecraft:compass" }
+    },
+    "result": {
+        "item": "claudemod:prismium_locator",
+        "count": 1
+    }
+}

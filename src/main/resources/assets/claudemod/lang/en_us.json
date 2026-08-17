@@ -29,5 +29,20 @@
     "message.claudemod.prismium_generator.fueled": "Fed Prismium Generator: %1$ss of fuel remaining",
     "message.claudemod.prismium_cable.status": "Prismium Cable: %1$s / %2$s FE",
     "tooltip.claudemod.energy_storage": "%1$s / %2$s FE",
-    "tooltip.claudemod.burn_time": "%1$ss of fuel remaining"
+    "tooltip.claudemod.burn_time": "%1$ss of fuel remaining",
+    "item.claudemod.prismium_locator": "Prismium Locator",
+    "message.claudemod.prismium_locator.found": "Prismium ore detected: %1$s, ~%2$s blocks away (%3$s)",
+    "message.claudemod.prismium_locator.none": "No Prismium ore detected nearby",
+    "direction.claudemod.north": "north",
+    "direction.claudemod.northeast": "northeast",
+    "direction.claudemod.east": "east",
+    "direction.claudemod.southeast": "southeast",
+    "direction.claudemod.south": "south",
+    "direction.claudemod.southwest": "southwest",
+    "direction.claudemod.west": "west",
+    "direction.claudemod.northwest": "northwest",
+    "direction.claudemod.here": "right here",
+    "direction.claudemod.above": "above you",
+    "direction.claudemod.below": "below you",
+    "direction.claudemod.level": "at your level"
 }

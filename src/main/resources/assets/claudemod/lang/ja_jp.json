@@ -29,5 +29,20 @@
     "message.claudemod.prismium_generator.fueled": "プリズミウム発電機に燃料を追加: 残り%1$s秒",
     "message.claudemod.prismium_cable.status": "プリズミウムケーブル: %1$s / %2$s FE",
     "tooltip.claudemod.energy_storage": "%1$s / %2$s FE",
-    "tooltip.claudemod.burn_time": "燃料残り%1$s秒"
+    "tooltip.claudemod.burn_time": "燃料残り%1$s秒",
+    "item.claudemod.prismium_locator": "プリズミウムロケーター",
+    "message.claudemod.prismium_locator.found": "プリズミウム鉱石を検知: %1$s、約%2$sブロック先(%3$s)",
+    "message.claudemod.prismium_locator.none": "近くにプリズミウム鉱石の反応はありません",
+    "direction.claudemod.north": "北",
+    "direction.claudemod.northeast": "北東",
+    "direction.claudemod.east": "東",
+    "direction.claudemod.southeast": "南東",
+    "direction.claudemod.south": "南",
+    "direction.claudemod.southwest": "南西",
+    "direction.claudemod.west": "西",
+    "direction.claudemod.northwest": "北西",
+    "direction.claudemod.here": "真下",
+    "direction.claudemod.above": "上方",
+    "direction.claudemod.below": "下方",
+    "direction.claudemod.level": "同じ高さ"
 }
