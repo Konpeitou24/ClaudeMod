@@ -585,6 +585,42 @@ GitHub Issueは`issues/1`・`issues/2`を個別ページ直叩きで確認、両
 
 ---
 
+## 3Q. セッション#18で実装した内容
+
+### 3Q-1. 状況確認
+毎回の作業フロー通り`git clone`から着手。session 17の§4-30の教訓(固定パスは`nobody:nogroup`所有ファイルで衝突しうる)を踏襲し、`/tmp`配下に`$(date +%s)`でユニークな作業ディレクトリを作った上で`git clone`し、正常に書き込み可能な状態を確保できた(実際、`/tmp/work2`のような以前使われていたと思しき固定名は今回も`nobody:nogroup`所有で書き込み・削除とも`Permission denied`だった。事前にユニーク名を使う方針が有効であることを再確認)。
+
+`api.github.com`は`mcp__workspace__bash`経由の`curl`では今回も(プロキシ・直接接続の両方で)到達不可だった(`blocked-by-allowlist` / `Could not resolve host`)。今回は`mcp__workspace__web_fetch`を試す前に、`git log`ローカル履歴と`git fetch origin main`の突き合わせで済ませた: セッション#17終了時点の最終コミット(`8e62ba0`、PROGRESS.md更新)の直後に`ci: update built jar [skip ci]`(`ed7d8da`)が付いており、**セッション#17終了時点のmainは実際にビルド成功していることを確認**。GitHub Issueは`github.com/.../issues/{1,2,3,4}`を個別ページ直叩きで確認(`"state":"(OPEN|CLOSED)"`をgrep)、issue #1・#2は引き続きOPEN(変化無し)、#3・#4は404で新規Issue無し。
+
+### 3Q-2. Prismium Bloomの浮遊生成バグを修正
+セッション#17の申し送り(§4-29)で挙がっていた「`canSurvive`のような判定が無いため、崖の側面や水上など不自然な場所に浮いた状態で生成される可能性がある」という既知の不具合に対応。
+
+- `PrismiumBloomBlock`に`canSurvive(BlockState, LevelReader, BlockPos)`を追加。直下のブロックが`isFaceSturdy(level, pos, Direction.UP)`を満たすかで判定する、バニラの花に近い一般的な「上面が平らな固体ブロックの上にのみ設置可能」ルール。
+- ただし`minecraft:simple_block`という(このMODのBloom/Ore worldgenがずっと使ってきた)feature typeは、配置時に`canSurvive()`を一切参照せず単純にブロック状態を強制的に置くだけ、ということが今回の調査で判明した。そのため`canSurvive()`の追加だけでは worldgen 側の浮遊生成は直らない。正しい対処は placement modifier 側で、`prismium_bloom_placed.json`に**このMOD初採用の`minecraft:block_predicate_filter`(predicate type: `minecraft:would_survive`)**を追加し、「その位置にその状態のブロックを置いたら`canSurvive()`が真になるか」を worldgen 候補地点ごとに事前フィルタする方式にした。
+- 初使用のAPIのため、Web検索(Minecraft Wikiの`Block_predicate`ページ)で`would_survive`(フィールド: `type`, 任意の`offset`, `state`)と`block_predicate_filter`(placement modifier、フィールド: `predicate`)の両方のJSONスキーマを個別に裏取りしてから採用した(session 15の教訓「初めて使う定数は個別に裏取りする」を実践)。
+- 同じ`canSurvive()`+`would_survive`パターンは、後述するPrismium Spike(§3Q-3)にも最初から適用した。
+- **未検証**: 実際にPrism Realm/オーバーワールドで、崖際や水上での浮遊生成が本当に解消されたかはプレイテストでしか確認できない(ロジック自体は既存の`isFaceSturdy`という長年安定したAPIに基づくため、コードレビューの確度は比較的高いと考えている)。
+
+### 3Q-3. Prismium Spike: MOD2つ目のPrism Realm地表装飾ブロック
+セッション#17の申し送り(§5「複数種の専用地表ブロック」)を受けて、Prismium Bloom(セッション#17)に続くPrism Realm/オーバーワールド用の2種類目の地表装飾を追加。
+
+- 実装: `PrismiumSpikeBlock`。Bloomと全く同じ設計パターン(素の`Block`継承、`getShape()`のみオーバーライド、BlockEntity/BushBlock/ボーンミール無し)をあえて再利用し、新規APIサーフェスを増やすリスクを避けた(session 16・17で繰り返し実践している「新しいAPIを増やさない選択肢を先に探す」というリスク低減パターン)。シルエットで差別化: Bloomの「横に広い花房」に対し、Spikeは「縦に細く尖ったクリスタルの塊」(VoxelShapeも3,0,3→13,**15**,13とBloomよりわずかに背が高い)。
+- ModBlocks登録: `mapColor(CYAN)`, `noCollission()`, `instabreak()`, `SoundType.AMETHYST_CLUSTER`(Bloomと同じ、既に裏取り済みのサウンド定数を再利用), `lightLevel(7)`(Bloomの5より少し明るくして「光る結晶」感を強調), `noOcclusion()`。
+- モデル: Bloomと同じく`block/cross`親+`"render_type": "minecraft:cutout"`のJSON指定のみで完結、クライアント専用コードは追加していない。
+- worldgen: `configured_feature`(`simple_block`)+ `placed_feature`(count **2**・in_square・heightmap(WORLD_SURFACE_WG)・**`would_survive`フィルタ(§3Q-2参照、Spikeは最初からこれを含む)**・biome)+ `forge:add_features`(`#minecraft:is_overworld`、Bloom/Oreと同じタグなのでPrism Realm・通常オーバーワールド両方に出現)。Bloomの count 4 よりまばら(2)にして、「群生する下草」のBloomと「たまに目を引くアクセント」のSpikeという役割分担を意図した。
+- クラフトレシピ無し(Bloomと同じくワールド生成でのみ入手)。
+- テクスチャー: `scripts/textures/gen_prismium_spike.py`。高さの異なる3本の先細りクリスタル片(中央が最も低く太い"アンカー"役、左右が高い)+ 暗いロック調の根本+ 控えめな水色系アクセント3点。Bloomの暖色(紫)アクセントに対しSpikeは寒色(水色)アクセントとし、本体のティール系グラデーション自体は既存ファミリーと共通のまま、アクセント色とシルエットだけで描き分けた。**生成後に24倍拡大チェッカーボードプレビューに加え、暗いインベントリスロット風の背景プレビューも追加で作成して目視確認**(今回新たに試した自己レビュー手法): シルエットの明瞭さ・透過部分の処理・暗い背景での視認性、いずれも問題無しと判断し作り直しは発生しなかった。
+- **未検証**(すべて初期見積もり・未プレイテスト): worldgenの生成密度(count 2)が意図通り「たまに」感になっているか、`would_survive`フィルタが実際に浮遊生成を防げているか、cutoutレンダリングの実機表示、インベントリでの実サイズ視認性(暗背景プレビューはあくまで近似)。
+
+### 3Q-4. commit・push・ビルド確認
+2コミットに分割(判断根拠: Bloomの不具合修正とSpikeの新規追加は独立した変更単位のため)。
+1. `e67fc93`: Prismium Bloomの`canSurvive`追加+`would_survive`placement filter追加。
+2. `8017ed8`: Prismium Spikeの実装一式(コード・アセット・worldgen・テクスチャー)。
+
+push前に`git fetch origin main`で差分無し(他セッションとの並行実行は検知せず)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`をポーリングして`ci: update built jar [skip ci]`コミット(`cba675a`)の到着を確認 — 本物のビルド成功。issue #1・#2ともOpenのまま変化無し、新規Issueも無し(§3Q-1)。
+
+---
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
 
 
@@ -661,10 +697,17 @@ GitHub Issueは`issues/1`・`issues/2`を個別ページ直叩きで確認、両
     - 8方位の閾値(22.5度刻み)・上下ヒントの判定は数式レビューのみで、実際のプレイヤー位置とプレイヤーから見た鉱石の体感方向が一致するかは未確認。
 29. 【セッション#17で新規発覚】Prismium Bloom(§3P-2)は以下すべて未検証・既知の割り切り:
     - worldgenの生成密度(count 4、in_square配置)・実際の見た目上の分布(密集しすぎ/まばらすぎ)は初期見積もりのまま未調整。
-    - `canSurvive`のような「下が固体ブロックか」の判定を一切実装していないため、地形次第では崖の側面や水上など不自然な場所に浮いた状態で生成される可能性がある(意図的な簡略化だが、実際にどの程度気になるかは未確認)。
+    - ~~`canSurvive`のような「下が固体ブロックか」の判定を一切実装していないため、地形次第では崖の側面や水上など不自然な場所に浮いた状態で生成される可能性がある~~ **【セッション#18で対応】** `canSurvive()`追加+`would_survive`block_predicate_filterで対応した(§3Q-2参照)。ただし実際に浮遊生成が解消されたかはプレイテスト待ち(未検証のまま)。
     - `"render_type": "minecraft:cutout"`によるクロスモデルのレンダリングが実機で正しく透過処理されるか(黒い正方形になる等の典型的な「レンダータイプ設定忘れ」バグが起きていないか)は、このサンドボックスでは目視確認できていない - ビルドが通ることと正しく描画されることは別問題である点に注意。
     - `#minecraft:is_overworld`タグ経由でPrism Realm・通常オーバーワールド両方に生成される設計だが、実際にPrism Realm側で(§4-24で挙げた鉱石・Wraith同様に)本当に生成されるかどうかも未確認。
-30. 【セッション#17で新規発覚、実務上の注意】このサンドボックスの作業ディレクトリ選びについて、session 16の申し送り(§5旧9番、`/tmp/cm_$$_$RANDOM`推奨)を踏まえてもなお、今回`/tmp/work/ClaudeMod`のような固定パスで`nobody:nogroup`所有ファイルによる`Permission denied`に遭遇した。今回はホームディレクトリ直下(`~/work/ClaudeMod3`)への切り替えで解決したが、これも固定パスである以上、並行セッションと衝突する可能性はゼロではない。**次回以降は`/tmp`・ホームディレクトリのどちらを使うにせよ、`mktemp -d`等で一意なパスを生成してからcloneするのが最も安全**(session 16の推奨を再度強調する形で申し送る)。固定パスで`Permission denied`に当たった場合、無理に同じパスへの書き込みを繰り返さず、即座に一意な新しいパスへ切り替えること(今回はこの切り替えだけで数分のロスで済んだ)。
+30. 【セッション#17で新規発覚、実務上の注意】このサンドボックスの作業ディレクトリ選びについて、session 16の申し送り(§5旧9番、`/tmp/cm_$$_$RANDOM`推奨)を踏まえてもなお、今回`/tmp/work/ClaudeMod`のような固定パスで`nobody:nogroup`所有ファイルによる`Permission denied`に遭遇した。今回はホームディレクトリ直下(`~/work/ClaudeMod3`)への切り替えで解決したが、これも固定パスである以上、並行セッションと衝突する可能性はゼロではない。**次回以降は`/tmp`・ホームディレクトリのどちらを使うにせよ、`mktemp -d`等で一意なパスを生成してからcloneするのが最も安全**(session 16の推奨を再度強調する形で申し送る)。固定パスで`Permission denied`に当たった場合、無理に同じパスへの書き込みを繰り返さず、即座に一意な新しいパスへ切り替えること(今回はこの切り替えだけで数分のロスで済んだ)。session 18では`/tmp/cmwork_$(date +%s)`という一意パスを使い、問題無く動作した(参考: 同時に`/tmp/work2`のような以前使われたと思しき固定名が今回も`nobody:nogroup`所有で使えないことを確認、この教訓は依然として有効)。
+31. 【セッション#18で新規発覚、重要】`minecraft:simple_block`という worldgen feature type は、配置時に対象ブロックの`canSurvive()`を一切参照しない(単純にブロック状態を強制的に置くだけ)ということが判明した。そのため、「Javaコード側で`canSurvive()`を実装しただけ」では worldgen 由来の浮遊生成バグは直らない(§3Q-2参照)。この種の「地表に生えるがBushBlockではない」ブロックで生成位置を地形に追従させたい場合は、必ず placed_feature 側に`minecraft:block_predicate_filter`(predicate type `minecraft:would_survive`)を明示的に追加すること。次に同種のブロック(Bloom/Spikeに続く3種類目の地表装飾等)を追加する際は、最初からこのペアをセットで実装すればよい(Spikeでは実践済み)。
+32. 【セッション#18で新規発覚】Prismium Spike(§3Q-3)は以下すべて未検証・既知の割り切り:
+    - worldgenの生成密度(count 2、in_square配置)が意図通り「Bloomよりまばらなアクセント」になっているかは未調整のまま。
+    - `would_survive`フィルタ自体が実際に浮遊生成を防げているかは、Bloom分(§4-31)と合わせてプレイテストでしか確認できない。
+    - `"render_type": "minecraft:cutout"`のクロスモデルレンダリング実機表示は、Bloom同様まだ一度も目視確認できていない(このサンドボックスの継続的な制約)。
+    - テクスチャーの3本シャード構成は、24倍プレビュー+暗背景プレビューでの目視レビューは通ったが、実際のインベントリ/ホットバーでの見え方(特に細いシャード部分がさらに潰れて見えないか)は未確認。
+    - `#minecraft:is_overworld`タグ経由でPrism Realm側にも本当に生成されるかは、Ore/Bloom/Wraith同様まだ未確認(§4-24)。
 
 
 ---
@@ -672,32 +715,33 @@ GitHub Issueは`issues/1`・`issues/2`を個別ページ直叩きで確認、両
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
-1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#17終了時点では、`06c78b8`(Prismium Bloom追加)の直後に`fc789c1`が付いており、ビルド成功を確認済み。`mcp__workspace__bash`経由の`curl`での`api.github.com`は今回も不可だが、`mcp__workspace__web_fetch`経由なら(provenance制限付きで)到達できることが分かった(§3P-1)。とはいえ`git fetch`によるjarコミット確認が最も確実な主手段であることに変わりはない。
-2. **【新規、環境まわりの実務上の注意、再強調】§4-30参照。`git clone`は固定パス(`/tmp/work/...`やホームディレクトリ直下の固定名)ではなく、`mktemp -d`等で得た一意なパスに対して行うこと。** 今回もホームディレクトリ直下の固定パス(`~/work/ClaudeMod3`)で作業したが、これはたまたま空いていただけで、次回以降も同じ運が続く保証はない。
-3. 【継続、優先度高】Prismium Bloom(§3P-2、session 17)は実際にPrism Realm/オーバーワールドで生成されるか、cutoutレンダリングが正しく透過表示されるかが一切未検証(§4-29)。次にこの方面を触るなら、生成密度の調整や、`canSurvive`による「不自然な浮遊配置」の抑制が自然な発展先。
+1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#18終了時点では、`8017ed8`(Prismium Spike追加、その前に`e67fc93`のBloom修正)の直後に`cba675a`が付いており、ビルド成功を確認済み。`mcp__workspace__bash`経由の`curl`での`api.github.com`は今回も(プロキシ経由・直接接続とも)不可だった。`git fetch`によるjarコミット確認が最も確実な主手段であることに変わりはない。
+2. **【継続、環境まわりの実務上の注意】§4-30参照。`git clone`は固定パスではなく一意なパスに対して行うこと。** 今回は`/tmp/cmwork_$(date +%s)`という一意パスを使い問題無く動作した。同時に`/tmp/work2`という以前使われたと思しき固定名が今回も`nobody:nogroup`所有で使用不可だったことを確認した(§4-30)ので、次回以降も固定パスは避けること。
+3. 【新規、優先度中】Prismium Bloomの浮遊生成バグはセッション#18で対応済み(`canSurvive()`+`would_survive`フィルタ、§3Q-2・§4-31)だが、**実際に効果があったかはまだプレイテストで確認できていない**。次にPrism Realm方面を触るセッションは、可能であればユーザーのプレイフィードバックでこの点を優先的に拾うこと。
 4. 【継続、優先度高】Prism Realm/Prismium Rift Shardはコンパイルが通ることは実証済み(session 15、§3N)だが、実プレイでの検証はまだ一切無い(§4-24・§4-25参照)。次にこの方面を触るなら:
    - `server.getLevel(claudemod:prism_realm)`が実際に解決できるか(Forge issue #8552の再現有無を含む)
    - Prismium Rift Shardで実際に行き来できるか、着地点(0, ~surface, 0)が安全か
-   - Prismium鉱石・Prismium Wraith・Prismium Bloom(session 17で追加)が本当にPrism Realm側でも生成/スポーンするか
+   - Prismium鉱石・Prismium Wraith・Prismium Bloom・Prismium Spike(session 17・18で追加)が本当にPrism Realm側でも生成/スポーンするか
    これらはいずれもプレイテストでしか確認できない。ユーザー側でのプレイフィードバックを最優先で拾うこと(§0-2の運用ルールに準じ、GitHub Issueで報告があれば最優先対応)。
 5. 【継続、優先度高】Prismium Locator(§3O-3、session 16)は実際に使ってみてどう感じるか一切未検証(§4-28)。探索半径・クールダウン・デッドゾーンの数値調整、あるいは行動バーメッセージだけで十分かはプレイフィードバック待ち。
 6. 【継続、優先度高】Prismium Wraith(§3K、session 12)は実際にスポーンするか・AIが正常に動くか・テクスチャーが3Dモデルに正しく貼られるかは一切未検証のまま(§4-20)。まだ「1体だけ」の状態でもあるので、(a) 2体目の追加、(b) 既存Wraithへの独自AI Goal追加、のどちらかが次の一歩として自然。
-7. 【継続、優先度高】Prismium Cable・Generator・Cellを組み合わせた「発電→送電→蓄電」の3点セットは、実際にゲーム内で並べて動作確認したセッションはまだゼロ(session 10から持ち越し、7セッション経過)。
-8. **ロードマップ§1の4本柱のうち、Prism Realmは専用地形・専用バイオーム・専用鉱石・本格ポータルブロックがまだ無い**(§4-24参照)。専用地表ブロックの第一歩(Prismium Bloom)はsession 17で着手したので、次は(a) 本格的なポータルブロック+フレーム検知(§3M-2で意図的に先送りした部分)、(b) 専用バイオームの追加、のどちらかが自然な発展先。ただし上記4の実プレイ検証(基本的な行き来ができるか)を優先すべき。
-9. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`(§2-5)。session 17では他セッションとの並行は検知しなかったが、毎回確認すること。
+7. 【継続、優先度高】Prismium Cable・Generator・Cellを組み合わせた「発電→送電→蓄電」の3点セットは、実際にゲーム内で並べて動作確認したセッションはまだゼロ(session 10から持ち越し、8セッション経過)。
+8. **ロードマップ§1の4本柱のうち、Prism Realmは専用地形・専用バイオーム・本格ポータルブロックがまだ無い**(§4-24参照)。専用地表ブロックはBloom(session 17)・Spike(session 18)の2種類まで積み上がったので、次は(a) 本格的なポータルブロック+フレーム検知(§3M-2で意図的に先送りした部分)、(b) 専用バイオームの追加、(c) 3種類目以降の地表装飾、のいずれかが自然な発展先。ただし上記4の実プレイ検証(基本的な行き来ができるか)を優先すべき。
+9. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`(§2-5)。session 18では他セッションとの並行は検知しなかったが、毎回確認すること。
 10. issueのbodyを取得する際は`github.com/<owner>/<repo>/issues/<番号>?nocache=<ts>`のHTMLから`"body":"..."`のJSON文字列を`python3`の文字列探索で抜き出す方法が引き続き有効。
+11. **【新規、重要な設計上の教訓】`minecraft:simple_block`のようなforce-place系のworldgen featureを使うブロックを新規追加する際は、`canSurvive()`のJava実装と`would_survive`のplacement filterを"最初からセットで"実装すること(§4-31参照)。** Bloom(session 17)はこれを後から追加する形になったが、Spike(session 18)以降は最初から両方入れる方が手戻りが無い。
 
 ### 議論したい論点・改善案
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。ユーザー側でビルド済みjar(`builds/ClaudeMod-latest.jar`、session 17のビルド成功分)を時々プレイし、フィードバック(できればGitHub Issueの形で)を残していただけると、次回以降のセッションがそれを最優先で拾える。特にPrism Realm/Prismium Rift Shard、Prismium Wraith、Prismium Locator、Prismium Bloomは「コンパイルは通るが本当に動くか一切未確認」という段階のものが積み上がっているので、フィードバックの価値が大きい。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。ユーザー側でビルド済みjar(`builds/ClaudeMod-latest.jar`、session 18のビルド成功分)を時々プレイし、フィードバック(できればGitHub Issueの形で)を残していただけると、次回以降のセッションがそれを最優先で拾える。特にPrism Realm/Prismium Rift Shard、Prismium Wraith、Prismium Locator、Prismium Bloom/Spikeは「コンパイルは通るが本当に動くか一切未確認」という段階のものが積み上がっているので、フィードバックの価値が大きい。
 - **エネルギーシステムの設計方針の続き**: Prismium Cell/Generator/Cableの数値関係は、session 10時点の初期見積もりのまま。
-- **Prism Realm ディメンションの雰囲気**: 「桜並木バイオーム固定+常時正午」という最小構成に、session 17でPrismium Bloomという専用地表装飾を1つ足した。もっと「異空間らしい」専用ビジュアル(空の色、専用パーティクル、複数種の専用地表ブロック)を今後も積み増していきたい。
-- **Prismium Rift Shardのポータル化**: 現状はアイテム直接テレポートのみ。フレームブロック+`ITeleporter`による「本物のポータル」への発展はまだ方針未確定(§3M-2)。もしポータルフレームを作るなら、Prismium Bloomと同じく新規クライアント専用コードを増やさずJSON側(`render_type`等)で完結させる設計を優先する方向で検討するとリスクを抑えられる。
-- **新しいシンボル未検証バグの教訓(§3N-3、session 16・17で継続実践)**: 「このMOD内で既に動いている実例があるAPIパターン」は目視レビューでも比較的安全に裏取りできるが、「このセッションで初めて(かつ唯一)使う定数・enum値・JSONスキーマ」は要注意。session 17ではこの教訓を2回活かした: (1) `SoundType.AMETHYST_CLUSTER`を使う前にWeb検索で実在確認、(2) 十字モデルの透過レンダリングを新規Javaイベントコードで実装する前にForge公式ドキュメントで`"render_type"`JSONフィールドという、コード変更不要のより安全な代替手段が存在すると確認してから採用した。後者は「新しいAPIサーフェスを増やさない選択肢を先に探す」という、session 16の「検証してから直す」に続くリスク低減パターンとして記録しておく。
+- **Prism Realm ディメンションの雰囲気**: 「桜並木バイオーム固定+常時正午」という最小構成に、session 17でPrismium Bloom、session 18でPrismium Spikeという専用地表装飾を積み増した(現在2種類)。もっと「異空間らしい」専用ビジュアル(空の色、専用パーティクル、3種類目以降の地表ブロック)を今後も積み増していきたい。
+- **Prismium Rift Shardのポータル化**: 現状はアイテム直接テレポートのみ。フレームブロック+`ITeleporter`による「本物のポータル」への発展はまだ方針未確定(§3M-2)。もしポータルフレームを作るなら、Prismium Bloom/Spikeと同じく新規クライアント専用コードを増やさずJSON側(`render_type`等)で完結させる設計を優先する方向で検討するとリスクを抑えられる。
+- **新しいシンボル未検証バグの教訓(§3N-3、session 16〜18で継続実践)**: 「このMOD内で既に動いている実例があるAPIパターン」は目視レビューでも比較的安全に裏取りできるが、「このセッションで初めて(かつ唯一)使う定数・enum値・JSONスキーマ」は要注意。session 18では`would_survive`ブロック述語と`block_predicate_filter`placement modifierを初採用する前にMinecraft Wikiで両方のJSONスキーマを個別に裏取りした。加えて「`simple_block`featureは`canSurvive()`を見ない」という、コードレビューだけでは気づきにくい落とし穴も今回発見できた(§4-31)。この種の「featureごとの暗黙の挙動差」は今後も注意する価値がある。
 - **探知アイテムの発展余地**: Prismium Locator(session 16)はメッセージ表示のみの最小実装。将来的に(a) バニラコンパスのようなアイテムモデルpredicateで針を実際に回転させる、(b) Prismium Wraithなど鉱石以外の対象も検知できるようにする、(c) Prism Realm内での探知、などの拡張が考えられる。
 - **GitHubファイル閲覧の新手法(§4-21、Kaupenjoe氏のチュートリアルリポジトリを`git clone`して実コードを読む手法含む)**: 引き続き有効。§3N-2で見つけた`/commit/<sha>/checks`ページの手法と合わせて、次回以降のデバッグツールキットとして活用すること。
 
 ### コミット/プッシュ状況
-このセッションの変更は1コミット: `06c78b8`(Prismium Bloomの実装・worldgen・テクスチャー・lang一式)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`fc789c1`)の到着を確認し、本物のビルド成功を確定させた。issue #1・#2ともOpenのまま変化無し、新規Issueも無し(§3P-1)。
+このセッションの変更は2コミット: `e67fc93`(Prismium Bloomの浮遊生成バグ修正)、`8017ed8`(Prismium Spikeの実装一式: コード・アセット・worldgen・テクスチャー・lang)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`cba675a`)の到着を確認し、本物のビルド成功を確定させた。issue #1・#2ともOpenのまま変化無し、新規Issueも無し(§3Q-1)。
 
 ### 通知状況
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`fc789c1`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`cba675a`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
