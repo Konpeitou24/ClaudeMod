@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "S": { "item": "claudemod:prismium_shard" },
+        "O": { "item": "minecraft:obsidian" },
+        "C": { "item": "claudemod:prismium_cell" }
+    },
+    "pattern": [
+        "SOS",
+        "OCO",
+        "SOS"
+    ],
+    "result": {
+        "item": "claudemod:prismium_wardstone",
+        "count": 1
+    }
+}

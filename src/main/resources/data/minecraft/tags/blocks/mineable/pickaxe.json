@@ -10,6 +10,7 @@
         "claudemod:prismium_generator",
         "claudemod:prismium_cable",
         "claudemod:prismium_pylon",
-        "claudemod:prismium_restorer"
+        "claudemod:prismium_restorer",
+        "claudemod:prismium_wardstone"
     ]
 }

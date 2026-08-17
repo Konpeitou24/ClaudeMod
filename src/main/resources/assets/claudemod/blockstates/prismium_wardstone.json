@@ -1,0 +1,6 @@
+{
+    "variants": {
+        "lit=false": { "model": "claudemod:block/prismium_wardstone" },
+        "lit=true": { "model": "claudemod:block/prismium_wardstone_lit" }
+    }
+}

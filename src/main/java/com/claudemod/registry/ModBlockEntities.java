@@ -6,6 +6,7 @@ import com.claudemod.blockentity.PrismiumCellBlockEntity;
 import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
 import com.claudemod.blockentity.PrismiumPylonBlockEntity;
 import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
+import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -48,6 +49,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("prismium_restorer",
                     () -> BlockEntityType.Builder.of(PrismiumRestorerBlockEntity::new,
                             ModBlocks.PRISMIUM_RESTORER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<PrismiumWardstoneBlockEntity>> PRISMIUM_WARDSTONE =
+            BLOCK_ENTITIES.register("prismium_wardstone",
+                    () -> BlockEntityType.Builder.of(PrismiumWardstoneBlockEntity::new,
+                            ModBlocks.PRISMIUM_WARDSTONE.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

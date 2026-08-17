@@ -8,6 +8,7 @@ import com.claudemod.block.PrismiumGeneratorBlock;
 import com.claudemod.block.PrismiumPylonBlock;
 import com.claudemod.block.PrismiumRestorerBlock;
 import com.claudemod.block.PrismiumSpikeBlock;
+import com.claudemod.block.PrismiumWardstoneBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -199,6 +200,23 @@ public class ModBlocks {
                     .mapColor(MapColor.COLOR_CYAN)
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)));
+
+    // Prismium Wardstone (session 21): the mod's third FE *consumer*,
+    // after Prismium Pylon (session 19, buffs players) and Prismium
+    // Restorer (session 20, repairs items). Where those two are helpful
+    // to the player directly, Wardstone is a defensive "area ward" that
+    // weakens/slows nearby hostile mobs - see PrismiumWardstoneBlock /
+    // PrismiumWardstoneBlockEntity for the full design rationale. Same
+    // "machine" family stats as Cell/Generator/Pylon; LIT drives light
+    // level exactly like Pylon/Generator (0 idle, here 10 while warding -
+    // brighter than Pylon's 9 to read as an even more overt magical
+    // effect, matching the "wider radius, defensive" framing).
+    public static final RegistryObject<Block> PRISMIUM_WARDSTONE = BLOCKS.register("prismium_wardstone",
+            () -> new PrismiumWardstoneBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 10 : 0)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

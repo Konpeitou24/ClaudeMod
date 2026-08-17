@@ -6,6 +6,7 @@ import com.claudemod.blockentity.PrismiumCellBlockEntity;
 import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
 import com.claudemod.blockentity.PrismiumPylonBlockEntity;
 import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
+import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
 import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
@@ -170,6 +171,13 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_RESTORER_ITEM = ITEMS.register("prismium_restorer",
             () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_RESTORER.get(), new Item.Properties(),
                     PrismiumRestorerBlockEntity.CAPACITY));
+
+    // Prismium Wardstone (session 21): BlockItem for the mod's third FE
+    // consumer. See ModBlocks.PRISMIUM_WARDSTONE. Same EnergyStorageBlockItem
+    // persistence/tooltip treatment as every other Prismium Energy block.
+    public static final RegistryObject<Item> PRISMIUM_WARDSTONE_ITEM = ITEMS.register("prismium_wardstone",
+            () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_WARDSTONE.get(), new Item.Properties(),
+                    PrismiumWardstoneBlockEntity.CAPACITY));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
