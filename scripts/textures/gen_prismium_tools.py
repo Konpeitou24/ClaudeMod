@@ -1,13 +1,23 @@
 #!/usr/bin/env python3
-"""Generate ClaudeMod's Prismium tool set textures (session 2).
+"""Generate ClaudeMod's Prismium tool set textures (session 2, redesigned
+session 13 in response to GitHub issue #2: "each tool's silhouette doesn't
+match what it is, and they all look too similar to tell apart at a glance").
 
-Produces 16x16 pixel-art item textures, styled like vanilla Minecraft tools
-(diagonal head-at-top-right / handle-at-bottom-left silhouette for pickaxe,
-axe, shovel, hoe; vertical blade for the sword), using the same Prismium
-crystal palette established in gen_prismium.py so the tool set reads as
-part of the same material family.
+Session 13 change: pickaxe, shovel and hoe previously all rendered as a
+similar small triangular crystal blob perched on a diagonal handle, which
+made them hard to distinguish in the hotbar (issue #2). This revision gives
+each tool head a genuinely different silhouette inspired by vanilla tool
+shapes, while keeping the established Prismium crystal palette so the set
+still reads as one material family:
+  - Pickaxe: a two-pronged fork opening from a shared socket.
+  - Axe:     a single solid wedge/blade (unchanged shape, still distinct).
+  - Shovel:  a thin continuous blade flush with the handle - no separate
+             blob head, so its silhouette is a slim line, unlike the others.
+  - Hoe:     a flat crossbar blade sticking out near the handle tip.
+  - Sword:   unchanged (vertical blade + crossguard + hilt).
 
-All output is deterministic (fixed RNG seed). Run from repo root:
+Produces 16x16 pixel-art item textures. All output is deterministic (no
+randomness). Run from repo root:
   python3 scripts/textures/gen_prismium_tools.py
 """
 from pathlib import Path
@@ -102,6 +112,31 @@ def draw_handle(px, start, end):
         set_px(px, x + 1, y, H_OUTLINE) if (x + 1, y) not in [] else None
 
 
+def draw_thin_diagonal(px, start, end, base_color, hilite_color, outline_color, hilite_every=4):
+    """Draw a thin (1px core) diagonal line - used for the shovel/hoe shafts
+    so they read as slimmer than the 2px pickaxe/axe handle. Returns the
+    ordered list of (x, y) points so callers can recolor the tip."""
+    x0, y0 = start
+    x1, y1 = end
+    steps = max(abs(x1 - x0), abs(y1 - y0))
+    pts = []
+    for i in range(steps + 1):
+        t = i / steps
+        x = round(x0 + (x1 - x0) * t)
+        y = round(y0 + (y1 - y0) * t)
+        pts.append((x, y))
+    ptset = set(pts)
+    for i, (x, y) in enumerate(pts):
+        color = hilite_color if i % hilite_every == 0 else base_color
+        set_px(px, x, y, color)
+    for (x, y) in pts:
+        for (dx, dy) in [(1, 0), (0, 1)]:
+            nx, ny = x + dx, y + dy
+            if (nx, ny) not in ptset and 0 <= nx < SIZE and 0 <= ny < SIZE and px[nx, ny][3] == 0:
+                px[nx, ny] = (*outline_color, 255)
+    return pts
+
+
 def crystal_fill(px, pts, shade_fn):
     for (x, y) in pts:
         px[x, y] = (*shade_fn(x, y), 255)
@@ -110,35 +145,38 @@ def crystal_fill(px, pts, shade_fn):
 def make_pickaxe():
     img = new_img()
     px = img.load()
-    # Handle: bottom-left tip to mid-board.
-    draw_handle(px, (1, 14), (8, 7))
-    # Head: pickaxe head, angled like a shallow "V" opening to the right,
-    # made of two crystal prongs meeting near (10, 5).
+    # Handle: bottom-left tip up to the socket where the two prongs meet.
+    draw_handle(px, (1, 14), (7, 7))
+    # Head: a genuine two-pronged fork opening upward from a shared socket,
+    # distinct from the single solid wedge used for the axe. This is the
+    # session-13 redesign (GitHub issue #2: tools were hard to tell apart).
     head = set()
-    # upper prong
-    for i, (x, y) in enumerate([(9, 6), (10, 5), (11, 4), (12, 3), (13, 2), (14, 1), (14, 0)]):
+    # right prong (socket to upper-right tip)
+    for (x, y) in [(9, 6), (10, 5), (11, 4), (12, 3), (13, 2), (14, 1), (15, 1)]:
         head.add((x, y))
-    # lower prong
-    for i, (x, y) in enumerate([(9, 6), (10, 6), (11, 5), (12, 5), (13, 4), (14, 4), (15, 3)]):
+    # left prong (socket to upper-left tip) - kept clear of the diagonal
+    # handle beneath it so the fork silhouette reads clearly.
+    for (x, y) in [(7, 6), (6, 5), (5, 4), (4, 3), (3, 2), (2, 1), (1, 1)]:
         head.add((x, y))
-    # connective mass near the socket
-    for (x, y) in [(8, 6), (9, 5), (10, 4)]:
+    # socket connecting both prongs to the handle
+    for (x, y) in [(8, 6), (8, 5), (7, 5), (9, 5)]:
         head.add((x, y))
 
     def shade(x, y):
-        d = x + y
-        if d <= 8:
+        d = abs(x - 8)
+        if d <= 1:
             return SHADOW
-        if d <= 12:
+        if d <= 3:
             return BASE
-        if d <= 15:
+        if d <= 5:
             return MID
         return HILITE
 
     crystal_fill(px, head, shade)
     draw_outline(px, head)
-    set_px(px, 13, 1, HILITE)
-    set_px(px, 14, 3, ACCENT)
+    set_px(px, 14, 1, HILITE)
+    set_px(px, 2, 1, HILITE)
+    set_px(px, 8, 5, ACCENT)
     return img
 
 
@@ -146,7 +184,9 @@ def make_axe():
     img = new_img()
     px = img.load()
     draw_handle(px, (1, 14), (8, 7))
-    # Head: a broad crystal wedge blade on the upper-right side of the handle.
+    # Head: a single broad, solid crystal wedge blade - kept as the "big
+    # solid chunk" silhouette so it still reads distinctly from the fork
+    # (pickaxe), the thin line (shovel) and the crossbar (hoe).
     head = set()
     rows = {
         0: (11, 15),
@@ -181,63 +221,58 @@ def make_axe():
 def make_shovel():
     img = new_img()
     px = img.load()
-    draw_handle(px, (1, 14), (10, 5))
-    # Head: small rounded crystal blade at the very top.
-    head = set()
-    rows = {
-        0: (10, 13),
-        1: (9, 14),
-        2: (9, 13),
-        3: (10, 13),
-    }
-    for y, (x0, x1) in rows.items():
-        for x in range(x0, x1 + 1):
-            head.add((x, y))
-
-    def shade(x, y):
-        rel = x - 9
-        if rel <= 1:
-            return SHADOW
-        if rel <= 3:
-            return BASE
-        return HILITE
-
-    crystal_fill(px, head, shade)
-    draw_outline(px, head)
-    set_px(px, 11, 0, HILITE)
-    set_px(px, 12, 2, ACCENT)
+    # Session-13 redesign: the shovel is now a single slim continuous blade
+    # running the whole length of the tool - no separate triangular head
+    # blob like the old design (which looked almost identical to the hoe).
+    # The lower two-thirds are wood (shaft), the upper third fades into the
+    # crystal palette (the flat spade blade), ending in a small flared tip.
+    core = draw_thin_diagonal(px, (1, 14), (12, 3), H_BASE, H_HILITE, H_OUTLINE)
+    blade_len = 6
+    blade_pts = core[-blade_len:]
+    for i, (x, y) in enumerate(blade_pts):
+        if i >= blade_len - 2:
+            c = HILITE
+        elif i >= blade_len - 4:
+            c = MID
+        else:
+            c = BASE
+        set_px(px, x, y, c)
+    tip_x, tip_y = core[-1]
+    # small flared spade tip, perpendicular-ish nub so the very top isn't
+    # just a single pixel (reads as a flat blade edge, not a spike).
+    set_px(px, tip_x + 1, tip_y, MID)
+    set_px(px, tip_x, tip_y - 1, HILITE)
+    set_px(px, tip_x - 1, tip_y - 1, BASE)
+    set_px(px, tip_x, tip_y + 1, ACCENT)
     return img
 
 
 def make_hoe():
     img = new_img()
     px = img.load()
-    draw_handle(px, (1, 14), (10, 3))
-    # Head: flat crystal blade perpendicular to the handle, near the top,
-    # touching the handle's end so there's no visible gap.
+    # Session-13 redesign: long slim handle (thinner than pickaxe/axe) with
+    # a flat crossbar blade sticking out near the tip - a rectangle, not a
+    # triangular wedge, so it can't be confused with the axe or old shovel.
+    draw_thin_diagonal(px, (1, 14), (11, 2), H_BASE, H_HILITE, H_OUTLINE)
     head = set()
-    rows = {
-        0: (10, 15),
-        1: (9, 15),
-        2: (9, 13),
-        3: (9, 11),
-    }
-    for y, (x0, x1) in rows.items():
-        for x in range(x0, x1 + 1):
+    for y in (0, 1):
+        for x in range(9, 15):
             head.add((x, y))
+    # small wood joint pixel so the crossbar visibly meets the handle tip
+    # instead of floating above it with a gap.
+    set_px(px, 11, 1, H_HILITE)
 
     def shade(x, y):
-        rel = x - 9
-        if rel <= 2:
-            return SHADOW
-        if rel <= 4:
-            return BASE
-        return MID
+        rel = 14 - x
+        if rel <= 1:
+            return HILITE
+        if rel <= 3:
+            return MID
+        return BASE
 
     crystal_fill(px, head, shade)
     draw_outline(px, head)
-    set_px(px, 14, 0, HILITE)
-    set_px(px, 10, 1, ACCENT)
+    set_px(px, 9, 0, ACCENT)
     return img
 
 
