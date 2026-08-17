@@ -1,6 +1,10 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.blockentity.PrismiumCableBlockEntity;
+import com.claudemod.blockentity.PrismiumCellBlockEntity;
+import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
+import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumGrapplingHookItem;
@@ -49,20 +53,30 @@ public class ModItems {
             () -> new BlockItem(ModBlocks.PRISMIUM_LANTERN.get(), new Item.Properties()));
 
     // Prismium Cell (session 8): BlockItem for the mod's first block
-    // entity/energy storage block. See ModBlocks.PRISMIUM_CELL.
+    // entity/energy storage block. See ModBlocks.PRISMIUM_CELL. Session 11
+    // switched this from a plain BlockItem to EnergyStorageBlockItem so
+    // stored FE survives break+replace (via each block's loot table
+    // copy_nbt function) and shows up in the item's tooltip - see
+    // EnergyStorageBlockItem's javadoc.
     public static final RegistryObject<Item> PRISMIUM_CELL_ITEM = ITEMS.register("prismium_cell",
-            () -> new BlockItem(ModBlocks.PRISMIUM_CELL.get(), new Item.Properties()));
+            () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_CELL.get(), new Item.Properties(),
+                    PrismiumCellBlockEntity.CAPACITY));
 
     // Prismium Generator (session 9): BlockItem for the mod's first
     // BlockEntityTicker / automatic energy-transfer block. See
-    // ModBlocks.PRISMIUM_GENERATOR.
+    // ModBlocks.PRISMIUM_GENERATOR. Session 11: see PRISMIUM_CELL_ITEM
+    // above, same EnergyStorageBlockItem persistence/tooltip treatment.
     public static final RegistryObject<Item> PRISMIUM_GENERATOR_ITEM = ITEMS.register("prismium_generator",
-            () -> new BlockItem(ModBlocks.PRISMIUM_GENERATOR.get(), new Item.Properties()));
+            () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_GENERATOR.get(), new Item.Properties(),
+                    PrismiumGeneratorBlockEntity.CAPACITY));
 
     // Prismium Cable (session 10): BlockItem for the mod's first relay
-    // block / non-full-cube block. See ModBlocks.PRISMIUM_CABLE.
+    // block / non-full-cube block. See ModBlocks.PRISMIUM_CABLE. Session
+    // 11: see PRISMIUM_CELL_ITEM above, same EnergyStorageBlockItem
+    // persistence/tooltip treatment.
     public static final RegistryObject<Item> PRISMIUM_CABLE_ITEM = ITEMS.register("prismium_cable",
-            () -> new BlockItem(ModBlocks.PRISMIUM_CABLE.get(), new Item.Properties()));
+            () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_CABLE.get(), new Item.Properties(),
+                    PrismiumCableBlockEntity.CAPACITY));
 
         // Prismium tool set (session 2): stats sit just above diamond, repaired
     // with Prismium Shard. See ModToolTiers for the tier definition.

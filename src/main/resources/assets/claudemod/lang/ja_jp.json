@@ -24,5 +24,7 @@
     "message.claudemod.prismium_cell.full": "プリズミウムセルは満タンです",
     "message.claudemod.prismium_generator.status": "プリズミウム発電機: 燃料残り%1$s秒、%2$s / %3$s FE",
     "message.claudemod.prismium_generator.fueled": "プリズミウム発電機に燃料を追加: 残り%1$s秒",
-    "message.claudemod.prismium_cable.status": "プリズミウムケーブル: %1$s / %2$s FE"
+    "message.claudemod.prismium_cable.status": "プリズミウムケーブル: %1$s / %2$s FE",
+    "tooltip.claudemod.energy_storage": "%1$s / %2$s FE",
+    "tooltip.claudemod.burn_time": "燃料残り%1$s秒"
 }

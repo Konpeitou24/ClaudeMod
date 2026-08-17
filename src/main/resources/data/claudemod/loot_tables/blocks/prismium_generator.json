@@ -7,7 +7,25 @@
             "entries": [
                 {
                     "type": "minecraft:item",
-                    "name": "claudemod:prismium_generator"
+                    "name": "claudemod:prismium_generator",
+                    "functions": [
+                        {
+                            "function": "minecraft:copy_nbt",
+                            "source": "block_entity",
+                            "ops": [
+                                {
+                                    "source": "Energy",
+                                    "target": "BlockEntityTag.Energy",
+                                    "op": "replace"
+                                },
+                                {
+                                    "source": "BurnTime",
+                                    "target": "BlockEntityTag.BurnTime",
+                                    "op": "replace"
+                                }
+                            ]
+                        }
+                    ]
                 }
             ],
             "conditions": [
