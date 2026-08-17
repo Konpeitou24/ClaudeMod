@@ -2,6 +2,7 @@ package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.client.screen.PrismiumCellScreen;
+import com.claudemod.client.screen.PrismiumGeneratorScreen;
 import com.claudemod.entity.client.PrismiumWraithRenderer;
 import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModMenuTypes;
@@ -37,7 +38,10 @@ public class ClientModEvents {
         // MenuScreens#register is not thread-safe (Forge docs, "Screens"
         // page, 1.20.x), so it must be deferred via enqueueWork rather
         // than called directly on this parallel-dispatched event.
-        event.enqueueWork(() ->
-                MenuScreens.register(ModMenuTypes.PRISMIUM_CELL_MENU.get(), PrismiumCellScreen::new));
+        event.enqueueWork(() -> {
+            MenuScreens.register(ModMenuTypes.PRISMIUM_CELL_MENU.get(), PrismiumCellScreen::new);
+            // Session 24: second screen registration, same call.
+            MenuScreens.register(ModMenuTypes.PRISMIUM_GENERATOR_MENU.get(), PrismiumGeneratorScreen::new);
+        });
     }
 }

@@ -2,10 +2,18 @@ package com.claudemod.blockentity;
 
 import com.claudemod.energy.EnergyPushHelper;
 import com.claudemod.energy.PrismiumEnergyStorage;
+import com.claudemod.menu.PrismiumGeneratorMenu;
 import com.claudemod.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.MenuProvider;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -74,7 +82,7 @@ import javax.annotation.Nullable;
  * so {@link com.claudemod.blockentity.PrismiumCableBlockEntity} could reuse
  * it verbatim instead of copy-pasting a third time; behavior is unchanged.
  */
-public class PrismiumGeneratorBlockEntity extends BlockEntity {
+public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuProvider {
 
     /** Ticks of burn time granted per Prismium Shard fed in. Matches
      * vanilla coal's 1600-tick (80 second) burn duration on purpose - a
@@ -95,6 +103,23 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity {
     /** Max FE pushed to *all* neighbors combined, per tick. */
     public static final int MAX_EXTRACT = 200;
 
+    /** Ceiling applied to the burn-time value exposed through
+     * {@link #getContainerData()} (session 24, see
+     * {@link PrismiumGeneratorMenu}'s class doc). Unlike energy (capped at
+     * {@link #CAPACITY} = 8,000, already comfortably short-safe), burnTime
+     * is not capped anywhere else in this class - {@link #addFuel()} adds
+     * {@link #BURN_TIME_PER_SHARD} unconditionally, so a player who feeds
+     * dozens of shards at once (or repeatedly before any of it burns off)
+     * really could push the raw value past {@code Short.MAX_VALUE}
+     * (32,767 ticks, about 27 minutes), which would silently wrap/truncate
+     * over the network exactly like the FE-value bug avoided for Prismium
+     * Cell in session 23. Clamping here avoids that; a burn-time gauge
+     * saturating at "still well over 27 minutes of fuel queued" is
+     * indistinguishable from correct in practice, so no precision is lost
+     * for any realistic amount of fuel.
+     */
+    public static final int BURN_TIME_SYNC_CAP = Short.MAX_VALUE;
+
     // maxReceive is 0: this generator only ever fills its own buffer via
     // the internal burn logic below (PrismiumEnergyStorage#setEnergy,
     // which bypasses maxReceive on purpose), never by another machine
@@ -103,6 +128,41 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity {
     private final LazyOptional<IEnergyStorage> energyOptional = LazyOptional.of(() -> energyStorage);
 
     private int burnTime = 0;
+
+    /** Backs this block entity's GUI (session 24, following the pattern
+     * {@link com.claudemod.blockentity.PrismiumCellBlockEntity} established
+     * in session 23). Three slots instead of Cell's two: index 0/1 are
+     * current/max energy (both already well inside short range - see
+     * {@link #CAPACITY} - so unlike Cell no division is needed here),
+     * index 2 is burnTime clamped to {@link #BURN_TIME_SYNC_CAP} (see that
+     * constant's doc for why). {@code set} is a no-op for the same reason
+     * as Cell's: the screen only ever reads, the underlying state changes
+     * through {@link #serverTick} and {@link #addFuel()} only. */
+    private final ContainerData containerData = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> energyStorage.getEnergyStored();
+                case 1 -> energyStorage.getMaxEnergyStored();
+                case 2 -> Math.min(burnTime, BURN_TIME_SYNC_CAP);
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            // Read-only from the screen's perspective, see field doc.
+        }
+
+        @Override
+        public int getCount() {
+            return 3;
+        }
+    };
+
+    public ContainerData getContainerData() {
+        return containerData;
+    }
 
     public PrismiumGeneratorBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PRISMIUM_GENERATOR.get(), pos, state);
@@ -188,5 +248,17 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity {
     public void invalidateCaps() {
         super.invalidateCaps();
         energyOptional.invalidate();
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("block.claudemod.prismium_generator");
+    }
+
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int windowId, Inventory inventory, Player player) {
+        return new PrismiumGeneratorMenu(windowId, inventory, containerData,
+                ContainerLevelAccess.create(level, worldPosition));
     }
 }

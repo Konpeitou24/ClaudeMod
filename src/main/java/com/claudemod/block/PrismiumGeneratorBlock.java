@@ -5,6 +5,7 @@ import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -21,6 +22,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
@@ -100,11 +102,17 @@ public class PrismiumGeneratorBlock extends BaseEntityBlock {
         }
 
         if (held.isEmpty()) {
-            player.displayClientMessage(
-                    Component.translatable("message.claudemod.prismium_generator.status",
-                            generator.getBurnSeconds(),
-                            generator.getEnergyStorage().getEnergyStored(),
-                            generator.getEnergyStorage().getMaxEnergyStored()), true);
+            // Session 24: open Generator's GUI instead of printing a status
+            // message - same NetworkHooks.openScreen pattern established by
+            // PrismiumCellBlock#use in session 23 (see that class's doc for
+            // why this specific API, not ServerPlayer#openMenu, is correct
+            // for this mod's pinned Forge version). The old action-bar
+            // status message is removed rather than kept alongside the
+            // GUI, same call as Cell: the GUI is a strictly more capable
+            // replacement for "check current fuel/energy".
+            if (player instanceof ServerPlayer serverPlayer) {
+                NetworkHooks.openScreen(serverPlayer, generator, buf -> buf.writeBlockPos(pos));
+            }
             return InteractionResult.CONSUME;
         }
 

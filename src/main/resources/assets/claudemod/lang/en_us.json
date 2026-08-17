@@ -64,5 +64,6 @@
     "message.claudemod.prismium_wardstone.status_idle": "Prismium Wardstone: %1$s / %2$s FE (idle)",
     "message.claudemod.prismium_wardstone.charged": "Charged Prismium Wardstone: %1$s / %2$s FE",
     "message.claudemod.prismium_wardstone.full": "Prismium Wardstone is already full",
-    "gui.claudemod.fe_amount": "%1$s / %2$s FE"
+    "gui.claudemod.fe_amount": "%1$s / %2$s FE",
+    "gui.claudemod.burn_seconds": "Fuel: %1$ss"
 }
