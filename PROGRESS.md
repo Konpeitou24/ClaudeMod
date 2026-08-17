@@ -794,6 +794,37 @@ GitHub issue #1・#2の状況もPROGRESS.md記載の手順(github.comのHTMLペ�
 
 1コミット(`80e6639`: Prismium GeneratorのGUI一式)。push前に`git fetch origin main`で差分無し(並行セッションとの衝突は検知せず、直前は`2d2926e`のまま)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`ad1a4e9`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(148,032→154,552バイト)も確認 - 本物のビルド成功。
 
+## 3X. セッション#25で実装した内容: Prismium PylonのGUI(MOD3種類目のMenu/Screen)
+
+### 3X-0. セッション開始時の状況確認
+
+`git clone`は`$HOME/tmp/ClaudeMod`(固定パスだが今回も空いていた)を使用したが、この状況確認の途中で新たな環境上の問題に遭遇した: `mcp__workspace__bash`のワークスペース自体の`/tmp`・マウント済み`outputs`フォルダの両方で、事前に(別セッション実行時の?)ファイルが`nobody:nogroup`所有または"Operation not permitted"な`.git`ロックファイル付きで残っており、`rm -rf`すら失敗する状態だった。`$HOME/tmp`(≒`/sessions/<session-id>/tmp`、`outputs`マウントとは別のsandboxローカルディスク)配下は問題なく使えたため、そちらに切り替えて解決した。詳細は§5-4に記載。
+
+`git log`で直前セッション(#24)の最終コミット`ba513fd`(PROGRESS.md更新)の直後に`ci: update built jar`コミット`753f93d`が付いていることを確認 - 本物のビルド成功。
+
+GitHub issue確認: 今回は個別issueページ(`/issues/1`, `/issues/2`)が**両方とも200 OKで正常に取得できた**(セッション#24で新たに発生していた「個別issueページが一貫して404を返す」制約(§3W-0参照)は、少なくとも今回は再現しなかった - 一時的な問題だった可能性が高い)。両issueとも本文の状態は`"state":"OPEN"`のまま、コメント数は`totalCount:0`(新規コメント無し)。リポジトリトップページの`issues-repo-tab-count`もOpen issue数2件のままで、新規issueの追加も無い。つまり#1(顔が見えない、session 9で対応済み)・#2(ツールの見た目、session 13で対応済み)とも追加のユーザーフィードバックは無し。
+
+§5(旧、session 24時点)の選択肢のうち、(a)「同じMenu/Screenパターンを消費ブロック3種(Pylon・Restorer・Wardstone)へさらに展開する」を選び、最初に追加されたPylon(session 19)から着手した。
+
+### 3X-1. 実装: Prismium PylonのGUI(MOD3種類目)
+
+- `PrismiumPylonBlockEntity`が`MenuProvider`を実装。`ContainerData`は3スロット(Generatorと同数だが内容が異なる): index0=現在FE、index1=最大FE(容量20,000は`Short.MAX_VALUE`に対しまだ余裕があるため、CellのDIVISORのような対処は不要)、index2=`active`フラグを`boolean`から`int`(0/1)へエンコードしたもの。Generatorの`burnTime`のような連続値ではなく、「直近のパルスが実際に放射したか」という真偽値のみを同期する点がGenerator型との違い。
+- `PrismiumPylonMenu`(新規、`PrismiumGeneratorMenu`とほぼ同型): スロット無し、ステータス表示のみ。`isActive()`ゲッターで`data.get(2) != 0`を返す。
+- `PrismiumPylonScreen`(新規): 176x90(Generatorの176x110より低い、Cellと同サイズ - Pylonには炎ゲージのような第2の連続値ゲージが無いため)。エネルギーバーはCell/Generatorと同じteal配色・同じ幾何(BAR_X=8, BAR_Y=34, 160x14)。新規要素として、タイトル行の下に8x8の正方形「ステータスランプ」を追加: idle時は暗いグレー(ケーシングと同系色)、active時はブロック本体の点灯テクスチャー(`scripts/textures/gen_prismium_pylon.py`のPRISMIUM_ACCENT紫コア+CYAN_ACCENTシアン縁)と全く同じ2色を再利用して2層に塗り分けた(外側シアン、内側紫)。ランプの隣にステータステキスト("Radiating"/"Idle"、新規lang key)も表示。
+- `PrismiumPylonBlock#use`の空手右クリック分岐を、旧来のアクションバー状態表示メッセージ(現在/最大FE + active/idle)から`NetworkHooks.openScreen`によるGUIオープンに置き換えた(Cell/Generatorと同じ置き換えパターン)。プリズミウムのかけらでの手動チャージ分岐(アクションバーメッセージのまま)は変更していない。クラスjavadocのコメントも「空手右クリック=GUIを開く」に更新した(Generatorのクラスjavadocが同種の更新を素通りしていた既存の抜けを踏まえ、今回は更新し忘れないよう意識した)。
+- `ModMenuTypes`に`PRISMIUM_PYLON_MENU`を追加、`ClientModEvents#registerScreens`に3件目の`MenuScreens.register`呼び出しを追加。
+- 新規lang key: `gui.claudemod.pylon_status_active`("Radiating"/"放射中")、`gui.claudemod.pylon_status_idle`("Idle"/"待機中")(en/ja)。
+
+### 3X-2. テクスチャー: Pylon GUI背景(3枚目のGUIカテゴリテクスチャー)
+
+`scripts/textures/gen_prismium_cell_gui.py`をベースに`scripts/textures/gen_prismium_pylon_gui.py`を新規作成。256x256キャンバス、実際に描画される範囲は176x90。Cell/Generatorと同じCASING_DARK/CASING_MID金属ケーシングだが、外枠の縁取り色をCell/Generatorの`PRISMIUM_OUTLINE`(暗いティール)から、Pylon自身の`PRISMIUM_ACCENT`(紫)を暗くした`PYLON_OUTLINE`(#3A1F52)へ意図的に変更し、GUIを開いた瞬間からCell/Generatorと視覚的に区別できるようにした(ステータスランプの色だけに頼らない差別化)。ステータスランプが描画される座標(LAMP_X=8, LAMP_Y=18, 8x8)の背後には、ランプ用の暗い紫がかった「ソケット」窪みをあらかじめ焼き込んだ。エネルギーバー用のトラック窪みはCell/Generatorと同じ幾何・同じTRACK_DARK配色。
+
+自己レビュー: `outputs`フォルダ経由でRead確認。(1)生の背景テクスチャー単体(256x256)をプレビューし、176x90の外側が完全に透過であること、紫がかった縁取り・ランプソケット・エネルギーバートラックの3要素が意図通りの位置に描かれていることを確認。(2)Generator同様、コード側の描画ロジック(`PrismiumPylonScreen#renderBg`のランプ+バー塗りつぶし)をPythonで再現したモックアップを、active(ランプ点灯・エネルギー70%)とidle(ランプ消灯・エネルギー15%)の2パターンで生成し、4倍拡大の横並び比較画像で目視確認した。ランプのactive/idle切り替えが一目で分かること、紫の縁取りがCell/Generatorのティール系と明確に異なる印象を与えること、エネルギーバーの視認性がCell/Generatorと同等であることを確認した。作り直しは発生しなかった。
+
+### 3X-3. commit・push・ビルド確認
+
+1コミット(`eeaaacf`: Prismium PylonのGUI一式: `PrismiumPylonMenu.java`・`PrismiumPylonScreen.java`新規、`PrismiumPylonBlockEntity.java`・`PrismiumPylonBlock.java`・`ModMenuTypes.java`・`ClientModEvents.java`更新、GUI背景テクスチャー新規、`gen_prismium_pylon_gui.py`新規、lang key 2件新規)。push前に`git fetch origin main`で差分無し(並行セッションとの衝突は検知せず、直前は`753f93d`のまま)を確認、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`3c5b98a`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(154,552→160,720バイト)も確認 - 本物のビルド成功。
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
 
 
@@ -928,37 +959,42 @@ GitHub issue #1・#2の状況もPROGRESS.md記載の手順(github.comのHTMLペ�
     - `getBurnFraction()`の「アイテム単位の区切りを持たない累積ゲージ」という簡略化(§3W-1参照)が、実際にプレイヤーの目にはどう映るか(バニラのかまどに慣れたプレイヤーが違和感を覚えないか)は未検証。
     - `BURN_TIME_SYNC_CAP`(Short.MAX_VALUE)によるクランプは理論上安全なはずだが、実際に大量のかけらを投入して短時間でクランプ値に到達するケースを実地で試したことは無い。
     - GUI背景テクスチャー(176x110)は目視レビュー・コード再現モックアップの両方を行ったが、実際にゲーム内でタイトル文字・燃料テキスト・FEテキストと重なった時の見た目は未確認。
-    - GitHub issueの個別ページ(`/issues/1`, `/issues/2`)が今回`curl`で一貫して404を返した(§3W-0参照、過去セッションには無かった新しい制約)原因は未調査のまま。
+    - GitHub issueの個別ページ(`/issues/1`, `/issues/2`)が今回`curl`で一貫して404を返した(§3W-0参照、過去セッションには無かった新しい制約)原因は未調査のまま。**【セッション#25で追記】この404は次のセッションでは再現せず、両ページとも200 OKで取得できた** - 恒久的な制約ではなく、一時的な問題(GitHub側のキャッシュ・レートリミット等)だった可能性が高い。今後404に当たったら焦らずリトライする価値がある。
+
+39. 【セッション#25で新規発覚】Prismium PylonのGUI(§3X)は以下すべて未検証・既知の割り切り:
+    - MOD3種類目のMenu/Screen実装であり、CIビルドが通ること以上の検証(実際に空手右クリックでGUIが開くか、ステータスランプがactive/idleで正しく切り替わるか、エネルギーバーが正しい割合で塗りつぶされるか)は一度もできていない。特にPylonは他の2機種と異なり`active`状態が10tickごとのパルスでしか更新されないため、GUIを開いたまま眺めた時にランプが「切り替わって見える」タイミングがCell/Generatorのエネルギーバーよりも粗く感じられないかは未確認。
+    - ステータスランプの2色塗り分け(外側シアン`CYAN_ACCENT`・内側紫`PRISMIUM_ACCENT`)がブロック本体の点灯テクスチャーの配色と実際に「同じ光り方」に見えるかは、静止画のモックアップでの比較のみに基づく - ゲーム内の照明・インベントリ背景との組み合わせでの見え方は未確認。
+    - `PYLON_OUTLINE`(紫がかった縁取り)がCell/Generatorのティール系縁取りと十分に区別がつくかは、今回のモックアップ比較(§3X-2)では明確に見えたが、実際のゲーム内解像度・UIスケール設定によっては差が分かりにくくなる可能性はゼロではない。
+    - Pylon自体の未検証項目(§4-33、半径6・パルス間隔10tick・コスト20FE等のバランス数値、Regenerationの実際の付与)はGUI追加後も一切解消されていない - GUIは既存の未検証な内部状態を「見えるようにした」だけで、その状態自体の正しさを検証したわけではない点に注意。
 
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#24終了時点では、`80e6639`(Prismium GeneratorのGUI追加)の直後に`ad1a4e9`が付いており、ビルド成功(jarサイズ148,032→154,552バイト増加も`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`で確認)済み。
-2. **【新規】GitHub issueの個別ページ(`/issues/<番号>`)が今回、User-Agentを変えても一貫して`404 Not Found`(9バイトのプレーンテキスト)を返した。** 一方でリポジトリのトップページ(`github.com/<owner>/<repo>`)のHTML内`issues-repo-tab-count`要素からOpen issue数(現在2件、既知の#1・#2のまま増減無し)は引き続き取得できる。次回、もし個別issueページへの到達性が回復していれば内容を確認すること。回復していなければ、少なくともタブカウントの増減だけは毎回追跡し、「2件から増えた」ら新規issueの存在を検知できる、という最低限の代替監視として使うとよい。
-3. 【継続、重要な方法論】GUI等、MOD内に前例のない新規API領域を実装する際は、実装前に`WebSearch`+`mcp__workspace__web_fetch`でForge公式docs(`docs.minecraftforge.net/en/1.20.1/...`という**厳密固定バージョン**のページ)を確認する価値が高いことがセッション#23・#24と2回連続で実証されている(セッション#24ではGeneratorの`burnTime`が無制限加算されうる点に実装前のコードレビューで気づき、`BURN_TIME_SYNC_CAP`で対処 - セッション#23で確立した「shortの値域制限を疑う」習慣がそのまま活きた)。今後もこの習慣は継続すること。
-4. 【継続、環境まわりの実務上の注意】今回`$HOME/tmp/ClaudeMod`という固定パスを使ったが問題無く空いていた。ただし`/tmp/work`・`/tmp/work2`等の使い回されたパスは今回も`nobody:nogroup`所有で使用不可(`rm`すら`Permission denied`)だったため、**固定パスで`Permission denied`に当たったら即座に別の一意なパスへ切り替える**方針は引き続き有効。`Read`/`Edit`/`Write`ツールはWindowsホスト側のマウント(`outputs`等)しか見えず、`mcp__workspace__bash`でcloneしたリポジトリには直接アクセスできない制約も継続。**今回はJavaファイル・Pythonスクリプトを`outputs`経由で持ち込む代わりに、bashのpython heredocで文字列置換パッチを当てる方式に切り替えた**(`$HOME/tmp/scripts/*.py`に一時スクリプトを書いて`old_string`の`assert`チェック付きで置換 - Editツールの「置換前文字列が一意に存在するか」チェックと似た安全策を自前で再現した)。この方式は往復が減り効率的だったので、次回以降も選択肢として使ってよい(テクスチャー等の画像確認だけは引き続き`outputs`経由でのRead必須、コード編集はどちらでも可)。
-5. **【新規、優先度中〜高】Prismium Generator(session 24)により、§5(旧、session 23時点)item 5の案(a)「GUIパターンを他のFEブロックへ展開」に2機種目として着手できた。** 残る展開先・選択肢:
-   - (a) 同じMenu/Screenパターンを消費ブロック3種(Pylon・Restorer・Wardstone)へさらに展開する。いずれもCellと同型の「スロット無し、ステータス表示のみ」で実装できるはず(Pylon/Wardstoneは`LIT`状態を持つのでGeneratorに近い設計、Restorerは`LIT`が無くCellに近い設計)。
-   - (b) Prismium Cell/Generatorの欠片チャージ操作そのものをGUI化する(スロット追加、`SlotItemHandler`等の未踏み込み領域)。
-   - (c) 今回・前回のGUI実装が実際にゲーム内で正しく動くかのプレイフィードバックを待ってから、次の展開を判断する(§4-37・§4-38の未検証項目が多いため、横展開を続けるより先に1件を検証しきる方が手堅い可能性は引き続き残る)。
-6. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Pylon・Prismium Restorer・Prismium Wardstone・Prismium Cable(接続モデル)・Prismium Cell/GeneratorのGUI(2機種)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
-7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 24では他セッションとの並行は検知しなかったが、毎回確認すること。
+1. **【最優先、恒例】まずセッション開始時に`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#25終了時点では、`eeaaacf`(Prismium PylonのGUI追加)の直後に`3c5b98a`が付いており、ビルド成功(jarサイズ154,552→160,720バイト増加も`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`で確認)済み。
+2. **【解決、旧§5-2】GitHub issueの個別ページ(`/issues/<番号>`)の404問題(session 24で発覚)は今回再現せず、両ページとも200 OKで取得できた。** 一時的な問題だった可能性が高いので、今後404に当たっても即座に「恒久的な制約」と結論付けず、まずリトライしてみること。今回確認した内容: issue #1・#2ともOPENのまま、コメント無し、新規issue無し(タブカウント2件のまま)。
+3. 【継続、重要な方法論】GUI等、MOD内に前例のない新規API領域を実装する際は、実装前にForge公式docs(厳密固定バージョンページ)を確認する習慣がセッション#23・#24で2回連続で潜在バグを防いだ実績がある。今回(#25)のPylon GUIはCell/Generatorとほぼ同型のAPIの繰り返し適用だったため新規のAPI裏取りは不要だったが、次にPylon以外の新規領域(例: GUIへのスロット追加、送電網の可視化)に踏み込む際は改めてこの習慣を思い出すこと。
+4. **【新規、重要、環境まわり】今回`$HOME/tmp/ClaudeMod`という固定パスを使う前に、`/tmp/work`・`/tmp/work2`相当のパス(マウント済み`outputs`フォルダ内に前セッションが作った作業ディレクトリ)で`nobody:nogroup`所有・`.git`ロックファイルの"Operation not permitted"により`rm -rf`すら失敗する事態に遭遇した。** これは過去セッションで繰り返し報告されてきた「使い回された固定パスがPermission deniedになる」問題(§5旧30番、session 17-18)と同根だが、今回は**マウント済み`outputs`フォルダ自体がFUSE経由(Windowsホスト側のフォルダに同期される特殊なマウント)であることが`mount`コマンドで確認できた**- git内部が使うロックファイル(`.lock`)やhardlink相当の操作がFUSE越しだと正しく動作しないことが、根本原因である可能性が高い。**次回以降、gitリポジトリのclone/操作は必ず`$HOME/tmp`(≒`/sessions/<session-id>/tmp`、サンドボックスのローカルディスク`/dev/sda1`上)配下で行い、`outputs`マウント配下やその他のFUSEマウントでは絶対に`git clone`しないこと。** `outputs`フォルダは、テクスチャーPNGを`Read`ツールで目視確認する際に一時的にコピーする用途にのみ使うのが安全(今回もその用途でのみ使用し、問題無く動作した)。`mount`コマンドで`type fuse`と表示される場所かどうかを、迷ったら確認するとよい。
+5. **【継続、重要】§5(旧、session 24時点)item 5の案(a)「GUIパターンを消費ブロック3種(Pylon・Restorer・Wardstone)へ展開」は、今回(#25)Pylonで2/3機種目(Cell・Generator・**Pylon**)が完了。残る展開先:**
+   - (a) 同じMenu/Screenパターンを残り2機種(Restorer・Wardstone)へさらに展開する。Restorerは`LIT`状態を持たずCellに近い設計(ステータスランプ相当の要素が無い、あるいは「使用可能/耐久最大」等の別の真偽値で代用するか検討)、WardstoneはPylonと同じく`LIT`+範囲効果を持つ設計なので、Pylonのステータスランプパターンがほぼそのまま流用できるはず。
+   - (b) Prismium Cell/Generator/Pylonの欠片チャージ操作そのものをGUI化する(スロット追加、`SlotItemHandler`等の未踏み込み領域)。
+   - (c) 今回・前回・前々回のGUI実装が実際にゲーム内で正しく動くかのプレイフィードバックを待ってから、次の展開を判断する(§4-37・§4-38・§4-39の未検証項目が積み上がっているため、横展開を続けるより先に1件を検証しきる方が手堅い可能性は引き続き残る - 3セッション連続でこの選択肢を見送っている自覚はある)。
+6. 【継続、優先度高】Prism Realm/Prismium Rift Shard・Prismium Wraith・Prismium Locator・Prismium Bloom/Spike・Prismium Restorer・Prismium Wardstone・Prismium Cable(接続モデル)・Prismium Cell/Generator/PylonのGUI(3機種)は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想)を最優先で拾うこと(§0-2の運用ルール通り)。
+7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`。session 25では他セッションとの並行は検知しなかったが、毎回確認すること。
 
 ### 議論したい論点・改善案
 
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。GUIは今やCell・Generatorの2機種になったが、どちらも「開くか・数字が正しいか」すら一度も実地確認できていない。
-- **web_fetch/curlでの一次情報確認という方法論**: セッション#23・#24と2回連続で、実装前にForge公式docs(厳密固定バージョンページ)を確認する進め方が潜在バグを防いだ。新規API領域に踏み込む際の標準手順として定着させたい。
-- **エネルギーシステムの完成度**: Cell(蓄電、GUIあり)・Generator(発電、GUIあり、今回)・Cable(送電、接続見た目あり)・Pylon(消費#1)・Restorer(消費#2)・Wardstone(消費#3)で「発電→送電→3種類の消費→見た目→GUI(2機種)」まで揃った。残る発展先はPylon/Restorer/WardstoneへのGUI展開、GUIへのスロット(アイテム入出力)追加、あるいは4種類目の消費ブロックや送電網の可視化ツールといった新方向。
-- **GUIパターンの再利用性**: CellからGeneratorへの展開は、`ContainerData`のスロット数を2→3に増やし、`getBurnFraction()`のような追加のゲッターを足すだけで済み、`AbstractContainerMenu`のコンストラクタ・`stillValid`・`ContainerLevelAccess`の配線、`quickMoveStack`の空実装は完全にコピー元と同型だった。この「型」は残り3機種(Pylon/Restorer/Wardstone)にもそのまま使えるはずで、次回以降のGUI展開はセッション#23よりもさらに短時間で終わる見込み。
-- **短命な数値同期の一般化**: Cellの`ENERGY_SYNC_DIVISOR`、Generatorの`BURN_TIME_SYNC_CAP`と、機種ごとに微妙に異なる「short安全化」の実装(割り算 vs クランプ)が生まれつつある。次にPylon/Restorer/WardstoneをGUI化する際(いずれも容量20,000〜30,000FEでshort超え確定)は、割り算・クランプのどちらの方式が読みやすいか、あるいは共通ヘルパーメソッドに切り出すべきかを検討する価値がある。
-- **消費ブロックの見分けやすさ(継続)**: Restorer(金)・Wardstone(赤)・Pylon(紫〜シアン)の配色戦略は変更なし。GUIパネルの配色をブロックごとに変えるか統一するかは未検討のまま(今回もGeneratorは自身のエンバー配色をそのまま使い、Cellのteal配色とは意図的に別系統にした)。
-- **探知アイテムの発展余地(継続)**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19-24では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。GUIは今やCell・Generator・Pylonの3機種になったが、いずれも「開くか・数字が正しいか・ランプ/ゲージが正しく切り替わるか」すら一度も実地確認できていない。3機種分のGUIコードが積み上がった今、次にプレイフィードバックが得られた際は横展開よりも先にこの検証を最優先すべきという声(§5-5(c))がますます強くなっている。
+- **GUIパターンの再利用性(継続、実証が進んだ)**: CellからGenerator、GeneratorからPylonへの展開はいずれも`ContainerData`のスロット数・追加ゲッター・`AbstractContainerMenu`の定型配線をコピーするだけで完結した。3例目のPylonでも新規のAPI裏取りは不要だった(既存パターンの純粋な繰り返し適用)。残るRestorer・Wardstoneも同様に短時間で終わる見込みが高い。
+- **消費ブロックの見分けやすさ、GUIにも波及**: Restorer(金)・Wardstone(赤)・Pylon(紫〜シアン)というブロック本体の配色戦略が、今回PylonのGUI縁取り色(紫がかった`PYLON_OUTLINE`)にも初めて波及した(Cell/Generatorはどちらもティール系`PRISMIUM_OUTLINE`のまま)。次にRestorer・WardstoneのGUIを作る際も、それぞれの本体配色(金・赤)をGUIの縁取りに反映させるかどうかを検討する価値がある - 今回のPylonが「一貫性のある差別化」の前例になる。
+- **短命な数値同期の一般化(継続)**: Cellの`ENERGY_SYNC_DIVISOR`、Generatorの`BURN_TIME_SYNC_CAP`、Pylonの`active`フラグのint化(0/1)と、機種ごとに微妙に異なる「ContainerDataは整数しか運べない」制約への対処法が3パターン目になった。次にRestorer・WardstoneをGUI化する際(いずれも容量20,000〜30,000FEでshort超え確定)は、この3パターンのどれを踏襲するか、あるいは共通ヘルパーに切り出すべきかを改めて検討する価値がある。
+- **探知アイテムの発展余地(継続)**: Prismium Locator(session 16)はメッセージ表示のみの最小実装のまま、session 19-25では未着手。将来的な拡張案(針モデル化、鉱石以外の検知対象、Prism Realm内対応)は引き続き有効な候補。
+- **クラスjavadocの陳腐化(新規)**: Generatorのブロッククラスjavadocは、session 24でGUI化した後も「no GUI exists yet」という旧い記述が更新されないまま残っていた(session 25でPylonの同種の記述は更新した)。他の既存クラス(特にCellの初期実装時点のjavadoc)にも同様の陳腐化が無いか、機会があれば棚卸しする価値がある - 優先度は低いが、コードレビューのみで検証している以上ドキュメントの正確性は非機能的な意味でも重要。
 
 ### コミット/プッシュ状況
 
-このセッションの変更は1コミット: `80e6639`(Prismium GeneratorのGUI追加: `PrismiumGeneratorMenu.java`・`PrismiumGeneratorScreen.java`新規、`PrismiumGeneratorBlockEntity.java`・`PrismiumGeneratorBlock.java`・`ModMenuTypes.java`・`ClientModEvents.java`更新、GUI背景テクスチャー新規、`gui.claudemod.burn_seconds`lang key新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`2d2926e`のまま)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`ad1a4e9`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(148,032→154,552バイト)も確認して、本物のビルド成功を確定させた。新規GUI背景テクスチャーは`outputs`フォルダ経由で目視レビュー・コード再現モックアップの両方を実施済み(§3W-2参照)。issue #1・#2は個別ページが404だったため内容未確認、タブカウント経由で「2件のまま増減無し」のみ確認(§3W-0参照)。
+このセッションの変更は1コミット: `eeaaacf`(Prismium PylonのGUI追加: `PrismiumPylonMenu.java`・`PrismiumPylonScreen.java`新規、`PrismiumPylonBlockEntity.java`・`PrismiumPylonBlock.java`・`ModMenuTypes.java`・`ClientModEvents.java`更新、GUI背景テクスチャー新規、`gen_prismium_pylon_gui.py`新規、`gui.claudemod.pylon_status_active`/`gui.claudemod.pylon_status_idle`lang key新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、直前は`753f93d`のまま)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`3c5b98a`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(154,552→160,720バイト)も確認して、本物のビルド成功を確定させた。新規GUI背景テクスチャーは`outputs`フォルダ経由で目視レビュー・コード再現モックアップ(active/idle比較)の両方を実施済み(§3X-2参照)。issue #1・#2は今回200 OKで取得でき、両方ともOPEN・コメント無し・新規issue無しを確認した(§3X-0参照)。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`ad1a4e9`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、`3c5b98a`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
