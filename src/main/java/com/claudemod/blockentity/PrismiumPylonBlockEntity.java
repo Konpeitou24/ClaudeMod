@@ -1,13 +1,20 @@
 package com.claudemod.blockentity;
 
 import com.claudemod.energy.PrismiumEnergyStorage;
+import com.claudemod.menu.PrismiumPylonMenu;
 import com.claudemod.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -67,7 +74,7 @@ import java.util.List;
  * playtested, only compiled and code-reviewed, consistent with every
  * other machine in this mod.
  */
-public class PrismiumPylonBlockEntity extends BlockEntity {
+public class PrismiumPylonBlockEntity extends BlockEntity implements MenuProvider {
 
     /** Total FE capacity. */
     public static final int CAPACITY = 20_000;
@@ -97,6 +104,41 @@ public class PrismiumPylonBlockEntity extends BlockEntity {
 
     private int pulseTimer = 0;
     private boolean active = false;
+
+    /** Backs this block entity's GUI (session 25), following the pattern
+     * established by Prismium Cell (session 23) and Prismium Generator
+     * (session 24). Index 0/1 are current/max energy (CAPACITY = 20,000,
+     * still comfortably inside Short.MAX_VALUE on its own, same situation
+     * as Generator - see PrismiumPylonMenu's class doc), index 2 is
+     * {@link #active} encoded as 0/1 since ContainerData only carries
+     * ints. {@code set} is a no-op for the same reason as Cell/Generator:
+     * the screen only ever reads, the underlying state changes through
+     * {@link #serverTick} only. */
+    private final ContainerData containerData = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> energyStorage.getEnergyStored();
+                case 1 -> energyStorage.getMaxEnergyStored();
+                case 2 -> active ? 1 : 0;
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            // Read-only from the screen's perspective, see field doc.
+        }
+
+        @Override
+        public int getCount() {
+            return 3;
+        }
+    };
+
+    public ContainerData getContainerData() {
+        return containerData;
+    }
 
     public PrismiumPylonBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PRISMIUM_PYLON.get(), pos, state);
@@ -179,5 +221,17 @@ public class PrismiumPylonBlockEntity extends BlockEntity {
     public void invalidateCaps() {
         super.invalidateCaps();
         energyOptional.invalidate();
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("block.claudemod.prismium_pylon");
+    }
+
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int windowId, Inventory inventory, Player player) {
+        return new PrismiumPylonMenu(windowId, inventory, containerData,
+                ContainerLevelAccess.create(level, worldPosition));
     }
 }

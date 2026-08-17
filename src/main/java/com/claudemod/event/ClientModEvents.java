@@ -3,6 +3,7 @@ package com.claudemod.event;
 import com.claudemod.ClaudeMod;
 import com.claudemod.client.screen.PrismiumCellScreen;
 import com.claudemod.client.screen.PrismiumGeneratorScreen;
+import com.claudemod.client.screen.PrismiumPylonScreen;
 import com.claudemod.entity.client.PrismiumWraithRenderer;
 import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModMenuTypes;
@@ -42,6 +43,8 @@ public class ClientModEvents {
             MenuScreens.register(ModMenuTypes.PRISMIUM_CELL_MENU.get(), PrismiumCellScreen::new);
             // Session 24: second screen registration, same call.
             MenuScreens.register(ModMenuTypes.PRISMIUM_GENERATOR_MENU.get(), PrismiumGeneratorScreen::new);
+            // Session 25: third screen registration, same call.
+            MenuScreens.register(ModMenuTypes.PRISMIUM_PYLON_MENU.get(), PrismiumPylonScreen::new);
         });
     }
 }

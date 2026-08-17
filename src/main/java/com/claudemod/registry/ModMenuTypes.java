@@ -3,6 +3,7 @@ package com.claudemod.registry;
 import com.claudemod.ClaudeMod;
 import com.claudemod.menu.PrismiumCellMenu;
 import com.claudemod.menu.PrismiumGeneratorMenu;
+import com.claudemod.menu.PrismiumPylonMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;
@@ -53,6 +54,15 @@ public class ModMenuTypes {
             MENU_TYPES.register("prismium_generator", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
                 BlockPos pos = extraData.readBlockPos();
                 return new PrismiumGeneratorMenu(windowId, inv, pos);
+            }));
+
+    /** Session 25: the mod's third GUI, see {@link PrismiumPylonMenu} for
+     * why Pylon was picked next and what's different from Cell/Generator's
+     * menus. */
+    public static final RegistryObject<MenuType<PrismiumPylonMenu>> PRISMIUM_PYLON_MENU =
+            MENU_TYPES.register("prismium_pylon", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
+                BlockPos pos = extraData.readBlockPos();
+                return new PrismiumPylonMenu(windowId, inv, pos);
             }));
 
     public static void register(IEventBus eventBus) {

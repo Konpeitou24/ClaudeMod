@@ -6,6 +6,7 @@ import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
@@ -33,9 +35,11 @@ import javax.annotation.Nullable;
  * (sessions 9) - deliberately not inventing a new blockstate property for
  * what is functionally the same "idle vs active" swap.
  *
- * <p>Right-click with an empty hand: report current/max FE and whether the
- * pylon is actively radiating (same "no GUI, action-bar status" pattern as
- * every other Prismium Energy block).
+ * <p>Right-click with an empty hand: opens Prismium Pylon's GUI (session
+ * 25, see {@link com.claudemod.menu.PrismiumPylonMenu}), which reports
+ * current/max FE and whether the pylon is actively radiating - previously
+ * (sessions 19-24) this was an action-bar status message only, same as
+ * every un-GUI'd Prismium Energy block still is.
  * Right-click holding a Prismium Shard: manually add
  * {@link PrismiumPylonBlockEntity#SHARD_CHARGE_AMOUNT} FE, same shape as
  * {@link PrismiumCellBlock}'s manual charge - lets a player use a Pylon
@@ -106,13 +110,17 @@ public class PrismiumPylonBlock extends BaseEntityBlock {
         }
 
         if (held.isEmpty()) {
-            PrismiumEnergyStorage storage = pylon.getEnergyStorage();
-            String statusKey = pylon.isActive()
-                    ? "message.claudemod.prismium_pylon.status_active"
-                    : "message.claudemod.prismium_pylon.status_idle";
-            player.displayClientMessage(
-                    Component.translatable(statusKey,
-                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+            // Session 25: open Pylon's GUI instead of printing a status
+            // message - same NetworkHooks.openScreen pattern established
+            // by PrismiumCellBlock#use (session 23) and
+            // PrismiumGeneratorBlock#use (session 24). The old action-bar
+            // status message (current/max FE plus active/idle) is removed
+            // rather than kept alongside the GUI, same call as those two:
+            // the GUI is a strictly more capable replacement for "check
+            // current status".
+            if (player instanceof ServerPlayer serverPlayer) {
+                NetworkHooks.openScreen(serverPlayer, pylon, buf -> buf.writeBlockPos(pos));
+            }
             return InteractionResult.CONSUME;
         }
 
