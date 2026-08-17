@@ -1,5 +1,6 @@
 package com.claudemod.item;
 
+import com.claudemod.registry.ModItems;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
@@ -62,6 +63,19 @@ public class PrismiumGrapplingHookItem extends Item {
 
     public PrismiumGrapplingHookItem(Item.Properties properties) {
         super(properties);
+    }
+
+    // Session 30: unify repair material across the mod's non-Tier/
+    // non-ArmorMaterial durability items (Grappling Hook / Shield / Bow -
+    // see PROGRESS.md session 28 handoff item on this exact gap). Tools
+    // and armor already accept Prismium Shard repair via their Tier /
+    // ArmorMaterial repair-ingredient suppliers (ModToolTiers /
+    // ModArmorMaterials); this item predates that mechanism and never
+    // got an equivalent, so an anvil could only ever fully-replace it,
+    // never partially repair it with the mod's own crafting resource.
+    @Override
+    public boolean isValidRepairItem(ItemStack toRepair, ItemStack repair) {
+        return repair.is(ModItems.PRISMIUM_SHARD.get());
     }
 
     @Override

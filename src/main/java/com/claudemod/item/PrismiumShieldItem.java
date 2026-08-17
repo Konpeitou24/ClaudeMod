@@ -1,5 +1,6 @@
 package com.claudemod.item;
 
+import com.claudemod.registry.ModItems;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
@@ -62,6 +63,16 @@ public class PrismiumShieldItem extends Item {
 
     public PrismiumShieldItem(Item.Properties properties) {
         super(properties);
+    }
+
+    // Session 30: accept Prismium Shard as a repair material, closing the
+    // gap called out in this class's own javadoc (and PROGRESS.md session
+    // 28 §4-42) - see PrismiumGrapplingHookItem#isValidRepairItem for the
+    // same change applied across all three of the mod's non-Tier/
+    // non-ArmorMaterial durability items in this session.
+    @Override
+    public boolean isValidRepairItem(ItemStack toRepair, ItemStack repair) {
+        return repair.is(ModItems.PRISMIUM_SHARD.get());
     }
 
     @Override

@@ -1,8 +1,10 @@
 package com.claudemod.item;
 
+import com.claudemod.registry.ModItems;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Session 29: Prismium Bow, the mod's first ranged weapon and the
@@ -29,11 +31,12 @@ import net.minecraft.world.item.Item;
  * event listener or NBT tagging was needed - the whole gimmick lives in
  * this one overridden hook.
  *
- * <p>Deliberately does <b>not</b> override {@link Item#isValidRepairItem}
- * to add a Prismium Shard repair path - same "no custom repair material"
- * call already made for {@link PrismiumGrapplingHookItem} and {@link
- * PrismiumShieldItem} (see PROGRESS.md session 28 §4-42's open question
- * about unifying Prismium gear repair across all three someday).
+ * <p>Session 30 added a {@link #isValidRepairItem} override accepting
+ * Prismium Shard, along with matching overrides on {@link
+ * PrismiumGrapplingHookItem} and {@link PrismiumShieldItem} - resolving
+ * the open question from PROGRESS.md session 28 §4-42 about unifying
+ * Prismium gear repair across all three of the mod's non-Tier/
+ * non-ArmorMaterial durability items.
  *
  * <p><b>Unverified</b> (no in-game client available in this sandbox, see
  * PROGRESS.md's standing note): whether the bow actually draws/fires
@@ -56,5 +59,12 @@ public class PrismiumBowItem extends BowItem {
     public AbstractArrow customArrow(AbstractArrow arrow) {
         arrow.setPierceLevel((byte) 1);
         return arrow;
+    }
+
+    // Session 30: see class javadoc above - unifies repair material across
+    // the mod's non-Tier/non-ArmorMaterial durability items.
+    @Override
+    public boolean isValidRepairItem(ItemStack toRepair, ItemStack repair) {
+        return repair.is(ModItems.PRISMIUM_SHARD.get());
     }
 }
