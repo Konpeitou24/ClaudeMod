@@ -1,13 +1,21 @@
 package com.claudemod.blockentity;
 
 import com.claudemod.energy.PrismiumEnergyStorage;
+import com.claudemod.menu.PrismiumWardstoneMenu;
 import com.claudemod.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.MenuProvider;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
@@ -48,16 +56,25 @@ import java.util.List;
  * compiles and behaves as expected (as much as "compiles" can be proven in
  * this sandbox - see PROGRESS.md).
  *
+ * <p>Session 27 adds {@link #getContainerData()}/{@link #createMenu} for
+ * this block's GUI (the mod's fifth, and the last of the three original
+ * consumer blocks to get one - Pylon session 25, Restorer session 26),
+ * copying {@code PrismiumPylonBlockEntity}'s exact 3-int ContainerData
+ * shape (energy, max energy, active-flag) since Wardstone shares Pylon's
+ * ticking active/idle state, unlike Restorer which has none.
+ *
  * <p><b>Unverified</b> (see PROGRESS.md): whether the radius/cost/effect
  * numbers feel good in play, whether hostile mobs are actually visibly
- * slowed/weakened, whether the LIT swap renders correctly, and whether
+ * slowed/weakened, whether the LIT swap renders correctly, whether
  * scanning for {@link Monster} (as opposed to a narrower/broader class)
  * misses anything a player would expect to be affected - note in
  * particular that {@code Slime}/{@code MagmaCube} extend {@code Mob} but
  * NOT {@code Monster}, so they are deliberately (if perhaps surprisingly)
- * excluded by this scan; flagged in PROGRESS.md as worth reconsidering.
+ * excluded by this scan; flagged in PROGRESS.md as worth reconsidering -
+ * and now also whether the new GUI opens/renders correctly in-game
+ * (zero playtesting, same as every other GUI in this mod so far).
  */
-public class PrismiumWardstoneBlockEntity extends BlockEntity {
+public class PrismiumWardstoneBlockEntity extends BlockEntity implements MenuProvider {
 
     /** Total FE capacity. */
     public static final int CAPACITY = 20_000;
@@ -95,6 +112,40 @@ public class PrismiumWardstoneBlockEntity extends BlockEntity {
 
     private int pulseTimer = 0;
     private boolean active = false;
+
+    /** Backs this block entity's GUI (session 27), following the exact
+     * shape established by {@code PrismiumPylonBlockEntity} (session 25).
+     * Index 0/1 are current/max energy (CAPACITY = 20,000, comfortably
+     * inside Short.MAX_VALUE on its own), index 2 is {@link #active}
+     * encoded as 0/1 since ContainerData only carries ints. {@code set}
+     * is a no-op for the same reason as every other machine's GUI: the
+     * screen only ever reads, the underlying state changes through
+     * {@link #serverTick} only. */
+    private final ContainerData containerData = new ContainerData() {
+        @Override
+        public int get(int index) {
+            return switch (index) {
+                case 0 -> energyStorage.getEnergyStored();
+                case 1 -> energyStorage.getMaxEnergyStored();
+                case 2 -> active ? 1 : 0;
+                default -> 0;
+            };
+        }
+
+        @Override
+        public void set(int index, int value) {
+            // Read-only from the screen's perspective, see field doc.
+        }
+
+        @Override
+        public int getCount() {
+            return 3;
+        }
+    };
+
+    public ContainerData getContainerData() {
+        return containerData;
+    }
 
     public PrismiumWardstoneBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.PRISMIUM_WARDSTONE.get(), pos, state);
@@ -181,5 +232,17 @@ public class PrismiumWardstoneBlockEntity extends BlockEntity {
     public void invalidateCaps() {
         super.invalidateCaps();
         energyOptional.invalidate();
+    }
+
+    @Override
+    public Component getDisplayName() {
+        return Component.translatable("block.claudemod.prismium_wardstone");
+    }
+
+    @Nullable
+    @Override
+    public AbstractContainerMenu createMenu(int windowId, Inventory inventory, Player player) {
+        return new PrismiumWardstoneMenu(windowId, inventory, containerData,
+                ContainerLevelAccess.create(level, worldPosition));
     }
 }

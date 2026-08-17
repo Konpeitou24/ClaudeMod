@@ -6,6 +6,7 @@ import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
@@ -22,6 +23,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.phys.BlockHitResult;
+import net.minecraftforge.network.NetworkHooks;
 
 import javax.annotation.Nullable;
 
@@ -34,13 +36,22 @@ import javax.annotation.Nullable;
  * working by both {@link PrismiumGeneratorBlock} (session 9) and
  * {@link PrismiumPylonBlock} (session 19).
  *
- * <p>Right-click with an empty hand: report current/max FE and whether the
- * wardstone is actively warding (same "no GUI, action-bar status" pattern
- * as every other Prismium Energy block). Right-click holding a Prismium
- * Shard: manually add {@link PrismiumWardstoneBlockEntity#SHARD_CHARGE_AMOUNT}
- * FE, same shape as Cell/Generator/Pylon/Restorer's manual charge - lets a
- * player use a Wardstone standalone before building out a full
- * Generator/Cable network.
+ * <p>Right-click with an empty hand: opens Prismium Wardstone's GUI
+ * (session 27, see {@link com.claudemod.menu.PrismiumWardstoneMenu}),
+ * which reports current/max FE and whether the wardstone is actively
+ * warding - previously (sessions 21-26) this was an action-bar status
+ * message only, same {@code NetworkHooks.openScreen} pattern established
+ * by {@link PrismiumCellBlock#use} (session 23), {@link
+ * PrismiumGeneratorBlock#use} (session 24), {@link PrismiumPylonBlock#use}
+ * (session 25) and {@code PrismiumRestorerBlock#use} (session 26). With
+ * this change every energy block in the mod (Cell, Generator, Pylon,
+ * Restorer, Wardstone) now opens a GUI instead of printing a status
+ * message. Right-click holding a Prismium Shard: manually add
+ * {@link PrismiumWardstoneBlockEntity#SHARD_CHARGE_AMOUNT} FE, same shape
+ * as Cell/Generator/Pylon/Restorer's manual charge - lets a player use a
+ * Wardstone standalone before building out a full Generator/Cable
+ * network. This action stays outside the GUI, same call made for every
+ * other machine's shard-charge interaction so far.
  */
 public class PrismiumWardstoneBlock extends BaseEntityBlock {
 
@@ -107,13 +118,11 @@ public class PrismiumWardstoneBlock extends BaseEntityBlock {
         }
 
         if (held.isEmpty()) {
-            PrismiumEnergyStorage storage = wardstone.getEnergyStorage();
-            String statusKey = wardstone.isActive()
-                    ? "message.claudemod.prismium_wardstone.status_active"
-                    : "message.claudemod.prismium_wardstone.status_idle";
-            player.displayClientMessage(
-                    Component.translatable(statusKey,
-                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+            // Session 27: open Wardstone's GUI instead of printing a
+            // status message - see class doc.
+            if (player instanceof ServerPlayer serverPlayer) {
+                NetworkHooks.openScreen(serverPlayer, wardstone, buf -> buf.writeBlockPos(pos));
+            }
             return InteractionResult.CONSUME;
         }
 

@@ -5,6 +5,7 @@ import com.claudemod.menu.PrismiumCellMenu;
 import com.claudemod.menu.PrismiumGeneratorMenu;
 import com.claudemod.menu.PrismiumPylonMenu;
 import com.claudemod.menu.PrismiumRestorerMenu;
+import com.claudemod.menu.PrismiumWardstoneMenu;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraftforge.common.extensions.IForgeMenuType;
@@ -74,6 +75,18 @@ public class ModMenuTypes {
             MENU_TYPES.register("prismium_restorer", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
                 BlockPos pos = extraData.readBlockPos();
                 return new PrismiumRestorerMenu(windowId, inv, pos);
+            }));
+
+    /** Session 27: the mod's fifth GUI, see {@link PrismiumWardstoneMenu}
+     * for why Wardstone was picked next and what's different from the
+     * other four menus (closest to Pylon's shape: same 3-int
+     * energy/max/active ContainerData). This completes GUI coverage for
+     * all five energy blocks in the mod (Cell, Generator, Pylon,
+     * Restorer, Wardstone). */
+    public static final RegistryObject<MenuType<PrismiumWardstoneMenu>> PRISMIUM_WARDSTONE_MENU =
+            MENU_TYPES.register("prismium_wardstone", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
+                BlockPos pos = extraData.readBlockPos();
+                return new PrismiumWardstoneMenu(windowId, inv, pos);
             }));
 
     public static void register(IEventBus eventBus) {

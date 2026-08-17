@@ -48,8 +48,6 @@
     "direction.claudemod.below": "下方",
     "direction.claudemod.level": "同じ高さ",
     "block.claudemod.prismium_pylon": "プリズミウムパイロン",
-    "message.claudemod.prismium_pylon.status_active": "プリズミウムパイロン: %1$s / %2$s FE (放射中)",
-    "message.claudemod.prismium_pylon.status_idle": "プリズミウムパイロン: %1$s / %2$s FE (待機中)",
     "message.claudemod.prismium_pylon.charged": "プリズミウムパイロンを充電した: %1$s / %2$s FE",
     "message.claudemod.prismium_pylon.full": "プリズミウムパイロンは満タンです",
     "block.claudemod.prismium_restorer": "プリズミウム修復機",
@@ -59,12 +57,12 @@
     "message.claudemod.prismium_restorer.no_charge": "プリズミウム修復機の充電が足りません",
     "message.claudemod.prismium_restorer.not_damaged": "そのアイテムは損傷していません",
     "block.claudemod.prismium_wardstone": "プリズミウム結界石",
-    "message.claudemod.prismium_wardstone.status_active": "プリズミウム結界石: %1$s / %2$s FE (結界展開中)",
-    "message.claudemod.prismium_wardstone.status_idle": "プリズミウム結界石: %1$s / %2$s FE (待機中)",
     "message.claudemod.prismium_wardstone.charged": "プリズミウム結界石を充電した: %1$s / %2$s FE",
     "message.claudemod.prismium_wardstone.full": "プリズミウム結界石は満タンです",
     "gui.claudemod.fe_amount": "%1$s / %2$s FE",
     "gui.claudemod.burn_seconds": "燃料: %1$s秒",
     "gui.claudemod.pylon_status_active": "放射中",
-    "gui.claudemod.pylon_status_idle": "待機中"
+    "gui.claudemod.pylon_status_idle": "待機中",
+    "gui.claudemod.wardstone_status_active": "結界展開中",
+    "gui.claudemod.wardstone_status_idle": "待機中"
 }

@@ -5,6 +5,7 @@ import com.claudemod.client.screen.PrismiumCellScreen;
 import com.claudemod.client.screen.PrismiumGeneratorScreen;
 import com.claudemod.client.screen.PrismiumPylonScreen;
 import com.claudemod.client.screen.PrismiumRestorerScreen;
+import com.claudemod.client.screen.PrismiumWardstoneScreen;
 import com.claudemod.entity.client.PrismiumWraithRenderer;
 import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModMenuTypes;
@@ -48,6 +49,9 @@ public class ClientModEvents {
             MenuScreens.register(ModMenuTypes.PRISMIUM_PYLON_MENU.get(), PrismiumPylonScreen::new);
             // Session 26: fourth screen registration, same call.
             MenuScreens.register(ModMenuTypes.PRISMIUM_RESTORER_MENU.get(), PrismiumRestorerScreen::new);
+            // Session 27: fifth screen registration, same call - all five
+            // energy blocks in the mod now have a GUI.
+            MenuScreens.register(ModMenuTypes.PRISMIUM_WARDSTONE_MENU.get(), PrismiumWardstoneScreen::new);
         });
     }
 }

@@ -48,8 +48,6 @@
     "direction.claudemod.below": "below you",
     "direction.claudemod.level": "at your level",
     "block.claudemod.prismium_pylon": "Prismium Pylon",
-    "message.claudemod.prismium_pylon.status_active": "Prismium Pylon: %1$s / %2$s FE (radiating)",
-    "message.claudemod.prismium_pylon.status_idle": "Prismium Pylon: %1$s / %2$s FE (idle)",
     "message.claudemod.prismium_pylon.charged": "Charged Prismium Pylon: %1$s / %2$s FE",
     "message.claudemod.prismium_pylon.full": "Prismium Pylon is already full",
     "block.claudemod.prismium_restorer": "Prismium Restorer",
@@ -59,12 +57,12 @@
     "message.claudemod.prismium_restorer.no_charge": "Prismium Restorer has no charge",
     "message.claudemod.prismium_restorer.not_damaged": "That item is not damaged",
     "block.claudemod.prismium_wardstone": "Prismium Wardstone",
-    "message.claudemod.prismium_wardstone.status_active": "Prismium Wardstone: %1$s / %2$s FE (warding)",
-    "message.claudemod.prismium_wardstone.status_idle": "Prismium Wardstone: %1$s / %2$s FE (idle)",
     "message.claudemod.prismium_wardstone.charged": "Charged Prismium Wardstone: %1$s / %2$s FE",
     "message.claudemod.prismium_wardstone.full": "Prismium Wardstone is already full",
     "gui.claudemod.fe_amount": "%1$s / %2$s FE",
     "gui.claudemod.burn_seconds": "Fuel: %1$ss",
     "gui.claudemod.pylon_status_active": "Radiating",
-    "gui.claudemod.pylon_status_idle": "Idle"
+    "gui.claudemod.pylon_status_idle": "Idle",
+    "gui.claudemod.wardstone_status_active": "Warding",
+    "gui.claudemod.wardstone_status_idle": "Idle"
 }
