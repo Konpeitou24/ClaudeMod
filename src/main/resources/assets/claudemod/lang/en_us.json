@@ -65,5 +65,6 @@
     "gui.claudemod.pylon_status_active": "Radiating",
     "gui.claudemod.pylon_status_idle": "Idle",
     "gui.claudemod.wardstone_status_active": "Warding",
-    "gui.claudemod.wardstone_status_idle": "Idle"
+    "gui.claudemod.wardstone_status_idle": "Idle",
+    "item.claudemod.prismium_bow": "Prismium Bow"
 }

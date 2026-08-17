@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "pattern": [
+        " TS",
+        "P S",
+        " TS"
+    ],
+    "key": {
+        "T": { "item": "minecraft:stick" },
+        "S": { "item": "minecraft:string" },
+        "P": { "item": "claudemod:prismium_shard" }
+    },
+    "result": {
+        "item": "claudemod:prismium_bow",
+        "count": 1
+    }
+}

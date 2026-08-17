@@ -8,8 +8,11 @@ import com.claudemod.client.screen.PrismiumRestorerScreen;
 import com.claudemod.client.screen.PrismiumWardstoneScreen;
 import com.claudemod.entity.client.PrismiumWraithRenderer;
 import com.claudemod.registry.ModEntities;
+import com.claudemod.registry.ModItems;
 import com.claudemod.registry.ModMenuTypes;
 import net.minecraft.client.gui.screens.MenuScreens;
+import net.minecraft.client.renderer.item.ItemProperties;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -52,6 +55,31 @@ public class ClientModEvents {
             // Session 27: fifth screen registration, same call - all five
             // energy blocks in the mod now have a GUI.
             MenuScreens.register(ModMenuTypes.PRISMIUM_WARDSTONE_MENU.get(), PrismiumWardstoneScreen::new);
+
+            // Session 29: "pull"/"pulling" item-model property overrides
+            // for Prismium Bow, mirroring vanilla's own registration for
+            // Items.BOW (ItemProperties class, not automatically applied
+            // to BowItem subclasses - each bow-like item must register
+            // its own predicates). "pulling" flips to 1 while the player
+            // is actively drawing this exact stack; "pull" reports draw
+            // progress 0.0-1.0 over the item's use duration, which the
+            // three predicate thresholds in prismium_bow.json's
+            // "overrides" list (0, 0.65, 0.9) key off of to pick the
+            // pulling_0/1/2 frame - the same threshold values vanilla's
+            // bow.json uses, kept identical here since they are simply
+            // draw-progress fractions, not vanilla-specific numbers.
+            ItemProperties.register(ModItems.PRISMIUM_BOW.get(), new ResourceLocation("pull"),
+                    (stack, level, entity, seed) -> {
+                        if (entity == null) {
+                            return 0.0F;
+                        } else {
+                            return entity.getUseItem() != stack ? 0.0F
+                                    : (float) (stack.getUseDuration() - entity.getUseItemRemainingTicks()) / 20.0F;
+                        }
+                    });
+            ItemProperties.register(ModItems.PRISMIUM_BOW.get(), new ResourceLocation("pulling"),
+                    (stack, level, entity, seed) ->
+                            entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F);
         });
     }
 }

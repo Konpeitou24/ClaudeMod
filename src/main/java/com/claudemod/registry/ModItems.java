@@ -10,6 +10,7 @@ import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
 import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
+import com.claudemod.item.PrismiumBowItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumLocatorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
@@ -134,6 +135,16 @@ public class ModItems {
     // philosophy already used by ModArmorMaterials/ModToolTiers.
     public static final RegistryObject<Item> PRISMIUM_SHIELD = ITEMS.register("prismium_shield",
             () -> new PrismiumShieldItem(new Item.Properties().durability(420)));
+
+    // Prismium Bow (session 29): the mod's first ranged weapon and the
+    // companion piece to the Shield (session 28) - see PrismiumBowItem
+    // for why this extends vanilla BowItem directly (unlike Shield) and
+    // for its innate-piercing gimmick. durability(460) sits above
+    // vanilla's bow (384), matching the "higher durability, no flat
+    // power creep" philosophy used across every other Prismium gear
+    // item (tools/armor/shield).
+    public static final RegistryObject<Item> PRISMIUM_BOW = ITEMS.register("prismium_bow",
+            () -> new PrismiumBowItem(new Item.Properties().durability(460)));
 
     // Prismium Rift Shard (session 14): the mod's first way in/out of the
     // Prism Realm dimension. Not consumed on use (stacksTo(1), reusable
