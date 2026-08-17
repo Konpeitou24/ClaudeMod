@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-17 (セッション #14)
+最終更新: 2026-08-17 (セッション #15)
 
 ---
 
@@ -26,7 +26,7 @@
 
 1. **新資源・素材ライン**: Prismium(プリズミウム) — セッション#1で着手した最初の資源。今後の装備・エネルギー・ディメンションの共通テーマ素材。
 2. **新エネルギーシステム**: 「Prismium Energy(仮称)」。発電機・ケーブル・蓄電ブロック・機械(粉砕機、精錬機など)を実装し、FE(Forge Energy)ベースで組む想定。セッション#8で蓄電ブロック Prismium Cell(IEnergyStorage capability公開、GUI無し、手動チャージ機構)に着手。**セッション#9で Prismium Generator(MOD初のBlockEntityTicker、Prismiumの欠片を燃焼して隣接ブロックへFEを自動送電) を追加し、CellとGeneratorをペアで置くことで初めて「自動化された発電→送電」ループが成立するようになった**。ケーブル(離れたブロック間の中継)・GUI・複数ブロックにまたがる大規模送電網はまだ無い。
-3. **新ディメンション**: 「Prism Realm(仮称)」。Prismiumで動くポータル(枠ブロック+起動アイテム)で行き来する異空間。専用地形生成、専用鉱石、専用バイオーム。**セッション#14で最初の一歩に着手**: データパック駆動のディメンション(地形はバニラのオーバーワールド設定+固定バイオームcherry_groveを流用、専用地形はまだ)と、テレポート用アイテム(Prismium Rift Shard、ポータルブロックの代わりの最小実装)を追加。専用地形・専用鉱石・専用バイオーム・本格的なポータルブロックはまだ無い。**ビルド成功は本セッション終了時点で未確認**(§3M-4参照)。
+3. **新ディメンション**: 「Prism Realm(仮称)」。Prismiumで動くポータル(枠ブロック+起動アイテム)で行き来する異空間。専用地形生成、専用鉱石、専用バイオーム。**セッション#14で最初の一歩に着手**: データパック駆動のディメンション(地形はバニラのオーバーワールド設定+固定バイオームcherry_groveを流用、専用地形はまだ)と、テレポート用アイテム(Prismium Rift Shard、ポータルブロックの代わりの最小実装)を追加。専用地形・専用鉱石・専用バイオーム・本格的なポータルブロックはまだ無い。**セッション#15でビルド失敗と判明、原因(存在しないシンボル2つ、後述§3N)を特定・修正しビルド成功を確認済み**(§3N参照)。ただしコンパイルが通ることの確認に留まり、実プレイでの検証はまだ無い。
 4. **新MOB**: Prism Realm を含む探索先に生息する敵対/中立MOB。ボス级の1体を最終的に用意したい。**セッション#12で最初の1体、Prismium Wraith(敵対、洞窟に生息しPrismium鉱石を守るイメージ)を追加**。ボス級はまだ無い。
 5. **新装備**: Prismium製ツール/アーマー(特殊能力付き)、探索を楽しくするアクセサリ的アイテム(グラップリングフック、探知アイテムなど)。ツール5種(セッション#2)・アーマー4種(セッション#3)実装済み。セッション#4でアーマーにフルセット効果(暗視、常時)を追加。セッション#5でアーマーのセット効果に水中呼吸を追加(2つ目の効果)、かつツール側にも初のギミック(Prismiumツルハシの鉱石ボーナスドロップ)を追加し、「ツールが純粋なステ上位互換のまま」という課題に着手。**セッション#7で、長らく手つかずだったアクセサリ系の最初の1個としてPrismiumグラップリングフックを追加**(視線方向のブロックへ引き寄せられる、レイキャスト+速度書き換え方式、飛翔エンティティ無し)。探知アイテムはまだ。
 6. **新ブロック/ギミック**: 装飾ブロック、罠、ダンジョン用ギミックブロックなど。Prismium Core(セッション#3中に並行セッションが追加)はギミックというより「ツールの存在意義付け」の1st ステップ。セッション#4で Prismium Lantern(ツール非依存の量産可能な光源ブロック、光レベル15)を追加、「探索を照らす」実用ブロックの最初の1個。
@@ -483,6 +483,50 @@ grep -noE 'aria-label="(currently running|completed successfully|failed|cancelle
 - **このセッションでできた自己防衛策**: ビルドログそのものは見えないため、代わりに今回新規追加したJSON/Javaの内容を通常より念入りに複数回読み返し、WebSearchで裏取りした各APIのシグネチャ・フィールド名と実際のコードを突き合わせる作業を追加で行った(§3M-1・§3M-2に詳細)。明らかな誤り(タイプミス、フィールド名の誤り、シグネチャ不一致)は見つからなかったが、**これは「恐らく大丈夫」以上の保証ではない**。
 - **次回セッションへの最優先申し送り**はこの一点に尽きる: まず`git fetch origin main`でコミット`b836049`の直後に`ci: update built jar`が付いているかを確認すること。付いていれば今回の実装は実証済みとして扱ってよい。付いておらず、かつactionsページ等で本当に`b836049`のビルドが失敗したと確認できた場合は、§3M-1・§3M-2の新規ファイル(特にこのMOD初のdimension_type/dimension JSON、初めて`net.minecraft.world.entity.RelativeMovement`を使うJavaコード)を最有力容疑として調査すること。
 
+## 3N. セッション#15で実装した内容
+
+セッション開始時、`git fetch origin main`で`origin/main`のHEADが`94fcd10`(session 14の2度目のPROGRESS.md更新)であることを確認。session 14終了時点で「Prism Realm(§3M)のビルド成功/失敗が確認できていない」という最優先の申し送りがあったため、今回はまずこの一点の決着から着手した。
+
+### 3N-1. ビルド失敗を確定させた新しい確認手法
+
+`git fetch`ポーリングで`ci: update built jar`コミットを何度確認しても新着が無く(session 14の40分越えポーリングと同じ状況)、素のbadge.svgも数回中数回は`failing`・数回は`passing`という矛盾した結果を返した(§2-7のキャッシュ問題が継続)。ここで、§2-4に記載の「`actions/workflows/<file>.yml`ページをnocacheクエリ付きで取得し`aria-label`から成否を読む」手法を、**1回のリトライで諦めず4〜5回連続でリトライする**形で改めて試したところ、途中から明らかにページサイズが変わる瞬間(16KB前後のキャッシュ済みシェル → 42万バイト超の本物の一覧)があり、そこから先は複数回連続で一貫した内容(`Run 36`〜`38`がいずれも`failed`)を返すようになった。**「サイズが数十倍になった瞬間を境に信頼できる内容に切り替わる」という経験則は、次回以降のキャッシュ判定に使える具体的な目印として有用**なので明記しておく。
+
+これでsession 14のコミット(`b836049`=Run 36、`94fcd10`=Run 37)が**両方とも実際にビルド失敗していたこと**が確定した。
+
+### 3N-2. javacのエラーメッセージそのものを取得する新手法(§4-9の長年の課題を初めて突破)
+
+これまでの全セッションを通じて「CIビルド失敗時にjavacの実際のエラー内容を見る手段が無い」(§4-9)ことが最大級の課題として繰り返し記録されてきたが、今回**非ログイン・API不使用でエラー内容そのものを取得する方法を発見した**:
+
+1. `https://github.com/<owner>/<repo>/actions/runs/<run_id>` のHTML内に、`data-url="/<owner>/<repo>/actions/runs/<run_id>/annotations_partial"` という埋め込みURLがある(JS/WebSocketで遅延ロードされる部分)。
+2. このURLに対して素の`curl`ではなく、ヘッダー `-H "X-Requested-With: XMLHttpRequest" -H "Accept: text/html, */*" -H "Turbo-Frame: annotations"` を付けて取得すると、GitHubのTurbo Frame機構がサーバー側でHTMLフラグメントとして直接返してくれる(ログイン不要、200 OK)。ここに「2 errors and 2 warnings」のようなサマリと、各annotationのメッセージ本文(例: `cannot find symbol`, `[removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal`)が入っている。
+3. ただし`annotations_partial`単体ではメッセージ本文はあってもファイル名・行番号が省略されがちだったため、代わりに `https://github.com/<owner>/<repo>/commit/<sha>/checks` (通常の`curl`、特別ヘッダー不要)を取得すると、**同じannotation情報がファイルパス・行番号付き(`src/main/java/.../Foo.java#L150`のようなリンクテキストとして)でHTML内に直接埋め込まれている**ことが分かった。むしろこちらの方が情報量が多く簡単なので、次回以降はこの`/commit/<sha>/checks`ページを第一選択肢にするとよい。
+4. 一方、実際のビルドログ本文(javac的な完全なコンソール出力)そのものは、`/commit/<sha>/checks/<job_id>/logs/<line>`のようなURLが埋め込まれてはいるものの、素の`curl`では404になり取得できなかった(ログイン必須と思われる)。**annotationsはあくまでGitHub側が「これはエラー行」と認識してハイライトした短いメッセージ+ファイル/行の集合であり、フルログではない**という限界は残るが、今回のケースでは`cannot find symbol`というメッセージと該当行番号だけで原因特定に十分だった。
+
+この手法により、§4-9(ビルドログが見えない問題)は「完全解決」ではないが「annotationsだけでも取得できる」という形で大きく前進した。次回以降、CIビルドが失敗した際はまずこの手法(`/commit/<sha>/checks`ページの取得)を試すこと。
+
+### 3N-3. 実際の原因: 存在しないシンボル2つ(`PrismiumRiftShardItem.java`)
+
+annotationsから得られた情報は「`cannot find symbol`」×4件、該当箇所は`PrismiumRiftShardItem.java`のL150, L156, L188, L203。実際のコードを見比べると、2種類の誤ったシンボルがそれぞれ2箇所ずつ使われていたことが分かった:
+
+- **`Heightmap.Types.MOTION_TOP`は存在しない。** 1.20.1の`Heightmap.Types`列挙型が持つ値は`WORLD_SURFACE_WG`/`WORLD_SURFACE`/`OCEAN_FLOOR_WG`/`OCEAN_FLOOR`/`MOTION_BLOCKING`/`MOTION_BLOCKING_NO_LEAVES`の6つのみ(Yarn mappingsのjavadocで裏取り済み)で、「MOTION_TOP」はいずれのバージョンにも存在しない。地表の着地Y座標を求める意図だったので、`MOTION_BLOCKING`に置き換えた。
+- **`SoundEvents.END_PORTAL_TELEPORT`も存在しない。** 実際に存在するEnd Portal関連のサウンド定数は`END_PORTAL_FRAME_FILL`と`END_PORTAL_SPAWN`のみで、どちらも「テレポート」の用途に合わない。代わりに、ヴァニラで最も定番のテレポート効果音である`SoundEvents.ENDERMAN_TELEPORT`に置き換えた(存在を確認済み、`CHORUS_FRUIT_TELEPORT`も候補だったが、より広く知られている方を採用)。
+
+**教訓(次回以降に活かすべき点)**: session 14の記録では「web検索でAPIを裏取り済み」と書かれていたにもかかわらず、この2つのシンボルは実在しないものだった。今回のsession 15によるレビューでも、`teleportTo`のシグネチャや`getCooldowns`/`awardStat`のような「このMOD内の他の箇所で既に動いている実績のあるパターン」は入念にクロスチェックして問題無しと判断できたが、**この2つの定数はこのMOD内で初めて(かつ唯一)使われた箇所で、比較対象となる「既に動いている実例」が無かったため、目視レビューだけでは見抜けなかった**。今後、列挙型の定数やstatic fieldを新規に使う際は、メソッドシグネチャと同様に「その定数が実在するか」を個別にWebSearchやmappings.devで直接確認する(クラス丸ごとの一覧ページを取得して該当シンボルが載っているか`grep`する、など)ことを徹底すべき。「それらしい名前を思いつきで書いて、ビルドが通ったら正解」という組み立て方はしないこと。
+
+### 3N-4. ワークフローのアクションバージョン更新(副次的な改善)
+
+原因調査の途中、annotationsに`Node.js 20 is deprecated`(`actions/checkout@v4`・`actions/setup-java@v4`がNode 20を対象にしているが強制的にNode 24で動かされている)、および`setup-java v4 is deprecated`という警告も見つかった。ビルド失敗の直接原因ではなかったが(§3N-3の`cannot find symbol`とは無関係と判明済み、Run 38でこの更新のみのコミットも同じ`cannot find symbol`で失敗したことから切り分けられた)、放置すると将来的にRunnerの仕様変更で本当に壊れるリスクがあるため、`.github/workflows/build-and-notify.yml`の`actions/checkout@v4`→`@v5`、`actions/setup-java@v4`→`@v5`をこのセッションで先に更新済み(WebSearchでv5が現行の安定版であることを確認)。
+
+### 3N-5. 修正・再ビルドの結果 - 【今回は最後まで確認できた、重要な前進】
+
+3コミットをpush: (1) `c789888` ワークフローのアクションバージョン更新、(2) `68159f3` `MOTION_TOP`/`END_PORTAL_TELEPORT`の修正、(3) 本ファイルの更新コミット(このコミット自体)。(1)は単独でもRun 38として失敗(§3N-3の原因がまだ残っていたため、想定通り)。(2)のpush後、`git fetch`ポーリングで**`ci: update built jar [skip ci]`コミット(`adef27b`)の到着を確認**、さらに`actions/workflows/build-and-notify.yml`ページ(4〜5回リトライ後の「本物」のレスポンス)でも`Run 39`が`completed successfully`と表示されているのを確認した。**2つの独立した経路(git fetchでのjarコミット到着、およびaria-labelでの成否表示)が一致して「成功」を示しており、これまでで最も確信度の高い成功確認**と言える。
+
+これにより、Prism Realmディメンション・Prismium Rift Shardは**ようやくコンパイルが通ることが実証された**。ただし、これは§4に記載の「未検証」項目(実際にサーバーでディメンションが解決できるか、着地点が安全か、鉱石・Wraithが生成/スポーンするか等)を何一つ解消するものではない点に注意。
+
+### 3N-6. GitHub Issue確認
+
+`issues/1`・`issues/2`を個別ページ直叩きで確認、両方とも引き続きOPEN(変化無し)。`issues/3`・`issues/4`は404(存在しない)。新規Issue無し。
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
 
 
@@ -539,7 +583,7 @@ grep -noE 'aria-label="(currently running|completed successfully|failed|cancelle
     - テクスチャーのUVレイアウト(§3K-2)は「右側専用UV」と「64x64左側専用UV」の両方に同じ絵を描く保険をかけたが、どちらが実際に使われるか(あるいは両方使われて二重に見えるか)は未確認。
 21. 【セッション#12で新規発覚、地味だが有用】GitHub上の任意ファイルの正確な中身を確認する新しい手法を発見した。`api.github.com`と`raw.githubusercontent.com`はいずれもこのサンドボックスのプロキシで到達不可(§2-1/2-6の制約が今回`raw.githubusercontent.com`にも及ぶことが新たに判明)だが、`github.com/<owner>/<repo>/blob/<ref>/<path>` のHTMLページは取得でき、そのHTML内に埋め込まれた `"rawLines":[...]` というJSON配列の中にファイルの各行がテキストでそのまま入っている(`re.search(r'"rawLines":(\[.*?\]),"styling', html, re.S)` で抽出し `json.loads` すればよい)。これを使えば、Web検索結果に出てきていない任意のURLでも、まず `git clone`(または該当リポジトリのファイルパスが分かっていれば直接blobページのURL)経由で正確なソースコードを読むことができる。session 12ではこれを使ってForgeの`SpawnPlacementRegisterEvent.java`の実ソースを直接確認できた。§4-10で触れていたweb_fetchのprovenance制限(検索結果に出てきたURLしか取れない)の実質的な回避策として、次回以降も積極的に使う価値がある。ただしより確実なのは今回主に使った方法(github.com上の実在の公開Forgeチュートリアルリポジトリを丸ごと`git clone`してgrepする)で、こちらは1ファイルずつURLを組み立てる必要が無く効率がよいので第一選択肢として推奨する。
 22. 【セッション#13で新規発覚】GitHub issue #2(ツールの見た目について)への対応としてツール5種のテクスチャーを再設計したが(§3L-1)、これも他の全テクスチャーと同じ構造的限界により**実際のゲーム内インベントリ/ホットバー表示での視認性は未検証**。特にシャベルは「頭部の塊が無い細い線」という設計にしたため、理論上は判別しやすいはずだが、実機での小さい表示だと逆に「地味で目立たない」と感じられる可能性はゼロではない。issue #2の報告者からの追加フィードバックがあれば最優先で反映したい。
-23. 【セッション#14で新規発覚、最重要】**Prism Realmディメンション+Prismium Rift Shard(§3M)は、本セッション終了時点でビルド成功/失敗のどちらとも確認できていない**。push自体は`b836049`として一度で成功したが、その後`git fetch`ポーリングを25秒間隔で40分以上続けても`ci: update built jar`コミットが到着せず、Actions badgeも`failing`表示だったが、Actions一覧ページ側は`totalCount:0`という明らかな異常値を伴う、いつもよりさらに酷いキャッシュ汚染を起こしていた(§2-7/§4-14の既知問題)。**このMODで初めて「git fetchベースの確認方法で結論が出ないまま時間切れになった」ケース**。次回セッションの最優先事項(§5参照)。
+23. 【セッション#14で新規発覚、セッション#15で解決】~~Prism Realmディメンション+Prismium Rift Shard(§3M)は、本セッション終了時点でビルド成功/失敗のどちらとも確認できていない~~ **【セッション#15で解決】** 実際にビルド失敗していたことが確定し(Run 36・37とも`failed`)、原因(`Heightmap.Types.MOTION_TOP`・`SoundEvents.END_PORTAL_TELEPORT`という存在しないシンボル2種)を特定・修正してビルド成功(Run 39)を確認済み(§3N参照)。
 24. 【セッション#14で新規発覚】Prism Realm/Prismium Rift Shardのコード・データは(§23の通りビルド結果が未確認なことに加えて)、以下すべて未検証・既知の割り切り:
     - このMOD初のdimension_type/dimension JSON、初めて`net.minecraft.world.entity.RelativeMovement`を使うJavaコードであり、コードレビューとWebSearchでのAPI裏取りのみに基づく(§3M-1・§3M-2参照)。
     - Forge issue #8552(1.18.2向け、修正済みのはずだが未検証)の「ワールド新規作成直後のサーバー初回起動ではmod提供ディメンションが反映されない」問題が、このMOD・このバージョンでも再現するかは未確認。再現した場合はサーバー再起動が回避策( `ModDimensions`のjavadocに記載済み)。
@@ -548,39 +592,40 @@ grep -noE 'aria-label="(currently running|completed successfully|failed|cancelle
     - Prismium鉱石・Prismium Wraithが実際にPrism Realm内でも生成/スポーンするか(`#minecraft:is_overworld`タグ経由で理論上は有効なはず、§3M-1参照)は未確認。
     - 本格的なポータルブロック(フレーム設置+マルチブロック検知)は意図的に未実装。アイテムによる直接テレポートのみ。
 
+25. 【セッション#15で新規発覚】Prism Realm/Prismium Rift Shardは§4-24に挙げた「未検証」項目に加え、**セッション#15の修正でようやくコンパイルが通ることが実証された**(§3N参照)。§4-23は解決済みとして扱ってよいが、§4-24の残りの未検証項目(サーバーでのディメンション解決、着地点の安全性、鉱石/Wraithの実際の生成・スポーン等)は引き続き未検証のまま。
+26. 【セッション#15で新規発覚、低優先度】ビルドのannotationsに`[removal] ResourceLocation(String,String) in ResourceLocation has been deprecated and marked for removal`という警告が複数件、および`[removal] get() in FMLJavaModLoadingContext has been deprecated and marked for removal`という警告が1件見つかった(§3N-2の新手法で初めて可視化できた)。いずれも現時点ではビルドを失敗させていない(warningのみ)が、将来のForgeバージョンで完全に削除される可能性がある非推奨API。`new ResourceLocation(namespace, path)`は このMOD全体で多数箇所(ほぼ全てのブロック/アイテム登録)に渡って使われていると思われ、置き換えは範囲が広く一括で行うにはリスクがあるため、今回は着手しなかった。次回以降、時間に余裕があるセッションで`ResourceLocation.fromNamespaceAndPath(namespace, path)`(1.20.1で利用可能か要確認)への一括置換や、`FMLJavaModLoadingContext.get()`の代替APIへの移行を検討する価値がある。まずは`git grep -n "new ResourceLocation("`で影響範囲を洗い出すとよい。
+
 
 ---
 
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
-1. **【最優先、セッション#14から持ち越し】まず`git fetch origin main`で、コミット`b836049`(session 14、Prism Realm+Prismium Rift Shard)の直後に`ci: update built jar`が付いているかを確認すること。**
-   - 付いていれば: session 14の実装は実証済みとして扱ってよい。§4-23/§4-24の「ビルド結果未確認」という注記は解消したとPROGRESS.mdに明記し、次はプレイテスト観点(§4-24の残り項目)へ進んでよい。
-   - 付いておらず、Actions側(badge.svgやrunsページ、あるいは今回発見した「commit個別ページ」以外の経路)で本当にビルド失敗が確認できた場合: session 14で追加した新規ファイル一式(`data/claudemod/dimension_type/prism_realm_type.json`、`data/claudemod/dimension/prism_realm.json`、`ModDimensions.java`、`PrismiumRiftShardItem.java`、`ModItems.java`/`ModCreativeTabs.java`への追記)を最有力容疑として調査すること。特に、このMOD初めてのdimension_type/dimension JSONと、初めて`net.minecraft.world.entity.RelativeMovement`を使うコードである点に注意。原因を特定できたら直し、再pushしてまた`git fetch`で確認する。
-   - キャッシュのせいで判別できない場合(§4-23参照、今回はActionsの一覧ページが`totalCount:0`という明らかな異常値を返すほど酷いキャッシュ汚染だった)は、素直に`git fetch`を長め(数分〜数十分)に待ってみること。今回は40分待っても付かなかったが、それでも「本当に失敗した」のか「たまたまRunnerが混雑していただけ」なのかは区別できていない。
-2. 【継続、§0-2、重要】セッション開始時に必ずGitHub Open Issueを確認すること。**session 14時点でOpen Issueは2件、変化無し**: issue #1(顔が見えない、session 9で対応済み)、issue #2(ツールの見た目について、session 13で対応済み)。ともにユーザー側のクローズ・追加コメント待ちの状態が続いている。なお今回issue一覧ページ自体が`"totalCount":0`という壊れた値を返したため、個別ページ(`issues/1`, `issues/2`, `issues/3`...)を1件ずつ直接叩いて存在・状態を確認する方式に切り替えた。次回もこの方式(個別ページ直叩き)を優先し、一覧ページの数値は参考程度に留めること。
-3. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`(§2-5)。session 14でも他セッションとの並行は検知しなかったが、毎回確認すること。
-4. **push後は必ず`git fetch`ポーリングでビルド結果を確認し、failedならそのセッション内で追いかけて直す**。今回はこの確認が時間切れで完遂できなかった(§4-23)ため、次回セッションはまずこの尻拭いから始まる形になる。
-5. 【継続、優先度高】Prism Realm/Prismium Rift Shard(session 14、§3M)がビルド成功していた場合、実際にサーバーで`server.getLevel(claudemod:prism_realm)`が解決できるか(§2-1のForge issue #8552の再現有無を含む)、着地点(0,~surface,0)が安全か、鉱石・Wraithが本当にそちら側でも出るかは、いずれもコードレビュー以上の検証ができていない。プレイテストの機会があれば最優先の確認対象。
-6. 【継続、優先度高】Prismium Wraith(§3K、session 12)は**実際にスポーンするか・AIが正常に動くか・テクスチャーが3Dモデルに正しく貼られるかは一切未検証**のまま(§4-20)。
-7. 【継続、優先度高】Prismium Wraithはまだ「1体だけ」の状態(ロードマップ§1項目4は複数体+ボス級1体を掲げる)。次にMOB方面を触るなら (a) 2体目、(b) 既存Wraithに独自AI Goalを1つ足す、のどちらかが自然な次の一歩。
-8. 【継続、優先度高】Prismium Cable・Generator・Cellを組み合わせた「発電→送電→蓄電」の3点セットは、**実際にゲーム内で並べて動作確認したセッションはまだゼロ**(session 10から持ち越し、4セッション経過)。
-9. 【継続、優先度中〜低】Prismium Cableの見た目は「常に同じ中央キューブ」で、マルチパートblockstateによる接続表現が無い(§3I-1)。
-10. **ロードマップ§1の4本柱のうち、Prism Realmはsession 14で最小の第一歩に着手できたが、専用地形・専用バイオーム・専用鉱石・本格ポータルブロックはまだ無い**(§4-24参照)。次にディメンション方面を触るなら、(a) 本格的なポータルブロック+フレーム検知(§3M-2で意図的に先送りした部分)、(b) 専用バイオーム・専用地表ブロックの追加、のどちらかが自然な発展先。
-11. issueのbodyを取得する際は`github.com/<owner>/<repo>/issues/<番号>?nocache=<ts>`のHTMLから`"body":"..."`のJSON文字列を`python3`の文字列探索で抜き出す方法が引き続き有効。
+1. **【最優先】まずセッション開始時の状況確認として`git fetch origin main`でHEADが`ci: update built jar`コミット(`adef27b`、session 15の修正コミット`68159f3`直後)になっているか確認すること。** なっていれば、Prism Realm/Prismium Rift Shardはコンパイルレベルでは実証済みとして扱ってよい(§3N参照)。もし新たなビルド失敗が見つかった場合は、§3N-2で確立した新手法(`https://github.com/<owner>/<repo>/commit/<sha>/checks`ページを素の`curl`で取得し、`cannot find symbol`等のannotationメッセージとファイル/行番号を読む)を最初に試すこと。従来の`git fetch`ポーリングやbadge.svgより速く確実に原因まで辿り着ける。
+2. 【継続、優先度高、新規性あり】Prism Realm/Prismium Rift Shardはコンパイルが通ることは実証されたが(§3N-5)、実プレイでの検証はまだ一切無い(§4-24・§4-25参照)。次にこの方面を触るなら:
+   - `server.getLevel(claudemod:prism_realm)`が実際に解決できるか(Forge issue #8552の再現有無を含む)
+   - Prismium Rift Shardで実際に行き来できるか、着地点(0, ~surface, 0)が安全か
+   - Prismium鉱石・Prismium Wraithが本当にPrism Realm側でも生成/スポーンするか
+   これらはいずれもプレイテストでしか確認できない。ユーザー側でのプレイフィードバックを最優先で拾うこと(§0-2の運用ルールに準じ、GitHub Issueで報告があれば最優先対応)。
+3. 【継続、優先度高】Prismium Wraith(§3K、session 12)は実際にスポーンするか・AIが正常に動くか・テクスチャーが3Dモデルに正しく貼られるかは一切未検証のまま(§4-20)。まだ「1体だけ」の状態でもあるので、(a) 2体目の追加、(b) 既存Wraithへの独自AI Goal追加、のどちらかが次の一歩として自然。
+4. 【継続、優先度高】Prismium Cable・Generator・Cellを組み合わせた「発電→送電→蓄電」の3点セットは、実際にゲーム内で並べて動作確認したセッションはまだゼロ(session 10から持ち越し、5セッション経過)。
+5. 【継続、優先度中〜低、新規に判明した具体的な作業項目】§4-26の非推奨API(`new ResourceLocation(String,String)`・`FMLJavaModLoadingContext.get()`)は今のところwarningのみでビルドを壊していないが、将来のForgeアップデートで削除される可能性がある。時間に余裕があるセッションで`git grep -n "new ResourceLocation("`により影響範囲(おそらく多数のブロック/アイテム登録箇所)を洗い出し、置き換え方針を検討する価値がある。ただし急ぐ必要は無い(現状は警告のみ)。
+6. **ロードマップ§1の4本柱のうち、Prism Realmは専用地形・専用バイオーム・専用鉱石・本格ポータルブロックがまだ無い**(§4-24参照)。次にディメンション方面を触るなら、(a) 本格的なポータルブロック+フレーム検知(§3M-2で意図的に先送りした部分)、(b) 専用バイオーム・専用地表ブロックの追加、のどちらかが自然な発展先。ただし上記2の実プレイ検証(基本的な行き来ができるか)を優先すべき。
+7. push前に必ず `git fetch origin main` → 差分があれば `git rebase origin/main`(§2-5)。session 15でも他セッションとの並行は検知しなかったが、毎回確認すること。
+8. issueのbodyを取得する際は`github.com/<owner>/<repo>/issues/<番号>?nocache=<ts>`のHTMLから`"body":"..."`のJSON文字列を`python3`の文字列探索で抜き出す方法が引き続き有効。
 
 ### 議論したい論点・改善案
-- **CIビルド失敗時にログ本文を見る手段が無い問題(§4-9)**: 依然未解決。session 14でその不便さが最も深刻な形で表面化した(ビルド結果自体が最後まで分からなかった)。
-- **Actionsのキャッシュ問題(§2-7/§4-14)がsession 14で過去最悪化した**: runsページが`totalCount:0`という数値レベルの異常を返した。もしユーザー側で「プロキシのアローリストに`api.github.com`を追加できないか」を検討いただけると、`git fetch`ポーリング以外の裏取り手段ができて安心感が増す(これまでも繰り返し出ている相談事項だが、session 14の経験でその価値が改めて高まったと感じる)。
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。ユーザー側でビルド済みjar(`builds/ClaudeMod-latest.jar`、今回のビルドが成功していれば)を時々プレイし、フィードバック(できればGitHub Issueの形で)を残していただけると、次回以降のセッションがそれを最優先で拾える。
+- **CIビルド失敗時にログ本文を見る手段が無い問題(§4-9)は、session 15でannotations経由の部分的な解決策が見つかった(§3N-2)**。完全なコンソールログ(javacの警告含む全出力)はまだ見えないが、「エラーメッセージ+ファイル/行」だけでも今回のような単純な「存在しないシンボル」系のバグには十分だった。より複雑なバグ(型不一致の詳細、ジェネリクスの推論失敗など)ではannotationsのメッセージだけでは情報不足になる可能性があるので、その場合は改めてログイン済みアクセスの相談が必要になるかもしれない。
+- **Actionsのキャッシュ問題(§2-7/§4-14)は今回も発生した**が、「ページサイズが16KB前後→42万バイト超に変わる瞬間を境に信頼できる内容になる」という具体的な目印(§3N-1)が見つかったので、次回以降はリトライの終了判定がしやすくなったはず。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック。ユーザー側でビルド済みjar(`builds/ClaudeMod-latest.jar`、session 15のビルド成功分)を時々プレイし、フィードバック(できればGitHub Issueの形で)を残していただけると、次回以降のセッションがそれを最優先で拾える。特にPrism Realm/Prismium Rift Shardは「コンパイルは通るが本当に動くか一切未確認」という段階なので、フィードバックの価値が大きい。
 - **エネルギーシステムの設計方針の続き**: Prismium Cell/Generator/Cableの数値関係は、session 10時点の初期見積もりのまま。
-- **Prism Realm ディメンションの雰囲気**: session 14では「桜並木バイオーム固定+常時正午」という最小構成にしたが、もっと「異空間らしい」専用ビジュアル(空の色、専用パーティクル、専用地表ブロック)を今後検討したい。
+- **Prism Realm ディメンションの雰囲気**: 「桜並木バイオーム固定+常時正午」という最小構成にしたが、もっと「異空間らしい」専用ビジュアル(空の色、専用パーティクル、専用地表ブロック)を今後検討したい。
 - **Prismium Rift Shardのポータル化**: 現状はアイテム直接テレポートのみ。フレームブロック+`ITeleporter`による「本物のポータル」への発展はまだ方針未確定(§3M-2)。
-- **アーマーの見た目**: 「灰色フレーム+クリスタル」で統一したが、実際に体に乗った状態は未確認。
-- **GitHubファイル閲覧の新手法(§4-21、Kaupenjoe氏のチュートリアルリポジトリを`git clone`して実コードを読む手法含む)**: session 14でも有効に機能した(dimension_type/teleportToの裏取りに活用)。引き続き優先して使うこと。
+- **新しいシンボル未検証バグの教訓(§3N-3)**: 「このMOD内で既に動いている実例があるAPIパターン」は目視レビューでも比較的安全に裏取りできるが、「このセッションで初めて(かつ唯一)使う定数・enum値」は要注意。次回以降、新しいAPIを使う際は、それが「既存の動作実績と比較できるもの」か「今回初めて使うもの」かを意識し、後者は個別にmappings.dev等の一覧ページで実在確認すること。
+- **GitHubファイル閲覧の新手法(§4-21、Kaupenjoe氏のチュートリアルリポジトリを`git clone`して実コードを読む手法含む)**: 引き続き有効。§3N-2で見つけた`/commit/<sha>/checks`ページの手法と合わせて、次回以降のデバッグツールキットとして活用すること。
 
 ### コミット/プッシュ状況
-このセッションの変更は1つのコミット: `Add Prism Realm dimension (session 14): first step on the mod's last untouched roadmap pillar`(`b836049`)。pushは他セッションとの衝突無く一度で成功。**ただし、push後の`ci: update built jar`到着確認は本セッション内で完了しなかった**(§3M-4・§4-23に詳細、40分以上ポーリングしても到着せず、Actions側の確認手段もキャッシュ汚染で信頼できなかった)。issue #1・#2ともOpenのまま変化無し(新規Issueも無し)。
+このセッションの変更は3コミット: `c789888`(ci: actions/checkout・actions/setup-javaをv5へ更新)、`68159f3`(Prism Realmのビルド失敗を修正: `Heightmap.Types.MOTION_TOP`→`MOTION_BLOCKING`、`SoundEvents.END_PORTAL_TELEPORT`→`ENDERMAN_TELEPORT`)、および本ファイルの更新コミット。pushはいずれも他セッションとの衝突無く一度で成功(プロキシ変数の回避策は不要だった)。**`68159f3`のpush後、`ci: update built jar`コミット(`adef27b`)の到着と、`actions/workflows/build-and-notify.yml`ページでの`Run 39 completed successfully`表示の両方で成功を確認済み**(§3N-5)。issue #1・#2ともOpenのまま変化無し(新規Issueも無し、§3N-6)。
 
 ### 通知状況
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、Run成功時に(Secretが設定済みであれば)送信されているはず(ただし今回はそのRunが成功したかどうか自体が本セッションでは未確認)。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(§2-2)。GitHub Actions側の通知は、Run 39(成功)の際に(Secretが設定済みであれば)送信されているはず。
