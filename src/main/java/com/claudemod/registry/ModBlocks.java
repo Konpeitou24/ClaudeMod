@@ -1,6 +1,7 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.block.PrismiumBloomBlock;
 import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
@@ -131,6 +132,25 @@ public class ModBlocks {
                     .strength(3.0f, 6.0f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 4)
+                    .noOcclusion()));
+
+    // Prismium Bloom (session 17): the mod's first surface decoration for
+    // the Prism Realm dimension - see PrismiumBloomBlock for the full
+    // rationale. noCollission()/instabreak() so it behaves like a vanilla
+    // flower (walk through it, pop it in one hit); noOcclusion() since it's
+    // a cross-quad, not a full cube, and would otherwise cull neighbouring
+    // faces incorrectly. AMETHYST_CLUSTER sound (first use in this mod,
+    // cross-checked against Forge 1.18.2 javadocs before use per the
+    // session 15 "verify new symbols individually" lesson, PROGRESS.md
+    // section 3N-3) reads as "crystal plant" rather than the flatter
+    // AMETHYST sound already used across the mineral-family blocks.
+    public static final RegistryObject<Block> PRISMIUM_BLOOM = BLOCKS.register("prismium_bloom",
+            () -> new PrismiumBloomBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 5)
                     .noOcclusion()));
 
     public static void register(IEventBus eventBus) {

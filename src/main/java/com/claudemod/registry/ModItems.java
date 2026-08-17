@@ -147,6 +147,9 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_WRAITH_SPAWN_EGG = ITEMS.register("prismium_wraith_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_WRAITH, 0x2b1033, 0x39e6d6, new Item.Properties()));
 
+    public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
