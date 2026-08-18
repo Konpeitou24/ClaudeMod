@@ -111,35 +111,45 @@ def make_chronoflame_top_texture():
             # the four cardinal ticks stand out from the other eight.
             px[xi, yi] = (*hilite, 255) if i % 3 == 0 else (*accent, 255)
 
-    # 4. Hour + minute hands, this time long and unambiguous (the whole
-    # point of this texture): minute hand toward 12, hour hand toward 4,
-    # both drawn as short line segments via integer steps from center.
-    def draw_hand(length, angle_deg, color, width_extra=None):
+    # 4. Hour + minute hands, revised in session 57 after the original
+    # same-color design still read as one fused "hook" shape at 1x/4x
+    # (both hands shared the dark OUTLINE color AND were thickened right
+    # next to the shared pivot, which is exactly the region where they
+    # pass closest to each other - the two failure modes named in the
+    # session 54/55 handoff: "same color" and "no gap"). This version
+    # fixes both: the hour hand switches to the bright PRISMIUM_ACCENT
+    # pink (already used for the cardinal tick marks, so no new color is
+    # invented) for a color-based distinction that survives even if the
+    # two hands' angles ever end up close together, AND a 1px gap is left
+    # around the pivot (hands start at step 2, not step 1) so the two
+    # hands never touch at the base - the exact spot the old blob formed.
+    # Thickening also moves to the outer half of each hand (near the tip,
+    # farther from the shared pivot) instead of the base.
+    def draw_hand(length, angle_deg, color, thicken=False):
         angle = math.radians(angle_deg - 90)
         dx, dy = math.cos(angle), math.sin(angle)
-        for step in range(1, length + 1):
+        for step in range(2, length + 1):
             xi = round(cx + dx * step)
             yi = round(cy + dy * step)
             if 0 <= xi < SIZE and 0 <= yi < SIZE:
                 px[xi, yi] = (*color, 255)
-            if width_extra and step <= length - 1:
-                # thicken near the base only, tapering toward the tip
+            if thicken and step >= max(2, length - 2):
+                # thicken only the outer tip half, far from the pivot
                 perp_x, perp_y = -dy, dx
                 xi2 = round(cx + dx * step + perp_x * 0.6)
                 yi2 = round(cy + dy * step + perp_y * 0.6)
                 if 0 <= xi2 < SIZE and 0 <= yi2 < SIZE:
                     px[xi2, yi2] = (*color, 255)
 
-    # Hands are drawn in the dark OUTLINE color (not a bright accent) so
-    # they read as solid dark silhouettes against the bright glow, the
-    # same way real clock hands read dark against a lit face - a bright
-    # hand on a bright core was the exact readability failure of the
-    # original single-texture design this file is replacing.
-    draw_hand(6, 0, outline, width_extra=True)     # minute hand -> 12
-    draw_hand(4, 105, outline, width_extra=True)    # hour hand -> ~3:30
+    # Minute hand: dark OUTLINE color, long, toward 12 - reads as a solid
+    # dark silhouette against the bright glow.
+    draw_hand(6, 0, outline, thicken=True)      # minute hand -> 12
+    # Hour hand: bright ACCENT pink (distinct hue, not just "darker/
+    # shorter"), short, toward ~3:30 - unmistakable even at 1x scale.
+    draw_hand(4, 105, accent, thicken=True)     # hour hand -> ~3:30
 
-    # Center pin: a single dark pixel (not bright) so it reads as the
-    # hands' pivot rather than merging back into the white glow.
+    # Center pin: a single dark pixel, one solid dot both hands visually
+    # originate from without touching each other.
     px[7, 7] = (*outline, 255)
 
     return img
