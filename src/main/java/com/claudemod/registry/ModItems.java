@@ -231,6 +231,12 @@ public class ModItems {
     public static final RegistryObject<Item> PRISM_LILY_ITEM = ITEMS.register("prism_lily",
             () -> new BlockItem(ModBlocks.PRISM_LILY.get(), new Item.Properties()));
 
+    // Prismium Soil (scheduled session #45): BlockItem for the mod's
+    // first Prism Realm-exclusive ground block - see
+    // ModBlocks.PRISMIUM_SOIL.
+    public static final RegistryObject<Item> PRISMIUM_SOIL_ITEM = ITEMS.register("prismium_soil",
+            () -> new BlockItem(ModBlocks.PRISMIUM_SOIL.get(), new Item.Properties()));
+
     // Prism Bramble (session 43): BlockItem for the mod's second Prism
     // Realm-exclusive surface decoration - see ModBlocks.PRISM_BRAMBLE.
     public static final RegistryObject<Item> PRISM_BRAMBLE_ITEM = ITEMS.register("prism_bramble",

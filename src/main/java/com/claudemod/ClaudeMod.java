@@ -4,6 +4,7 @@ import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModCreativeTabs;
 import com.claudemod.registry.ModEntities;
+import com.claudemod.registry.ModFeatures;
 import com.claudemod.registry.ModItems;
 import com.claudemod.registry.ModMenuTypes;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -32,6 +33,7 @@ public class ClaudeMod {
         ModBlocks.register(modEventBus);
         ModBlockEntities.register(modEventBus);
         ModEntities.register(modEventBus);
+        ModFeatures.register(modEventBus);
         ModItems.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModMenuTypes.register(modEventBus);

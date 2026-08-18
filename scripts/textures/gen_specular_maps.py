@@ -42,6 +42,7 @@ LIGHT_LEVELS = {
     "prismium_wardstone.png": 0,       # unlit state
     "prismium_wardstone_lit.png": 10,
     "prismium_restorer.png": 0,        # never glows (no LIT state at all)
+    "prismium_soil.png": 0,            # ground block, never glows
 }
 
 

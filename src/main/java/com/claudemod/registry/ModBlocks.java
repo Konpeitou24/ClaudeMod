@@ -411,6 +411,28 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 10)));
 
+    // Prismium Soil (scheduled session #45): the mod's first Prism Realm
+    // -exclusive GROUND block, addressing the long-flagged gap that the
+    // dimension's terrain itself was still plain overworld grass/dirt
+    // despite custom biome colors (session 39), boosted ore density
+    // (session 41), and three exclusive plants (sessions 40/43/44). Not
+    // placed by ordinary worldgen noise/surface rules (see
+    // PrismiumSoilFeature for why that approach was judged too risky to
+    // verify) - instead a decoration-step Feature repaints grass_block/
+    // dirt/coarse_dirt to this block, restricted to claudemod:prism_realm
+    // via the usual biome_modifier technique. Dark violet-indigo palette
+    // sampled from the biome's own sky/fog colors (see
+    // gen_prismium_soil.py), NOT the bright teal/magenta PRISMIUM_*
+    // crystal palette, so mile after mile of it doesn't read as "a floor
+    // made of gemstone" - only sparse embedded flecks tie it back to the
+    // mod's crystal family. Plain dirt-like stats (soft, no tool
+    // required), mineable/shovel like vanilla dirt.
+    public static final RegistryObject<Block> PRISMIUM_SOIL = BLOCKS.register("prismium_soil",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .strength(0.5f)
+                    .sound(SoundType.GRAVEL)));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }
