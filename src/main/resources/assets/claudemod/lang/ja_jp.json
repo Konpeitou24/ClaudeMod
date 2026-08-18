@@ -12,6 +12,7 @@
     "block.claudemod.prismium_spike": "プリズミウムの結晶棘",
     "block.claudemod.prism_lily": "プリズムリリー",
     "block.claudemod.prism_bramble": "プリズムブランブル",
+    "block.claudemod.prism_vine": "プリズムバイン",
     "block.claudemod.prismium_lantern": "プリズミウムランタン",
     "block.claudemod.prismium_cell": "プリズミウムセル",
     "block.claudemod.prismium_cell.usage": "空手で右クリックするとGUIが開く。プリズミウムの欠片を持って右クリックすると直接充電できる。プリズミウム発電機やケーブルの隣に置くと自動で充電される。",

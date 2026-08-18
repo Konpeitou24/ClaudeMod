@@ -236,6 +236,11 @@ public class ModItems {
     public static final RegistryObject<Item> PRISM_BRAMBLE_ITEM = ITEMS.register("prism_bramble",
             () -> new BlockItem(ModBlocks.PRISM_BRAMBLE.get(), new Item.Properties()));
 
+    // Prism Vine (session 44): BlockItem for the mod's third Prism
+    // Realm-exclusive surface decoration - see ModBlocks.PRISM_VINE.
+    public static final RegistryObject<Item> PRISM_VINE_ITEM = ITEMS.register("prism_vine",
+            () -> new BlockItem(ModBlocks.PRISM_VINE.get(), new Item.Properties()));
+
     // Prismium Pylon (session 19): BlockItem for the mod's first FE
     // consumer. See ModBlocks.PRISMIUM_PYLON. Same EnergyStorageBlockItem
     // persistence/tooltip treatment as Cell/Generator/Cable (session 11).

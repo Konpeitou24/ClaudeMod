@@ -2,6 +2,7 @@ package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.block.PrismBrambleBlock;
+import com.claudemod.block.PrismVineBlock;
 import com.claudemod.block.PrismLilyBlock;
 import com.claudemod.block.PrismiumBloomBlock;
 import com.claudemod.block.PrismiumCableBlock;
@@ -217,6 +218,22 @@ public class ModBlocks {
                     .instabreak()
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .lightLevel(state -> 2)
+                    .noOcclusion()));
+
+    // Prism Vine (session 44): the mod's third plant exclusive to the
+    // Prism Realm dimension (see PrismVineBlock / PROGRESS.md section 5
+    // item 9(c), which asked for a third plant with a different "growth
+    // direction" than Lily/Bramble). Reuses the same violet "family"
+    // properties as Lily/Bramble; dimmest light level of the three (1,
+    // vs Bramble's 2 and Lily's 3) since a ground-hugging tangle in
+    // shadow reads as the least luminous of the three by design.
+    public static final RegistryObject<Block> PRISM_VINE = BLOCKS.register("prism_vine",
+            () -> new PrismVineBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 1)
                     .noOcclusion()));
 
     // Prismium Pylon (session 19): the mod's first FE *consumer*, closing
