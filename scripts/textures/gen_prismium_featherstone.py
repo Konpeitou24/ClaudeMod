@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
-"""Generate the item icon for Prismium Featherstone (session 31), the
-mod's first passive/always-on accessory - unlike every other Prismium
-item so far (tools/armor equipped in their vanilla slot, or "hold and
-activate" items like the Grappling Hook/Locator/Rift Shard/Guardian
-Charm), this one works simply by sitting anywhere in the player's
-inventory (see PrismiumFeatherstoneHandler's LivingFallEvent listener -
-no equip slot, no right-click action, nothing to consciously use).
+"""Generate the item icon for Prismium Featherstone (session 31, reworked
+session 34), the mod's first passive/always-on accessory - unlike every
+other Prismium item so far (tools/armor equipped in their vanilla slot, or
+"hold and activate" items like the Grappling Hook/Locator/Rift
+Shard/Guardian Charm), this one works simply by sitting anywhere in the
+player's inventory (see PrismiumFeatherstoneHandler's LivingFallEvent
+listener - no equip slot, no right-click action, nothing to consciously
+use).
 
 Visual language: a smooth pale stone (pebble) with a feather laid
 diagonally across it and a small teal Prismium gem (reusing
@@ -16,11 +17,30 @@ touches the stone - "a stone light enough to float", echoing the fall
 Guardian Charm's gold pendant silhouette (a wearable necklace) since this
 item is explicitly *not* worn/held for its effect to apply.
 
-Self-review note: an early draft placed the gem fully inside the
-feather's silhouette rather than the stone's, which read as "a feather
-with a chunk out of it" rather than "a gem embedded in the stone" once
-previewed at 4x - moved the gem down one row so it sits unambiguously on
-stone pixels only, with the feather tip merely touching its edge.
+Session 34 rework: the session 31/32 self-review note (below) flagged
+that the feather still read as "a crystal shard" rather than a feather at
+a glance - the PROGRESS.md session 31 handoff (section 4-46) named this
+explicitly as a candidate for revisiting. Root cause on closer look: the
+old design put its darker "rachis" column on the *outer* edge of the
+band, which is exactly what the mod's shard-family items
+(scripts/gen_prismium.py's make_shard_item, Prismium Shard/Core) do for
+their faceted highlight - so the silhouette language was accidentally
+reused from the wrong item family. This rework moves the quill line to
+the *center* of the band (a real feather's rachis runs down the middle,
+not the edge) and cuts small notches into *both* outer edges at
+intervals to break the smooth shard-like taper into a segmented,
+comb-like barb silhouette - the two changes together should be enough to
+read as "feather" instead of "narrow crystal" even at small sizes.
+Un-verified in-game like everything else in this sandbox (see
+PROGRESS.md) - judged only by the 4x/8x/16x preview sheet.
+
+Self-review note (session 31, still relevant): an early draft placed the
+gem fully inside the feather's silhouette rather than the stone's, which
+read as "a feather with a chunk out of it" rather than "a gem embedded in
+the stone" once previewed at 4x - moved the gem down one row so it sits
+unambiguously on stone pixels only, with the feather tip merely touching
+its edge. The session 34 rework kept the stone/gem geometry unchanged and
+only replaced the feather itself, so this note still applies.
 
 Deterministic (no RNG - every pixel is placed explicitly). Run from repo
 root: python3 scripts/textures/gen_prismium_featherstone.py
@@ -78,29 +98,35 @@ STONE_ROWS = {
     14: (6, 9),
 }
 
-# Feather silhouette: a thin diagonal band from the upper-right down to
-# the stone, tapering to a point at both ends. The rachis (quill vein)
-# runs along the right/lower edge of each row.
-FEATHER_ROWS = {
-    0: (9, 11),
-    1: (9, 11),
-    2: (9, 10),
-    3: (8, 10),
-    4: (8, 9),
-    5: (7, 9),
-    6: (7, 8),
-    7: (6, 8),
-    8: (6, 7),
-    9: (6, 7),
+# Feather silhouette (session 34 rework): a diagonal plume from the
+# upper-right tip down to where it touches the stone, defined per-row as
+# (quill_x, half_width) so the rachis (quill) is always the *center*
+# column of the row rather than an edge column - see the module
+# docstring for why that matters. half_width=0 means a single-pixel tip.
+FEATHER_SPEC = {
+    0: (12, 0),
+    1: (12, 1),
+    2: (11, 1),
+    3: (11, 2),
+    4: (10, 2),
+    5: (10, 3),
+    6: (9, 2),
+    7: (9, 3),
+    8: (8, 2),
 }
-# Rachis pixel per row = the rightmost column (darker shadow tone).
-RACHIS_COL = {y: x1 for y, (x0, x1) in FEATHER_ROWS.items()}
+FEATHER_ROWS = {y: (q - hw, q + hw) for y, (q, hw) in FEATHER_SPEC.items()}
+QUILL_COL = {y: q for y, (q, hw) in FEATHER_SPEC.items()}
 
-# Barb notches: single transparent nicks cut into the feather's leading
-# (left) edge so the silhouette reads as segmented barbs rather than a
-# smooth crystal-shard taper (see self-review note - the first draft
-# had no notches and previewed as indistinguishable from the mod's
-# other Prismium Shard-family items).
+# Barb notches: the leading (left/lower-x) edge is left smooth - a real
+# feather's leading edge is fairly clean - while the FEATHER_SPEC
+# half-widths above already zigzag the trailing (right/higher-x) edge
+# row-to-row (13,12,13,12,13,11,12,10 across rows 1-8) for a serrated,
+# comb-like silhouette instead of a single smooth taper. This dict adds a
+# few extra single-pixel nicks along that same trailing edge to reinforce
+# the barb read at a glance.
+FEATHER_NOTCHES = {
+    (13, 1), (13, 3), (13, 5),
+}
 
 # Gem: small diamond embedded in the stone, just below where the
 # feather's tip touches it (see self-review note in the docstring).
@@ -130,8 +156,7 @@ def make_icon():
         for x in range(x0, x1 + 1):
             feather_pts.add((x, y))
 
-    notch_pts = {(9, 2), (8, 5)}
-    feather_pts -= notch_pts
+    feather_pts -= FEATHER_NOTCHES
 
     all_solid = stone_pts | feather_pts
 
@@ -158,14 +183,20 @@ def make_icon():
                 color = S_HILITE
             px[x, y] = (*color, 255)
 
-    # Feather fill: base tone, with the rachis edge in shadow tone and
-    # the leading (left) edge in highlight tone so the barbs read as
-    # catching light.
+    # Feather fill: the quill (center column) is drawn in the shadow
+    # tone as a distinct vein running down the middle of the plume; the
+    # barbs on either side use the base tone, with the outermost pixel
+    # of each side in the highlight tone so each barb segment still
+    # catches a bit of light at its tip (echoes the old edge-highlight
+    # without making the whole edge read as one smooth faceted line).
     for y, (x0, x1) in FEATHER_ROWS.items():
+        quill = QUILL_COL[y]
         for x in range(x0, x1 + 1):
-            if x == RACHIS_COL[y]:
+            if (x, y) in FEATHER_NOTCHES:
+                continue
+            if x == quill:
                 color = F_SHADOW
-            elif x == x0:
+            elif x in (x0, x1):
                 color = F_HILITE
             else:
                 color = F_BASE
