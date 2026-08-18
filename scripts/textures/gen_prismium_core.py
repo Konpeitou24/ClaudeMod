@@ -139,5 +139,35 @@ def save(img, rel_path):
     print(f"wrote {out.relative_to(REPO_ROOT)}")
 
 
+def use_user_submitted_core_texture():
+    """Copy the user's hand-drawn Prismium Core art in as the real asset.
+
+    Session (interactive follow-up, same day as the Prismium Block art
+    adoption in gen_prismium.py): the user pointed out that Prismium Core
+    had not caught up with the newly-adopted Prismium Block look (Core was
+    still the programmatic make_prismium_core() diagonal-band pattern,
+    just recolored to the new palette, not literal hand-drawn art) and
+    hand-made a Core-specific 16x16 texture to fix that: same diagonal
+    teal/cyan gradient and four corner magenta gem clusters as the block
+    art, plus a bright white/hilite ring in the center to read as the
+    block's own light source (matching what make_prismium_core() was
+    trying to achieve programmatically with its core_pts cluster).
+    Converts to RGBA (source PNG is plain RGB) but does not otherwise
+    touch a single pixel.
+
+    prismium_core_slab / prismium_core_stairs / prismium_core_wall all
+    reference this same "claudemod:block/prismium_core" texture in their
+    models, so they pick up this art automatically - no separate files
+    needed for those ("Prismium Core-related building blocks").
+    """
+    src = REPO_ROOT / "scripts/textures/reference/user_submitted_prismium_core_2026-08-18.png"
+    img = Image.open(src).convert("RGBA")
+    assert img.size == (SIZE, SIZE), f"expected {SIZE}x{SIZE}, got {img.size}"
+    out = ASSETS / "block/prismium_core.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out)
+    print(f"wrote {out.relative_to(REPO_ROOT)} (from user-submitted art, not make_prismium_core())")
+
+
 if __name__ == "__main__":
-    save(make_prismium_core(), "block/prismium_core.png")
+    use_user_submitted_core_texture()
