@@ -55,6 +55,26 @@ public class ModBlocks {
                     .sound(SoundType.DEEPSLATE)
                     .lightLevel(state -> 3)));
 
+    // Session 47: Prismium Stone, the plain stone-equivalent fill block
+    // for the Prism Realm's new flat chunk generator (see
+    // data/claudemod/dimension/prism_realm.json). Directly requested by
+    // the repo owner: ordinary overworld stone/dirt were still generating
+    // in the dimension (the old generator reused minecraft:overworld noise
+    // settings wholesale, see PROGRESS.md session 47), and ordinary
+    // "recolor the ore" texture reuse was explicitly asked for. Texture
+    // (scripts/textures/gen_prismium_stone.py) reuses prismium_ore.png's
+    // exact grey stone-base palette (sampled directly from that file) with
+    // only a handful of very sparse teal flecks - a "family resemblance"
+    // to the ore without looking like an ore block itself, since this is
+    // meant to be the mundane bulk fill material, not something to mine
+    // for its own sake.
+    public static final RegistryObject<Block> PRISMIUM_STONE = BLOCKS.register("prismium_stone",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
     // Compressed storage block, crafted from 9 Prismium Shards.
     public static final RegistryObject<Block> PRISMIUM_BLOCK = BLOCKS.register("prismium_block",
             () -> new Block(BlockBehaviour.Properties.of()

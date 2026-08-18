@@ -89,5 +89,8 @@
     "block.claudemod.prismium_core_wall": "Prismium Core Wall",
     "block.claudemod.prismium_core_stairs": "Prismium Core Stairs",
     "block.claudemod.chiseled_prismium_core": "Chiseled Block of Prismium Core",
-    "block.claudemod.prismium_soil": "Prismium Soil"
+    "block.claudemod.prismium_soil": "Prismium Soil",
+    "entity.claudemod.prismium_deep_wraith": "Prismium Deep Wraith",
+    "item.claudemod.prismium_deep_wraith_spawn_egg": "Prismium Deep Wraith Spawn Egg",
+    "block.claudemod.prismium_stone": "Prismium Stone"
 }

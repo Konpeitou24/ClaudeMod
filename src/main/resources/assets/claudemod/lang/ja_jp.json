@@ -89,5 +89,8 @@
     "block.claudemod.prismium_core_wall": "プリズミウムコアの塀",
     "block.claudemod.prismium_core_stairs": "プリズミウムコアの階段",
     "block.claudemod.chiseled_prismium_core": "模様入りプリズミウムコア",
-    "block.claudemod.prismium_soil": "プリズミウムの土"
+    "block.claudemod.prismium_soil": "プリズミウムの土",
+    "entity.claudemod.prismium_deep_wraith": "プリズミウム・ディープレイス",
+    "item.claudemod.prismium_deep_wraith_spawn_egg": "プリズミウム・ディープレイスのスポーンエッグ",
+    "block.claudemod.prismium_stone": "プリズミウムストーン"
 }

@@ -53,6 +53,10 @@ public class ModItems {
     public static final RegistryObject<Item> DEEPSLATE_PRISMIUM_ORE_ITEM = ITEMS.register("deepslate_prismium_ore",
             () -> new BlockItem(ModBlocks.DEEPSLATE_PRISMIUM_ORE.get(), new Item.Properties()));
 
+    // Session 47: BlockItem for Prismium Stone (see ModBlocks.PRISMIUM_STONE).
+    public static final RegistryObject<Item> PRISMIUM_STONE_ITEM = ITEMS.register("prismium_stone",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STONE.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOCK_ITEM = ITEMS.register("prismium_block",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK.get(), new Item.Properties()));
 
@@ -217,6 +221,13 @@ public class ModItems {
     // as part of the Prismium family in the creative inventory.
     public static final RegistryObject<Item> PRISMIUM_WRAITH_SPAWN_EGG = ITEMS.register("prismium_wraith_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_WRAITH, 0x2b1033, 0x39e6d6, new Item.Properties()));
+
+    // Session 47: Prismium Deep Wraith spawn egg. Colors swapped to the
+    // entity's own "waterlogged basalt + bioluminescent green" palette
+    // (see scripts/textures/gen_prismium_deep_wraith.py) so it reads as a
+    // distinct-but-related egg next to the land Wraith's in creative.
+    public static final RegistryObject<Item> PRISMIUM_DEEP_WRAITH_SPAWN_EGG = ITEMS.register("prismium_deep_wraith_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_DEEP_WRAITH, 0x1c3548, 0x7cffb8, new Item.Properties()));
 
     public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));

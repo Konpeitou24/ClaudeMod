@@ -28,6 +28,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_SHARD.get());
                         output.accept(ModItems.PRISMIUM_ORE_ITEM.get());
                         output.accept(ModItems.DEEPSLATE_PRISMIUM_ORE_ITEM.get());
+                        output.accept(ModItems.PRISMIUM_STONE_ITEM.get()); // session 47
                         output.accept(ModItems.PRISMIUM_BLOCK_ITEM.get());
                         output.accept(ModItems.PRISMIUM_CORE_ITEM.get());
                         output.accept(ModItems.CHISELED_PRISMIUM_BLOCK_ITEM.get());
@@ -64,6 +65,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_BOW.get());
                         output.accept(ModItems.PRISMIUM_GRAPPLING_HOOK.get());
                         output.accept(ModItems.PRISMIUM_WRAITH_SPAWN_EGG.get());
+                        output.accept(ModItems.PRISMIUM_DEEP_WRAITH_SPAWN_EGG.get()); // session 47
                         output.accept(ModItems.PRISMIUM_RIFT_SHARD.get());
                         output.accept(ModItems.PRISMIUM_LOCATOR.get());
                         output.accept(ModItems.PRISMIUM_GUARDIAN_CHARM.get());
