@@ -1,0 +1,10 @@
+2880:java.net.SocketTimeoutException: Read timed out
+2921:java.net.SocketTimeoutException: Read timed out
+3058:java.net.SocketTimeoutException: Read timed out
+3204:java.net.SocketTimeoutException: Read timed out
+3696:FAILURE: Build failed with an exception.
+3710:* Exception is:
+3711:org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':downloadAssets'.
+3720:	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+3742:Caused by: java.lang.RuntimeException: Failed to get asset: minecraft/lang/szl.json
+3843:	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
