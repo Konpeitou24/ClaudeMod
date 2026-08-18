@@ -1,6 +1,7 @@
 {
-    "parent": "minecraft:block/cube_all",
+    "parent": "minecraft:block/cube_column",
     "textures": {
-        "all": "claudemod:block/prismium_chronoflame"
+        "end": "claudemod:block/prismium_chronoflame_top",
+        "side": "claudemod:block/prismium_chronoflame"
     }
 }
