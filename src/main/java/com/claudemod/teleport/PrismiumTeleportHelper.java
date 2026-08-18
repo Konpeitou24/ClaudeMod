@@ -3,6 +3,7 @@ package com.claudemod.teleport;
 import com.claudemod.dimension.ModDimensions;
 import com.claudemod.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.resources.ResourceKey;
@@ -13,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.levelgen.Heightmap;
 import net.minecraft.world.level.material.FluidState;
 
@@ -35,6 +37,17 @@ import java.util.Set;
  * design rationale (fixed anchor point, no custom {@code ITeleporter},
  * round-trip position saved in the player's persistent data under
  * {@link #RETURN_TAG_KEY}) - none of that changed here.
+ *
+ * <p><b>Session 53 addition - the one-way problem</b>: PROGRESS.md flagged
+ * that a player who reaches the Prism Realm through
+ * {@code PrismiumPortalBlock} (which consumes a Prismium Shard to ignite)
+ * and has no spare shard left had no way back - {@code teleportBackFromRealm}
+ * existed but nothing physical in the Realm could trigger it. {@link
+ * #teleportToRealm} now calls {@link #ensureReturnPortal} every time,
+ * which builds (once, idempotently) a second, fixed {@code
+ * PrismiumPortalBlock} frame a few blocks from the landing spot - so
+ * every arrival, regardless of which item/block sent the player there,
+ * leaves behind a walk-through way back that costs nothing to use.
  */
 public final class PrismiumTeleportHelper {
 
@@ -44,6 +57,14 @@ public final class PrismiumTeleportHelper {
     private static final String RETURN_TAG_KEY = "claudemod_realm_return";
     private static final BlockPos REALM_ANCHOR = new BlockPos(0, 0, 0);
     private static final int REALM_FALLBACK_SURFACE_Y = 65;
+
+    // Session 53: fixed offset (from REALM_ANCHOR, at the landing Y) for
+    // the auto-built return portal - see class javadoc. Kept a few
+    // blocks away from the anchor itself so it never overlaps the
+    // landing spot a player is standing on when they first arrive.
+    private static final int RETURN_PORTAL_X_OFFSET = 4;
+    private static final int RETURN_PORTAL_RING_WIDTH = 4;
+    private static final int RETURN_PORTAL_RING_HEIGHT = 5;
 
     /**
      * Teleports {@code player} from wherever they currently are into the
@@ -73,6 +94,8 @@ public final class PrismiumTeleportHelper {
         int landingY = findSafeRealmLanding(realmLevel, REALM_ANCHOR.getX(), REALM_ANCHOR.getZ());
         double destX = REALM_ANCHOR.getX() + 0.5;
         double destZ = REALM_ANCHOR.getZ() + 0.5;
+
+        ensureReturnPortal(realmLevel, landingY);
 
         player.teleportTo(realmLevel, destX, landingY, destZ, Set.of(), player.getYRot(), player.getXRot());
         realmLevel.playSound(null, destX, landingY, destZ,
@@ -108,6 +131,60 @@ public final class PrismiumTeleportHelper {
         }
 
         return landingY;
+    }
+
+    /**
+     * Builds (once) a small, always-lit {@code PrismiumPortalBlock} frame
+     * at a fixed spot near the Realm anchor, so a player who arrives with
+     * no Prismium Shard on hand still has a free, physical way back - see
+     * the class javadoc's "one-way problem" note. Idempotent: if the
+     * frame's interior already has portal blocks in it (checked via a
+     * single block read), this is a no-op, so repeated arrivals - the
+     * common case - don't re-set the same blocks every time.
+     *
+     * <p>Reuses the exact ring dimensions {@code
+     * PrismiumPortalIgniteHandler} validates (4 wide x 5 tall outer ring,
+     * 2x3 interior, {@code Direction.Axis.X}) so this auto-built frame
+     * looks identical to one a player builds and ignites by hand, and
+     * remains a legitimate, walk-through-both-ways
+     * {@code PrismiumPortalBlock} pair once built - not a teleport
+     * pad or a special case.
+     */
+    private static void ensureReturnPortal(ServerLevel realmLevel, int landingY) {
+        BlockPos origin = new BlockPos(
+                REALM_ANCHOR.getX() + RETURN_PORTAL_X_OFFSET, landingY, REALM_ANCHOR.getZ());
+
+        BlockPos interiorProbe = origin.offset(1, 1, 0);
+        if (realmLevel.getBlockState(interiorProbe).getBlock() == ModBlocks.PRISMIUM_PORTAL.get()) {
+            // Already built on a previous arrival - nothing to do.
+            return;
+        }
+
+        // Solid footing under the whole footprint first, in case the
+        // ground here is water/void (this Realm is a flat "waterworld",
+        // see PROGRESS.md session 47) - same material/reasoning as the
+        // landing platform carved by findSafeRealmLanding.
+        for (int dx = -1; dx <= RETURN_PORTAL_RING_WIDTH; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                BlockPos floorPos = origin.offset(dx, -1, dz);
+                realmLevel.setBlockAndUpdate(floorPos, ModBlocks.PRISMIUM_SOIL.get().defaultBlockState());
+            }
+        }
+
+        for (int w = 0; w < RETURN_PORTAL_RING_WIDTH; w++) {
+            for (int h = 0; h < RETURN_PORTAL_RING_HEIGHT; h++) {
+                boolean isRing = w == 0 || w == RETURN_PORTAL_RING_WIDTH - 1
+                        || h == 0 || h == RETURN_PORTAL_RING_HEIGHT - 1;
+                BlockPos pos = origin.offset(w, h, 0);
+                if (isRing) {
+                    realmLevel.setBlockAndUpdate(pos, ModBlocks.PRISMIUM_CORE.get().defaultBlockState());
+                } else {
+                    realmLevel.setBlockAndUpdate(pos,
+                            ModBlocks.PRISMIUM_PORTAL.get().defaultBlockState()
+                                    .setValue(BlockStateProperties.HORIZONTAL_AXIS, Direction.Axis.X));
+                }
+            }
+        }
     }
 
     /**
