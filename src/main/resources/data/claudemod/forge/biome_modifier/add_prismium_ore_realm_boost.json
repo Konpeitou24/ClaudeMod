@@ -1,8 +1,8 @@
 {
     "type": "forge:add_features",
     "biomes": [
-        "#minecraft:is_overworld"
+        "claudemod:prism_realm"
     ],
-    "features": "claudemod:prismium_ore_placed",
+    "features": "claudemod:prismium_ore_placed_realm",
     "step": "underground_ores"
 }
