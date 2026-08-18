@@ -94,19 +94,36 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
      * 1600 * 10 = 16,000 FE/shard is deliberately more than
      * PrismiumCellBlock's 4,000 FE/shard manual-charge amount. */
     public static final int GENERATION_PER_TICK = 10;
-    /** Internal buffer capacity. Deliberately small - this block is meant
-     * to push energy out immediately, not accumulate a meaningful
-     * reserve (that's Prismium Cell's job). It mainly exists so a tick or
-     * two of generation isn't lost if neighbors momentarily can't accept
-     * the full amount. */
-    public static final int CAPACITY = 8000;
+    /** Internal buffer capacity. GitHub issue #15 (session 55): originally
+     * 8,000 - exactly half of a full shard's documented 16,000 FE total
+     * yield (see class javadoc above, "A full shard therefore yields
+     * 1600 * 10 = 16,000 FE total"). Because {@link #serverTick} pauses
+     * burning (and therefore generation) once the buffer is full rather
+     * than discarding the overflow, a lone unconnected generator fed one
+     * shard would silently stop at 8,000/8,000 "full" looking finished,
+     * then - the moment something started draining it - resume burning
+     * and eventually emit another 8,000 FE from the very same shard's
+     * still-queued burn time. A player watching the buffer would see it
+     * drain to 0 and a downstream Cell end up with 16,000 FE total from
+     * "one shard that looked like it only made 8,000", which reads
+     * exactly like a duplication bug even though every individual FE
+     * transfer was correct (see {@link EnergyPushHelper#pushThroughNetwork}
+     * doc - no double-crediting happens there either). Raised to match
+     * {@link #BURN_TIME_PER_SHARD} * {@link #GENERATION_PER_TICK} exactly
+     * so one full shard now fits in the buffer without ever needing to
+     * pause mid-burn (assuming nothing drains it faster than it can
+     * fill), removing the confusing pause-then-resume behavior at its
+     * root rather than papering over it with a UI indicator. Still
+     * small relative to Prismium Cell's 100,000 FE - this is a buffer
+     * sized for "one shard's worth", not a general-purpose battery. */
+    public static final int CAPACITY = BURN_TIME_PER_SHARD * GENERATION_PER_TICK;
     /** Max FE pushed to *all* neighbors combined, per tick. */
     public static final int MAX_EXTRACT = 200;
 
     /** Ceiling applied to the burn-time value exposed through
      * {@link #getContainerData()} (session 24, see
      * {@link PrismiumGeneratorMenu}'s class doc). Unlike energy (capped at
-     * {@link #CAPACITY} = 8,000, already comfortably short-safe), burnTime
+     * {@link #CAPACITY} = 16,000 (session 55, was 8,000), still comfortably short-safe), burnTime
      * is not capped anywhere else in this class - {@link #addFuel()} adds
      * {@link #BURN_TIME_PER_SHARD} unconditionally, so a player who feeds
      * dozens of shards at once (or repeatedly before any of it burns off)
@@ -205,7 +222,11 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
         }
 
         if (generator.energyStorage.getEnergyStored() > 0) {
-            if (EnergyPushHelper.pushToNeighbors(level, pos, generator.energyStorage, MAX_EXTRACT)) {
+            // Session 55 (GitHub issue #15): was pushToNeighbors (six
+            // immediate neighbors only) - now walks any connected
+            // Prismium Cable run to reach distant receivers in the same
+            // tick. See EnergyPushHelper#pushThroughNetwork's doc.
+            if (EnergyPushHelper.pushThroughNetwork(level, pos, generator.energyStorage, MAX_EXTRACT)) {
                 changed = true;
             }
         }
