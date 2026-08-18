@@ -21,11 +21,37 @@ import net.minecraftforge.fml.common.Mod;
 /**
  * Session 52: ignition logic for {@link com.claudemod.block.PrismiumPortalBlock}
  * (see that class's javadoc for the overall feature/GitHub issue #9
- * context). Right-clicking a {@code PRISMIUM_CORE} block while holding a
- * Prismium Shard searches the immediate neighborhood for a valid hollow
- * frame - interior exactly 2 blocks wide by 3 blocks tall, ring entirely
- * {@code PRISMIUM_CORE} - in either horizontal orientation, and if found,
- * consumes one shard and fills the interior with portal blocks.
+ * context). Right-clicking a frame ring block ({@code PRISMIUM_BLOCK} or
+ * {@code PRISMIUM_BLOCK_WALL}, see below) while holding a Prismium Shard
+ * searches the immediate neighborhood for a valid hollow frame - interior
+ * exactly 2 blocks wide by 3 blocks tall - in either horizontal
+ * orientation, and if found, consumes one shard and fills the interior
+ * with portal blocks.
+ *
+ * <p><b>Direct-chat session update (2026-08-19)</b>: the repo owner
+ * reported directly (not via a scheduled session) that (a) the portal
+ * block rendered as a full solid cube instead of a thin membrane like
+ * vanilla's nether portal, and (b) requested the frame recipe be changed
+ * to a specific mixed-material shape instead of uniform
+ * {@code PRISMIUM_CORE}: the top row and bottom row (4 blocks each,
+ * corners included) built from plain {@code PRISMIUM_BLOCK}, and the
+ * left and right columns (3 blocks each, corners excluded since those
+ * belong to the top/bottom rows) built from {@code PRISMIUM_BLOCK_WALL}.
+ * That shape happens to fit the existing 4-wide x 5-tall outer ring
+ * exactly (see {@link #RING_WIDTH}/{@link #RING_HEIGHT}), so only the
+ * per-cell material check in {@link #tryFrame} and the ignition-click
+ * block check below needed to change - the search geometry itself is
+ * untouched. Per the repo owner's explicit choice, this *replaces* the
+ * old uniform-{@code PRISMIUM_CORE} recipe rather than existing
+ * alongside it: a ring built entirely out of {@code PRISMIUM_CORE} no
+ * longer ignites. (Item (a), the thin/animated rendering, was handled
+ * entirely in {@code prismium_portal.json} and the new animated
+ * {@code prismium_portal.png}/{@code .png.mcmeta} - no Java changes were
+ * needed for that part; see {@link com.claudemod.block.PrismiumPortalBlock}
+ * for the particle-shape follow-up.) <b>Unverified</b>, like the rest of
+ * this feature: no in-game confirmation that the mixed-material ring
+ * validates correctly or that the animated texture actually plays
+ * smoothly client-side.
  *
  * <p>Follows the same {@code @Mod.EventBusSubscriber} +
  * {@code PlayerInteractEvent.RightClickBlock} pattern already established
@@ -39,19 +65,22 @@ import net.minecraftforge.fml.common.Mod;
  * a substantial, hard-to-verify-from-this-sandbox piece of code), this
  * checks a small, fixed number of candidate frame placements - every
  * position where the clicked block could plausibly be part of a 4-wide x
- * 5-tall ring (the outer bounds of a 2x3 interior) - and accepts the
- * first one that validates. This is deliberately less general than
+ * 5-tall ring (the outer bounds of a 2x3 interior), now with a per-cell
+ * material check instead of a single uniform block type (see the
+ * direct-chat session update above) - and accepts the first one that
+ * validates. This is deliberately less general than
  * vanilla (frame size is fixed, not "any size 2x3 or larger") but far
  * simpler to reason about without a running client to test against.
  *
  * <p><b>Unverified</b>: no in-game confirmation that {@code
  * PlayerInteractEvent.RightClickBlock} actually fires with the clicked
- * block already resolved to {@code PRISMIUM_CORE} in every case (e.g.
- * whether it also fires for the chiseled/slab/wall/stairs variants in a
- * way that could confuse players expecting the frame to accept those
- * too - it deliberately does not, only the plain block counts) or that
- * the brute-force search below finds every rotation a player might
- * reasonably attempt (only the two axis-aligned orientations are
+ * block already resolved to {@code PRISMIUM_BLOCK}/{@code
+ * PRISMIUM_BLOCK_WALL} in every case (e.g. whether it also fires for the
+ * chiseled/slab/stairs variants of Prismium Block in a way that could
+ * confuse players expecting the frame to accept those too - it
+ * deliberately does not, only the plain block and the plain wall count)
+ * or that the brute-force search below finds every rotation a player
+ * might reasonably attempt (only the two axis-aligned orientations are
  * checked; a frame built diagonally, which vanilla doesn't support
  * either, is not expected to work).
  */
@@ -78,7 +107,9 @@ public class PrismiumPortalIgniteHandler {
         }
         BlockPos clickedPos = event.getPos();
         BlockState clickedState = level.getBlockState(clickedPos);
-        if (clickedState.getBlock() != ModBlocks.PRISMIUM_CORE.get()) {
+        net.minecraft.world.level.block.Block clickedBlock = clickedState.getBlock();
+        if (clickedBlock != ModBlocks.PRISMIUM_BLOCK.get()
+                && clickedBlock != ModBlocks.PRISMIUM_BLOCK_WALL.get()) {
             return;
         }
         ItemStack heldStack = event.getItemStack();
@@ -138,7 +169,9 @@ public class PrismiumPortalIgniteHandler {
      * corner (in the given axis) is placed so that {@code clickedPos}
      * lands {@code widthOffset}/{@code heightOffset} cells in from that
      * corner. Returns a populated {@link FrameMatch} if every ring cell
-     * is {@code PRISMIUM_CORE} and every interior cell is air, else
+     * matches the required material for its position ({@code
+     * PRISMIUM_BLOCK} on the top/bottom rows, {@code PRISMIUM_BLOCK_WALL}
+     * on the left/right columns) and every interior cell is air, else
      * {@code null}.
      */
     private static FrameMatch tryFrame(ServerLevel level, BlockPos clickedPos, Direction.Axis axis,
@@ -148,12 +181,22 @@ public class PrismiumPortalIgniteHandler {
 
         for (int w = 0; w < RING_WIDTH; w++) {
             for (int h = 0; h < RING_HEIGHT; h++) {
-                boolean isRing = w == 0 || w == RING_WIDTH - 1 || h == 0 || h == RING_HEIGHT - 1;
-                if (!isRing) {
+                boolean isTopOrBottomRow = h == 0 || h == RING_HEIGHT - 1;
+                boolean isLeftOrRightColumn = w == 0 || w == RING_WIDTH - 1;
+                if (!isTopOrBottomRow && !isLeftOrRightColumn) {
                     continue;
                 }
                 BlockPos pos = offset(origin, axis, w, h);
-                if (level.getBlockState(pos).getBlock() != ModBlocks.PRISMIUM_CORE.get()) {
+                net.minecraft.world.level.block.Block ringBlock = level.getBlockState(pos).getBlock();
+                // Corners belong to the top/bottom row (4-wide, corners
+                // included), matching the repo owner's description of
+                // "top 4 / bottom 4" Prismium Blocks; the left/right
+                // columns are the remaining 3 non-corner cells each,
+                // built from Prismium Block Wall.
+                net.minecraft.world.level.block.Block required = isTopOrBottomRow
+                        ? ModBlocks.PRISMIUM_BLOCK.get()
+                        : ModBlocks.PRISMIUM_BLOCK_WALL.get();
+                if (ringBlock != required) {
                     return null;
                 }
             }

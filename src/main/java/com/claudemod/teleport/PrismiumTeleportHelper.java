@@ -142,13 +142,16 @@ public final class PrismiumTeleportHelper {
      * single block read), this is a no-op, so repeated arrivals - the
      * common case - don't re-set the same blocks every time.
      *
-     * <p>Reuses the exact ring dimensions {@code
+     * <p>Reuses the exact ring dimensions and per-cell materials {@code
      * PrismiumPortalIgniteHandler} validates (4 wide x 5 tall outer ring,
-     * 2x3 interior, {@code Direction.Axis.X}) so this auto-built frame
-     * looks identical to one a player builds and ignites by hand, and
-     * remains a legitimate, walk-through-both-ways
-     * {@code PrismiumPortalBlock} pair once built - not a teleport
-     * pad or a special case.
+     * 2x3 interior, {@code Direction.Axis.X}, top/bottom rows of {@code
+     * PRISMIUM_BLOCK} and left/right columns of {@code
+     * PRISMIUM_BLOCK_WALL} - updated in the direct-chat session on
+     * 2026-08-19 alongside that handler's own recipe change, see its
+     * javadoc) so this auto-built frame looks identical to one a player
+     * builds and ignites by hand, and remains a legitimate,
+     * walk-through-both-ways {@code PrismiumPortalBlock} pair once
+     * built - not a teleport pad or a special case.
      */
     private static void ensureReturnPortal(ServerLevel realmLevel, int landingY) {
         BlockPos origin = new BlockPos(
@@ -173,11 +176,13 @@ public final class PrismiumTeleportHelper {
 
         for (int w = 0; w < RETURN_PORTAL_RING_WIDTH; w++) {
             for (int h = 0; h < RETURN_PORTAL_RING_HEIGHT; h++) {
-                boolean isRing = w == 0 || w == RETURN_PORTAL_RING_WIDTH - 1
-                        || h == 0 || h == RETURN_PORTAL_RING_HEIGHT - 1;
+                boolean isTopOrBottomRow = h == 0 || h == RETURN_PORTAL_RING_HEIGHT - 1;
+                boolean isLeftOrRightColumn = w == 0 || w == RETURN_PORTAL_RING_WIDTH - 1;
                 BlockPos pos = origin.offset(w, h, 0);
-                if (isRing) {
-                    realmLevel.setBlockAndUpdate(pos, ModBlocks.PRISMIUM_CORE.get().defaultBlockState());
+                if (isTopOrBottomRow) {
+                    realmLevel.setBlockAndUpdate(pos, ModBlocks.PRISMIUM_BLOCK.get().defaultBlockState());
+                } else if (isLeftOrRightColumn) {
+                    realmLevel.setBlockAndUpdate(pos, ModBlocks.PRISMIUM_BLOCK_WALL.get().defaultBlockState());
                 } else {
                     realmLevel.setBlockAndUpdate(pos,
                             ModBlocks.PRISMIUM_PORTAL.get().defaultBlockState()
