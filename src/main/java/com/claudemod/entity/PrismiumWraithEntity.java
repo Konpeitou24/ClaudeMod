@@ -52,6 +52,41 @@ public class PrismiumWraithEntity extends Zombie {
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.15D);
     }
 
+    /**
+     * GitHub issue #5 (session 38): reported "spawns via spawn egg then
+     * vanishes immediately". Root cause analysis (no in-game repro
+     * possible in this sandbox - see PROGRESS.md's standing note on this
+     * limitation): vanilla {@code Monster} overrides
+     * {@code shouldDespawnInPeaceful()} to {@code true}, so any
+     * {@code Monster} subclass (this one included, via {@link Zombie})
+     * is force-discarded the instant {@code Mob#checkDespawn()} runs on
+     * a world set to Peaceful difficulty - regardless of how it was
+     * spawned (natural spawn, spawn egg, /summon). This is the single
+     * most common cause of "my hostile mob spawns then instantly
+     * disappears" reports in Forge/Fabric modding communities (confirmed
+     * via WebSearch, e.g. a 2013 Forge Forums thread titled exactly that,
+     * resolved by the reporter realizing their world was on Peaceful).
+     * Vanilla mobs that are technically hostile-classified but not meant
+     * to vanish outright (Enderman, Zombified Piglin) override this same
+     * method back to {@code false} for the same reason. A "guardian"
+     * mob that is supposed to reliably protect Prismium ore deposits
+     * fits that same exception better than a generic Peaceful-mode
+     * shambler, so this override is a deliberate, permanent design
+     * choice, not just a peaceful-difficulty workaround: even players
+     * who keep Peaceful set for parts of their world should still be
+     * able to find a Wraith guarding ore if they wander into one.
+     * <b>Unverified</b>: could not reproduce or confirm the original bug
+     * in this sandbox, so it is possible peaceful difficulty was not the
+     * actual cause reported in issue #5 - if the bug persists after this
+     * change ships, the next things to check are spawn-position collision
+     * (egg placing the entity inside solid terrain) and the mob-cap /
+     * tracking-range settings (see {@link com.claudemod.registry.ModEntities}).
+     */
+    @Override
+    public boolean shouldDespawnInPeaceful() {
+        return false;
+    }
+
     @Override
     protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
         // Deliberately empty: a Prismium Wraith should never spawn holding
