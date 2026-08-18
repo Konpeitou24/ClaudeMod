@@ -1,5 +1,6 @@
 {
     "variants": {
-        "": { "model": "claudemod:block/prism_bramble" }
+        "waterlogged=false": { "model": "claudemod:block/prism_bramble" },
+        "waterlogged=true": { "model": "claudemod:block/prism_bramble" }
     }
 }

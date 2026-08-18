@@ -1,5 +1,6 @@
 {
     "variants": {
-        "": { "model": "claudemod:block/prism_vine" }
+        "waterlogged=false": { "model": "claudemod:block/prism_vine" },
+        "waterlogged=true": { "model": "claudemod:block/prism_vine" }
     }
 }
