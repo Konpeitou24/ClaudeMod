@@ -30,27 +30,34 @@ import javax.annotation.Nullable;
  * a cable has no player interaction and no fuel/charge concept, just a
  * small pass-through buffer. Every neighbor-facing side exposes the same
  * {@link IEnergyStorage} capability with equal maxReceive/maxExtract, so
- * a cable can both accept energy pushed into it (e.g. by
- * {@code PrismiumGeneratorBlockEntity}'s own neighbor push, or by a
- * future machine that pulls) and, every server tick, immediately try to
- * push whatever it is currently holding onward to ITS neighbors via the
- * same {@link EnergyPushHelper#pushToNeighbors} helper Generator uses.
- * The buffer capacity is intentionally small (see {@link #CAPACITY}) so a
- * cable behaves like a wire that energy passes *through*, not a small
- * battery that meaningfully stores charge - any energy left sitting in a
- * cable across ticks is essentially just "in transit" waiting for a
- * downstream neighbor to have room.
+ * a cable can accept energy pushed into it (e.g. by
+ * {@code PrismiumGeneratorBlockEntity}'s own push, or by a future
+ * machine that pulls).
  *
- * <p>Known simplification worth flagging in PROGRESS.md: because every
- * cable independently pushes to every capability-exposing neighbor each
- * tick (including, if applicable, right back the way energy came from),
- * a straight run of N cables moves energy one hop per tick rather than
- * instantaneously end-to-end - functionally correct but introduces a
- * small transmission delay proportional to cable count. This mirrors how
- * most tech-mod cable networks with per-block ticking (rather than a
- * shared network graph) behave, and was an accepted tradeoff to avoid
- * building actual network/graph logic (union-find over connected cables,
- * cached per-network capacity, etc.) in this first pass.
+ * <p><b>Revised session 55 (GitHub issue #15):</b> the original
+ * "every cable independently pushes to its own six neighbors each tick,
+ * so a straight run of N cables moves energy one hop per tick rather
+ * than instantaneously end-to-end" design (kept below for history) turned
+ * out to read as a hard failure rather than a mere delay once a player
+ * tried more than a couple of cables in a row - see
+ * {@link com.claudemod.energy.EnergyPushHelper#pushThroughNetwork}'s doc
+ * for the fix. {@code PrismiumGeneratorBlockEntity} (and this class's own
+ * {@link #serverTick}) now walk the whole connected run of cables in a
+ * single bounded search and push straight through to the real receiver
+ * at the far end, so a cable's own buffer is no longer load-bearing for
+ * multi-hop delivery - it mainly exists now to hold energy that
+ * momentarily had nowhere to go. Original design note, still true as
+ * background: because every cable-to-cable capability exchange is
+ * symmetric (including, if applicable, right back the way energy came
+ * from), and because a straight per-block relay was the first-pass
+ * approach before session 55, this mirrors how many tech-mod cable
+ * networks start out before graduating to a shared network graph
+ * (union-find over connected cables, cached per-network capacity, etc.) -
+ * {@link com.claudemod.energy.EnergyPushHelper#pushThroughNetwork}'s BFS
+ * is a lighter-weight step in that direction, not the full graph-cache
+ * version, see PROGRESS.md for what a further pass could still do
+ * (caching the reachable-receiver set across ticks instead of
+ * recomputing the BFS every time a source has energy to push).
  */
 public class PrismiumCableBlockEntity extends BlockEntity {
 
@@ -83,7 +90,16 @@ public class PrismiumCableBlockEntity extends BlockEntity {
         if (cable.energyStorage.getEnergyStored() <= 0) {
             return;
         }
-        if (EnergyPushHelper.pushToNeighbors(level, pos, cable.energyStorage, MAX_TRANSFER)) {
+        // Session 55 (GitHub issue #15): was pushToNeighbors. A source
+        // (Generator) now reaches this cable's whole network directly on
+        // its own tick, so in the common case this cable's own buffer
+        // stays near-empty and this call is a cheap no-op via the guard
+        // above. It still matters for energy that got stuck here because
+        // every reachable receiver was momentarily full - retrying via
+        // the same network-wide search (starting from this cable) lets
+        // that leftover keep looking for somewhere to go instead of only
+        // ever being offered to this one cable's six immediate neighbors.
+        if (EnergyPushHelper.pushThroughNetwork(level, pos, cable.energyStorage, MAX_TRANSFER)) {
             cable.setChanged();
         }
     }
