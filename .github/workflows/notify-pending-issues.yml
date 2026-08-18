@@ -1,0 +1,58 @@
+name: Notify Pending Issues
+
+# Fires when PENDING_ISSUES.json changes on main. That file is maintained by
+# the ClaudeMod scheduled dev-agent sessions (see PROGRESS.md, "Issue対応
+# ポリシー" / issue triage policy): whenever a session finds an open Issue
+# that was NOT filed by the repo owner (Konpeitou24), it is held rather than
+# acted on automatically, and recorded here so the owner gets pinged.
+#
+# The sandbox those sessions run in cannot reach discord.com directly (known
+# network constraint - see PROGRESS.md §2), but this GitHub Actions runner
+# can (same DISCORD_WEBHOOK_URL secret already used by build-and-notify.yml
+# for build-result pings), so this workflow is the relay: the agent just
+# commits/pushes the JSON, and this workflow turns it into a Discord message.
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'PENDING_ISSUES.json'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Send Discord message
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL secret is not set; skipping notification."
+            exit 0
+          fi
+
+          COUNT=$(jq 'length' PENDING_ISSUES.json)
+
+          if [ "$COUNT" = "0" ]; then
+            CONTENT="✅ ClaudeMod: 保留中のIssueはありません(Konpeitou24さん以外が投稿した未対応Issueは現在ゼロ件です)。"
+          else
+            LINES=$(jq -r '.[] | "• Issue #\(.number)「\(.title)」 (投稿者: \(.author)) \(.url)\n  保留理由: \(.note // "投稿者がKonpeitou24さんではないため")"' PENDING_ISSUES.json)
+            CONTENT=$(printf '⚠️ ClaudeMod: 保留中のIssueが%s件あります(Konpeitou24さん以外からの投稿のため自動対応せず保留中):\n\n%s\n\n対応するかどうかご確認ください。' "$COUNT" "$LINES")
+          fi
+
+          CONTENT=$(echo "$CONTENT" | cut -c1-1900)
+          PAYLOAD=$(jq -n --arg content "$CONTENT" '{content: $content}')
+
+          HTTP_CODE=$(curl -s -o /tmp/discord_response.txt -w "%{http_code}" -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK_URL")
+          echo "Discord response HTTP $HTTP_CODE:"
+          cat /tmp/discord_response.txt
+          echo
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::warning::Discord notification failed with HTTP $HTTP_CODE"
+          fi
