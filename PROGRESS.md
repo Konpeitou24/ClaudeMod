@@ -1626,18 +1626,53 @@ session 40の申し送り(項目9-b、「既存のPrismium鉱石/結晶ブルー
 
 変更は2コミット: `f343ab0`(Issue #2ツール見た目改善)、`576f9ab`(Prism Realm資源密度アップ)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し、クローン後origin/mainに動きなし)、素のまま`git push origin main`で一発成功(プロキシ回避策は不要、session 34以降8セッション連続でこの運用のまま成功)。push後`git fetch`のポーリングで`ci: update built jar`(`045c3d5`)の到着を確認し、両コミットとも通常ビルドが成功したことを実証済み。
 
+## 3AP. セッション#42で実装した内容: Prismium Core関連建築ブロックの手作りテクスチャー採用(§5旧項目0-3への対応)
+
+### 3AP-0. セッション開始時の状況確認
+
+今回はスケジュール起動ではなく、ユーザーとの対話中に画像添付(16x16 PNG)付きのメッセージを受け取る形でセッションが始まった。`git clone`は`/tmp/ClaudeMod`が空いていたためそのまま使用(先行セッションの残骸なし)。`git log --oneline -8`で直前セッション(#41)最終コミット`471da6b`(PROGRESS.md更新)の直後に`ci: update built jar`(`27551dc`)が付いていることを確認し、前回ビルドは成功と判断(修正対応は不要)。`api.github.com`は今回試みていない(Issue確認より画像対応を優先したため、GitHub Issueの巡回は今回スキップした - 次回必ず実施すること)。
+
+### 3AP-1. 背景調査: 既に一度「Prismium Block」で同種の対応が行われていたことが判明
+
+ユーザーメッセージ「PrismiumCoreが新しくなったプリズミウムブロックに対応できていなかったため、刷新したバージョンを一生懸命、一つ一つ手作りしてきました。使ってほしいです。(プリズミウムコア関連建築ブロックを含む)」+16x16画像1枚を受け取った。
+
+`git log`を遡ったところ、実は同日(2026-08-18)の先行セッションで既に類似の対応が2段階で行われていたことが判明した:
+1. `01a5a08`(session 36相当): ユーザーが最初に手作りしたPrismium Blockのテクスチャーを`scripts/textures/reference/user_submitted_prismium_block_2026-08-18.png`として保存(この時点ではまだ採用は保留、「次回セッションへの申し送り」に記載)。
+2. `c880d35`: 別の(おそらく同日中の)セッションが、そのBlockアートを`block/prismium_block.png`として文字通り採用し、さらにそこから7色の`PRISMIUM_*`パレット(OUTLINE/SHADOW/BASE/MID/HILITE/ACCENT/ACCENT_DARK)を再抽出して、GUI2種を除くMOD内の全28スクリプトに一括反映していた(コミットメッセージに新旧16進数まで明記済み)。
+
+つまり、MOD全体の**色**は既にユーザーの手描きパレットに統一済みだった。しかし`gen_prismium_core.py`を確認したところ、Prismium Coreは新パレットの色こそ使っているものの、**柄(パターン)自体は相変わらず`make_prismium_core()`のプログラム生成(斜めバンドグラデーション+中央の放射コアクラスタ)のまま**で、Blockのように「ユーザーの手描きをそのまま採用」はされていなかった。今回ユーザーが指摘した「PrismiumCoreが新しくなったプリズミウムブロックに対応できていなかった」は、まさにこの「色は追従したが柄は追従していない」ギャップを指しているものと判断した。
+
+今回受け取った新しい画像を、既存の`prismium_block.png`・過去の参照アート・現行`prismium_core.png`のいずれとも画素単位で比較したところ全て不一致であり、また色をサンプリングしたところ上位色が`#65F5E3`/`#11BBB8`/`#CAFDF9`/`#720070`/`#024D4B`/`#008282`/`#FF7CFC`と、c880d35で確立した新パレットの7色と完全に一致していた(グラデーション部分の中間色多数含む、eyeballedではなく実際にパレットのカラーピッカーで塗ったと考えられる)。構図はBlockの斜めグラデーション+四隅マゼンタジェムを踏襲しつつ、中央に新規で白〜マゼンタの同心リング(発光コアを表現する意匠、`lightLevel 10`を持つCoreの差別化ポイントと一致)を追加したものと判断した。
+
+### 3AP-2. 実装: Prismium Core本体テクスチャーの採用
+
+`gen_prismium.py`の`use_user_submitted_block_texture()`と全く同じパターンを`gen_prismium_core.py`に追加(`use_user_submitted_core_texture()`)。画像を`scripts/textures/reference/user_submitted_prismium_core_2026-08-18.png`として保存後、RGBA変換のみ行い`block/prismium_core.png`として書き出すようにし、`__main__`から従来の`make_prismium_core()`呼び出しを置き換えた(`make_prismium_core()`自体は削除せず残置、Block側の前例を踏襲)。
+
+`prismium_core_slab`/`prismium_core_stairs`/`prismium_core_wall`(+各アイテムモデル)は元々全て`"claudemod:block/prismium_core"`という同一テクスチャーファイルを参照するモデルJSONだった(個別のPNGを持たない)ため、Core本体のPNGを差し替えるだけで**ユーザーが依頼した「プリズミウムコア関連建築ブロック」全て(Core・Core Slab・Core Stairs・Core Wall)に自動的に新デザインが反映される**ことを確認した。追加のモデル/blockstate変更は不要だった。
+
+**あえて変更しなかったもの**: `chiseled_prismium_core.png`(額縁状の同心フレーム+中央ダイヤ意匠、`prismium_core.png`とは別の独立したテクスチャーファイル)は、ユーザーから手描きの彫刻版アートは提供されなかったため今回は触れていない。ただし既にc880d35で新パレットには追従済みであることは確認した(色は最新、柄は独自デザインのまま)。「Chiseled Prismium Coreも刷新してほしいか」はユーザーに確認できていない(自動実行セッションのため質問できず、次回以降の申し送り事項とした)。
+
+**自己レビュー**: 差し替え後の`prismium_core.png`を16倍(近接視点相当)・4倍(ホットバーアイコン相当)の両方でプレビューし`Read`で目視確認。中央の白〜マゼンタの同心リングが小さい表示でも「発光する核」として明瞭に判別でき、四隅のマゼンタジェムと斜めグラデーションもBlockアートと同じ家族の意匠として違和感なく馴染んでいることを確認した。プログラムでもサイズ(16x16)・アルファ値(全ピクセル255、透過崩れ無し)を検証済み。
+
+### 3AP-3. commit・push・ビルド確認
+
+変更は1コミット: `f424858`(参照アート保存+`gen_prismium_core.py`パッチ+`prismium_core.png`差し替え)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し)、素のまま`git push origin main`で一発成功(session 34以降、9セッション連続でこの運用のまま成功)。push後`git fetch`のポーリングで`ci: update built jar`(`0cf731f`)の到着を確認し、ビルド成功を確認済み。
+
+**未検証**: 実機でCore本体・Slab・Stairs・Wallいずれも正しく新テクスチャーで表示されるか(モデルJSON上は同一テクスチャー参照のため理論上は問題ないはずだが、実プレイでの確認は無し)。GitHub Issueの巡回は今回省略したため、Open Issue(#2, #3, #5, #6, #7, #8, #9)に動きがあったかは未確認のまま次回に持ち越し。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-0. **【最優先、継続】ユーザーからの装備/Prism Realmの見た目フィードバック(session 37受領)は、session 39・40で段階的に着手中。**
+0. **【最優先、継続】ユーザーからの装備/Prism Realm/テクスチャー見た目フィードバックは、session 39・40・42で段階的に着手中。**
    - (a) 【session 39対応】Prismiumアーマーの「のっぺり」感 → ベベル+バンドテクスチャー追加。実機(3人称視点)での見え方は未検証。ユーザーの反応待ち。
    - (b) 【session 39部分対応】Prism Realmがオーバーワールドに似すぎている問題 → 専用バイオーム(色・霧・パーティクル)を新設(session 39)。
    - (c) 【session 40で着手】専用植物が無い問題 → Prism Lily(Prism Realm限定、biome_modifierで`claudemod:prism_realm`のみに注入、§3AN参照)を追加。地形の形状・ブロックパレット(草ブロック/土/石)は依然未着手のまま(項目9参照)。
+   - (d) 【session 42で対応、新規、§3AP参照】ユーザーが手作りしたPrismium Core用の新テクスチャーを採用し、`block/prismium_core.png`を差し替え(Core Slab/Stairs/Wallは同一テクスチャー参照のため自動反映)。**未対応: `chiseled_prismium_core.png`は独自デザインのまま(パレットのみ新、柄は未刷新)。ユーザーに「彫刻版も刷新してほしいか」を確認できていない(自動実行セッションのため質問不可) - 次回、Issue経由か次のインタラクティブセッションで確認すること。**
 
 1. **【最優先、恒例】まず`git log`/`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** session 41は2コミット(`f343ab0`ツール見た目改善、`576f9ab`Prism Realm資源密度アップ - §3AO参照)をpushし、直後に`ci: update built jar`(`045c3d5`)が付いたことを確認済み。**session 41のbiome_modifier/placed_feature変更(新規6ファイル)もsession 39-40同様、CIビルド(コンパイル)が通ることと実際にゲーム内でデータパックが正しく読み込まれる/機能することは別問題。次回、GitHub Issueに新規のクラッシュ・データパックエラー報告が無いか特に注意して確認すること。**
 
-2. 【継続】GitHub Issue確認は`/issues`一覧の`grep -o 'issues/[0-9]*'`→各Issueページを個別curlしてtitle/state/コメント数相当のtotalCountをgrepする方式(session 38で確立)を今回も使用、有効だった。`"totalCount":0`が本当にコメント数を表しているかは3セッション連続で変化なしのため依然未検証のまま。もし次回、明らかにコメントが付いているはずのIssueで`totalCount:0`のままなら、このフィールドはコメント数を表していない可能性が高いので、別の判定手段を検討すること。
+2. 【session 42で一時中断、次回必ず再開】GitHub Issue確認(`/issues`一覧の`grep -o 'issues/[0-9]*'`→各Issueページを個別curlしてtitle/state/コメント数相当のtotalCountをgrepする方式、session 38で確立)は、今回はユーザー添付画像への対応を優先したため**実施していない**。Open Issue #2, #3, #5, #6, #7, #8, #9に動きがあったかは前回(session 41)時点の情報のまま未更新。次回セッション冒頭で必ず巡回すること。`"totalCount":0`がコメント数を正しく表しているかも引き続き未検証。
 
 3. 【継続】session 38で対応したIssue #5・#6・#7・#8・#9は今回(session 40)も新しいコメント・クローズの兆候なし(全てOPENのまま)。実プレイでの検証待ちの状態が続いている。引き続き優先的に追跡すること。
 
@@ -1656,7 +1691,7 @@ session 40の申し送り(項目9-b、「既存のPrismium鉱石/結晶ブルー
     - (b) 【session 41で対応済み、§3AO-2参照】既存のPrismium鉱石/結晶ブルーム/結晶スパイクの生成頻度をPrism Realm限定で引き上げるbiome_modifier(鉱石5→12・ブルーム4→10・スパイク2→6、オーバーワールド側は元のまま)。実機で密度差が体感できるかは未検証。
     - (c) 【session 40で一部着手、Prism Lily1種のみ、継続】Prism Realm限定の植物をさらに追加(低木・つる植物など、Lilyとは違うシルエットのものが望ましい)。確立済みの「biome_modifierを`claudemod:prism_realm`のみに絞る」+「rim/erosionシェーディングで手打ちシルエットからテクスチャーを作る」の2つの技法はそのまま再利用できる。
 
-10. 【継続】Prismium Block/Core建築バリエーション計8種、5GUI、Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・Prism Realm関連一式(Prism Lily含む)は、いずれも実プレイでの検証が一切無いまま積み上がっている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+10. 【継続】Prismium Block/Core建築バリエーション計8種(session 42でCore側4種の柄も刷新)、5GUI、Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・Prism Realm関連一式(Prism Lily含む)は、いずれも実プレイでの検証が一切無いまま積み上がっている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
 
 11. 【継続、次の展開候補、ただし項目0・3・9を優先すること】
     - (a) Prismium Arrow(session 30で見送り、Shieldのelementsベースモデルの技法が使えるかもしれない)。
@@ -1673,10 +1708,10 @@ session 40の申し送り(項目9-b、「既存のPrismium鉱石/結晶ブルー
 
 ### コミット/プッシュ状況
 
-session 41の変更は2コミット: `f343ab0`(Issue #2ツール見た目改善)、`576f9ab`(Prism Realm資源密度アップ、§3AO参照)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し)、素のまま`git push origin main`で一発成功。push後`git fetch`ポーリングで`ci: update built jar`(`045c3d5`)の到着を確認し、ビルド成功を確認済み。
+session 42の変更は1コミット: `f424858`(ユーザー手描きのPrismium Coreアート採用、§3AP参照)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し)、素のまま`git push origin main`で一発成功。push後`git fetch`ポーリングで`ci: update built jar`(`0cf731f`)の到着を確認し、ビルド成功を確認済み。
 
-GitHub Issue確認は§0-2/session 38確立の運用ルール通り実施。Open: #2, #3, #5, #6, #7, #8, #9(前回から変化なし)。#1・#4はCLOSED。API権限の制約によりこのセッションからIssueをクローズすることはできない。
+GitHub Issue確認は**今回未実施**(§5項目2参照)。前回(session 41)時点の情報: Open #2, #3, #5, #6, #7, #8, #9、CLOSED #1・#4。次回セッション冒頭で必ず再確認すること。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、今回のpush(`f343ab0`/`576f9ab`)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず(`ci: update built jar`到着で成功は確認済み)。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、今回のpush(`f424858`)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず(`ci: update built jar`到着で成功は確認済み)。
