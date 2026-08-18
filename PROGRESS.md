@@ -2556,7 +2556,7 @@ Issueのクローズは今回行っていない: #7はツールチップだけ�
 ### 3BH-2. 実装(1): Prismium Portalを薄い板状・アニメーション付きに変更
 
 - `assets/claudemod/models/block/prismium_portal.json`: `minecraft:block/cube_all`継承(完全な立方体)だったモデルを、厚み2px(`from`/`to`のZ座標が7〜9)・北面と南面のみ描画する独自の板状モデルに置き換えた。バニラのネザーポータルと同じシルエットを狙ったもの。`ambientocclusion: false`も追加。既存の`blockstates/prismium_portal.json`(`axis=z`時にy:90回転)はそのまま流用でき、変更不要だった。
-- `assets/claudemod/textures/block/prismium_portal.png`: 元の16x16静止画1枚だったテクスチャーを、同じ画像をnumpyで斜め方向に2pxずつ8段階ロールした8フレームのアニメーションシート(16x128)に置き換えた。色調・パターンは元テクスチャーと完全に同一(単純に同じピクセルデータを周期的にずらしただけ)なので、他のプリズミウム系ブロックとのスタイル統一は崩れていないはず。新規に`prismium_portal.png.mcmeta`(`interpolate: true`, `frametime: 2`)を追加した。
+- `assets/claudemod/textures/block/prismium_portal.png`: 元の16x16静止画1枚だったテクスチャーを、同じ画像をnumpyで斜め方向に2pxずつ8段階ロールした8フレームのアニメーションシート(16x128)に置き換えた。色調・パターンは元テクスチャーと完全に同一(単純に同じピクセルデータを周期的にずらしただけ)なので、他のプリズミウム系ブロックとのスタイル統一は崩れていないはず。新規に`prismium_portal.png.mcmeta`(`interpolate: true`, `frametime: 2`)を追加したが、push直後にご本人から「アニメーションが早すぎて目がちかちかします」と直接フィードバックを受け、即座に`frametime`を`2`→`10`(1フレーム0.1秒→0.5秒、8フレーム一周4秒)に変更する追加コミットを行った(コミット`54caebe`)。
 - 生成後、各フレームを切り出して拡大画像として自分の目で確認した(1枚目・4枚目・8枚目)。パターンが滑らかにシフトしており、ノイズや透過崩れは見当たらなかった。ただし**実際にMinecraftクライアント上でアニメーションが意図通り補間再生されるかはこのサンドボックスでは検証不可能で、未検証のまま**。
 - `PrismiumPortalBlock#animateTick`のパーティクル生成位置を、旧・立方体全体に散らばる実装から、薄い板の面に沿う(厚み方向のジッターを±0.0625程度に抑える)実装に変更した。`AXIS`の値に応じてどちらの水平軸を薄くするかを分岐させている。
 
@@ -2647,6 +2647,7 @@ push後、`ci: update built jar`(`a5ab828`)→`ci: update datapack validation re
 1. `5bd3232` Prismium Portalを薄い板状モデル+8フレームアニメーションテクスチャに変更
 2. `59497d1` ポータル枠レシピをプリズミウムブロック+塀に変更(帰還ポータルの自動生成も追従)
 3. `49174ee` v0.6.0リリース(gradle.properties更新 + RELEASE_NOTES.md追記)+ タグ`v0.6.0`
+4. `54caebe` アニメーション速度の緊急修正(frametime 2→10、本人からの即時フィードバック対応)
 
 push前に`git fetch origin main`で並行セッション無しを確認、すべて素のまま`git push origin main`/`git push origin v0.6.0`で一発成功。push後、`ci: update built jar`(`a5ab828`)→`ci: update datapack validation results`(`b65cb0f`、`status=ok commit=59497d1...`)の到着、および`release.yml`によるGitHub Release `v0.6.0`公開(`claudemod-0.6.0.jar`添付)を確認済み。
 
