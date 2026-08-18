@@ -1,20 +1,34 @@
 #!/usr/bin/env python3
 """Generate ClaudeMod's Prismium tool set textures (session 2, redesigned
-session 13 in response to GitHub issue #2: "each tool's silhouette doesn't
-match what it is, and they all look too similar to tell apart at a glance").
+session 13 and again session 41 in response to GitHub issue #2: "each
+tool's silhouette doesn't match what it is, and they all look too similar
+to tell apart at a glance").
 
-Session 13 change: pickaxe, shovel and hoe previously all rendered as a
-similar small triangular crystal blob perched on a diagonal handle, which
-made them hard to distinguish in the hotbar (issue #2). This revision gives
-each tool head a genuinely different silhouette inspired by vanilla tool
-shapes, while keeping the established Prismium crystal palette so the set
-still reads as one material family:
-  - Pickaxe: a two-pronged fork opening from a shared socket.
-  - Axe:     a single solid wedge/blade (unchanged shape, still distinct).
-  - Shovel:  a thin continuous blade flush with the handle - no separate
-             blob head, so its silhouette is a slim line, unlike the others.
-  - Hoe:     a flat crossbar blade sticking out near the handle tip.
-  - Sword:   unchanged (vertical blade + crossguard + hilt).
+Session 13 gave each head a different internal shape (fork / wedge / blob
+/ crossbar) but kept every head as a similarly-sized, similarly-coloured
+teal triangular mass on the same diagonal handle. Comparing a rendered
+preview at hotbar scale (session 41) confirmed the user's complaint still
+held: pickaxe and axe read as near-identical "teal blobs on a stick", and
+the shovel's small rounded head looked like a loose gem rather than a
+spade blade. This revision keeps the crystal palette (so the set still
+reads as one material family) but pushes the *overall bounding shapes*
+further apart, since that's what actually differentiates icons at small
+size - fine internal detail (a notch, a crossbar) does not survive
+shrinking, but gross silhouette (tall vs wide, thin vs blocky, forked vs
+solid) does:
+  - Pickaxe: two separate, narrow diagonal prongs forming a wide, shallow
+             fork - an "open" silhouette with a visible gap in the middle.
+  - Axe:     a single wide, flat-topped rectangular block flush against
+             the handle - a "solid, blocky" silhouette, deliberately
+             short and wide instead of tall and pointed so it can't be
+             mistaken for one half of the pickaxe's fork.
+  - Shovel:  a slim, elongated paddle (tall and narrow) instead of the
+             old rounded blob - reads as a spade blade, not a gem.
+  - Hoe:     unchanged (flat crossbar near the handle tip - already
+             distinct from the other three).
+  - Sword:   unchanged (vertical blade + crossguard + hilt - already
+             distinct thanks to the guard/hilt, which none of the other
+             tools have).
 
 Produces 16x16 pixel-art item textures. All output is deterministic (no
 randomness). Run from repo root:
@@ -146,37 +160,36 @@ def make_pickaxe():
     img = new_img()
     px = img.load()
     # Handle: bottom-left tip up to the socket where the two prongs meet.
-    draw_handle(px, (1, 14), (7, 7))
-    # Head: session-13b redesign. The first redesign (thin twin spikes) was
-    # too spindly (read as a slingshot/dowsing rod, not a pick) and its
-    # tips touched the canvas edge (x=15/y=0), leaving no room for an
-    # outline on that side, which looked clipped. This version uses two
-    # *filled, tapering wedges* (same construction as the axe blade,
-    # mirrored left/right) for a bulkier, more recognisable pick-head, and
-    # keeps a 1px margin on every side so draw_outline can frame it fully.
+    draw_handle(px, (1, 14), (7, 8))
+    # Head (session 41): two narrow, separate diagonal prongs spread wide
+    # from a shared socket - a shallow, OPEN fork. Deliberately kept
+    # narrower (2-3px per prong) and shorter/wider (peaks at y=2, not a
+    # tall point) than the old design so the overall bounding shape reads
+    # as "wide and forked" rather than "tall wedge" - the opposite of the
+    # axe's silhouette below.
     head = set()
     right_rows = {
-        1: (11, 13),
-        2: (10, 13),
-        3: (9, 12),
-        4: (9, 11),
-        5: (8, 10),
-        6: (8, 9),
+        2: (12, 13),
+        3: (11, 13),
+        4: (10, 12),
+        5: (9, 11),
+        6: (8, 10),
+        7: (8, 9),
     }
     left_rows = {
-        1: (2, 4),
-        2: (2, 5),
-        3: (3, 6),
-        4: (4, 6),
-        5: (5, 7),
-        6: (6, 7),
+        2: (2, 3),
+        3: (2, 4),
+        4: (3, 5),
+        5: (4, 6),
+        6: (5, 7),
+        7: (6, 7),
     }
     for rows in (right_rows, left_rows):
         for y, (x0, x1) in rows.items():
             for x in range(x0, x1 + 1):
                 head.add((x, y))
-    # socket connecting both wedges to the handle
-    for (x, y) in [(7, 6), (8, 6), (7, 7)]:
+    # socket connecting both prongs to the handle
+    for (x, y) in [(7, 7), (8, 7), (7, 8)]:
         head.add((x, y))
 
     def shade(x, y):
@@ -191,31 +204,30 @@ def make_pickaxe():
 
     crystal_fill(px, head, shade)
     draw_outline(px, head)
-    set_px(px, 12, 1, HILITE)
-    set_px(px, 3, 1, HILITE)
-    set_px(px, 7, 6, ACCENT)
+    set_px(px, 12, 2, HILITE)
+    set_px(px, 3, 2, HILITE)
+    set_px(px, 7, 7, ACCENT)
     return img
 
 
 def make_axe():
     img = new_img()
     px = img.load()
-    draw_handle(px, (1, 14), (8, 7))
-    # Head: a single broad, solid crystal wedge blade - kept as the "big
-    # solid chunk" silhouette so it still reads distinctly from the fork
-    # (pickaxe), the paddle (shovel) and the crossbar (hoe).
-    # Session-13b fix: shifted 1px left / 1px down versus the original
-    # (which reached x=15 and y=0 with raw fill colour and no room for an
-    # outline on that side - looked clipped at the canvas edge).
+    draw_handle(px, (1, 14), (8, 9))
+    # Head (session 41): a single wide, flat-topped rectangular block,
+    # flush against the handle on its inner edge - short and blocky
+    # rather than tall and pointed, so its bounding shape can't be
+    # mistaken for one lobe of the pickaxe's fork above. The flat top
+    # edge (row y=2) is a full-width hilite line standing in for a
+    # cutting edge.
     head = set()
     rows = {
-        1: (10, 14),
-        2: (9, 14),
+        2: (9, 13),
         3: (8, 13),
-        4: (8, 12),
-        5: (8, 11),
-        6: (8, 10),
-        7: (8, 9),
+        4: (8, 13),
+        5: (8, 12),
+        6: (8, 11),
+        7: (8, 10),
     }
     for y, (x0, x1) in rows.items():
         for x in range(x0, x1 + 1):
@@ -233,51 +245,53 @@ def make_axe():
 
     crystal_fill(px, head, shade)
     draw_outline(px, head)
-    set_px(px, 13, 1, HILITE)
-    set_px(px, 11, 2, ACCENT)
+    for x in range(9, 13):
+        set_px(px, x, 2, HILITE)
+    set_px(px, 11, 4, ACCENT)
     return img
 
 
 def make_shovel():
     img = new_img()
     px = img.load()
-    # Session-13 redesign: the shovel is now a single slim continuous blade
+    # Session 13 redesign: the shovel is now a single slim continuous blade
     # running the whole length of the tool - no separate triangular head
     # blob like the old design (which looked almost identical to the hoe).
-    # The lower two-thirds are wood (shaft), the upper third fades into the
-    # crystal palette (the flat spade blade), ending in a small flared tip.
-    # Session-13b redesign: the first redesign (a bare thin diagonal line)
-    # fixed the "looks the same as the hoe" complaint but over-corrected
-    # into something that reads as a wand/spear rather than a shovel. This
-    # version keeps a slim shaft (still clearly thinner than the pickaxe/
-    # axe handle) but ends in an actual flat, slightly-rounded spade blade
-    # - a filled paddle shape, not a single-pixel line - kept within a 1px
-    # margin of every edge.
-    draw_thin_diagonal(px, (1, 14), (9, 7), H_BASE, H_HILITE, H_OUTLINE)
+    # Session 41 redesign: the session-13b spade blade was a short, rounded
+    # blob (5 rows tall) that read as a loose gem rather than a spade at
+    # hotbar scale. This version keeps the same slim shaft but stretches
+    # the blade into a taller, narrower paddle (7 rows) with a pointed tip
+    # - an elongated shape that can't be mistaken for a round gem.
+    draw_thin_diagonal(px, (1, 14), (9, 8), H_BASE, H_HILITE, H_OUTLINE)
     blade = set()
+    # Flat-topped, narrow rectangle (not a pointed diamond) - narrower than
+    # the axe's block and taller than it is wide, so it reads as a slim
+    # paddle continuing the thin shaft rather than a gem stuck on a stick.
     rows = {
-        2: (10, 11),
+        1: (9, 12),
+        2: (9, 12),
         3: (9, 12),
         4: (9, 12),
         5: (9, 12),
         6: (9, 11),
+        7: (9, 10),
     }
     for y, (x0, x1) in rows.items():
         for x in range(x0, x1 + 1):
             blade.add((x, y))
     # joint pixel so the blade visibly meets the handle tip
-    set_px(px, 9, 7, H_HILITE)
+    set_px(px, 9, 8, H_HILITE)
 
     def shade(x, y):
         if y <= 2:
             return HILITE
-        if y <= 4:
+        if y <= 5:
             return MID
         return BASE
 
     crystal_fill(px, blade, shade)
     draw_outline(px, blade)
-    set_px(px, 10, 2, HILITE)
+    set_px(px, 10, 1, HILITE)
     set_px(px, 10, 4, ACCENT)
     return img
 
