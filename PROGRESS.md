@@ -2014,15 +2014,73 @@ bedrock(1) → prismium_stone(59) → prismium_soil(1) → water(68, 海面y=64)
 
 計4コミットをpush: `46ca652`(Prismium Stone)、`a87fe92`(フラットワールド化)、`5b8ef62`(Prismium Deep Wraith)、`3228072`(Rift Shard修正)。push前に`git fetch`で並行セッション無しを確認、一発成功。**`runGameTestServer`によるデータパック検証で`status=ok`を確認済み**(コミット`3228072`、CI実行`32153801947`) - 新しいflatジェネレーター・新規ブロック・新規エンティティを含む変更一式が、実際にヘッドレスサーバーのレジストリ読み込みを通過することを確認できた。ただし前述の通りこれは「サーバー側が起動できる」ことの確認であり、クライアント側の見た目(地形の実際の見え方、モブのテクスチャー、Rift Shardの着地感)は未検証のまま。
 
+## 3AX. セッション#48(定期実行)で実装した内容: Prism Lily/Bramble/Vine 未生成バグ修正(waterlogged化) + Prismium Rift Anchor新設
+
+### 3AX-1. 背景・今回の方針決定
+
+セッション開始時、`git fetch`で前回(session 47対話セッション)のpush後に届いていた`ci: update built jar`/`ci: update datapack validation results`の到着(`status=ok`)を確認(§3AW-8の続き)。`api.github.com`は今回も`curl`からは到達不可(継続、§2-9参照)だったため、ビルド結果確認は従来通り`git fetch`によるCIコミット到着確認で代替した。
+
+§5(旧)項目000000で「最優先で確認すべき」と申し送られていた、**Prism Lily/Bramble/Vine(session 18・40・43・44で追加した3種の植物)がsession 47のフラットワールド化以降、実際に配置されているかどうか**をまずコードレビューで検証することから着手した(実機/ローカルビルドが無いサンドボックスのため、`git clone`した内容の静的読解のみで判断)。
+
+### 3AX-2. 発見: Prism Lily/Bramble/Vineは配置ロジック上、ワールド生成時に一度も生成されない状態だった
+
+3種のplaced_feature JSON(`prism_lily_placed.json`等)はいずれも`minecraft:heightmap`配置modifierに`WORLD_SURFACE_WG`を指定していた。この値はワールド生成中、**水を「地表」として扱う**(空気でないブロックの最上部を返す)ため、Prism Realmの現在の地形(bedrock→prismium_stone→prismium_soil→水68ブロック、§3AW-3参照)では、配置座標が「水柱の一番上のさらに1マス上(=何もない空中、直下が水)」に解決される。3種の`canSurvive()`はいずれも「直下のブロックが`isFaceSturdy(UP)`であること」を要求しており(水はsturdyでない)、`would_survive`配置フィルタで毎回弾かれる。**結果、フラットワールド化(session 47)以降、この3種の植物は理論上ただの一本も自然生成していない。**
+
+これは実装ミスというより、session 40/43/44の実装当時(旧: overworldノイズ流用の地形)には正しく機能していたロジックが、session 47の地形刷新によって前提条件ごと壊れた、という経緯物のバグ。§3AW-1(旧000000)で「未検証」としてフラグが立てられていた懸念がそのまま的中した形。
+
+### 3AX-3. 修正内容
+
+1. **`placed_feature`のheightmapを`WORLD_SURFACE_WG` → `OCEAN_FLOOR_WG`に変更**(3ファイル: `prism_lily_placed.json`/`prism_bramble_placed.json`/`prism_vine_placed.json`)。`OCEAN_FLOOR_WG`は流体を無視して地形の実体(この場合`prismium_soil`)の最上部を返すため、配置座標が正しく海底(y=61付近、`prismium_soil`の直上)に解決されるようになる。`canSurvive()`の「直下がsturdy」判定も`prismium_soil`(通常の全面ブロック)相手なら通る。
+2. **3ブロッククラス(`PrismLilyBlock`/`PrismBrambleBlock`/`PrismVineBlock`)をwaterloggable化**。`BlockStateProperties.WATERLOGGED` + `SimpleWaterloggedBlock`実装 + `getStateForPlacement`/`updateShape`/`getFluidState`オーバーライドという、バニラの階段・柵ブロック等で使われる定型パターン(Forge公式ドキュメント`docs.minecraftforge.net/en/1.20.1/blocks/states/`と、本リポジトリ内で既に動いている`PrismiumCableBlock#updateShape`のシグネチャをWebSearch+コードレビューの両方で裏取り)。理由: 修正後の配置座標(海底直上)は元々水没しているマスであり、waterlogged対応が無いと「その1マスだけ水が抜けた空気ポケット」になってしまう見た目のバグを生むため。
+3. **blockstateのJSON**(3ファイル)に`waterlogged=true`/`waterlogged=false`の2バリアントを追加(どちらも既存の同じモデルを指す。見た目自体は変わらないので新規テクスチャーは不要)。
+4. **`configured_feature`のJSON**(3ファイル)の`to_place.state`に`"Properties": {"waterlogged": "true"}`を追加し、ワールド生成で配置されるインスタンスが最初から正しく水没状態になるようにした。
+
+修正はJSON+Javaのみ、新規テクスチャーは無し(既存モデル・テクスチャーをそのまま流用)。詳細な設計判断・裏取りの経緯は各Javaファイルのjavadocコメント本文に書き残した(次回セッションが個別ファイルを読むだけで背景を追えるように)。
+
+**未検証事項(正直に明記)**: ローカルビルド・実機起動ができないサンドボックスのため、以下は今回のセッション内では確認できていない。
+- 実際にPrism Realmでチャンクを生成した際、Lily/Bramble/Vineが本当に(想定した密度・分布で)出現するか。
+- waterlogged状態での見た目(半透明の水越しに植物が見える、等)が意図通りに描画されるか。
+- `OCEAN_FLOOR_WG`への変更が、`in_square`/`count`等の他の配置modifierと組み合わさったときに想定外の副作用(例: 配置座標が海底より低い箇所を誤って拾う等)を生まないか。
+
+`git push`後、`runGameTestServer`によるデータパック検証は`status=ok`(コミット`e133a85`、下記§3AX-5参照)を確認済みだが、これは「レジストリ・JSON定義がサーバー起動時にクラッシュなく読み込める」ことの確認に過ぎず、上記の「実際に生成されるか」の確認にはならない(§3AW-8以来繰り返し書いている、このCIの既知の限界)。
+
+### 3AX-4. 実装: Prismium Rift Anchor(§5旧項目12(a)(i)対応)
+
+前回の申し送り(§5旧項目12(a))にあった、本人からの要望「Rift Shardのクラフト派生アイテム2種」のうち、(i)「ベッドのようにリスポーン地点を設定できるアイテム」を新設した((ii)の「時間を自由に変えられる焚火状ブロック」は今回未着手、次回に持ち越し - 下記§5参照)。
+
+- **`PrismiumRiftAnchorItem`**: 右クリックで`ServerPlayer#setRespawnPosition(dimension, pos, angle, forced=true, sendMessage=true)`を呼び、その場(現在の次元問わず)にリスポーン地点を設定する単発消費アイテム(`stack.shrink(1)`)。`forced=true`はバニラのRespawn Anchorと同じフラグで、「その座標に特定のブロックが残っている必要がない」効果を持つ - ベッド(オーバーワールド限定)・Respawn Anchor(ネザー限定、かつブロックとして常設)のどちらとも異なり、**どの次元でも使える、置いたブロックに縛られないリスポーン地点**という、本人の要望に合う設計にした。
+- API裏取り(WebSearchで実施、このMOD初の`setRespawnPosition`呼び出し): 1.19.3のForgeマッピング済みjavadoc(`nekoyue.github.io/ForgeJavaDocs-NG`)で5引数シグネチャ(`ResourceKey<Level>, BlockPos, float, boolean, boolean`)を確認、1.20.1でも同一である旨を別途WebSearchのYarnマッピング情報でクロスチェック。効果音`SoundEvents.RESPAWN_ANCHOR_SET_SPAWN`も同じ1.18.2 Forge javadocで実在を確認した上で使用(§3G「それらしい名前を思いつきで書いて、ビルドが通ったら正解、という組み立て方はしない」という過去の教訓を踏まえた裏取り)。
+- レシピ: `claudemod:prismium_rift_shard` ×1 + `minecraft:ender_eye` ×1 + `claudemod:prismium_shard` ×2 の shapeless。既にRift Shardを作れる状態を前提にしたやや高コストな派生品という位置づけ。
+- テクスチャー(`scripts/textures/gen_prismium_rift_anchor.py`): Rift Shardの結晶シルエット(`ROWS`)をそのまま再利用し、Rift Shardの「暗い虚空コア+明るい紫リング」を反転させた「明るい金色コア+暗いアンバーのリング」の"ビーコン"モチーフに差し替え。同じ結晶系アイテムだが色相(寒色の紫 vs 暖色の金)と明暗の配置が逆になっているため、インベントリ内でも一目でRift Shardと区別できる。生成後、4x/8x/16xのチェッカーボードプレビューPNGを`Read`ツールで実際に目視確認済み(アルファ値は{0, 255}のみでにじみ無し、16pxそのままのサイズでも金色コアが視認できることを確認)。
+- 日英両方のlangファイル(`en_us.json`/`ja_jp.json`)にアイテム名・使用法ツールチップを追加。
+
+**未検証事項**: 実機での動作確認は無い。特に、Prism Realmの現在の地形(ほぼ全域が海、§3AW-1参照)で`forced=true`のリスポーン地点を設定した場合、次回リスポーン時にバニラの安全地点探索がどう振る舞うか(水没した座標にそのまま復活してしまわないか)は未確認。
+
+### 3AX-5. commit・push・ビルド確認
+
+`/tmp`配下はcloneした場所とは別の残骸(`nobody`ユーザー所有、書き込み不可)が存在する状態だった(session 47の申し送り§5旧項目8と同種の問題、継続)。今回は`/tmp/work2`にクローンされていたキャッシュ済みコピーを自分の書き込み可能な`/tmp/mywork`へ`cp -r`してから作業する方式で回避した。次回セッションもこの種の書き込み不可ディレクトリに当たった場合の参考にすること。
+
+計2コミットをpush:
+1. `c540434`(rebase後のハッシュ、push前は`ff59b0a`) Prism Lily/Bramble/Vine修正(§3AX-2/3AX-3)
+2. `e133a85` Prismium Rift Anchor新設(§3AX-4)
+
+push前に`git fetch origin main`を実行したところ、前回(session 47)push後のCI副産物コミット2件(`ci: update built jar`/`ci: update datapack validation results`)が新たに存在していたため、`git pull --rebase origin main`でクリーンに取り込んでからpush(competing sessionではなく、単に前回のCI結果が遅れて到着していただけと判断)。
+
+push後、`git fetch`による到着確認で以下を確認済み:
+- `ci: update built jar`(コミット`6a04bb8`) → ビルド成功(`build-and-notify.yml`の`ci: update built jar`はビルドjob成功時のみコミットされる、§本ファイル内`build-and-notify.yml`の`if: steps.build.outcome == 'success'`条件を確認済み)。
+- `ci: update datapack validation results`(コミット`cf48f1f`) → `builds/last_datapack_validation_summary.txt`の内容は`status=ok  commit=e133a85a4d9ea13a6afe75bc015ce2868c7a0126`。今回の変更(waterlogged化・heightmap変更を含む)がヘッドレスサーバーのレジストリ読み込みでクラッシュしないことを確認できた。
+
+`api.github.com`への`curl`到達性は今回も`000`/DNS解決不可(プロキシ変数を空にしても同様、`Could not resolve host`)で、この点は継続する既知の制約(§2-9参照、`WebSearch`/`web_fetch`は別経路のため引き続き問題なく利用できた)。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-000000. **【最優先・新規・全セッション必読、session 47対話セッション】Prism Realmの地形をフラット「ウォーターワールド」に全面書き換えた(§3AW-3参照)。次回以降のセッションはこれを前提に動くこと。**
+000000. **【継続・全セッション必読】Prism Realmの地形はflat「ウォーターワールド」(§3AW-3参照)。次回以降のセッションはこれを前提に動くこと。**
    - 現在のディメンションは`minecraft:flat`(bedrock→prismium_stone→prismium_soil→water、海面y=64)で、**ほぼ全域が深さ約68ブロックの海**。陸地・実際のバイオーム多様性はまだ無い。
    - ユーザー(こんぺいとう)本人の明示的な方針: 「うまくいきしだい、どんどんバイオームを追加し、最後にフラット地形とフラット海を削除するイメージ」。次回以降、実際に陸地・複数バイオームを追加していくフェーズに入ってよい(本人から一任されている)。
-   - **既存のPrism Lily/Bramble/Vine Feature(session 18〜)は、地表がほぼ全域水没した影響で配置に失敗し続けている可能性が高い(未検証)。** 次に陸地/バイオームを追加するセッションで、これらの植物Featureの配置条件(水没を想定していない生育条件)も一緒に見直す必要がある。
-   - `runGameTestServer`で`status=ok`(コミット`3228072`)まで確認済みだが、これは「サーバーが起動できる」ことの確認に過ぎない。**実際にPrism Realmへ行って地形・水・Prismium Stoneの見た目を確認できたユーザーの反応がまだ無い、最優先で見ること。**
+   - **【session 48で修正済み】Prism Lily/Bramble/Vine Featureが水没地形で一切生成されなくなっていた問題を修正した(§3AX-2/3AX-3参照)。** heightmapを`OCEAN_FLOOR_WG`に変更+3ブロックをwaterlogged化。ただし**実際にチャンクを生成してみての生成確認(密度・見た目とも)はまだ無い、次回最優先で確認すること。**
+   - `runGameTestServer`で`status=ok`(コミット`e133a85`)まで確認済みだが、これは「サーバーが起動できる」ことの確認に過ぎない。**実際にPrism Realmへ行って地形・水・Prismium Stoneの見た目、および今回waterlogged化した植物の見え方を確認できたユーザーの反応がまだ無い、最優先で見ること。**
 
 00000. **【継続・重要】雲の見た目修正(Prism Realmがオーバーワールドと同じ白い雲を描画してしまう問題)は、調査のみ行い実装を見送った(§3AW-6参照)。次回以降の実装メモ:**
    - 原因: `dimension_type`の`effects: "minecraft:overworld"`がオーバーワールドと同じ雲(高さ192)を描画させている。
@@ -2042,7 +2100,7 @@ bedrock(1) → prismium_stone(59) → prismium_soil(1) → water(68, 海面y=64)
 
 0. 【継続、優先度大幅低下】装備の見た目フィードバックはsession 39〜45で一通り対応済み。今回はPrism Realm地形の方が優先度が高かったため深追いしていない。防具の3人称シェーディングは引き続き実機未検証。
 
-1. 【最優先・恒例】まず`git log`/`git fetch origin main`し、`ci: update built jar`→`ci: update datapack validation results`の順に到着しているか確認する。**session 47対話セッションは4コミットpushし、両方の到着・`status=ok`まで確認済み**(§3AW-8参照)。
+1. 【最優先・恒例】まず`git log`/`git fetch origin main`し、`ci: update built jar`→`ci: update datapack validation results`の順に到着しているか確認する。**session 48は2コミットpushし、両方の到着・`status=ok`まで確認済み**(§3AX-5参照)。
 
 2. `api.github.com`は今回も到達不可(継続)。Issueページ個別取得・添付ファイルダウンロード(`user-attachments/files/...`)は引き続き有効な手法。
 
@@ -2065,7 +2123,7 @@ bedrock(1) → prismium_stone(59) → prismium_soil(1) → water(68, 海面y=64)
 11. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能が積み上がり続けている。session 47もその例外ではない(Prismium Stone/Deep Wraith/フラットワールド/Rift Shard修正、いずれも未検証)。**新機能追加のたびに、pushのたびのデータパック検証結果確認を徹底すること**(引き続き最重要の習慣)。
 
 12. 【継続、次の展開候補、優先度は下記の通り更新】
-    - (a) 【新規・ユーザー要望】Rift Shardのクラフト派生アイテム2種: (i) ベッドのようにリスポーン地点を設定できるアイテム、(ii) 自由に時間を変えられるが破壊時にアイテムとしてドロップしない焚火のようなブロック。**このセッションでは未着手、次回以降の有力候補。**
+    - (a) ユーザー要望のRift Shard派生アイテム2種のうち、**(i)リスポーン地点を設定できるアイテムはsession 48で実装済み(`PrismiumRiftAnchorItem`、§3AX-4参照、実機未検証)**。(ii) 自由に時間を変えられるが破壊時にアイテムとしてドロップしない焚火のようなブロックは**引き続き未着手、次回の最有力候補**。実装イメージ(session 48時点の下書き): `noLootTable()`でドロップ無効化した通常`Block`、右クリックで`level.setDayTime(現在時刻 + 一定量)`(ディメンションごとに独立した時刻を持つ想定)を進める/シフト+右クリックで戻す、程度のシンプルな設計に留めるのが無難(篝火型の見た目・パーティクル演出は後回しでよい)。
     - (b) 【新規・ユーザー要望】Prism Realmの草花(Prism Lily/Bramble/Vine)を「活用できないものになっている」との指摘(染料・クラフト素材等への用途追加)。**未着手。** ただし§000000の通り、これらの植物が今のフラット水没地形でそもそも配置できているか自体を先に確認・修正する必要がある可能性が高い。
     - (c) 雲の見た目修正(§00000参照、調査済み・実装待ち)。
     - (d) Prism Realmへの陸地・複数バイオーム追加(ユーザー本人の段階的移行計画の次のステップ)。
@@ -2082,21 +2140,18 @@ bedrock(1) → prismium_stone(59) → prismium_soil(1) → water(68, 海面y=64)
 - **フラットワールド化は「地中の石を無くす」という目的には即効性があるが、当面ディメンションの体験が「ほぼ全域が海」になるというトレードオフがある。** ユーザー本人が把握・了承済みの設計だが、次に陸地/バイオームを追加するまでの間、実際にプレイした際の第一印象(「歩ける場所がない」)をどう感じるか、次回セッション開始時にユーザーへの確認をおすすめしたい。
 - **Prismium Deep Wraithの遊泳AIが無い状態で、実際に水中で「らしく」動くかは全くの未知数。** 陸上を歩くだけのゾンビ的な動きになる可能性が高く、狙った「専用の水生モブ」感が薄い場合は次回、本格的なAI実装を検討すること。
 - **雲の修正は技法までは分かったが実装は未確認のまま持ち越し。** クライアント専用コードでCIのセーフティネットが効かない領域なので、次回実装する際は特に慎重に。
-- **既存のPrism Lily/Bramble/Vine Featureがフラット水没地形でどうなるかは、次回セッション開始時に最優先で確認すべき(データパック検証はレジストリ読み込みしか見ておらず、feature配置の成否そのものはCIから見えない)。**
-- **`runGameTestServer`はsession 47対話セッションでも問題なく動作し続けている(累計5回目のstatus=ok)。** 安定して動いている実績が積み上がってきたので、`continue-on-error`を外して本当のゲートにするかの判断時期が近づいている。
+- **Prism Lily/Bramble/Vine Featureの未生成バグはsession 48でheightmap変更+waterlogged化により修正したが、これもデータパック検証(レジストリ読み込みの成否のみ)では確認できない領域なので、次回セッション開始時に「実際に生成されているか」を最優先で確認すべき(§3AX-2/3AX-3、§5旧000000参照)。**
+- **Prismium Rift Anchor(session 48)の`forced=true`リスポーン地点が、Prism Realmのほぼ全域が海という現状の地形でどこに着地させるかは全くの未知数。** バニラの安全地点探索ロジックが水中を避けてくれる保証は無く、悪くすると溺れる位置に復活する可能性がある。実プレイ確認が最優先。
+- **`runGameTestServer`はsession 48でも問題なく動作し続けている(累計6回目のstatus=ok)。** 安定して動いている実績が積み上がってきたので、`continue-on-error`を外して本当のゲートにするかの判断時期が近づいている。
 
 ### コミット/プッシュ状況
 
-session 47(対話セッション、定期実行ではない)は以下の4コミットをpush:
-1. `46ca652` Prismium Stone新設(地形フラット化の下地ブロック)
-2. `a87fe92` Prism Realmをflatジェネレーター(ウォーターワールド)に全面書き換え
-3. `5b8ef62` Prismium Deep Wraith新設 + Wraith→Drowned変質の停止
-4. `3228072` Rift Shard着地バグ修正(チャンク強制生成+水上足場)
+session 48(定期実行)は以下の2コミットをpush(§3AX-5参照):
+1. `c540434`(push時ハッシュ、rebase後) Prism Lily/Bramble/Vine未生成バグ修正(heightmap変更+waterlogged化)
+2. `e133a85` Prismium Rift Anchor新設
 
-push前に`git fetch origin main`で並行セッション無しを確認、一発成功。`ci: update built jar`→`ci: update datapack validation results`(`status=ok`、コミット`3228072`、CI実行`32153801947`)まで到着を確認済み。
-
-このセッション開始前の直前の定期実行分(同じセッション内で継続)では、`ISSUES_TO_CLOSE.json`中継の新設+Issue #10・#11・#6・#8のクローズ、Prismium Shieldの`blocking`ItemProperties欠落修正も行っている(詳細は本ファイルの該当箇所参照)。
+push前に`git fetch origin main`を実行したところ、session 47の2コミット分のCI副産物(`ci: update built jar`/`ci: update datapack validation results`)が新たに到着していたため`git pull --rebase origin main`で取り込んでからpush。`ci: update built jar`(`6a04bb8`)→`ci: update datapack validation results`(`cf48f1f`、`status=ok`、コミット`e133a85`)まで到着を確認済み。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側の通知は今回4回のpushに対応する分がSecret設定済みであれば送信されているはず。
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側の通知は今回2回のpushに対応する分がSecret設定済みであれば送信されているはず。
