@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-19 (セッション #52、定期実行)
+最終更新: 2026-08-19 (セッション #53、定期実行)
 
 ---
 
@@ -2265,11 +2265,53 @@ push後、`git fetch`のポーリングで以下を確認:
 
 **未検証(このセッションでは確認不可能な範囲)**: Prismium Portalが実際にゲーム内で(a)半透明に描画されるか、(b)フレーム判定・シャード消費・ブロック設置が意図通り発火するか、(c)`entityInside`がプレイヤーの通常速度の移動で確実に発火するか(スプリント・エリトラ飛行で1tickの重なりをすり抜けないか)、(d)Prism Realm側の着地地点にテレポート先のポータルが無いため、**現状は行きは新ポータル・帰りは旧来のRift Shardアイテムに頼らないと戻れない**(片道専用、既知の制約、§5参照)。
 
+## 3BC. セッション#53(定期実行)で実装した内容: Prismium Portalの片道問題を解消
+
+### 3BC-1. 状況確認
+
+`/tmp/work`・`/tmp/work2`・`/home/<user>`はいずれも過去セッションの残骸または権限の都合で書き込み不可だったため(継続する既知の問題、§5参照)、`/tmp/mywork_5/repo`という新規一意パスにcloneして進めた。`api.github.com`への`curl`は今回も`bash`からは`blocked-by-allowlist`で到達不可(プロキシ経由でも、プロキシ変数を空にしても`Could not resolve host`)だったため、ビルド確否は確立済みの一次情報である`builds/last_datapack_validation_summary.txt`の`commit=`欄で確認した: session 52最終コミット(`f39aa89`)で`status=ok`、つまり**前回ビルドは成功**だったことを確認済み。Open Issueは`github.com/<owner>/<repo>/issues/<番号>`への個別`curl`(確立済み手法)で#2・#7・#9の3件がOPENのままであることを再確認(§3BBの記録と一致、変化なし)。
+
+### 3BC-2. 今回の方針決定
+
+PROGRESS.md §5の最優先項目(`000000000`)がそのまま「Prismium Portalの片道問題」だったため、これを最優先で実装した。他のIssue(#2の見た目、#7のガイド不足)は今回は着手せず見送り(下記§3BC-4参照)。
+
+### 3BC-3. 実装: `PrismiumTeleportHelper.ensureReturnPortal`(新規メソッド、片道問題の解消)
+
+問題の実体を整理すると: Prismium Portal(Overworld側)はPrismium Shardを1個消費して起動する。プレイヤーがそのシャードを最後の1個として使った場合、Prism Realmに着いた時点で手持ちのシャードが0個になり、`teleportBackFromRealm`自体は存在するのに、それを起動できる物理的な手段(Realm側のポータル)が無く、実質的に戻れなくなる。
+
+対応として、`PrismiumTeleportHelper.teleportToRealm`から新規`ensureReturnPortal(ServerLevel, int landingY)`を毎回呼び出すようにした。このメソッドは:
+- Realmのアンカー地点(0, landingY, 0)からX方向に4ブロックずれた固定位置に、`PrismiumPortalIgniteHandler`が検証する枠と全く同じ寸法(外枠4幅x5高、内側2幅x3高、`Direction.Axis.X`)の`PRISMIUM_CORE`枠+`PRISMIUM_PORTAL`ブロックを直接生成する(手動点火のロジックを再利用せず、最終状態を直接書き込む方式)。
+- 内側の1ブロックを読んで既に`PRISMIUM_PORTAL`であれば何もしない(冪等性、毎回の到着で無駄なブロック更新をしない)。
+- 枠の footprint 全体の直下に`prismium_soil`の床を敷く(session 47でPrism Realmがフラット「ウォーターワールド」化されているため、水上に浮いた枠にならないようにするための対策、既存の着地プラットフォーム生成ロジックと同じ発想)。
+
+この結果、**Rift Shardを持っているか・Overworld側ポータルで来たかを問わず、Realmに到着した瞬間に必ず歩いて戻れるポータルがその場に存在するようになった**。既存の`PrismiumPortalBlock.entityInside`は次元がPrism Realmであれば`teleportBackFromRealm`を呼ぶようになっているので、このメソヽッド新規のブロック用の特別分岐は不要だった(既存コードがそのまま機能する)。
+
+新規テクスチャー・新規ブロック・新規アイテムは追加していない(既存の`PRISMIUM_CORE`・`PRISMIUM_PORTAL`・`PRISMIUM_SOIL`を再利用するのみ)ため、今回はテクスチャー作成・自己レビューの工程は無し。
+
+### 3BC-4. 今回やらなかったこと(正直な記録)
+
+- Issue #2(ツールの見た目)・#7(ガイド不足)には今回は手を付けなかった。
+- `PrismiumPortalBlock`のブロックモデルが`cube_all`のままでX/Z軸の見た目が実際には変わらない問題(session 52から既知の簡略化)は今回も未対応。
+- 自動生成される帰還用ポータルの周囲(footprint外)に安全な足場があるかは未検証(Prism Realmが水上ワールドである以上、枠のすぐ外は依然水である可能性がある)。
+- `ISSUES_TO_CLOSE.json`リレーの信頼性問題(session 52で発覚)は今回調査していない。
+
+### 3BC-5. commit・push・ビルド確認
+
+1コミット: `e7bd7a5` "Fix Prismium Portal one-way problem: auto-build return portal in Realm"。
+
+push前に`git fetch origin main`で並行セッションの有無を確認(無し、`origin/main`はsession 52最終コミット`b5ae21f`のまま)。プロキシ回避策無しで素の`git push origin main`が一発成功(session 49以降継続)。
+
+push後、`git fetch`のポーリングで`8e45a48`(`ci: update built jar`)→`34cf92e`(`ci: update datapack validation results`)の順に到着を確認。`builds/last_datapack_validation_summary.txt`が`status=ok  commit=e7bd7a5...`を記録 = **通常ビルド・データパック検証とも成功**。`builds/last_datapack_validation_errors.log`の中身はJVM/Forge起動時の通常のDEBUG/WARNノイズのみ(`server.properties`が無い等、既存セッションでも見られたのと同種のもの)で、`Failed to load registries`等の実害は無し。
+
+**未検証(このセッションでは確認不可能な範囲)**: 実際にゲーム内で(a)自動生成された帰還用ポータルが意図した位置(アンカーからX+4、着地Yの高さ)に正しく出現するか、(b)水上でも床がちゃんと敷かれて浮いた枠にならないか、(c)そのポータルに歩いて入ると本当に元の場所(Overworld側の出発地点)に戻れるか。ロジック上は`teleportBackFromRealm`の既存の永続データ読み込みに乗るだけなので理屈上は動くはずだが、実機確認はまだ無い。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-000000000. **【新規・最優先】Prismium Portal(§3BB-1)は実機未検証。次回セッション、Issueや本人フィードバックがあれば最優先で読むこと。** 特に片道専用の制約(上記§3BB-3末尾)は、ユーザーが「行けたのに帰れない」と混乱する可能性が高い実用上の欠陥なので、次回以降の最優先課題にすべき: (a) Prism Realm側のアンカー地点(0, ~y, 0)に、初回到達時点で自動的に帰り用のポータル(Prismium Core枠+Portalブロック)を生成する、または(b) 素直にRift Shardの入手性を上げてどのみち携帯させる、のいずれかで解消できる。
+0000000000. **【session 53で対応済み、実機未検証】Prismium Portalの片道問題は§3BC-3の`ensureReturnPortal`で解消した(上記(a)案を実装)。Realm到着時に必ず帰還用ポータルが自動生成されるようになったが、実機でこの生成物が本当に正しい位置・見た目で出現し、歩いて入れば戻れるかはまだ未検証。次回セッションでIssue #9や本人からのフィードバックがあれば最優先で確認すること。特に水上に生成された場合の見た目(浮いた床に見えないか)は要注意。**
+
+000000000. **【解消済み、参考として残す】旧・最優先事項だった「Prismium Portalは実機未検証」自体は継続する制約(このMOD全体がプレイテスト不能なサンドボックス下で開発されているため)。上記0000000000と合わせて読むこと。**
 
 00000000. **【新規】GitHub Actionsの`actions/runs` API(`api.github.com`)は、`web_fetch`ツール経由でも到達はできるが、キャッシュされた古い結果を返すことがある(§3BB-0で確認)。ビルド確否の一次情報は引き続き`builds/last_datapack_validation_summary.txt`の`commit=`欄を使うこと。**
 
@@ -2326,14 +2368,14 @@ push後、`git fetch`のポーリングで以下を確認:
 
 ### コミット/プッシュ状況
 
-session 52(定期実行)は以下の3コミットをpush(§3BB-3参照):
-1. `cb1b2e2` Extract Prism Realm teleport logic into PrismiumTeleportHelper
-2. `b435411` Add Prismium Portal: standing dimension gateway (GitHub issue #9)
-3. `0336842` Queue Issues #3, #5, #6, #8 for closing via CI relay
+session 53(定期実行)は以下の1コミットをpush(§3BC-5参照):
+1. `e7bd7a5` Fix Prismium Portal one-way problem: auto-build return portal in Realm
 
-push前に`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功(session 49以降継続)。push後、`ci: clear processed ISSUES_TO_CLOSE entries`→`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認し、Issue一覧の再確認で#3・#5・#6・#8のクローズも確認済み。
+push前に`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功(session 49以降継続)。push後、`ci: update built jar`(`8e45a48`)→`ci: update datapack validation results`(`34cf92e`、`status=ok  commit=e7bd7a5...`)の到着を確認済み。
 
 このPROGRESS.md更新コミット自体のCI結果は、次回セッション開始時に確認すること。
+
+参考(session 52、変更なし): 以下の3コミットをpush(§3BB-3参照): `cb1b2e2` Extract Prism Realm teleport logic into PrismiumTeleportHelper / `b435411` Add Prismium Portal: standing dimension gateway (GitHub issue #9) / `0336842` Queue Issues #3, #5, #6, #8 for closing via CI relay。
 
 ### 通知状況
 
