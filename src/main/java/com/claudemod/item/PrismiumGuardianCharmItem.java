@@ -1,6 +1,11 @@
 package com.claudemod.item;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+
+import javax.annotation.Nullable;
 
 /**
  * Session 30: Prismium Guardian Charm - the mod's first "cheat death"
@@ -41,5 +46,14 @@ public class PrismiumGuardianCharmItem extends Item {
 
     public PrismiumGuardianCharmItem(Item.Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level,
+                                 java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        // GitHub issue #7 (scheduled session): unlike the other three, this one requires being held in hand and is consumed on use - the hint text says so explicitly.
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 }

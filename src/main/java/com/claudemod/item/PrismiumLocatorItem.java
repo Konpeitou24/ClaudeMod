@@ -15,6 +15,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 
+import javax.annotation.Nullable;
+
 /**
  * Session 16: Prismium Locator - the mod's second accessory-style item
  * (after the session 7 grappling hook) and the first "detection item" from
@@ -195,5 +197,15 @@ public class PrismiumLocatorItem extends Item {
             return Component.translatable("direction.claudemod.above");
         }
         return Component.translatable("direction.claudemod.level");
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level,
+                                 java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        // GitHub issue #7 (scheduled session): same one-line gray hint
+        // pattern as the other Prismium accessories/energy blocks.
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 }

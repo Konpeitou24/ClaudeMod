@@ -1,6 +1,11 @@
 package com.claudemod.item;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+
+import javax.annotation.Nullable;
 
 /**
  * Session 33: Prismium Vitastone - the mod's third purely passive
@@ -22,5 +27,14 @@ public class PrismiumVitastoneItem extends Item {
 
     public PrismiumVitastoneItem(Item.Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level,
+                                 java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        // GitHub issue #7 (scheduled session): same passive-accessory hint pattern as Featherstone/Emberguard.
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 }

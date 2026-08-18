@@ -1,6 +1,11 @@
 package com.claudemod.item;
 
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+
+import javax.annotation.Nullable;
 
 /**
  * Session 31: Prismium Featherstone - the mod's first purely passive
@@ -27,5 +32,19 @@ public class PrismiumFeatherstoneItem extends Item {
 
     public PrismiumFeatherstoneItem(Item.Properties properties) {
         super(properties);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level,
+                                 java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        // GitHub issue #7 (scheduled session, follow-up to session 45's
+        // EnergyStorageBlockItem/Rift Shard hints): the mod's passive
+        // "just carry it" accessories had no in-game indication of what
+        // they do at all, which is a stronger version of #7's complaint
+        // than the energy blocks already had. Same one-line gray hint
+        // pattern, sourced from "<item translation key>.usage".
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 }

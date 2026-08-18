@@ -1,6 +1,7 @@
 package com.claudemod.item;
 
 import com.claudemod.registry.ModItems;
+import net.minecraft.network.chat.Component;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.stats.Stats;
@@ -14,6 +15,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+
+import javax.annotation.Nullable;
 
 /**
  * Session 7: Prismium Grappling Hook - the mod's first accessory-style item
@@ -120,5 +123,15 @@ public class PrismiumGrapplingHookItem extends Item {
         player.awardStat(Stats.ITEM_USED.get(this));
 
         return InteractionResultHolder.sidedSuccess(stack, level.isClientSide());
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level,
+                                 java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        // GitHub issue #7 (scheduled session): same one-line gray hint
+        // pattern as the other Prismium accessories/energy blocks.
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 }

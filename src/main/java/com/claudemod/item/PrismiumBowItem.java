@@ -1,10 +1,14 @@
 package com.claudemod.item;
 
 import com.claudemod.registry.ModItems;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.entity.projectile.AbstractArrow;
 import net.minecraft.world.item.BowItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.level.Level;
+
+import javax.annotation.Nullable;
 
 /**
  * Session 29: Prismium Bow, the mod's first ranged weapon and the
@@ -66,5 +70,15 @@ public class PrismiumBowItem extends BowItem {
     @Override
     public boolean isValidRepairItem(ItemStack toRepair, ItemStack repair) {
         return repair.is(ModItems.PRISMIUM_SHARD.get());
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level,
+                                 java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        // GitHub issue #7 (scheduled session): same one-line gray hint
+        // pattern as the other Prismium accessories/energy blocks.
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 }

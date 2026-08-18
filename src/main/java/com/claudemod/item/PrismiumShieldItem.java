@@ -1,6 +1,7 @@
 package com.claudemod.item;
 
 import com.claudemod.registry.ModItems;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.entity.player.Player;
@@ -8,6 +9,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.UseAnim;
 import net.minecraft.world.level.Level;
+
+import javax.annotation.Nullable;
 
 /**
  * Session 28: Prismium Shield, the mod's first blocking-capable gear and
@@ -111,5 +114,15 @@ public class PrismiumShieldItem extends Item {
         ItemStack stack = player.getItemInHand(hand);
         player.startUsingItem(hand);
         return InteractionResultHolder.consume(stack);
+    }
+
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level,
+                                 java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        // GitHub issue #7 (scheduled session): same one-line gray hint
+        // pattern as the other Prismium accessories/energy blocks.
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 }
