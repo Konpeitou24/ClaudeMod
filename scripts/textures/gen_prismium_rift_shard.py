@@ -36,18 +36,18 @@ BUILD_DIR = REPO_ROOT / "build"
 # ---- palette --------------------------------------------------------------
 # Crystal frame: identical teal family used by every other Prismium item
 # (gen_prismium.py / gen_prismium_core.py) for cross-item consistency.
-PRISMIUM_OUTLINE = "#0B3D3C"
-PRISMIUM_SHADOW = "#1E7A78"
-PRISMIUM_BASE = "#3FBDB8"
-PRISMIUM_MID = "#66D9D2"
-PRISMIUM_HILITE = "#B9FFF3"
+PRISMIUM_OUTLINE = "#024D4B"
+PRISMIUM_SHADOW = "#008282"
+PRISMIUM_BASE = "#11BBB8"
+PRISMIUM_MID = "#65F5E3"
+PRISMIUM_HILITE = "#CAFDF9"
 
 # Rift tear: near-black void core ringed by the mod's existing violet
 # energy-accent color (PRISMIUM_ACCENT / PRISMIUM_ACCENT_DARK, reused
 # verbatim from gen_prismium.py / gen_prismium_grappling_hook.py).
 VOID_CORE = "#0D0518"
-RIFT_ACCENT = "#C97BFF"
-RIFT_ACCENT_DARK = "#7A3FA6"
+RIFT_ACCENT = "#FF7CFC"
+RIFT_ACCENT_DARK = "#720070"
 
 
 def hexrgb(h):

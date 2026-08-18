@@ -56,9 +56,9 @@ LIFE_HILITE = "#FFC7DE"
 # gen_prismium_featherstone.py / gen_prismium_emberguard.py so this
 # item still reads as part of the Prismium family at a glance despite
 # the pink/magenta palette swap.
-GEM_RING = "#1E7A78"
-GEM_CORE = "#3FBDB8"
-GEM_GLINT = "#B9FFF3"
+GEM_RING = "#008282"
+GEM_CORE = "#11BBB8"
+GEM_GLINT = "#CAFDF9"
 
 
 def hexrgb(h):

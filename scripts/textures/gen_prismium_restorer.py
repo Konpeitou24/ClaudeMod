@@ -44,7 +44,7 @@ SIZE = 16
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
-PRISMIUM_OUTLINE = "#0B3D3C"
+PRISMIUM_OUTLINE = "#024D4B"
 
 # Same casing palette as Cell/Generator/Cable/Pylon (sessions 8-10, 19).
 CASING_DARK = "#4A5A58"

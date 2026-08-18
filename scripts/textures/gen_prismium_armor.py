@@ -55,12 +55,12 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
 # ---- palette (matches gen_prismium.py / gen_prismium_tools.py) --------
-PRISMIUM_OUTLINE = "#0B3D3C"
-PRISMIUM_SHADOW = "#1E7A78"
-PRISMIUM_BASE = "#3FBDB8"
-PRISMIUM_MID = "#66D9D2"
-PRISMIUM_HILITE = "#B9FFF3"
-PRISMIUM_ACCENT = "#C97BFF"
+PRISMIUM_OUTLINE = "#024D4B"
+PRISMIUM_SHADOW = "#008282"
+PRISMIUM_BASE = "#11BBB8"
+PRISMIUM_MID = "#65F5E3"
+PRISMIUM_HILITE = "#CAFDF9"
+PRISMIUM_ACCENT = "#FF7CFC"
 
 FRAME_OUTLINE = "#1B1B22"
 FRAME_SHADOW = "#33333D"

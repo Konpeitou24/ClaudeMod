@@ -29,11 +29,11 @@ ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
 # Same outline/shadow/base/mid/hilite ramp as the rest of the Prismium
 # family (gen_prismium.py onward) for cross-texture consistency.
-PRISMIUM_OUTLINE = "#0B3D3C"
-PRISMIUM_SHADOW = "#1E7A78"
-PRISMIUM_BASE = "#3FBDB8"
-PRISMIUM_MID = "#66D9D2"
-PRISMIUM_HILITE = "#B9FFF3"
+PRISMIUM_OUTLINE = "#024D4B"
+PRISMIUM_SHADOW = "#008282"
+PRISMIUM_BASE = "#11BBB8"
+PRISMIUM_MID = "#65F5E3"
+PRISMIUM_HILITE = "#CAFDF9"
 
 # Spike-only accent: cool cyan/blue instead of Bloom's warm violet, so the
 # two decorations don't share the same accent color at a glance.

@@ -43,8 +43,8 @@ SIZE = 16
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
-PRISMIUM_OUTLINE = "#0B3D3C"
-PRISMIUM_ACCENT = "#C97BFF"
+PRISMIUM_OUTLINE = "#024D4B"
+PRISMIUM_ACCENT = "#FF7CFC"
 
 # Same casing palette as Prismium Cell (session 8) - deliberately reused,
 # not reinvented, so the two machines read as a matched pair. See module

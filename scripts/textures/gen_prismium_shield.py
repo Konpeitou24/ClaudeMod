@@ -38,7 +38,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
 # ---- palette -------------------------------------------------------------
-PRISMIUM_ACCENT = "#C97BFF"
+PRISMIUM_ACCENT = "#FF7CFC"
 PRISMIUM_ACCENT_HILITE = "#EAC8FF"
 
 # Steel rim: identical to the tool set / grappling hook's neutral steel,

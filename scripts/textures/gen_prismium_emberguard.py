@@ -49,9 +49,9 @@ FLAME_HILITE = "#FFD966"
 # Prismium crystal accent, reused verbatim from gen_prismium.py /
 # gen_prismium_featherstone.py so this item still reads as part of the
 # Prismium family at a glance despite the warm/cool palette swap.
-GEM_RING = "#1E7A78"
-GEM_CORE = "#3FBDB8"
-GEM_GLINT = "#B9FFF3"
+GEM_RING = "#008282"
+GEM_CORE = "#11BBB8"
+GEM_GLINT = "#CAFDF9"
 
 
 def hexrgb(h):

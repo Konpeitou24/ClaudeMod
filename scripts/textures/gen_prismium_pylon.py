@@ -50,8 +50,8 @@ SIZE = 16
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
-PRISMIUM_OUTLINE = "#0B3D3C"
-PRISMIUM_ACCENT = "#C97BFF"
+PRISMIUM_OUTLINE = "#024D4B"
+PRISMIUM_ACCENT = "#FF7CFC"
 CYAN_ACCENT = "#39E6D6"
 
 # Same casing palette as Cell/Generator/Cable (sessions 8-10) - reused on
@@ -67,7 +67,7 @@ CRYSTAL_OFF_EDGE = "#2B5C5A"
 
 # Crystal spike, active (lit=true): violet core fading to cyan edge.
 CRYSTAL_LIT_CORE = "#F2E3FF"
-CRYSTAL_LIT_MID = "#C97BFF"
+CRYSTAL_LIT_MID = "#FF7CFC"
 CRYSTAL_LIT_EDGE = "#39E6D6"
 
 

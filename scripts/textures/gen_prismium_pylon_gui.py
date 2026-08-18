@@ -36,7 +36,7 @@ CANVAS_SIZE = 256
 PANEL_W = 176
 PANEL_H = 90
 
-# Violet-tinted outline derived from Pylon's own PRISMIUM_ACCENT (#C97BFF,
+# Violet-tinted outline derived from Pylon's own PRISMIUM_ACCENT (#FF7CFC,
 # see gen_prismium_pylon.py), darkened toward the mod's usual near-black
 # outline value so it still reads as a frame, not a glow, at rest.
 PYLON_OUTLINE = "#3A1F52"

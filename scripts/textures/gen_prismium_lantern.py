@@ -25,13 +25,13 @@ SIZE = 16
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
-PRISMIUM_OUTLINE = "#0B3D3C"
-PRISMIUM_SHADOW = "#1E7A78"
-PRISMIUM_BASE = "#3FBDB8"
-PRISMIUM_MID = "#66D9D2"
-PRISMIUM_HILITE = "#B9FFF3"
+PRISMIUM_OUTLINE = "#024D4B"
+PRISMIUM_SHADOW = "#008282"
+PRISMIUM_BASE = "#11BBB8"
+PRISMIUM_MID = "#65F5E3"
+PRISMIUM_HILITE = "#CAFDF9"
 PRISMIUM_CORE_WHITE = "#EFFFFC"
-PRISMIUM_ACCENT = "#C97BFF"
+PRISMIUM_ACCENT = "#FF7CFC"
 
 # Dark cage frame color: distinct from PRISMIUM_OUTLINE (which is a very
 # dark teal used as a thin silhouette border on every texture in the

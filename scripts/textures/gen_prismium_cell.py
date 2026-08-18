@@ -37,12 +37,12 @@ SIZE = 16
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
-PRISMIUM_OUTLINE = "#0B3D3C"
-PRISMIUM_BASE = "#3FBDB8"
-PRISMIUM_MID = "#66D9D2"
-PRISMIUM_HILITE = "#B9FFF3"
+PRISMIUM_OUTLINE = "#024D4B"
+PRISMIUM_BASE = "#11BBB8"
+PRISMIUM_MID = "#65F5E3"
+PRISMIUM_HILITE = "#CAFDF9"
 PRISMIUM_CORE_WHITE = "#EFFFFC"
-PRISMIUM_ACCENT = "#C97BFF"
+PRISMIUM_ACCENT = "#FF7CFC"
 
 # Deliberately NOT the lantern's near-black CAGE_DARK/CAGE_MID (see module
 # docstring for why the first draft using those failed self-review): a

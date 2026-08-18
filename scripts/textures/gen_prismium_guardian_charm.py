@@ -44,9 +44,9 @@ GOLD_HILITE = "#F5D97A"
 # Violet gem: the mod's existing energy-accent color, reused verbatim
 # from gen_prismium_grappling_hook.py / gen_prismium_rift_shard.py so
 # this item still reads as part of the Prismium family at a glance.
-PRISMIUM_ACCENT = "#C97BFF"
+PRISMIUM_ACCENT = "#FF7CFC"
 PRISMIUM_ACCENT_HILITE = "#EAC8FF"
-PRISMIUM_ACCENT_DARK = "#7A3FA6"
+PRISMIUM_ACCENT_DARK = "#720070"
 
 
 def hexrgb(h):

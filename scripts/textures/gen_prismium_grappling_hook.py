@@ -30,7 +30,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
 # ---- palette -------------------------------------------------------------
-PRISMIUM_ACCENT = "#C97BFF"
+PRISMIUM_ACCENT = "#FF7CFC"
 PRISMIUM_ACCENT_HILITE = "#EAC8FF"
 
 # Steel hook: neutral grey, matches the tool set's sword-hilt palette
