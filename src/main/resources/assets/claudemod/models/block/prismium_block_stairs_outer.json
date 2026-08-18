@@ -1,0 +1,8 @@
+{
+    "parent": "minecraft:block/outer_stairs",
+    "textures": {
+        "bottom": "claudemod:block/prismium_block",
+        "top": "claudemod:block/prismium_block",
+        "side": "claudemod:block/prismium_block"
+    }
+}

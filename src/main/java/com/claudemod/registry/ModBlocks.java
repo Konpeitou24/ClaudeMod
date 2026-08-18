@@ -11,6 +11,7 @@ import com.claudemod.block.PrismiumSpikeBlock;
 import com.claudemod.block.PrismiumWardstoneBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
@@ -262,6 +263,31 @@ public class ModBlocks {
     // models/block/prismium_block_wall_*.json).
     public static final RegistryObject<Block> PRISMIUM_BLOCK_WALL = BLOCKS.register("prismium_block_wall",
             () -> new WallBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    // Prismium Block Stairs (session 35): completes the basic building
+    // trio started with the slab/wall in session 34 (§3AG-2 of
+    // PROGRESS.md deliberately postponed this one - the 40-entry
+    // facing/half/shape blockstate with its per-variant x/y rotations
+    // was too easy to get subtly wrong from memory, and a wrong rotation
+    // wouldn't fail the build, just look broken in-game with no way for
+    // this sandbox to notice). This session sourced the exact vanilla
+    // oak_stairs.json blockstate from two independently-fetched mirrors
+    // of InventivetalentDev/minecraft-assets - github.com/edayot/
+    // model_resolver's bundled datapack-tool fixture (oak_stairs.json),
+    // and mcasset.cloud's acacia_stairs.json for 1.20.1-rc1 - which
+    // matched exactly (same 40 rotation/uvlock values) before
+    // transcribing prismium_block_stairs.json; see PROGRESS.md session
+    // 35 for both URLs. Plain vanilla StairBlock, same low-risk
+    // rationale as the slab/wall: no custom subclass, no event
+    // listeners. Reuses Prismium Block's texture like the other two
+    // building-variety blocks.
+    public static final RegistryObject<Block> PRISMIUM_BLOCK_STAIRS = BLOCKS.register("prismium_block_stairs",
+            () -> new StairBlock(() -> PRISMIUM_BLOCK.get().defaultBlockState(),
+                    BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_CYAN)
                     .requiresCorrectToolForDrops()
                     .strength(5.0f, 6.0f)
