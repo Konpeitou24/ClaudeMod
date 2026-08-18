@@ -7,6 +7,7 @@ import com.claudemod.block.PrismLilyBlock;
 import com.claudemod.block.PrismiumBloomBlock;
 import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
+import com.claudemod.block.PrismiumChronoflameBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
 import com.claudemod.block.PrismiumPylonBlock;
 import com.claudemod.block.PrismiumRestorerBlock;
@@ -452,6 +453,28 @@ public class ModBlocks {
                     .mapColor(MapColor.COLOR_PURPLE)
                     .strength(0.5f)
                     .sound(SoundType.GRAVEL)));
+
+    // Prismium Chronoflame (scheduled session #49): PROGRESS.md section 5
+    // item 12(a)(ii), a "campfire-like block that can freely change the
+    // time, but doesn't drop an item when broken" per the repo owner's
+    // request. See PrismiumChronoflameBlock's class doc for the
+    // interaction/API details. noLootTable() is the literal mechanism
+    // for "doesn't drop an item when broken" (confirmed a genuine no-arg
+    // BlockBehaviour.Properties method via WebSearch this session, see
+    // class doc) - deliberately no loot_tables/blocks JSON exists for
+    // this block at all. Stats loosely modelled on PRISMIUM_LANTERN
+    // (also always-lit, similar strength) since both are "small lit
+    // fixture" blocks, with slightly higher blast resistance since this
+    // one is meant to read as a more deliberate, semi-permanent shrine
+    // piece rather than a portable light source - an arbitrary judgment
+    // call, unplaytested (see PROGRESS.md).
+    public static final RegistryObject<Block> PRISMIUM_CHRONOFLAME = BLOCKS.register("prismium_chronoflame",
+            () -> new PrismiumChronoflameBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(3.5f, 9.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 14)
+                    .noLootTable()));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

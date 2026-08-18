@@ -74,6 +74,8 @@
     "block.claudemod.prismium_wardstone.usage": "FEを消費して、周囲の敵Mobを弱体化させる。",
     "message.claudemod.prismium_wardstone.charged": "プリズミウム結界石を充電した: %1$s / %2$s FE",
     "message.claudemod.prismium_wardstone.full": "プリズミウム結界石は満タンです",
+    "message.claudemod.prismium_chronoflame.advance": "時刻を6時間進めた",
+    "message.claudemod.prismium_chronoflame.rewind": "時刻を6時間戻した",
     "gui.claudemod.fe_amount": "%1$s / %2$s FE",
     "gui.claudemod.burn_seconds": "燃料: %1$s秒",
     "gui.claudemod.pylon_status_active": "放射中",
@@ -94,5 +96,7 @@
     "item.claudemod.prismium_deep_wraith_spawn_egg": "プリズミウム・ディープレイスのスポーンエッグ",
     "block.claudemod.prismium_stone": "プリズミウムストーン",
     "item.claudemod.prismium_rift_anchor": "プリズミウム・リフトアンカー",
-    "item.claudemod.prismium_rift_anchor.usage": "右クリックで現在地(どの次元でも可)にリスポーン地点を設定します。使用すると消費されます。プリズミウム・リフトシャード+エンダーアイ+プリズミウムの欠片2個で作成。"
+    "item.claudemod.prismium_rift_anchor.usage": "右クリックで現在地(どの次元でも可)にリスポーン地点を設定します。使用すると消費されます。プリズミウム・リフトシャード+エンダーアイ+プリズミウムの欠片2個で作成。",
+    "block.claudemod.prismium_chronoflame": "プリズミウム・クロノフレイム",
+    "block.claudemod.prismium_chronoflame.usage": "右クリックで現在の次元の時刻を6時間進めます。しゃがみ+右クリックで6時間戻します。破壊してもアイテムはドロップしません。時計+グロウストーンダスト2個+プリズミウムの欠片4個で作成。"
 }

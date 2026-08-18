@@ -11,6 +11,7 @@ import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumBowItem;
+import com.claudemod.item.PrismiumChronoflameBlockItem;
 import com.claudemod.item.PrismiumEmberguardItem;
 import com.claudemod.item.PrismiumFeatherstoneItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
@@ -308,6 +309,13 @@ public class ModItems {
     // the reusable Rift Shard.
     public static final RegistryObject<Item> PRISMIUM_RIFT_ANCHOR = ITEMS.register("prismium_rift_anchor",
             () -> new PrismiumRiftAnchorItem(new Item.Properties()));
+
+    // Prismium Chronoflame (scheduled session #49): BlockItem for
+    // ModBlocks.PRISMIUM_CHRONOFLAME, using the custom
+    // PrismiumChronoflameBlockItem subclass purely to add the "no drop on
+    // break" usage tooltip - see that class's doc.
+    public static final RegistryObject<Item> PRISMIUM_CHRONOFLAME_ITEM = ITEMS.register("prismium_chronoflame",
+            () -> new PrismiumChronoflameBlockItem(ModBlocks.PRISMIUM_CHRONOFLAME.get(), new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

@@ -74,6 +74,8 @@
     "block.claudemod.prismium_wardstone.usage": "Consumes FE to weaken nearby hostile mobs.",
     "message.claudemod.prismium_wardstone.charged": "Charged Prismium Wardstone: %1$s / %2$s FE",
     "message.claudemod.prismium_wardstone.full": "Prismium Wardstone is already full",
+    "message.claudemod.prismium_chronoflame.advance": "Time advanced by 6 hours",
+    "message.claudemod.prismium_chronoflame.rewind": "Time rewound by 6 hours",
     "gui.claudemod.fe_amount": "%1$s / %2$s FE",
     "gui.claudemod.burn_seconds": "Fuel: %1$ss",
     "gui.claudemod.pylon_status_active": "Radiating",
@@ -94,5 +96,7 @@
     "item.claudemod.prismium_deep_wraith_spawn_egg": "Prismium Deep Wraith Spawn Egg",
     "block.claudemod.prismium_stone": "Prismium Stone",
     "item.claudemod.prismium_rift_anchor": "Prismium Rift Anchor",
-    "item.claudemod.prismium_rift_anchor.usage": "Right-click to set your respawn point at your current location, in any dimension. Consumed on use. Crafted from a Prismium Rift Shard + an Eye of Ender + 2 Prismium Shards."
+    "item.claudemod.prismium_rift_anchor.usage": "Right-click to set your respawn point at your current location, in any dimension. Consumed on use. Crafted from a Prismium Rift Shard + an Eye of Ender + 2 Prismium Shards.",
+    "block.claudemod.prismium_chronoflame": "Prismium Chronoflame",
+    "block.claudemod.prismium_chronoflame.usage": "Right-click to advance the current dimension's time by 6 hours; sneak + right-click to rewind it by 6 hours. Does not drop itself when broken. Crafted from a Clock + 2 Glowstone Dust + 4 Prismium Shards."
 }

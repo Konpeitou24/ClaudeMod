@@ -1,0 +1,17 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "minecraft:clock" },
+        { "item": "minecraft:glowstone_dust" },
+        { "item": "minecraft:glowstone_dust" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "claudemod:prismium_shard" }
+    ],
+    "result": {
+        "item": "claudemod:prismium_chronoflame",
+        "count": 1
+    }
+}
