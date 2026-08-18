@@ -40,6 +40,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.CHISELED_PRISMIUM_CORE_ITEM.get());
                         output.accept(ModItems.PRISMIUM_BLOOM_ITEM.get());
                         output.accept(ModItems.PRISMIUM_SPIKE_ITEM.get());
+                        output.accept(ModItems.PRISM_LILY_ITEM.get());
                         output.accept(ModItems.PRISMIUM_LANTERN_ITEM.get());
                         output.accept(ModItems.PRISMIUM_CELL_ITEM.get());
                         output.accept(ModItems.PRISMIUM_GENERATOR_ITEM.get());

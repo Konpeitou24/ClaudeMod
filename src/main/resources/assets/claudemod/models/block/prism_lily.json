@@ -1,0 +1,8 @@
+{
+    "render_type": "minecraft:cutout",
+    "parent": "block/cross",
+    "textures": {
+        "cross": "claudemod:block/prism_lily",
+        "particle": "claudemod:block/prism_lily"
+    }
+}

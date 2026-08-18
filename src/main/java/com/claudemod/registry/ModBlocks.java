@@ -1,6 +1,7 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.block.PrismLilyBlock;
 import com.claudemod.block.PrismiumBloomBlock;
 import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
@@ -175,6 +176,27 @@ public class ModBlocks {
                     .instabreak()
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .lightLevel(state -> 7)
+                    .noOcclusion()));
+
+    // Prism Lily (session 40): the mod's third surface decoration and
+    // its first plant exclusive to the Prism Realm dimension (see
+    // PrismLilyBlock for the full design rationale and PROGRESS.md
+    // section 5 item 9). Uses MapColor.COLOR_PURPLE (new map color for
+    // this mod's plant family, distinct from Bloom/Spike's
+    // COLOR_CYAN) to reflect its violet/magenta palette, which is
+    // deliberately different from Bloom/Spike's teal Prismium-crystal
+    // look so it reads as native alien flora rather than a
+    // palette-swapped duplicate. Dimmer light level (3) than Bloom (5)
+    // or Spike (7) - a softer ambient glow rather than another bright
+    // crystal light source, so the Realm doesn't end up with three
+    // near-identical glowing props.
+    public static final RegistryObject<Block> PRISM_LILY = BLOCKS.register("prism_lily",
+            () -> new PrismLilyBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 3)
                     .noOcclusion()));
 
     // Prismium Pylon (session 19): the mod's first FE *consumer*, closing
