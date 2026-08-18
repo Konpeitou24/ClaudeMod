@@ -99,5 +99,6 @@
     "item.claudemod.prismium_rift_anchor": "プリズミウム・リフトアンカー",
     "item.claudemod.prismium_rift_anchor.usage": "右クリックで現在地(どの次元でも可)にリスポーン地点を設定します。使用すると消費されます。プリズミウム・リフトシャード+エンダーアイ+プリズミウムの欠片2個で作成。",
     "block.claudemod.prismium_chronoflame": "プリズミウム・クロノフレイム",
-    "block.claudemod.prismium_chronoflame.usage": "右クリックで現在の次元の時刻を6時間進めます。しゃがみ+右クリックで6時間戻します。破壊してもアイテムはドロップしません。時計+グロウストーンダスト2個+プリズミウムの欠片4個で作成。"
+    "block.claudemod.prismium_chronoflame.usage": "右クリックで現在の次元の時刻を6時間進めます。しゃがみ+右クリックで6時間戻します。破壊してもアイテムはドロップしません。時計+グロウストーンダスト2個+プリズミウムの欠片4個で作成。",
+    "biome.claudemod.prism_realm": "プリズムレルム"
 }

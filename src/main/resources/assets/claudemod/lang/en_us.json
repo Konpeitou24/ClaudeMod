@@ -99,5 +99,6 @@
     "item.claudemod.prismium_rift_anchor": "Prismium Rift Anchor",
     "item.claudemod.prismium_rift_anchor.usage": "Right-click to set your respawn point at your current location, in any dimension. Consumed on use. Crafted from a Prismium Rift Shard + an Eye of Ender + 2 Prismium Shards.",
     "block.claudemod.prismium_chronoflame": "Prismium Chronoflame",
-    "block.claudemod.prismium_chronoflame.usage": "Right-click to advance the current dimension's time by 6 hours; sneak + right-click to rewind it by 6 hours. Does not drop itself when broken. Crafted from a Clock + 2 Glowstone Dust + 4 Prismium Shards."
+    "block.claudemod.prismium_chronoflame.usage": "Right-click to advance the current dimension's time by 6 hours; sneak + right-click to rewind it by 6 hours. Does not drop itself when broken. Crafted from a Clock + 2 Glowstone Dust + 4 Prismium Shards.",
+    "biome.claudemod.prism_realm": "Prism Realm"
 }
