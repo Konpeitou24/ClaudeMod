@@ -261,6 +261,18 @@ public class ModBlocks {
     // Plain vanilla WallBlock, same low-risk rationale as the slab. Also
     // reuses Prismium Block's texture (see
     // models/block/prismium_block_wall_*.json).
+    // BUG FIX (reported by user, addressed same-day as session 35):
+    // placing two of these walls next to each other did not connect -
+    // vanilla WallBlock#connectsTo() only treats a neighbor as
+    // connectable if it's in the `minecraft:walls` block tag (or is a
+    // full solid cube); a wall post's own hitbox isn't a full cube, so
+    // without the tag two walls just sat as isolated posts. Session 34
+    // never created data/minecraft/tags/blocks/walls.json for this mod,
+    // so PRISMIUM_BLOCK_WALL was never added to it. Fixed by adding that
+    // tag file with this block in it - still unverified in an actual
+    // game render (this sandbox can't launch Minecraft), but the root
+    // cause (confirmed by reading vanilla WallBlock's connectsTo logic)
+    // matches the reported symptom exactly.
     public static final RegistryObject<Block> PRISMIUM_BLOCK_WALL = BLOCKS.register("prismium_block_wall",
             () -> new WallBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_CYAN)
