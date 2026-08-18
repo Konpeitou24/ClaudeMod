@@ -1871,72 +1871,143 @@ session 42の申し送り(「`chiseled_prismium_core.png`はパレットのみ�
 
 Issue一覧ページ(`/issues?q=is%3Aissue`)のHTMLから正規表現で`"number"`直後の`"state"`/`"author"`/`"title"`を拾おうとしたところ、**実行のたびに異なる(矛盾する)結果が返ってきた**(例: Issue #5が"CLOSED"と出たり、PROGRESS.mdの既存記録と矛盾するIssue #10の出現など)。恐らく複数のIssueオブジェクトのJSON構造が入れ子・並列になっており、正規表現の「直後を拾う」アプローチでは別のIssueのフィールドを誤って掴むことがあるためと考えられる。**一覧ページからの一括スクレイピングは信頼性が低いことが今回はっきりした**ので、次回以降Issueの状態・投稿者を正確に知りたい場合は、面倒でも個別Issueページ(`/issues/<番号>`)を1件ずつ取得する方式を使うこと(§3AU-4手順1参照、今回はこの方式で#2・#6を確認し、こちらは安定して正しい値が取れた)。
 
+## 3AV. セッション#46(定期実行)で実装した内容: 緊急バグ修正 v0.3.1(Issue #11: 起動不能クラッシュ / Issue #10: Peacefulでレイス persist)+ CIへのデータパック検証・リリース削除リレー新設
+
+### 3AV-0. セッション開始時の状況確認
+
+`~/work`にclone、書き込みテスト実施(前回申し送り通り)。`git log`で直前セッション最終コミットの直後に`ci: update built jar`が付いていることを確認しビルド成功と判断。
+
+**GitHub Issue確認**: 一覧ページのJSONスクレイピングは信頼性が低いと分かっている(§3AU-5)ため、`/issues/<番号>`個別ページを1件ずつ確認する方式(§3AU-4手順)で#10・#11を発見(前回session 45終了時点では#9までしか無かった)。両方とも投稿者は`Konpeitou24`本人(OPEN)。
+
+- **Issue #10**「ピースフルでレイスがスポーンしてしまう」
+- **Issue #11**「起動できません。RereaseVersion 0.3.0」- クラッシュログ添付(`https://github.com/user-attachments/files/...`、`curl -sL`で取得可能と判明、GitHub添付ファイルもgithub.com経由でダウンロードできることが分かった)。本文に「速やかに対応し、リリースを消し、0.3.1を作成してください」という明示的な緊急対応依頼。
+
+両方バグ修正ポリシー(§3AU-4)に照らし、投稿者がオーナー本人なので通常通り対応。**このセッションはほぼ全てをIssue #11の調査・修正に費やした**(#10は片手間で解決)。
+
+### 3AV-1. Issue #11: v0.3.0がシングルプレイ画面を開けずクラッシュする不具合の調査・修正
+
+添付クラッシュログ(`crash-2026-08-18_22.42.09-client.txt`)を解析。`WorldSelectionList`初期化時に`RegistryDataLoader`が`IllegalStateException: Failed to load registries due to above errors`を投げてクラッシュしていたが、クラッシュレポート自体には「above errors」の詳細(実際にどのJSONの何が悪いか)が含まれておらず、ログファイル(`latest.log`)も無いため、この時点では原因不明だった。
+
+**根本的な問題**: `./gradlew build`はコンパイル・パッケージングのみでゲームを一切起動しないため、JSON構文としては正しいがスキーマ的に間違っている(存在しないフィールド構造、型違いなど)データパックファイルがあっても、これまでのCIビルドは全て検知できずグリーンのまま通過していた。これが、v0.3.0のような「ビルドは常に成功と表示されるのに実機では起動すらできない」不具合を生んだ真因。
+
+**恒久対策として、CIにデータパック/レジストリの実検証ステップを新設**(`build-and-notify.yml`に追加、このセッションの主要な構造的改善):
+- `./gradlew runGameTestServer`(ForgeGradleが提供する、ゲームテスト専用のヘッドレスサーバー起動タスク。`runServer`と違い`stop`コマンド入力が不要で、起動・(登録されたゲームテスト実行、現状ゼロ件)・自動終了までを1コマンドで完結できる)を、通常ビルド成功後に実行。これは実際のプレイヤーがシングルプレイ画面を開くのと全く同じレジストリ読み込み経路を通るため、この種の不具合を確実に検知できる。
+- 結果(エラー行の抜粋・ログ末尾500行・ステータス一言)を`builds/last_datapack_validation_*`としてリポジトリにコミット(`ci: update datapack validation results [skip ci]`)。これにより、`api.github.com`のActionsログAPIが到達不可なこのサンドボックスからでも、`git pull`するだけで検証結果を直接読めるようになった。
+- Discord通知にも🟢OK/🟡その他失敗/🔴レジストリ失敗の一言を追加。
+- 現時点では`continue-on-error: true`とし、このステップの失敗でビルド全体を赤くしない(新設したばかりで安定性が未知数なため)。
+
+**1回目の実行**: `downloadAssets`タスクが`minecraft/lang/szl.json`等の取得で`SocketTimeoutException`を繰り返し失敗(Mojangリソースサーバー側の一時的な遅延と推測)。`gradle.properties`に`org.gradle.internal.http.connectionTimeout=180000`/`socketTimeout=180000`を追加して再実行。
+
+**2回目の実行で実際のエラーを捕捉**(`builds/last_datapack_validation_errors.log`、コミット`a72d574`のCI実行):
+```
+[minecraft/RegistryDataLoader]: Registry loading errors:
+> Errors in registry forge:biome_modifier:
+>> Errors in element claudemod:add_prismium_bloom: ... Not a JSON object: ["#minecraft:is_overworld"]
+>> Errors in element claudemod:add_prismium_ore: ... Not a JSON object: ["#minecraft:is_overworld"]
+>> Errors in element claudemod:add_prismium_spike: ... Not a JSON object: ["#minecraft:is_overworld"]
+>> Errors in element claudemod:add_prismium_wraith_spawn: ... Not a JSON object: ["#minecraft:is_overworld","claudemod:prism_realm"]
+> Errors in registry minecraft:worldgen/biome:
+>> Errors in element claudemod:prism_realm: ... Not a JSON object: []
+> (連鎖して) Unbound values in registry ... worldgen/biome: [claudemod:prism_realm]
+```
+
+WebSearchで実例と照合し、2つの独立した原因を特定(いずれも「JSON構文としては正しいがスキーマが間違っている」典型例):
+
+1. **`biomes`フィールドにタグ参照を配列で包んでしまっていた**: `forge:add_features`/`forge:add_spawns`の`biomes`は「単一のバイオームID文字列」「バイオームIDの配列」「`#namespace:tag`という単独の文字列(配列に入れない)」のいずれかを取るが、`["#minecraft:is_overworld"]`のように**タグ文字列を配列の中に入れる書き方は無効**。純粋な直接ID配列(`prism_lily`/`bramble`/`vine`/`soil`や`_realm_boost`系)は問題なく動いていたため、CIログの「失敗した4ファイルだけ`#`付きタグを配列に入れている」という違いと綺麗に一致した。該当4ファイル(`add_prismium_bloom.json`・`add_prismium_ore.json`・`add_prismium_spike.json`・`add_prismium_wraith_spawn.json`)を単独文字列に修正。タグと直接ID(`claudemod:prism_realm`)が混在していた`add_prismium_wraith_spawn.json`はこの書き方では両立できないため、タグ専用ファイル(既存ファイルを流用)と、`claudemod:prism_realm`用の新規ファイル`add_prismium_wraith_spawn_realm.json`の2ファイルに分割。
+2. **`worldgen/biome/prism_realm.json`の`carvers`フィールドが空配列`[]`になっていた**: バニラのbiome JSONスキーマでは`carvers`は(`air`/`liquid`キーを持ちうる)JSONオブジェクトである必要があり、空配列は無効。これによりPrism Realmバイオーム自体の読み込みが丸ごと失敗し、後続の「未解決の参照」エラーまで連鎖していた。`{}`に修正。
+
+**3回目の実行(修正後)で`status=ok`を確認**(コミット`9b1fab2`、CI実行`32146576860`): `Failed to load registries`エラーが完全に消え、ログにはCIサーバー環境特有の無害な警告(`server.properties`が無い、ForgeConfigSpecのデフォルト値補正)しか残っていないことを確認。**推測ではなく実際にCIのヘッドレスサーバーがレジストリ読み込みに成功したことをもって修正確認とした**、このプロジェクト初の「実際にゲームのコードパスを通した検証」。
+
+### 3AV-2. Issue #10: Prismium Wraithがピースフルでも消えずにスポーンし続ける不具合の修正
+
+`PrismiumWraithEntity.java`を確認したところ、session 38が`shouldDespawnInPeaceful()`を`false`にオーバーライドしていた(Issue #5「スポーン直後に消える」への対応として)。これはバニラの標準仕様(ピースフル難易度では敵対Mob用スポーンエッグ/summonで出したモブも即座に消える)を「バグ」と誤診断した修正で、結果として「ワールドをピースフルに切り替えた後もWraithだけ生き残り続ける/ピースフルでエッグから出したWraithが消えずに残る」という実害のある回帰を生み、それが今回Issue #10として報告された。
+
+コード調査のみで原因を特定できた(実機検証不要な、ロジックの読解で完結する不具合)。修正: オーバーライドを削除し、`Monster`基底クラスのデフォルト(`true`)に戻した。自然スポーンは元々`ModEntityEvents`が`Monster::checkMonsterSpawnRules`(ピースフルでの自然スポーンを内部で禁止している)をスポーン配置述語として登録済みだったため影響なし。バニラのゾンビと全く同じ挙動に戻っただけなので、退行のリスクは低いと判断。
+
+### 3AV-3. リリース: v0.3.0を取り下げ、v0.3.1をリリース(Issue #11のユーザー明示依頼への対応)
+
+- `gradle.properties`の`mod_version`を`0.3.0`→`0.3.1`に更新、`RELEASE_NOTES.md`に日本語でv0.3.1セクションを追加(2つの不具合の説明、v0.3.0は取り下げ済みなので必ず更新するよう明記)。
+- **リリース削除の仕組みを新設**(`PENDING_ISSUES.json`と全く同じ「サンドボックス→JSON経由→CI(ネットワーク制限なし)がGitHub API相当の操作を代行」パターン): このサンドボックスは`api.github.com`に到達できずReleases APIを直接叩けないため、`RELEASES_TO_DELETE.json`(新規)にタグ名の配列を書いてpushすると、`build-and-notify.yml`の新ステップが`gh release delete <tag> --yes --cleanup-tag`(Actionsランナーのネットワークとリポジトリスコープの`GITHUB_TOKEN`を使用)で実際に削除し、ファイルを空配列に戻してコミットする。
+- 手順: (1) まず`v0.3.1`関連のコミットを先に`git push origin main`し成功を確認、(2) その後`git tag v0.3.1 && git push origin v0.3.1`(session 45の教訓通り、タグより先にmainのpush成功を確認する順序を徹底)。タグpushで`release.yml`が起動しビルド+GitHub Release公開。同じmainへのpush(バージョンアップ+`RELEASES_TO_DELETE.json`のコミット)で`build-and-notify.yml`も起動し、その中の削除ステップが`v0.3.0`を削除。
+- **結果を実際に確認済み**: `curl -o /dev/null -w '%{http_code}'`で`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.3.0`が`404`(削除成功)、`.../tag/v0.3.1`が`200`(公開成功)、`releases/download/v0.3.1/claudemod-0.3.1.jar`へのHEADリクエストが`302`(添付jar実在、session 45で確立した確認手法を再利用)であることを確認。v0.3.1コミットに対する`runGameTestServer`データパック検証も改めて`status=ok`であることを確認済み(§3AV-1参照)。
+
+### 3AV-4. このセッションで新規に確立した技法・教訓(次回以降のセッション必読)
+
+- **`gradlew build`は無罪放免ではない**: コンパイルが通ってもゲームが実際に起動できるとは限らない。今回のようなデータパック/レジストリのスキーマミスは、CIの通常ビルドでは検知不能で、実機で初めて露見する。今後、biome/biome_modifier/worldgen系のJSONを新規・変更するセッションは、pushして`runGameTestServer`のCI結果(`builds/last_datapack_validation_summary.txt`の`status`)を必ず確認すること。`status=registry_failure`ならエラー詳細は`builds/last_datapack_validation_errors.log`に、`status=other_failure`ならビルド/起動プロセス自体の問題(ネットワーク等)なので`builds/last_datapack_validation_tail.log`を見ること。
+- **`forge:add_features`/`forge:add_spawns`の`biomes`フィールドの正しい書式**(WebSearchで実例確認済み): 単一ID文字列、直接IDのみの配列、または単独の`#namespace:tag`文字列のいずれか。**タグ文字列を配列に入れる、あるいはタグと直接IDを同じ配列に混在させるのは無効**。複数の対象(タグ+個別ID)を同時に指定したい場合はファイルを分けること。
+- **biome JSONの`carvers`フィールドは空でも`{}`(オブジェクト)で書く。`[]`(配列)は無効**、biome全体の読み込みが丸ごと失敗する。
+- **GitHub添付ファイル(`user-attachments/files/...`のクラッシュログ等)は`curl -sL`でダウンロード可能**(`github.com`経由でS3署名付きURLにリダイレクトされる)。Issue調査でユーザーが貼ったクラッシュログ・スクリーンショット等を直接読めることが分かった。
+- **`api.github.com`アクセス不能を前提に、「JSON目印ファイル+CI側での実処理」という中継パターンが2件目になった**(1件目: `PENDING_ISSUES.json`→Discord通知、2件目: `RELEASES_TO_DELETE.json`→リリース削除)。今後も「サンドボックスから直接is APIを叩けないが、ネットワーク制限のないActionsランナーなら可能」な操作(例: Issueのクローズ・コメント投稿等)はこのパターンで実現できる。**次の有力候補は「Issueへの返信・クローズ」**(現状、Issue #5・#10・#11のような対応済みのIssueをクローズする手段がサンドボックスに無く、手動 or ユーザー任せになっている)。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-000. **【最優先・新規・全セッション必読】Issue対応ポリシー(ユーザー明示依頼、対話セッション §3AU参照): Issueに対応するかどうかは投稿者が`Konpeitou24`かどうかで判断する。** `Konpeitou24`以外の投稿は`PENDING_ISSUES.json`に登録した上で保留し(→push時に`.github/workflows/notify-pending-issues.yml`が自動でDiscordへ通知)、実際の対応(機能要望的な実装等)は見送る。**ただし投稿者を問わずバグかどうかは検証してよく、バグと判断できれば吟味の上で直してよい。** クローズ済みIssueは確認不要。手順の詳細は§3AU-4を必ず参照すること。investigate時は個別Issueページ(`/issues/<番号>`)を1件ずつ見ること(一覧ページの一括スクレイピングは信頼性が低いと判明、§3AU-5参照)。現時点(session 45終了時点)では全10件のIssueがKonpeitou24さん本人の投稿であり、保留対象は0件。
+0000. **【最優先・新規・全セッション必読、session 46】今回、CIに2つの新しいJSON中継の仕組みが増えた。存在を忘れないこと。**
+   - `RELEASES_TO_DELETE.json`(タグ名の配列): pushすると`build-and-notify.yml`がそのタグのGitHub Releaseとタグ自体を`gh release delete --cleanup-tag`で削除し、ファイルを空配列に戻す。`PENDING_ISSUES.json`と全く同じ「サンドボックスはAPIを直接叩けないのでJSON経由でCIに代行させる」パターン(§3AV-3参照)。
+   - データパック検証結果: `builds/last_datapack_validation_summary.txt`(`status=ok`/`registry_failure`/`other_failure`の一言)、`builds/last_datapack_validation_errors.log`(エラー行抜粋)、`builds/last_datapack_validation_tail.log`(ログ末尾500行)。**biome/biome_modifier/worldgen系のJSONを新規追加・変更した回は、pushしたら必ずこれをpull/確認すること。`status=registry_failure`または`other_failure`のまま放置しない。** 現状`continue-on-error: true`でビルド全体は失敗にならないため、見落とすと気づかないまま実機だけが壊れたリリースが出る(まさに今回のv0.3.0がそれだった)。
 
-0. **【最優先、継続】リリース運用方針(§3AS-4で明文化)は今回セッション#45で初めて実行に移した。** Prism Realm地形専用化(項目10のa/b/c)が完了した区切りで`v0.3.0`をユーザーに確認を取らず自発的にリリース(§3AT-5参照)。次回以降も、大きな区切り(新ディメンション級の機能、大型システムの完成等)に到達したら同様に自発的リリースを継続すること。**リリース後の実際のjar添付確認は「推測ファイル名へのHEADリクエストで302を確認」という新しい代替手段が使える(§3AT-5)。**
+000. **【最優先・継続・全セッション必読】Issue対応ポリシー(§3AU参照): Issueに対応するかどうかは投稿者が`Konpeitou24`かどうかで判断する。** `Konpeitou24`以外の投稿は`PENDING_ISSUES.json`に登録した上で保留(→Discord通知)。バグかどうかは投稿者を問わず検証してよく、バグと判断できれば直してよい。クローズ済みIssueは確認不要。individual Issueページ(`/issues/<番号>`)を1件ずつ見ること(一覧ページの一括スクレイピングは信頼性が低い、§3AU-5)。session 46終了時点でOpenは #2, #3, #6, #7, #9 の5件(#5・#8は既に対応済みでOpenのまま=ユーザー確認待ちの可能性、要再確認)。**#10・#11はsession 46で修正しv0.3.1をリリース済みだが、Issue自体はまだOpenのまま**(サンドボックスにはIssueをクローズする手段が無いため)。次回、v0.3.1で解決したことをコメントで報告してクローズを促す、あるいは§3AV-4で触れた新しいJSON中継(`ISSUES_TO_CLOSE.json`のようなもの)をCIに追加することを検討する価値がある。
 
-00. **【最優先、継続】ユーザーからの装備/Prism Realm/テクスチャー見た目フィードバックは、session 39・40・42・43・44・対話セッション・session 45で段階的に着手中。**
-   - (a) 【session 39対応】Prismiumアーマーの「のっぺり」感 → ベベル+バンドテクスチャー追加。実機(3人称視点)での見え方は未検証。ユーザーの反応待ち。
-   - (b) 【session 39対応、session 45で完了】Prism Realmがオーバーワールドに似すぎている問題 → 専用バイオーム(色・霧・パーティクル、session 39)に続き、**session 45でPrismium Soil(専用地面ブロック)を追加し、地形専用化が一区切りついた(旧項目10、詳細は下記10参照)**。
-   - (c) 【session 40・43・44で着手、3種で一区切り】専用植物が無い問題 → Prism Lily・Prism Bramble・Prism Vineの3種。
-   - (d) 【session 42・44で対応、対話セッションで完了】Core/Chiseled Core/Chiseled Blockの手描きアート採用は全て完了済み。
+00. **【緊急対応完了、経緯だけ記録】v0.3.0はシングルプレイ画面すら開けない致命的な不具合があり(Issue #11)、session 46で原因特定・修正・v0.3.1リリース・v0.3.0削除まで完了した(§3AV参照)。** 原因は`biomes`フィールドへのタグ配列指定ミスと`carvers`の型ミスという、CIの通常ビルドでは検知できないデータパックのスキーマ誤り。今回新設した`runGameTestServer`による実機相当の検証(§3AV-1参照)で`status=ok`を確認済み。**次回、ユーザーが実際にv0.3.1で問題なく遊べているかの確認(Issue #11への反応)を最優先で見ること。**
 
-1. **【最優先、恒例】まず`git log`/`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** session 45は2コミット(`f7e0b95`: Prismium Soil本体、`60c1f46`: v0.3.0リリース準備)+タグ`v0.3.0`をpushし、それぞれ`ci: update built jar`(`5462e56`)の到着、およびリリースアセットの存在(HEADリクエストで302)を確認済み。**session 45のbiome_modifier/新規Feature変更(claudemod:prismium_soil)もCIビルド(コンパイル)が通ることと実際にゲーム内で正しく機能する(全チャンクの地面が漏れなく置き換わる、植物が正常に生える等)ことは別問題。次回、GitHub Issueに新規のクラッシュ・地面のムラ・データパックエラー報告が無いか特に注意して確認すること。**
+0. **【継続】ユーザーからの装備/Prism Realm/テクスチャー見た目フィードバックは、session 39・40・42・43・44・対話セッション・45で段階的に着手し、Prism Realm地形専用化(色・密度・植生・地面)は完了済み。** 防具のシェーディングは実機(3人称視点)での見え方が未検証のまま。ユーザーの反応待ち。
 
-2. **`api.github.com`はsession 45でも到達不可だった(session 44から継続)。** `https://github.com/<repo>/commits/main.atom`のポーリングで代替(複数回リトライ前提、§項目12参照)。**新規技法(session 45で発見)**: `raw.githubusercontent.com`・`codeload.github.com`もブロックされているが、`github.com`の`/blob/<branch>/<path>`ページはファイル内容全体をJSON(`rawLines`)としてHTMLに埋め込んでいるため、正規表現+JSONパースで任意のGitHubファイルの中身を取得できる(§3AT-1参照)。web_fetchのprovenance制限や生ファイル取得がブロックされた時の新しい回避策として次回以降活用できる。
+1. **【最優先、恒例】まず`git log`/`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** session 46は複数コミット+タグ`v0.3.1`をpushし、`ci: update built jar`到着・`status=ok`(データパック検証)・リリースアセットのHEADリクエストで302・v0.3.0の404(削除確認)まで全て確認済み(§3AV-3参照)。
 
-3. **Issue確認で使っていたコメント数の正確な取得は session 45でも未解決のまま。** Issue一覧ページのHTMLペイロードに`commentCount`/`totalCommentCount`いずれのキーも見当たらなかった。次回、個別Issueページ(`/issues/<number>`)を1件ずつ開いてコメント数を確認する方式を試す価値がある(一覧ページでの一括取得は諦めた方が早いかもしれない)。
+2. **`api.github.com`はsession 46でも到達不可だった(session 44から継続)。** `https://github.com/<repo>/commits/main.atom`のポーリングで代替。`github.com`の`/blob/<branch>/<path>`ページのJSON埋め込み技法(§3AT-1)に加え、**session 46で新たに確認: `github.com/user-attachments/files/<id>/<filename>`形式のIssue添付ファイル(クラッシュログ等)も`curl -sL`で直接ダウンロードできる**(S3署名付きURLへの302リダイレクトを`curl -L`が追う)。ユーザーがIssueに貼ったログ・スクショを直接読めることが分かったので、今後クラッシュ報告系のIssueはまずこれを試すこと。
 
-4. 【継続】session 38で対応したIssue #5・#6・#7・#8・#9はsession 45時点でも全てOPENのまま(新規コメントの有無は上記項目3参照で判定不能)。引き続き優先的に追跡すること。
+3. 【継続】Issueのコメント数の正確な取得は今回も未着手(優先度が下がっている)。
 
-5. 【session 41で初着手、継続注視】Issue #2(ツールの見た目)はsession 41で再設計して以降、追加対応していない。次回以降ユーザーの反応を確認すること。
+4. 【継続】Issue #6・#7・#9は引き続きOpenのまま。#5・#8は対応済みだがOpenのまま(session 38・session??時点の対応がユーザーに確認取れているか不明、次回個別ページで再確認する価値がある)。
 
-6. 【継続、優先度中】Issue #9(プリズミウムディメンションへ行く手段が分かりにくい)の本格的なポータル機構は今回も未着手(ツールチップでの案内のみ、session 38)。
+5. 【継続、優先度中】Issue #2(ツールの見た目)はsession 41で再設計して以降、追加対応していない。
 
-7. 【再確認、要注意】git pushは今回2回(`f7e0b95`、`60c1f46`+タグ)行い、1回目は一発成功、2回目はタグpushの直後に通常pushが1回`fetch first`で拒否された(§3AT-4参照、並行セッションではなく単純なfetch漏れ)。**次回以降、タグをpushする前に必ずmainブランチのpushが成功したことを確認してからタグをpushする順序を徹底すること**(今回はたまたま実害が無かったが、タグが指すコミットがmainに存在しない状態が一瞬発生した)。
+6. 【継続、優先度中】Issue #9(プリズミウムディメンションへ行く手段が分かりにくい)の本格的なポータル機構は未着手(ツールチップ案内のみ)。
 
-8. 【継続、重要】`/tmp`配下は今回も(前回とは別の経緯で)`nobody:nogroup`所有により書き込み不可だった。**session開始直後、cloneした場所で`touch`等の書き込みテストを必ず行うこと(未実施だと、テクスチャー生成スクリプト実行時に初めてエラーで気づき、時間をロスする)。** `~/work`配下への退避で今回も解決した。
+7. 【継続、重要】タグをpushする前に必ずmainブランチのpushが成功したことを確認してからタグをpushする順序を、session 46でも徹底した(問題なし)。
 
-9. 【継続、優先度中】v0.2.0/v0.3.0タグ付きリリースの中身(添付jarのファイル名・サイズ)の詳細確認は今回もアセットの存在確認(HEADリクエスト)にとどまり、実際にダウンロードして展開しての中身検証はしていない。
+8. 【継続、重要】cloneした場所での書き込みテストを毎回行うこと(session 46は`~/work`で問題なし)。
 
-10. **【session 45で完了】Prism Realm用の専用地形(a: 地面ブロック、b: 資源密度、c: 専用植物)が出揃った。**
-    - (a) 【session 45で完了】Prismium Soil(専用地面ブロック)をFeature方式で追加(§3AT-2参照)。noise_settings/surface_ruleによる「本格的な」地面差し替えは高リスクと判断し見送った(§3AT-1参照)。**実機未検証**: チャンク全体を漏れなくカバーできているか、植物との共存に問題が無いか、ユーザーのフィードバック待ち。
-    - (b) 【session 41で対応済み】資源密度アップ。実機で密度差が体感できるかは未検証。
-    - (c) 【session 40・43・44で対応】専用植物3種。
-    - **次の展開候補**: 地形専用化という大きな柱は一区切りついたので、次回以降は他の優先項目(下記11・12)や、ユーザーからの実プレイフィードバック対応に軸足を移すことを検討してよい。
+9. 【継続】リリース(v0.2.0/v0.3.0[削除済み]/v0.3.1)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
 
-11. 【継続】Prismium Block/Core建築バリエーション計8種、5GUI、Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・Prism Realm関連一式(Prism Lily・Bramble・Vine・Soil含む)は、いずれも実プレイでの検証が一切無いまま積み上がっている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+10. 【完了】Prism Realm用の専用地形(a〜c)はsession 45で出揃った。地面ブロック(Prismium Soil)を含め、実機での動作確認はまだ無い。
 
-12. 【継続、次の展開候補、ただし項目0・4を優先すること】
-    - (a) 【session 43で再検討、依然見送り】Prismium Arrow(session 30で見送り)。vanilla `ArrowRenderer`の正確なUV座標が検索でも特定できず見送り継続。
-    - (b) GUIスロット化(`SlotItemHandler`等)、Prismium Cableの接続見た目・送電網ロジックの作り込み。
-    - (c) 【継続、優先度が相対的に上昇】新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。地形専用化が一段落した今、次のコンテンツ拡張の有力候補。
+11. 【継続、最重要度が上昇】Prismium Block/Core建築バリエーション、5GUI、Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・Prism Realm関連一式は、いずれも実プレイでの検証が一切無いまま積み上がっている。**今回、v0.3.0が「実プレイの第一歩(シングルプレイを開く)」すら踏み出せない状態でリリースされていたと判明したことは、この「実プレイ検証ゼロ」の積み重ねが実際にユーザーの手を止めてしまった実例。次回以降、新機能追加のペースを落としてでも、pushのたびに§0000のデータパック検証結果を確認する習慣を必ず徹底すること。**
+
+12. 【継続、次の展開候補、ただし上記緊急項目群を優先】
+    - (a) Prismium Arrow(session 30・43で見送り継続)。
+    - (b) GUIスロット化、Prismium Cableの接続見た目・送電網ロジック。
+    - (c) 【優先度が相対的に上昇、継続】新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。今回はIssue #10・#11対応で時間を使い切ったため未着手のまま持ち越し。次回、緊急案件が無ければ最有力候補。
     - (d) Generatorの発電速度・バッファサイズの見直し。
     - (e) Issue #7が本来求めている本格的なガイド/図鑑システム。
+    - (f) 【session 46で新規発案】IssueクローズのCI中継(`ISSUES_TO_CLOSE.json`のような仕組み、§3AV-4参照)。地味だが、Issue #5・#8・#10・#11のように「対応済みなのにOpenのまま放置」が積み重なっている現状を解消できる。
 
-13. 【継続】WebSearch/`mcp__workspace__web_fetch`が一般サイト(minecraft.wiki、Forge Forums等)に到達できることを確認済み。加えてsession 45で§3AT-1の技法(GitHub Blobページ経由のファイル取得)も確立した。記憶ベースの再現に頼っている実装(vanilla API仕様、worldgenスキーマ、レンダリング関連のUV/座標など)に着手する際は、まずこれらのツールで一次情報源に当たることを検討すること。
+13. 【継続】WebSearch/`mcp__workspace__web_fetch`は一般サイトに到達可能。**session 46で新たに確認**: `forge:add_features`/`forge:add_spawns`の`biomes`フィールド構文、biome JSONの`carvers`フィールド構文は、いずれも記憶に頼らずWebSearchで実例確認してから直したことで、根拠のある修正ができた(§3AV-1参照)。今後もworldgen/レジストリ系のJSONを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
 
 ### 議論したい論点・改善案
 
-- **PrismiumSoilFeature.javaの`context.origin()`がチャンク開始位置そのものである、という前提は未検証(session 45、§3AT参照)**: 1.20.1のNoiseBasedChunkGeneratorのソースを直接確認したわけではなく、一般的な理解に基づく実装。実機で地面のパッチ状のムラが報告されたらこの前提を最初に疑うこと。
-- **noise_settings/surface_ruleによる「本格的な」地面専用化は今後も選択肢として残る(session 45、§3AT-1参照)**: GitHub Blobページ経由のファイル取得技法を使えば1.20.1版の正確なリファレンスをより粘り強く探索できる可能性があるが、Feature方式で見た目の目的はほぼ達成できたため優先度は下がったと考えられる。
-- **Chiseled Blockの意匠論点(session 44で浮上)は対話セッションで解決済み**(§3AS-1参照、ユーザー手描きアート採用)。
-- **細い線状シルエットのテクスチャーにはerosion depthではなく方向性(top-lit)バンディングを使うべき、という教訓(session 44)**: 次回、細い装飾を作る際に再適用すること。
-- **アーマーのバンドテクスチャーが実機でどう見えるか(session 39から継続、未解決)**: ユーザーの反応待ち。
-- **地形専用化という大きな柱が一区切りついたことで、次のMODの方向性をどこに向けるか(session 45で新規に浮上)**: 新MOB追加(項目12-c)か、既存コンテンツの実プレイ検証待ち(項目11)を優先するか、それとも本格的なガイド/図鑑システム(項目12-e、Issue #7)に着手するか。ユーザーの実プレイフィードバックを踏まえて次回以降判断するのが良さそうだが、フィードバックが無い場合は項目12-c(新MOB)が「てんこ盛りコンテンツ」というMODコンセプトに最も素直に合致する選択と思われる。
+- **`runGameTestServer`による検証はまだ2回しか成功実行していない(session 46)**: 継続的に安定して動くか、CI実行時間がどの程度増えるか、次回以降数回見てから`continue-on-error`を外して本当のゲートにするか判断すること。
+- **Issueをクローズする手段がサンドボックスに無い問題(§4項目12-f参照)**: `RELEASES_TO_DELETE.json`と同じパターンで解決できそうだが、今回は緊急対応で手一杯だったため設計のみで実装は次回以降に持ち越し。
+- **PrismiumSoilFeature.javaの`context.origin()`前提は依然未検証(session 45から継続)**。
+- **noise_settings/surface_ruleによる「本格的な」地面専用化は選択肢として残るが優先度は低い(session 45から継続)**。
+- **細い線状シルエットのテクスチャーには方向性(top-lit)バンディングを使うべき、という教訓(session 44)**は次回、細い装飾を作る際に再適用すること。
+- **今回のバグ(Issue #11)から得た最大の教訓**: 「CIが緑=安全」という思い込みが、実は「コンパイルが通る」以上を保証していなかった。今後も、Javaコードのリファクタリングだけでなく、JSON1つの追加・変更であっても、pushしたら必ずデータパック検証結果を見る習慣を持つこと。
 
 ### コミット/プッシュ状況
 
-session 45の変更は2コミット: `f7e0b95`(Prismium Soil本体、§3AT-2参照)、`60c1f46`(v0.3.0リリース準備、§3AT-5参照)+タグ`v0.3.0`。`f7e0b95`はpush前に`git fetch origin main`で並行セッションの有無を確認(無し)、素のまま`git push origin main`で一発成功、`ci: update built jar`(`5462e56`)到着を確認。`60c1f46`+タグは、タグを先にpushしてしまった後に通常pushが1回`fetch first`で拒否され、`git fetch`→`git merge`(jarファイルのみ、コンフリクトなし)→再pushで解消した(§3AT-4参照、次回は「mainを先にpushしてからタグ」の順序を徹底すること)。
+session 46は以下の6コミット+タグ`v0.3.1`をpush:
+1. `33eb163` Wraithがピースフルで消えない不具合修正(Issue #10)
+2. `21c5cd6` CI: データパック検証+リリース削除リレー新設
+3. `a72d574` Gradle HTTPタイムアウト延長(1回目の検証実行がタイムアウトしたため)
+4. `9b1fab2` Issue #11の根本原因修正(biomes配列内タグ+carvers型ミス)
+5. `20425c1` v0.3.1リリース準備(バージョン更新・RELEASE_NOTES・v0.3.0削除キュー)
+6. `git tag v0.3.1`+push(mainのpush成功を確認してから実行、§項目7参照)
 
-GitHub Issue確認は**session 45で簡易実施**(§3AT-3参照): Open #2, #3, #5, #6, #7, #8, #9、CLOSED #1・#4、新規Issue無し。コメント数の正確な判定は今回も持ち越し。
+全てpush前に`git fetch origin main`で並行セッションの有無を確認(全て無し)。データパック検証は計3回実行され、1回目`other_failure`(ネットワークタイムアウト)、2回目`registry_failure`(真のバグを捕捉)、3回目以降(修正後、v0.3.1コミット含め2回)`status=ok`を確認済み。v0.3.0リリースは`gh release delete --cleanup-tag`で削除確認(404)、v0.3.1は公開確認(200、添付jarへのHEADリクエストで302)。
 
-**v0.3.0リリースを作成した**(§3AT-5参照)。次のリリース(v0.4.0相当)は、次の大きな区切り(項目12-cの新MOB完成、または他の大型機能の完了時)に到達したら、ユーザーに聞かずこの手順でリリースを切ること。
+GitHub Issue確認は個別ページ方式で#1〜#11を確認: Open #2, #3, #6, #7, #9, #10(修正済みだがOpenのまま), #11(同上)。CLOSED #1, #4。#5・#8は過去に対応済みのはずだがOpenのまま(要再確認、上記項目4参照)。新規Issueは#10・#11のみ(いずれもKonpeitou24さん本人)、`PENDING_ISSUES.json`への追加は無し(保留対象0件のまま)。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続、未検証のまま)。GitHub Actions側の通知は、今回の2件のpush+タグpushのビルド/リリース成否に応じて(Secretが設定済みであれば)送信されているはず(`ci: update built jar`到着およびリリースアセットのHEADリクエスト302で成功は確認済み)。
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側の通知(ビルド結果・データパック検証結果)は、今回6回のpush(うち1回はタグ)に対応する分がSecret設定済みであれば送信されているはず。RELEASES_TO_DELETE.json経由のリリース削除自体はDiscord通知の対象にしていない(必要なら次回以降検討)。
