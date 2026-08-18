@@ -45,6 +45,29 @@ PROGRESS.md session 9) to confirm the cutout lands exactly where
 intended and doesn't leak into neighboring UV regions; not yet confirmed
 in an actual in-game render, same caveat as the note above.
 
+SESSION 39 UPDATE (user feedback relayed session 37, still outstanding
+as of session 38): the worn armor was reported as looking "flat"
+("のっぺりしている" - lacking shading/depth). The 64x32 layer sheet
+previously filled each box face with a single flat color (only varying
+color *between* faces via PLATE_COLORS/CRYSTAL_FRONT_COLORS), so any one
+face read as a solid block with almost no internal contrast. Two changes
+address this without touching the UV layout (still unverified in-game,
+same caveat as above):
+  - fill_box()'s rect() now applies a 1px lighten on a face's first row
+    and a 1px darken on its last row (a simple top-lit bevel), for every
+    face on every box, so even the plain metal plates (arms, chestplate
+    back, leggings back) pick up a bit of directional shading instead of
+    being perfectly flat.
+  - crystal_front_detail() (used for helmet/chest/legs front faces) now
+    fills the whole front face with alternating 2-row BASE/MID bands
+    (a faceted-crystal look) plus SHADOW/HILITE side edge columns,
+    instead of a flat BASE fill with only a single sparse accent line.
+    The center gem_accent() cross is kept on top as a focal highlight.
+  Self-reviewed via the same upscaled-preview method as session 9
+  (see PROGRESS.md session 39): bevel edges are visible without reading
+  as noise, and the crystal bands read clearly as faceted at both 8x and
+  16x scale. Still not verified as an actual worn 3rd-person render.
+
 Run from repo root: python3 scripts/textures/gen_prismium_armor.py
 """
 from pathlib import Path
@@ -63,9 +86,9 @@ PRISMIUM_HILITE = "#CAFDF9"
 PRISMIUM_ACCENT = "#FF7CFC"
 
 FRAME_OUTLINE = "#1B1B22"
-FRAME_SHADOW = "#33333D"
+FRAME_SHADOW = "#262630"
 FRAME_BASE = "#4A4A57"
-FRAME_HILITE = "#6E6E80"
+FRAME_HILITE = "#82829C"
 
 
 def hexrgb(h):
@@ -84,6 +107,18 @@ F_OUTLINE = hexrgb(FRAME_OUTLINE)
 F_SHADOW = hexrgb(FRAME_SHADOW)
 F_BASE = hexrgb(FRAME_BASE)
 F_HILITE = hexrgb(FRAME_HILITE)
+
+
+def clamp255(v):
+    return max(0, min(255, v))
+
+
+def lighten(color, amt=30):
+    return tuple(clamp255(c + amt) for c in color)
+
+
+def darken(color, amt=30):
+    return tuple(clamp255(c - amt) for c in color)
 
 
 def new_img(w=16, h=16):
@@ -243,11 +278,22 @@ def fill_box(px, ux, uy, w, h, d, colors, front_extra=None):
         front:  (ux+d, uy+d)       size w x h
         left:   (ux+d+w, uy+d)     size d x h
         back:   (ux+d+w+d, uy+d)   size w x h
+
+    SESSION 39: each rect now gets a 1px lighten on its first row and a
+    1px darken on its last row (when tall enough) - a cheap top-lit bevel
+    so flat metal plate faces aren't a single uniform color anymore. See
+    module docstring "SESSION 39 UPDATE" for the motivating feedback.
     """
     def rect(x0, y0, rw, rh, color):
         for yy in range(y0, y0 + rh):
+            if rh >= 3 and yy == y0:
+                row_color = lighten(color)
+            elif rh >= 3 and yy == y0 + rh - 1:
+                row_color = darken(color)
+            else:
+                row_color = color
             for xx in range(x0, x0 + rw):
-                px[xx, yy] = (*color, 255)
+                px[xx, yy] = (*row_color, 255)
 
     rect(ux + d, uy, w, d, colors["top"])
     rect(ux + d + w, uy, w, d, colors["bottom"])
@@ -289,9 +335,19 @@ CRYSTAL_FRONT_COLORS = {
 
 
 def crystal_front_detail(px, x0, y0, w, h):
+    """SESSION 39: replaced the old flat-BASE-fill + single sparse accent
+    line with alternating 2-row BASE/MID bands across the whole front
+    face (a faceted-crystal look) plus SHADOW/HILITE side edge columns
+    for a touch of side-lighting. gem_accent()'s center cross is kept as
+    a focal highlight on top. See module docstring for context."""
     for y in range(y0, y0 + h):
-        if (y - y0) % 3 == 0:
-            px[x0, y] = (*MID, 255)
+        band = ((y - y0) // 2) % 2
+        row_color = MID if band == 0 else BASE
+        for x in range(x0, x0 + w):
+            px[x, y] = (*row_color, 255)
+        px[x0, y] = (*SHADOW, 255)
+        if w > 1:
+            px[x0 + w - 1, y] = (*HILITE, 255)
     gem_accent(px, x0, y0, w, h)
 
 

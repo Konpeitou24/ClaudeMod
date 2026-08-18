@@ -1,0 +1,41 @@
+{
+    "has_precipitation": false,
+    "temperature": 0.5,
+    "downfall": 0.5,
+    "effects": {
+        "sky_color": 2824781,
+        "fog_color": 3810144,
+        "water_color": 1162168,
+        "water_fog_color": 150859,
+        "grass_color": 6682083,
+        "foliage_color": 1162168,
+        "particle": {
+            "probability": 0.006,
+            "options": {
+                "type": "minecraft:portal"
+            }
+        },
+        "mood_sound": {
+            "sound": "minecraft:ambient.cave",
+            "tick_delay": 6000,
+            "block_search_extent": 8,
+            "offset": 2.0
+        }
+    },
+    "carvers": [],
+    "features": [
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        [],
+        []
+    ],
+    "spawners": {},
+    "spawn_costs": {}
+}

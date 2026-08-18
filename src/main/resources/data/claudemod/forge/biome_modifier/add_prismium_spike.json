@@ -1,6 +1,9 @@
 {
     "type": "forge:add_features",
-    "biomes": "#minecraft:is_overworld",
+    "biomes": [
+        "#minecraft:is_overworld",
+        "claudemod:prism_realm"
+    ],
     "features": "claudemod:prismium_spike_placed",
     "step": "vegetal_decoration"
 }
