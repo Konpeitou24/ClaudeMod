@@ -1,6 +1,7 @@
 {
     "replace": false,
     "values": [
-        "claudemod:prismium_block_wall"
+        "claudemod:prismium_block_wall",
+        "claudemod:prismium_core_wall"
     ]
 }
