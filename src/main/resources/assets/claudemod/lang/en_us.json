@@ -77,5 +77,6 @@
     "item.claudemod.prismium_vitastone": "Prismium Vitastone",
     "block.claudemod.prismium_core_slab": "Prismium Core Slab",
     "block.claudemod.prismium_core_wall": "Prismium Core Wall",
-    "block.claudemod.prismium_core_stairs": "Prismium Core Stairs"
+    "block.claudemod.prismium_core_stairs": "Prismium Core Stairs",
+    "block.claudemod.chiseled_prismium_core": "Chiseled Block of Prismium Core"
 }

@@ -88,6 +88,11 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_CORE_STAIRS_ITEM = ITEMS.register("prismium_core_stairs",
             () -> new BlockItem(ModBlocks.PRISMIUM_CORE_STAIRS.get(), new Item.Properties()));
 
+    // Chiseled Prismium Core (session 37): BlockItem for the decorative
+    // masonry variant. See ModBlocks.CHISELED_PRISMIUM_CORE.
+    public static final RegistryObject<Item> CHISELED_PRISMIUM_CORE_ITEM = ITEMS.register("chiseled_prismium_core",
+            () -> new BlockItem(ModBlocks.CHISELED_PRISMIUM_CORE.get(), new Item.Properties()));
+
     // Prismium Lantern (session 4): a cheap, tool-tier-independent light
     // source block for exploration. See ModBlocks for the block stats.
     public static final RegistryObject<Item> PRISMIUM_LANTERN_ITEM = ITEMS.register("prismium_lantern",

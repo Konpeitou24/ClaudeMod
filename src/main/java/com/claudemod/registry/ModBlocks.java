@@ -336,6 +336,22 @@ public class ModBlocks {
                     .strength(8.0f, 20.0f)
                     .sound(SoundType.AMETHYST)));
 
+    // Chiseled Prismium Core (session 37): the decorative-masonry
+    // treatment already given to Prismium Block (session 34,
+    // CHISELED_PRISMIUM_BLOCK above) extended to Prismium Core, so both
+    // resource blocks in the mod now have a detail/panel variant. Same
+    // stats as PRISMIUM_CORE (tool-gated behind the custom Prismium tier,
+    // same hardness/resistance/sound/light) since it's the same material
+    // just cut differently - only the texture differs. See
+    // gen_prismium_chiseled_core.py for the art.
+    public static final RegistryObject<Block> CHISELED_PRISMIUM_CORE = BLOCKS.register("chiseled_prismium_core",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(8.0f, 20.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 10)));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

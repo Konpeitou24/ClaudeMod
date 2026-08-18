@@ -37,6 +37,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_CORE_SLAB_ITEM.get());
                         output.accept(ModItems.PRISMIUM_CORE_WALL_ITEM.get());
                         output.accept(ModItems.PRISMIUM_CORE_STAIRS_ITEM.get());
+                        output.accept(ModItems.CHISELED_PRISMIUM_CORE_ITEM.get());
                         output.accept(ModItems.PRISMIUM_BLOOM_ITEM.get());
                         output.accept(ModItems.PRISMIUM_SPIKE_ITEM.get());
                         output.accept(ModItems.PRISMIUM_LANTERN_ITEM.get());

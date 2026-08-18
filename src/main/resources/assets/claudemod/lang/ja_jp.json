@@ -77,5 +77,6 @@
     "item.claudemod.prismium_vitastone": "プリズミウムの活力石",
     "block.claudemod.prismium_core_slab": "プリズミウムコアのハーフブロック",
     "block.claudemod.prismium_core_wall": "プリズミウムコアの塀",
-    "block.claudemod.prismium_core_stairs": "プリズミウムコアの階段"
+    "block.claudemod.prismium_core_stairs": "プリズミウムコアの階段",
+    "block.claudemod.chiseled_prismium_core": "模様入りプリズミウムコア"
 }
