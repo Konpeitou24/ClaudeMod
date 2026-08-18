@@ -7,6 +7,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: build-and-notify
@@ -62,6 +63,42 @@ jobs:
           git add RELEASES_TO_DELETE.json
           git diff --cached --quiet || git commit -m "ci: clear processed RELEASES_TO_DELETE entries [skip ci]"
           git -c http.extraHeader= push || echo "::warning::Failed to push RELEASES_TO_DELETE.json cleanup"
+
+      - name: Close flagged resolved issues
+        # See ISSUES_TO_CLOSE.json for the format/rationale. Same relay
+        # pattern as "Delete flagged broken releases" above: the sandbox
+        # that runs the scheduled dev-agent sessions cannot reach
+        # api.github.com, so it cannot call the Issues API directly to post
+        # a resolution comment and close an issue. Instead it lists
+        # {number, comment} entries in this file and pushes; this runner
+        # (full network access, GITHUB_TOKEN now scoped with issues: write
+        # above) posts the comment and closes the issue, then empties the
+        # file and commits so each entry only fires once.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -f ISSUES_TO_CLOSE.json ]; then
+            echo "No ISSUES_TO_CLOSE.json present; nothing to do."
+            exit 0
+          fi
+          COUNT=$(jq 'length' ISSUES_TO_CLOSE.json)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "ISSUES_TO_CLOSE.json is empty; nothing to do."
+            exit 0
+          fi
+          jq -c '.[]' ISSUES_TO_CLOSE.json | while read -r ENTRY; do
+            NUM=$(echo "$ENTRY" | jq -r '.number')
+            MSG=$(echo "$ENTRY" | jq -r '.comment')
+            echo "Closing issue #$NUM"
+            gh issue comment "$NUM" --repo "${{ github.repository }}" --body "$MSG" || echo "::warning::Failed to comment on issue #$NUM (it may not exist)"
+            gh issue close "$NUM" --repo "${{ github.repository }}" || echo "::warning::Failed to close issue #$NUM (it may not exist, or was already closed)"
+          done
+          echo "[]" > ISSUES_TO_CLOSE.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add ISSUES_TO_CLOSE.json
+          git diff --cached --quiet || git commit -m "ci: clear processed ISSUES_TO_CLOSE entries [skip ci]"
+          git -c http.extraHeader= push || echo "::warning::Failed to push ISSUES_TO_CLOSE.json cleanup"
 
       - name: Build with Gradle
         id: build
