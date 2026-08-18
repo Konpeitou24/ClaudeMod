@@ -1348,7 +1348,7 @@ GitHub Issue確認(§0-2)は今回も実施できなかった: `api.github.com`�
 
 ### コミット/プッシュ状況
 
-このセッションの変更は2コミット: `20e61d1`(建築バリエーション3種+Featherstoneテクスチャー再検討一式、§3AG-5参照)と、本PROGRESS.md更新コミット(このセクションの直後にpushされる)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、リモート最新は前回セッション終了時点の`138ccc2`のまま)。新規テクスチャー(Chiseled Prismium Block・Featherstone再改修)は`outputs`フォルダ経由で目視レビュー(4x/8x/16x拡大のプレビューシート)を実施した上で採用した(§3AG-3・§3AG-4参照、Featherstoneは2回作り直し、Chiseledは一発採用)。GitHub issueの確認は§3AG-0・§5項目2に記載の通り、今回もAPI/Webアクセスの不調により実施できなかった(「確認したが無かった」ではなく「確認手段自体が機能しなかった」)。
+このセッションの変更は実質3コミット: `20e61d1`(建築バリエーション3種一式、§3AG-5参照)、`9c6dd8b`(本PROGRESS.md更新)、`81fc8d1`(**ミス修正**: `gen_prismium_featherstone.py`と再生成後の`prismium_featherstone.png`を`20e61d1`の`git add`リストに入れ忘れており、push直前の`git rebase origin/main`で「未コミットの変更が残っている」という形で発覚したため、慌てず内容を確認した上で別コミットとして追加した - 中身は§3AG-4で説明・レビュー済みのものと同一で、ステージングミスだけが原因)。他セッションとの並行はpush時に1件検知した: 最初のpushは`ci: update built jar [skip ci]`(`5839cea`)がリモートに先行しており`rejected`となったため、`git rebase origin/main`で取り込んでから再push(`8e6df8d`)して成功した - これはこのMODのGitHub Actionsが自動コミットする定常パターンであり、他セッションとの衝突ではない。新規テクスチャー(Chiseled Prismium Block・Featherstone再改修)は`outputs`フォルダ経由で目視レビュー(4x/8x/16x拡大のプレビューシート)を実施した上で採用した(§3AG-3・§3AG-4参照、Featherstoneは2回作り直し、Chiseledは一発採用)。GitHub issueの確認は§3AG-0・§5項目2に記載の通り、今回もAPI/Webアクセスの不調により実施できなかった(「確認したが無かった」ではなく「確認手段自体が機能しなかった」)。
 
 ### 通知状況
 
