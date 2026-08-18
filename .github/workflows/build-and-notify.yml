@@ -30,6 +30,39 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      - name: Delete flagged broken releases
+        # See RELEASES_TO_DELETE.json for the format/rationale. This is the
+        # sandbox-side dev-agent's way of removing a GitHub Release: the
+        # sandbox that runs the scheduled sessions cannot reach api.github.com
+        # (see PROGRESS.md), so it cannot call the Releases API directly. It
+        # instead lists tag names to delete in this file and pushes; this
+        # runner (which has full network access and a repo-scoped token via
+        # the existing `contents: write` permission above) does the actual
+        # deletion with `gh release delete --cleanup-tag`, then empties the
+        # file and commits so it only fires once per entry.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ ! -f RELEASES_TO_DELETE.json ]; then
+            echo "No RELEASES_TO_DELETE.json present; nothing to do."
+            exit 0
+          fi
+          COUNT=$(jq 'length' RELEASES_TO_DELETE.json)
+          if [ "$COUNT" -eq 0 ]; then
+            echo "RELEASES_TO_DELETE.json is empty; nothing to do."
+            exit 0
+          fi
+          for TAG in $(jq -r '.[]' RELEASES_TO_DELETE.json); do
+            echo "Deleting release+tag: $TAG"
+            gh release delete "$TAG" --yes --cleanup-tag --repo "${{ github.repository }}" || echo "::warning::Failed to delete release $TAG (it may not exist, or was already deleted)"
+          done
+          echo "[]" > RELEASES_TO_DELETE.json
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add RELEASES_TO_DELETE.json
+          git diff --cached --quiet || git commit -m "ci: clear processed RELEASES_TO_DELETE entries [skip ci]"
+          git -c http.extraHeader= push || echo "::warning::Failed to push RELEASES_TO_DELETE.json cleanup"
+
       - name: Build with Gradle
         id: build
         run: ./gradlew build --stacktrace
@@ -62,11 +95,65 @@ jobs:
           git diff --cached --quiet || git commit -m "ci: update built jar [skip ci]"
           git push
 
+      - name: Validate datapack/registries (headless GameTest server smoke test)
+        # gradlew build only *compiles and packages* - it never launches the
+        # game, so a JSON file that is syntactically valid but semantically
+        # wrong (bad registry reference, wrong codec shape, etc.) sails
+        # through every CI run green and only surfaces the first time an
+        # actual player opens Singleplayer, at which point Minecraft loads
+        # *every* datapack registry (biome, dimension, worldgen feature,
+        # biome_modifier, etc.) up front and throws
+        # "Failed to load registries due to above errors" if any one entry
+        # is invalid - this is exactly what happened in GitHub issue #11
+        # (v0.3.0 wouldn't launch into Singleplayer at all). This step closes
+        # that gap: runGameTestServer boots a real headless dedicated server
+        # (same registry-loading code path as a player's Singleplayer world),
+        # runs whatever @GameTest methods exist (none yet), and exits on its
+        # own once done - no manual "stop" command needed, unlike runServer.
+        id: datapack
+        if: steps.build.outcome == 'success'
+        continue-on-error: true
+        run: |
+          mkdir -p run
+          echo "eula=true" > run/eula.txt
+          set +e
+          timeout 900 ./gradlew runGameTestServer --stacktrace --console=plain < /dev/null > server_validation.log 2>&1
+          EXIT_CODE=$?
+          set -e
+          echo "exit_code=$EXIT_CODE"
+          if grep -q "Failed to load registries" server_validation.log; then
+            echo "status=registry_failure" >> "$GITHUB_OUTPUT"
+          elif [ "$EXIT_CODE" -ne 0 ]; then
+            echo "status=other_failure" >> "$GITHUB_OUTPUT"
+          else
+            echo "status=ok" >> "$GITHUB_OUTPUT"
+          fi
+          # Keep a human/agent-readable error digest AND the last part of the
+          # full log, committed back to the repo (next section) so a future
+          # sandbox session - which cannot run this server itself - can read
+          # exactly what went wrong without needing Actions log UI access.
+          grep -inE "ERROR|Exception|Failed to load|Invalid|Unknown registry|error:" server_validation.log | head -n 300 > server_validation_errors.log || true
+          tail -n 500 server_validation.log > server_validation_tail.log || true
+
+      - name: Publish datapack validation results to repo
+        if: steps.build.outcome == 'success' && steps.datapack.outcome != 'skipped'
+        run: |
+          mkdir -p builds
+          cp server_validation_errors.log builds/last_datapack_validation_errors.log 2>/dev/null || echo "(no errors log produced)" > builds/last_datapack_validation_errors.log
+          cp server_validation_tail.log builds/last_datapack_validation_tail.log 2>/dev/null || echo "(no log produced)" > builds/last_datapack_validation_tail.log
+          echo "status=${{ steps.datapack.outputs.status }}  commit=${{ github.sha }}  run=${{ github.run_id }}" > builds/last_datapack_validation_summary.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add builds/last_datapack_validation_errors.log builds/last_datapack_validation_tail.log builds/last_datapack_validation_summary.txt
+          git diff --cached --quiet || git commit -m "ci: update datapack validation results [skip ci]"
+          git push
+
       - name: Notify Discord
         if: always()
         env:
           WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           RESULT_STATUS: ${{ steps.result.outputs.status }}
+          DATAPACK_STATUS: ${{ steps.datapack.outputs.status }}
           BEFORE_SHA: ${{ github.event.before }}
           AFTER_SHA: ${{ github.sha }}
           RUN_URL: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
@@ -116,7 +203,22 @@ jobs:
           CHANGES_BULLETS=$(echo "$CHANGES" | sed 's/^/• /')
           CHANGES_JA_BULLETS=$(echo "$CHANGES_JA" | sed 's/^/• /')
 
-          CONTENT=$(printf '%s  ClaudeMod ビルド結果\n\n変更内容(日本語訳):\n%s\n\n変更内容(原文):\n%s\n\n詳細: %s' "$RESULT_STATUS" "$CHANGES_JA_BULLETS" "$CHANGES_BULLETS" "$RUN_URL" | cut -c1-1900)
+          case "$DATAPACK_STATUS" in
+            registry_failure)
+              DATAPACK_LINE="🔴 データパック検証: レジストリ読み込み失敗(実機で起動不能になる不具合の可能性)。builds/last_datapack_validation_errors.log を確認してください。"
+              ;;
+            other_failure)
+              DATAPACK_LINE="🟡 データパック検証: サーバー起動テストで異常終了(内容確認要)。builds/last_datapack_validation_tail.log を確認してください。"
+              ;;
+            ok)
+              DATAPACK_LINE="🟢 データパック検証: レジストリ読み込みOK"
+              ;;
+            *)
+              DATAPACK_LINE=""
+              ;;
+          esac
+
+          CONTENT=$(printf '%s  ClaudeMod ビルド結果\n%s\n\n変更内容(日本語訳):\n%s\n\n変更内容(原文):\n%s\n\n詳細: %s' "$RESULT_STATUS" "$DATAPACK_LINE" "$CHANGES_JA_BULLETS" "$CHANGES_BULLETS" "$RUN_URL" | cut -c1-1900)
           PAYLOAD=$(jq -n --arg content "$CONTENT" '{content: $content}')
 
           HTTP_CODE=$(curl -s -o /tmp/discord_response.txt -w "%{http_code}" -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK_URL")
