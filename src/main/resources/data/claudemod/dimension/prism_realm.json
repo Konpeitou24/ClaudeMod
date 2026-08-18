@@ -1,11 +1,30 @@
 {
     "type": "claudemod:prism_realm_type",
     "generator": {
-        "type": "minecraft:noise",
-        "settings": "minecraft:overworld",
-        "biome_source": {
-            "type": "minecraft:fixed",
-            "biome": "claudemod:prism_realm"
+        "type": "minecraft:flat",
+        "settings": {
+            "biome": "claudemod:prism_realm",
+            "lakes": false,
+            "features": true,
+            "layers": [
+                {
+                    "block": "minecraft:bedrock",
+                    "height": 1
+                },
+                {
+                    "block": "claudemod:prismium_stone",
+                    "height": 59
+                },
+                {
+                    "block": "claudemod:prismium_soil",
+                    "height": 1
+                },
+                {
+                    "block": "minecraft:water",
+                    "height": 68
+                }
+            ],
+            "structure_overrides": []
         }
     }
 }
