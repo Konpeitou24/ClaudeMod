@@ -59,6 +59,20 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_CORE_ITEM = ITEMS.register("prismium_core",
             () -> new BlockItem(ModBlocks.PRISMIUM_CORE.get(), new Item.Properties()));
 
+    // Chiseled Prismium Block (session 34): BlockItem for the decorative
+    // masonry variant. See ModBlocks.CHISELED_PRISMIUM_BLOCK.
+    public static final RegistryObject<Item> CHISELED_PRISMIUM_BLOCK_ITEM = ITEMS.register("chiseled_prismium_block",
+            () -> new BlockItem(ModBlocks.CHISELED_PRISMIUM_BLOCK.get(), new Item.Properties()));
+
+    // Prismium Block Slab / Wall (session 34): BlockItems for the mod's
+    // first building-variety blocks. See ModBlocks.PRISMIUM_BLOCK_SLAB /
+    // PRISMIUM_BLOCK_WALL.
+    public static final RegistryObject<Item> PRISMIUM_BLOCK_SLAB_ITEM = ITEMS.register("prismium_block_slab",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK_SLAB.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_BLOCK_WALL_ITEM = ITEMS.register("prismium_block_wall",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK_WALL.get(), new Item.Properties()));
+
     // Prismium Lantern (session 4): a cheap, tool-tier-independent light
     // source block for exploration. See ModBlocks for the block stats.
     public static final RegistryObject<Item> PRISMIUM_LANTERN_ITEM = ITEMS.register("prismium_lantern",

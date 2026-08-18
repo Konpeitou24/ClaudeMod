@@ -10,6 +10,8 @@ import com.claudemod.block.PrismiumRestorerBlock;
 import com.claudemod.block.PrismiumSpikeBlock;
 import com.claudemod.block.PrismiumWardstoneBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SlabBlock;
+import net.minecraft.world.level.block.WallBlock;
 import net.minecraft.world.level.block.SoundType;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
@@ -217,6 +219,53 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 10 : 0)));
+
+    // Chiseled Prismium Block (session 34): the mod's first purely
+    // decorative masonry variant - no new mechanics, just a second look
+    // for Prismium Block so builders/explorers have a detail block to
+    // break up flat surfaces, matching vanilla's
+    // stone_bricks/chiseled_stone_bricks pairing. Same stats as
+    // PRISMIUM_BLOCK (tool-gated, same hardness/resistance/sound/light)
+    // since it's the same material, just cut differently - only the
+    // texture differs. See gen_prismium_chiseled_block.py for the art.
+    public static final RegistryObject<Block> CHISELED_PRISMIUM_BLOCK = BLOCKS.register("chiseled_prismium_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 6)));
+
+    // Prismium Block Slab (session 34): the mod's first SlabBlock, giving
+    // builders half-height Prismium Block pieces for stairs/roofing/detail
+    // work - the mod's roadmap has emphasized "exploration should be fun"
+    // since its concept doc, but building variety for what players *do*
+    // with what they find has been untouched since session 1. Plain
+    // vanilla SlabBlock (no custom subclass needed, unlike every
+    // block-entity-bearing block in this file) so bottom/top/double
+    // placement and drop-count-on-break are entirely vanilla behavior -
+    // deliberately the lowest-risk new block type added so far. Reuses
+    // Prismium Block's own texture (see models/block/prismium_block_slab*
+    // .json) rather than a new one, matching vanilla's own
+    // slab-reuses-parent-texture convention (e.g. oak_slab/oak_planks).
+    public static final RegistryObject<Block> PRISMIUM_BLOCK_SLAB = BLOCKS.register("prismium_block_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    // Prismium Block Wall (session 34): the mod's first WallBlock,
+    // pairing with the slab above to round out basic building variety.
+    // Plain vanilla WallBlock, same low-risk rationale as the slab. Also
+    // reuses Prismium Block's texture (see
+    // models/block/prismium_block_wall_*.json).
+    public static final RegistryObject<Block> PRISMIUM_BLOCK_WALL = BLOCKS.register("prismium_block_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

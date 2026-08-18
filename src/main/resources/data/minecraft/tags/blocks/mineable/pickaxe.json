@@ -11,6 +11,9 @@
         "claudemod:prismium_cable",
         "claudemod:prismium_pylon",
         "claudemod:prismium_restorer",
-        "claudemod:prismium_wardstone"
+        "claudemod:prismium_wardstone",
+        "claudemod:chiseled_prismium_block",
+        "claudemod:prismium_block_slab",
+        "claudemod:prismium_block_wall"
     ]
 }

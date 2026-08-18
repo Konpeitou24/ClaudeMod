@@ -1,0 +1,17 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "building",
+    "pattern": [
+        "#",
+        "#"
+    ],
+    "key": {
+        "#": {
+            "item": "claudemod:prismium_block_slab"
+        }
+    },
+    "result": {
+        "item": "claudemod:chiseled_prismium_block",
+        "count": 1
+    }
+}

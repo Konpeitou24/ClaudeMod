@@ -1,0 +1,39 @@
+{
+    "type": "minecraft:block",
+    "pools": [
+        {
+            "rolls": 1.0,
+            "bonus_rolls": 0.0,
+            "entries": [
+                {
+                    "type": "minecraft:alternatives",
+                    "children": [
+                        {
+                            "type": "minecraft:item",
+                            "conditions": [
+                                {
+                                    "condition": "minecraft:block_state_property",
+                                    "block": "claudemod:prismium_block_slab",
+                                    "properties": { "type": "double" }
+                                }
+                            ],
+                            "name": "claudemod:prismium_block_slab",
+                            "functions": [
+                                { "function": "minecraft:set_count", "count": 2.0 }
+                            ]
+                        },
+                        {
+                            "type": "minecraft:item",
+                            "name": "claudemod:prismium_block_slab"
+                        }
+                    ]
+                }
+            ],
+            "conditions": [
+                {
+                    "condition": "minecraft:survives_explosion"
+                }
+            ]
+        }
+    ]
+}
