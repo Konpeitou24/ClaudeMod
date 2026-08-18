@@ -2,6 +2,10 @@ package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModItems;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -88,6 +92,33 @@ public class PrismiumFeatherstoneHandler {
         }
 
         event.setDamageMultiplier(event.getDamageMultiplier() * DAMAGE_MULTIPLIER);
+        playFeedback(player);
+    }
+
+    /**
+     * Session 32 addition: a subtle particle/sound cue at the moment the
+     * reduction actually applies, so the effect isn't purely invisible
+     * arithmetic (see PROGRESS.md session 31 handoff - "no visual
+     * feedback" was flagged as a concern shared by every passive item in
+     * this "just carry it" family). Reuses {@link
+     * PrismiumGuardianCharmHandler}'s established pattern (server-side
+     * {@code ServerLevel#sendParticles}/{@code #playSound} pair, guarded
+     * behind an {@code instanceof ServerLevel} check) rather than
+     * inventing a new one. Amethyst's chime sound was picked over a
+     * generic "poof" because it reads as a soft crystalline cue that
+     * fits Prismium's crystal-shard theme, and {@link
+     * ParticleTypes#CLOUD} because a light puff under the player's feet
+     * reads as "cushioned landing" without implying anything as dramatic
+     * as the Guardian Charm's totem burst.
+     */
+    private static void playFeedback(Player player) {
+        if (player.level() instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(ParticleTypes.CLOUD,
+                    player.getX(), player.getY() + 0.1D, player.getZ(),
+                    8, 0.3D, 0.05D, 0.3D, 0.02D);
+            serverLevel.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
+                    SoundSource.PLAYERS, 0.6F, 1.4F);
+        }
     }
 
     private static boolean hasFeatherstone(Player player) {
