@@ -13,9 +13,9 @@ name: Release
 #   4. Tag the commit and push the tag, e.g.:
 #        git tag v0.2.0
 #        git push origin v0.2.0
-#      This workflow does the rest (build + publish release), independently
-#      of the regular build-and-notify.yml workflow that runs on every push
-#      to main.
+#      This workflow does the rest (build + publish release + Discord
+#      notification), independently of the regular build-and-notify.yml
+#      workflow that runs on every push to main.
 
 on:
   push:
@@ -58,3 +58,30 @@ jobs:
           files: ${{ steps.jar.outputs.path }}
           body_path: RELEASE_NOTES.md
           generate_release_notes: true
+
+      # Simple release announcement: just the version and the Releases page
+      # URL (unlike build-and-notify.yml, this intentionally skips the
+      # translated commit-changelog message — that's already covered by the
+      # per-push build notifications; this one just flags "a release went out").
+      - name: Notify Discord of new release
+        if: always()
+        env:
+          WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          TAG_NAME: ${{ github.ref_name }}
+          RELEASE_URL: https://github.com/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+        run: |
+          if [ -z "$WEBHOOK_URL" ]; then
+            echo "DISCORD_WEBHOOK_URL secret is not set; skipping notification."
+            exit 0
+          fi
+
+          CONTENT=$(printf '🎉 ClaudeMod 新バージョンをリリースしました: %s\n%s' "$TAG_NAME" "$RELEASE_URL")
+          PAYLOAD=$(jq -n --arg content "$CONTENT" '{content: $content}')
+
+          HTTP_CODE=$(curl -s -o /tmp/discord_release_response.txt -w "%{http_code}" -H "Content-Type: application/json" -X POST -d "$PAYLOAD" "$WEBHOOK_URL")
+          echo "Discord response HTTP $HTTP_CODE:"
+          cat /tmp/discord_release_response.txt
+          echo
+          if [ "$HTTP_CODE" -lt 200 ] || [ "$HTTP_CODE" -ge 300 ]; then
+            echo "::warning::Discord release notification failed with HTTP $HTTP_CODE"
+          fi
