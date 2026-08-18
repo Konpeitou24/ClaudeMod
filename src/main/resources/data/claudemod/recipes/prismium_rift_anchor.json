@@ -1,0 +1,14 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "claudemod:prismium_rift_shard" },
+        { "item": "minecraft:ender_eye" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "claudemod:prismium_shard" }
+    ],
+    "result": {
+        "item": "claudemod:prismium_rift_anchor",
+        "count": 1
+    }
+}

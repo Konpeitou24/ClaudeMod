@@ -92,5 +92,7 @@
     "block.claudemod.prismium_soil": "Prismium Soil",
     "entity.claudemod.prismium_deep_wraith": "Prismium Deep Wraith",
     "item.claudemod.prismium_deep_wraith_spawn_egg": "Prismium Deep Wraith Spawn Egg",
-    "block.claudemod.prismium_stone": "Prismium Stone"
+    "block.claudemod.prismium_stone": "Prismium Stone",
+    "item.claudemod.prismium_rift_anchor": "Prismium Rift Anchor",
+    "item.claudemod.prismium_rift_anchor.usage": "Right-click to set your respawn point at your current location, in any dimension. Consumed on use. Crafted from a Prismium Rift Shard + an Eye of Ender + 2 Prismium Shards."
 }

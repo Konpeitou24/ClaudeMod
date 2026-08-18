@@ -16,6 +16,7 @@ import com.claudemod.item.PrismiumFeatherstoneItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumGuardianCharmItem;
 import com.claudemod.item.PrismiumLocatorItem;
+import com.claudemod.item.PrismiumRiftAnchorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
 import com.claudemod.item.PrismiumShieldItem;
 import com.claudemod.item.PrismiumVitastoneItem;
@@ -299,6 +300,14 @@ public class ModItems {
     // Emberguard.
     public static final RegistryObject<Item> PRISMIUM_VITASTONE = ITEMS.register("prismium_vitastone",
             () -> new PrismiumVitastoneItem(new Item.Properties()));
+
+    // Prismium Rift Anchor (session 48): the mod's first Rift Shard-
+    // family derivative item - see PrismiumRiftAnchorItem for the full
+    // design rationale (PROGRESS.md section 5 item 12(a)(i)). Default
+    // stack size (not stacksTo(1)) since it is consumed on use, unlike
+    // the reusable Rift Shard.
+    public static final RegistryObject<Item> PRISMIUM_RIFT_ANCHOR = ITEMS.register("prismium_rift_anchor",
+            () -> new PrismiumRiftAnchorItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
