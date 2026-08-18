@@ -1366,6 +1366,13 @@ GitHub Issue確認(§0-2)は今回も実施できなかった: `api.github.com`�
     - レシピの個数・パターン(スラブ6個・塀6個・階段4個、パターン自体はPrismium Blockと同一)は一次情報源での裏取りをしておらず、既存知識からの再現に留まる(Prismium Block版と同じ割り切り)。
     - 新規テクスチャーは作らずPrismium Core本体のテクスチャーを再利用した(Prismium Block版と同じ判断)。3ブロック中の見分けにくさというトレードオフも同様に残っている。
 
+54. 【セッション#37で新規発覚】Prismium Core Wallが`data/minecraft/tags/blocks/walls.json`に入っていなかった(session 36での単純な入れ忘れ、Prismium Block Wallで session 35に見つかったのと全く同じバグ)。今回`claudemod:prismium_core_wall`を追加して修正したが、他の「新ブロック追加時にタグ登録を一つ忘れる」ミス(§4-16で似た教訓を書いたもの)が他にも潜んでいないか、機会があれば全ブロック・全タグファイルの棚卸しをする価値が改めて増した。Block Wall分の修正(session 35)と合わせて、この種のバグは「同じ場所」で2回連続発生しており、パターン化した見落としの可能性がある。
+55. 【セッション#37で新規発覚】Chiseled Prismium Core(§3AK参照)は以下すべて未検証・既知の割り切り:
+    - Chiseled Prismium Block(session 34)と全く同じ構造的限界: CIビルドが通ること以上の検証(実機での見た目、インベントリ/ホットバーでの視認性)は一度もできていない。ただし素の`Block`クラスをそのまま使い、`requiresCorrectToolForDrops`等の既存パターンをCoreからそのまま引き継いだだけのため、このMOD内の未検証項目群の中では比較的リスクが低い部類だと考えている(建築バリエーション7種と同程度のリスク)。
+    - レシピ(スラブ2個→1個、Chiseled Prismium Blockと同一パターン)は一次情報源での裏取りをしておらず、既存知識(自MOD内の前例)からの再現に留まる。
+    - テクスチャーは自己レビュー(4x/8x/16xプレビュー)で「Chiseled Blockと同じ技法・Coreらしい中心モチーフ」として明瞭に見えたが、実際のインベントリ/ホットバー表示での視認性、および四隅に置いた小さな紫アクセントが4x表示で潰れて見えないかは未確認。
+    - `needs_prismium_tool`カスタムタグには追加しなかった(既存のPrismium Core本体もこのタグに入っているが、スラブ/塀/階段の3variantは入っていない前例に倣った、§3AK-0の調査で確認済み・意図的な踏襲であってバグではない)。`needs_diamond_tool`+`incorrect_for_diamond_tool`の組み合わせにより、実質的にPrismiumツール以外では正しくドロップしないはずだが、この仕組み自体(diamond超えの階層を示すvanillaの「除外」トリックがカスタムツール階層と本当に噛み合っているか)はCore本体以外では一度もゲーム内検証されていない(既存のCore系variant未検証項目と同じ限界)。
+
 ## 3AI. セッション#36で実装した内容: GitHub Issue #3・#4対応(README・リリース自動化) + Prismium Core建築バリエーション
 
 セッション開始時、`git fetch origin main`でセッション#35最終コミット(`cca8f51`)直後に`ci: update built jar`(`d03de50`)が付いていることを確認し、前回ビルドは成功と判断した(修正対応は不要)。続けて§0-2の運用ルールに従い、セッション#35で復旧した`embeddedData`JSON抽出手法でOpen Issue一覧を確認したところ、**新規のOpen Issueが2件見つかった**: issue #3「リリースについて」(ソースだけでは全容が分からないので、機能ごとにセマンティックバージョンでリリースを出してほしい)、issue #4「GitのReadmeが浅い」(READMEがほぼ空白なので、プロダクト概要やMODの説明を載せてほしい)。issue #1(顔が見えない)・issue #2(ツールの見た目について)は引き続きOpenのままだが、いずれもPROGRESS.mdの記録上は過去セッション(#9・#13)で対応済みと確認できたため、今回は追加対応しなかった。
@@ -1411,13 +1418,48 @@ GitHub Issue確認(§0-2)は今回も実施できなかった: `api.github.com`�
 - **未検証(継続)**: 実際にゲーム内で三人称/一人称表示が意図通りになったかは、このサンドボックスでは検証できていない。前回の「垂直デザイン」も同様に未検証のままリリースされ、実際にユーザーがプレイして初めて問題が発覚した経緯があるため、**この修正についても次回ユーザーからのフィードバックを待つ必要がある**。もし引き続き変に見える場合、次に疑うべき箇所は(a)モデルJSON自体(`prismium_bow.json`、今回は触っていない)、(b)`item/handheld`ではなく`item/generated`を継承している点(バニラの弓自体もgeneratedなので通常は問題にならないはずだが要再確認)、(c)対角線の向き自体(左下→右上ではなく逆向きの方が自然に見える可能性)。
 - コミット`4eb9a96`をpushして`ci: update built jar`(`80c4aa4`)でビルド成功を確認済み。push直前に`git fetch`したところ、並行して定期セッションが1件走っており(`011bd96` Prismium Block Wallの自己接続タグ漏れ修正)、rebaseしてから重ねてpushした。
 
+## 3AK. セッション#37で実装した内容: Prismium Core Wall接続バグ修正 + Chiseled Prismium Core(6種目の建築バリエーション/装飾ブロック)
+
+### 3AK-0. セッション開始時の状況確認
+- `git clone`後、`PROGRESS.md`の§4(既知の不具合)・§5(申し送り)・直近の§3AI/§3AJを読了。`git log`/`commits/main.atom`で直前セッション最終コミット`b0ed2be`(PROGRESS.md更新)の直後に`ci: update built jar`(`06141a0`)が付いていることを確認し、対話セッションでのPrismium Bow修正(§3AJ)も含めて前回ビルドは成功と判断(修正対応は不要)。
+- `api.github.com`は今回もこのサンドボックスの`bash`経由のcurlからは直接到達不可(`blocked-by-allowlist`)だったが、`mcp__workspace__web_fetch`ツール経由では到達でき、`total_count: 3`・最新Runが`conclusion: success`という応答が返った。ただしこのRun情報は明らかに古い内容(session #28前後に相当するコミットメッセージ)で、§4-14・§3V末尾で既に指摘されている「Actions API/runsページのキャッシュ問題」が今回も再現していると判断し、実際の確認は`git fetch`ポーリングによる`ci: update built jar`到着確認(§4-14で推奨された手法)を主に使った。
+- GitHub Issue確認(§0-2の`embeddedData`JSON抽出手法): 今回はIssue一覧ページのHTML内に`"embeddedData":{...},"appPayload"`という正規表現がヒットしなかった(GitHubのフロントエンド実装が変わった可能性がある)。代わりに`grep -o 'issues/[0-9]*'`でIssue番号一覧(#1〜#4のみ、#5は404)を取得し、各Issueページ個別に`"state":"OPEN"`・`"createdAt"`をgrepする簡易手法に切り替えて確認した。Issue #1〜#4はすべて`OPEN`のままだが、`createdAt`がそれぞれ1件ずつ(=本文のみ、追加コメント無し)であることを確認し、**新規Issue・新規コメントともに無い**と判断した。この`embeddedData`抽出手法が使えなくなった件は次回への申し送りに記載する。
+- `v0.1.0`リリースページ(`/releases/tag/v0.1.0`)をキャッシュバスティング無しでcurl取得し、HTTP 200・`<title>Release ClaudeMod v0.1.0 · Konpeitou24/ClaudeMod · GitHub</title>`を確認した。ただし前回セッション同様、Reactクライアントサイドレンダリングのため添付jarのファイル名・サイズまでは静的HTMLから確認できなかった(§3AI-4と同じ限界、未解決のまま)。
+- **セッション終盤、PROGRESS.md更新をpushしようとした際に、この定期セッションと並行して別の対話セッションが走っており、ユーザーから新規フィードバック(装備の見た目がのっぺりしている、Prism Realmがオーバーワールドに似すぎている)がPROGRESS.mdに追記済み(コミット`3cba26d`)であることが判明した。** 詳細は現在の§5項目0-2を参照。今回のセッションはこのフィードバックへの対応には未着手(§3AK-4で述べる通りpush直前に検知したため)だが、次回セッションで最優先級で扱うべき内容として§5に維持した。
+
+### 3AK-1. バグ修正: Prismium Core Wallの自己接続不具合(§4-16の教訓が的中)
+- 新しいブロックを追加する前に、Chiseled Prismium Blockの実装一式(blockstate/model/loot table/recipe/tag登録)を横展開のテンプレートとして読み返していたところ、`data/minecraft/tags/blocks/walls.json`に`claudemod:prismium_block_wall`だけが入っており、session 36で追加された`claudemod:prismium_core_wall`が入っていないことに気付いた。これはsession 35で実際にユーザーから報告され修正された「WallBlock#connectsTo()はminecraft:wallsタグに入っていない隣接ブロックを繋がない」というのと全く同じバグクラスで、Core Wall側では未修正のまま残っていた。
+- `walls.json`に`claudemod:prismium_core_wall`を追加して修正(コミット`5507f17`)。§4-16で「新ブロック追加時のタグ登録漏れがないか棚卸しする価値がある」と書かれていた懸念が、まさにこの形で的中した。
+
+### 3AK-2. 実装: Chiseled Prismium Core(6種目の建築バリエーション/装飾ブロック)
+- 申し送り(§5旧項目9-d、「Prismium Coreの模様入りブロックは常時発光ブロックにどうデザインすべきか要検討」)への回答として、Chiseled Prismium Block(session 34)の構造をそのまま踏襲しつつ、中心モチーフだけをPrismium Core自身の「凝縮された光源」というアイデンティティに合わせて差別化する方針を採った(詳細は§3AK-3参照)。
+- `ModBlocks.java`: `CHISELED_PRISMIUM_CORE`を`CHISELED_PRISMIUM_BLOCK`と全く同じ骨格(素の`Block`クラス、カスタムサブクラス無し)で登録。ただしプロパティはPrismium Core本体(`requiresCorrectToolForDrops()`、`strength(8.0f, 20.0f)`、`lightLevel(state -> 10)`)を引き継ぎ、Chiseled Prismium Block(`strength(5.0f, 6.0f)`、light 6)とは明確に区別した。
+- `ModItems.java`/`ModCreativeTabs.java`にBlockItem登録・クリエイティブタブ表示を追加。
+- blockstate/model(block・item)は`chiseled_prismium_block`の構造をそのまま`chiseled_prismium_core`に置き換えて作成(`cube_all`親、1テクスチャー)。
+- loot table・recipe(スラブ2個→1個、`prismium_core_slab`が材料)も同様にChiseled Blockのパターンをそのまま踏襲。
+- タグ: `mineable/pickaxe`・`needs_diamond_tool`・`incorrect_for_diamond_tool`にそれぞれ追加し、Core本体・Core建築バリエーション3種と同じ収穫階層(ダイヤモンドツルハシで壊せるがドロップせず、Prismiumツールのみ正しくドロップ)を踏襲した。`needs_prismium_tool`カスタムタグには(Core本体以外のvariant同様)追加していない - これは§4-55に「意図的な踏襲であってバグではない」と明記した。
+- lang(en_us/ja_jp)に`block.claudemod.chiseled_prismium_core`を追加。
+- **未検証事項は§4-55にまとめた。**
+
+### 3AK-3. テクスチャー: Chiseled Prismium Coreのブロックテクスチャー(`scripts/textures/gen_prismium_chiseled_core.py`)
+- Chiseled Prismium Block(session 34、`gen_prismium_chiseled_block.py`)の「1px縁取り+3px内側に第二の縁取り(陰影)+その間のベベル帯」という額縁構造をそのまま再利用し、2つのChiseled系ブロックが「同じ石工技法」で作られていると分かるようにした。
+- 中心モチーフはChiseled Blockの平坦な紫ダイヤモンド・ルーンではなく、`gen_prismium_core.py`のPrismium Core本体テクスチャーで使われている「放射状コアクラスター」(hilite色の十字クラスター+中心4pxのcore-white)の座標をそのまま再利用した。これによりChiseled CoreがCore本体のlightLevel(10)・「凝縮された発光体」というアイデンティティを引き継いでいることが一目で分かるようにし、Chiseled Blockのルーンをそのまま複製するのではなく素材ごとに異なる意味を持つモチーフにした。
+- 四隅のベベル帯内側に紫のアクセントスタッド2点を追加(Coreのエネルギーフレック色を少量だけ残し、中心モチーフと競合しない程度に抑えた)。
+- 生成後、`build/preview_chiseled_prismium_core.png`(4x/8x/16xチェッカーボードプレビュー)を`outputs`マウント側にコピーしてから`Read`ツールで目視確認した(リポジトリのパスを直接`Read`しようとすると失敗するため、session 34以降の確立済み手順を踏襲)。額縁のシルエットが明瞭で、中心の明るいコアクラスターが4x表示でも視認できること、四隅のアクセントスタッドが中心モチーフを邪魔しないことを確認し、作り直しは不要と判断した。全ピクセルのアルファ値が255のみであることをコードで確認済み(透過崩れ無し)。
+
+### 3AK-4. commit・push・ビルド確認
+- 変更は2コミット: `5507f17`(Prismium Core Wall接続バグ修正)、`1aa3f76`(Chiseled Prismium Core追加)。
+- push前に`git fetch origin main`したところ、直前セッション(§3AJ)以降に新規のpush(`06141a0`、`ci: update built jar`のみ)があったため`git rebase origin/main`で追従してから`git push origin main`した。プロキシ変数は今回も一切いじらず、素のままで一発成功(§2-3の方針を継続、これでsession 34以降5セッション連続成功)。
+- push後、`git fetch`のポーリングで`ci: update built jar`(`06e4c8f`)の到着を確認し、両コミットとも通常ビルドが成功したことを実証した。
+- **この直後、本PROGRESS.md更新をpushしようとしたところ`non-fast-forward`で拒否され、`git fetch`で並行対話セッションのコミット`3cba26d`(装備/Prism Realmに関するユーザーフィードバック追記)の存在に気付いた。** 一度`git rebase`で自動マージを試みたが§5セクションでコンフリクトが発生したため、`git rebase --abort`→`git reset --hard origin/main`でやり直し、`3cba26d`の内容を保持したまま本セクション(§3AK)・§4の追加・§5の書き換えを最新の`origin/main`に対して再適用した(このパラグラフ自体がその記録)。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-0. **【最優先、新規、対話セッションでの追加修正あり】セッション#36の後、ユーザーが実際にプレイして「道具全般の持ち方が変」とフィードバックし、Prismium Bowのテクスチャーを対角線基準に描き直す修正が別の対話セッションで行われた(§3AJ参照、コミット`4eb9a96`、ビルド成功確認済み)。** 次回セッション冒頭で`git log`を見て、この修正が本当に想定通りmainに乗っているか、かつその後さらにユーザーからのフィードバック(GitHub Issueまたはこのチャット)が無いかを必ず確認すること。もし「まだ変」というフィードバックがあれば、§3AJ末尾に書いた次の疑い箇所(モデルJSON、item/generated化、対角線の向き)から順に当たること。
+0. 【セッション#37で確認・解決済み】セッション#36の後の対話セッションで行われたPrismium Bowの持ち方修正(§3AJ、コミット`4eb9a96`)は、`git log`で本当にmainに乗っていること、直後に`ci: update built jar`(`80c4aa4`)が付いてビルド成功していることをセッション#37冒頭で確認済み。GitHub Issue確認(簡易手法、§3AK-0参照)でも「まだ変」という追加フィードバックは見当たらなかった。この項目はクローズしてよい。
 
-0-2. **【新規、優先度高、ユーザーからの直接フィードバック(§3AJの直後の同じ対話セッションで受領、実装は次回以降でよいと明言あり)】次の2点の改善要望が来ている:**
+0-2. **【最優先、継続、ユーザーからの直接フィードバック、セッション#37でも未着手】次の2点の改善要望が来ている(§3AJ直後の対話セッションで受領、セッション#37の定期実行と並行して`3cba26d`でPROGRESS.mdに追記された):**
    - **(a) 装備(アーマー)の見た目が「のっぺりしている」**: プレイヤーがPrismiumアーマー一式を装備したスクリーンショットが添付され、平面的でメリハリが無い(シェーディングが乏しい、模様が単調)という指摘。現在のアーマーレイヤーテクスチャー(`gen_prismium_armor.py`、セッション#3)は「クリスタル色+灰色ソケット枠」という意匠を64x32のレイヤーシートに手作業でボックスUV展開したもので、当時から「初めてプレイできる環境で見た際に位置ズレ・伸び・裏表反転などがあれば直す」という留保付きだった(§3-3参照)。今回のフィードバックは位置ズレではなく「陰影・立体感の乏しさ」なので、ハイライト/シャドウのコントラストを強める、模様のディテールを増やす等の改修が必要。次回対応する際は、まず現在の64x32レイヤーシートを拡大プレビューで自己レビューしてから着手すること。
    - **(b) Prism Realmディメンションの見た目がオーバーワールドとほぼ同じ**: セッション#14で「地形はバニラのオーバーワールド設定+固定バイオームcherry_groveを流用(専用地形はまだ)」という最小実装のまま(§1参照)、以降のセッションでBloom/Spikeの地表装飾ブロックこそ追加されたものの、地形・土・鉱石・水・雰囲気は依然としてオーバーワールドに酷似したままだった、という長年の既知の未着手事項(§1参照)がついに実際にユーザーの目に触れて指摘された形。ユーザーからの具体的な提案:
      - 灰色系の土(オーバーワールドの`dirt`/`grass_block`とは別の専用ブロック)
@@ -1426,32 +1468,33 @@ GitHub Issue確認(§0-2)は今回も実施できなかった: `api.github.com`�
      - 電気・エネルギー関連を思わせる装飾(このMODのPrismium Energy系統、Cable/Pylon等の意匠と世界観を繋げる案)
      - 専用鉱石(現状Prism Realmに来ても掘れるのはオーバーワールドと同じ`prismium_ore`等のみで、ディメンション固有の鉱石が無い)
      - 石(ストーン)の色そのものも専用の色にする
-   - この2点は今回のセッション内での対応は不要(ユーザー明言)。次回以降、腰を据えて取り組む価値のある大きめのテーマとして扱うこと。特に(b)は「探索そのものが楽しくなるような…地形」というMODの根本コンセプト(タスクファイル参照)に直結する長年の宿題であり、優先度は高いと判断する。
-1. **【最優先、恒例】まず`git log`(または`git fetch origin main`)し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#36は`b1e0e4f`(Prismium Core建築バリエーション)をpushし、直後に`ci: update built jar`(`5eb67ec`)が付いたことをセッション内で確認済み。念のため次回セッション冒頭でも再確認すること。
-2. **【継続】GitHub Issue確認手法(§0-2・`embeddedData`JSON抽出)は今回も問題なく機能した。** 今回はIssue #3(リリースについて)・#4(READme浅い)に対応した(§3AI参照)。Issue #1(顔が見えない、セッション#9対応済み)・#2(ツールの見た目、セッション#13対応済み)は引き続きOPENのままだが対応済みと判断し見送った。次回セッション開始時も必ずIssue一覧を確認し、新規Issueがあれば最優先で拾うこと。
-3. **【重要、要検証】v0.1.0リリースが正しく作成されたか確認すること。** 今回`v0.1.0`タグをpushし、`.github/workflows/release.yml`(新規)がビルド→GitHub Release作成を行うはずだが、Reactクライアントサイドレンダリングの制約で静的HTML取得だけでは「添付jarが実際に付いているか」「ビルド自体が成功したか」まで断定できていない(§3AI-4参照)。次回セッション冒頭で`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.1.0`(キャッシュバスティング付き)を再確認し、もし失敗していれば`release.yml`のデバッグを最優先で行うこと(ビルド自体は`build-and-notify.yml`と同じ手順なので、通常は成功するはず)。
-4. **【新規、環境まわり、重要】今回のセッションでは`/tmp/work`が問題なく使え、逆に「outputs」マウント配下への直接cloneはロックファイル絡みで失敗した(§2-8参照)。** 過去セッションの「`/tmp/work`は`nobody:nogroup`所有で使えない」という記述と矛盾しており、実行環境(コンテナ)がセッションをまたいで変わっている可能性が高い。次回セッションはまず`/tmp/work`のような分かりやすいパスを試し、ダメなら一意な新規パスにフォールバックすること。また、生成した画像を`Read`ツールで確認する際は、リポジトリのパスを直接渡すのではなく、一旦「outputs」側のパスにコピーしてから`Read`する必要があった(§2-8に検証済みの手順を記載)。次回セッションが新規テクスチャーを生成する場合は、この手順を必ず踏むこと(踏まずに直接リポジトリパスを`Read`しようとすると失敗する)。
-5. **【再確認】git pushは今回も「プロキシ環境変数を一切いじらず素のまま`git push`」で(main・タグとも)一発成功した。** これでセッション#34以降4セッション連続成功。次回以降も「①まず素のまま試す→②`access denied by the git proxy`の文言が出た場合のみプロキシを空にする」の順を維持すること。
-6. 【継続、優先度中】Prismium Block/Core建築バリエーション計7種(スラブ・塀・階段・模様入り×Block、スラブ・塀・階段×Core)は実プレイ未検証のまま(§4-50・§4-52・§4-53)。特にWallのmultipart blockstateとStairsの40通りの回転値が実機で正しく表示されるかを優先的に確認したい。
-7. 【継続、優先度中】Featherstoneのテクスチャーは2回改修したが自己評価では「まだ4xで曖昧」(§3AG-4・§4-51)。時間があれば3回目の改修を検討する価値がある。
-8. 【継続、優先度高】Prism Realm/Rift Shard・Wraith・Locator・Bloom/Spike・Cable(接続モデル)・全5GUI・Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・建築バリエーション7種は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue確認手段が安定してきたので、今後はこちらが主要な受け皿)を最優先で拾うこと。
-9. 【継続、次の展開候補】
-   - (a) Prismium Arrow: session 30で見送った(ArrowRendererのUVレイアウトの裏取り手段が見つからなかった)。「GitHubのembeddedData JSON抽出」や「mcasset.cloud」の手法を、Forgeソースコード自体(`ArrowRenderer.java`)の裏取りにも応用できないか試す価値がある。
-   - (b) GUIスロット化(`SlotItemHandler`等)、Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックの作り込み。
-   - (c) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。カスタムエンティティ+レンダラーはAPI裏取りが難しい領域。
-   - (d) Prismium Coreの模様入りブロック(Chiseled)は今回あえて見送った(§3AI-3参照、常時発光ブロックにどうデザインすべきか要検討)。追加するなら次回以降で。
-   - (e) `RELEASE_NOTES.md`の運用が今回始まったばかりなので、次に何らかのまとまった機能追加をしたセッションで、実際に`mod_version`を上げてタグを切る運用を1回試してみると、release.ymlの手順(§3AI-2のワークフロー冒頭コメント参照)が正しく機能するかの2回目の実証になる。
+   - **セッション#37はこの2点にまだ着手できていない**(§3AK-0の通り、push直前まで存在に気付かなかったため)。次回セッションは、他の横展開より先にこの2点、特に(b)のPrism Realm専用地形・専用ブロック群への着手を最優先で検討すること。「探索そのものが楽しくなるような…地形」というMODの根本コンセプトに直結する上、実際のユーザーからの一次フィードバックという重みもある。
+1. **【最優先、恒例】まず`git log`(または`git fetch origin main`)し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#37は`5507f17`(Core Wall接続バグ修正)→`1aa3f76`(Chiseled Prismium Core追加)の順でpushし、直後に`ci: update built jar`(`06e4c8f`)が付いたことを確認済み。ただし本PROGRESS.md更新コミット自体は、並行対話セッションのコミット`3cba26d`を検知して`git rebase --abort`→`git reset --hard origin/main`でやり直した上でpushしたため(§3AK-4参照)、**次回セッション冒頭で本コミットの直後にも`ci: update built jar`が付いているか改めて確認すること**(このセッション終了時点では未確認)。
+2. **【継続、要調査】GitHub Issue確認手法(`embeddedData`JSON抽出)が今回機能しなくなっていた。** セッション#23〜#36では`"embeddedData":{...},"appPayload"`という正規表現でIssue一覧・詳細を安定して抽出できていたが、今回は同じ正規表現がヒットしなくなった(GitHubのフロントエンド実装が変わった可能性がある)。今回は代わりに`grep -o 'issues/[0-9]*'`でIssue番号を洗い出し、各Issueページを個別に取得して`"state":"OPEN"`・`"createdAt"`をgrepする簡易手法で代替し、新規Issue・新規コメントが無いことは確認できた(§3AK-0参照)。次回セッションでは、まず`embeddedData`抽出が本当に恒久的に使えなくなったのか(一時的な変化か)を再確認し、ダメなら今回の簡易手法(または他の手段)に完全移行することを検討すること。
+3. **【継続、未解決】v0.1.0リリースの添付jar確認は今回も断念した。** `/releases/tag/v0.1.0`はHTTP 200・正しいタイトルを返すが、Reactクライアントサイドレンダリングのため添付ファイル名・サイズまでは静的HTML取得だけでは分からない(§3AI-4・§3AK-0で2セッション連続同じ結論)。この確認方法自体を諦めて「タグをpushしてci: update built jarが付けば十分」という運用に倒すか、あるいは`api.github.com`のReleases APIエンドポイント(`/repos/.../releases/tags/v0.1.0`)を`mcp__workspace__web_fetch`経由で叩けないか試す価値がある(セッション#37で`actions/runs`エンドポイントには`web_fetch`経由で到達できることを確認済み、同じ手法がreleasesエンドポイントにも通用するか未検証)。
+4. **【新規、重要】Prismium Core Wallの自己接続バグ修正(§3AK-1、`5507f17`)は、Block Wall分の修正(session 35)と全く同じ原因・全く同じ直し方だった。** これで2回連続「新ブロック追加時のタグ登録漏れ」が発生している。次回、時間に余裕があれば全ブロック×全関連タグ(`mineable/pickaxe`、`needs_diamond_tool`、`incorrect_for_diamond_tool`、`needs_iron_tool`、`walls`等)の対応表をスクリプトで機械的に突き合わせ、漏れがないか一括棚卸しする価値が高い(§4-16・§4-54で繰り返し提案されてきたが、まだ着手していない)。
+5. 【再確認】git pushは今回もプロキシ変数を一切いじらず「素のまま`git push`」で成功した(直前にrebase/resetは必要だった)。これでセッション#34以降5セッション連続成功。次回以降も「①まず素のまま試す→②`access denied by the git proxy`の文言が出た場合のみプロキシを空にする」の順を維持すること。並行セッションとのコンフリクトに当たった場合は、無理にrebaseで自動マージしようとせず、§3AK-4の手順(`rebase --abort`→`reset --hard origin/main`→変更を最新版に再適用)を踏むとよい。
+6. 【継続、環境まわり】このサンドボックスは今回、outputs直下へのcloneが`.git`ロックファイル絡みで`Operation not permitted`となり、`/root`・`/tmp/work`も書き込み不可だった。最終的に`$HOME`(`/sessions/<session-id>`、ここは`whoami`と一致するユーザーが所有)直下の`work/`ディレクトリで成功した。**次回セッションは、outputs直下への直接cloneをまず試さず、最初から`$HOME/work`のような自分のホーム配下を使うと手戻りが少ない**(次回もし`$HOME`すら失敗するなら`mktemp -d`で一意なパスにフォールバックする、という従来の推奨は変わらず)。また生成画像を確認する際は、今回も「outputsマウント側に一旦コピーしてから`Read`」の手順が必須だった。
+7. 【継続、優先度中】Prismium Block/Core建築バリエーション計8種(スラブ・塀・階段・模様入り×Block、スラブ・塀・階段・模様入り×Core)は実プレイ未検証のまま(§4-50・§4-52・§4-53・§4-55)。特にWallのmultipart blockstateとStairsの40通りの回転値が実機で正しく表示されるかを優先的に確認したい。
+8. 【継続、優先度中】Featherstoneのテクスチャーは2回改修したが自己評価では「まだ4xで曖昧」(§3AG-4・§4-51)。時間があれば3回目の改修を検討する価値がある。
+9. 【継続、優先度高】Prism Realm/Rift Shard・Wraith・Locator・Bloom/Spike・Cable(接続モデル)・全5GUI・Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・建築バリエーション8種は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(§5項目0-2のように直接届くこともある)を最優先で拾うこと。
+10. 【継続、次の展開候補、ただし§5項目0-2を優先すること】
+    - (a) Prismium Arrow: session 30で見送った(ArrowRendererのUVレイアウトの裏取り手段が見つからなかった)。
+    - (b) GUIスロット化(`SlotItemHandler`等)、Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックの作り込み。
+    - (c) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。カスタムエンティティ+レンダラーはAPI裏取りが難しい領域だが、「てんこ盛り」というMODコンセプト上、そろそろ本格的に着手する価値がある。
+    - (d) Prismium Block・Prismium Core双方の建築バリエーションが出揃った(計8種)。次に他の資源ブロックへさらに広げるより、装備/アクセサリ・GUI/送電網の作り込み・新MOB・そして何より§5項目0-2のフィードバック対応に軸足を移すタイミングに来ていると考えられる。
+    - (e) `RELEASE_NOTES.md`/`release.yml`の運用は今回も実地で回していない(v0.1.0の1回のみ)。次に何らかのまとまった機能追加をしたセッションで、実際に`mod_version`を上げて2回目のタグリリースを切ってみると、運用が定着しているか確認できる。
 
 ### 議論したい論点・改善案
 
-- **Issue駆動の対応が定着しつつある**: セッション#13(issue #2)・#9(issue #1)に続き、今回issue #3・#4にも対応できた。GitHub Issue確認手段(§0-2)が安定して機能するようになったことで、ロードマップ主導の機能追加と、ユーザーフィードバック主導の改善のバランスを取れるようになってきている。今後も毎回のセッション冒頭でのIssue確認を欠かさないこと。
-- **リリース運用は始まったばかりで実証が1回のみ**: v0.1.0タグでの初回リリースは、ワークフロー自体の実行成功をこのセッション内で完全には確認しきれていない(§5項目3参照)。次回以降、実際にバージョンを上げてタグを切るセッションが出てきて初めて「運用として回る」と言えるので、油断せず経過を見守ること。
-- **建築バリエーション路線がPrismium Coreにも広がった**: Prismium Block(4種)・Prismium Core(3種、Chiseled除く)で計7種の建築バリアントが揃った。次に他の資源ブロックへさらに広げるか、装備/アクセサリ・GUI/送電網の作り込みに戻るかは、引き続き判断が分かれるところ(セッション#35から継続する論点)。
+- **ついに実プレイフィードバックが「未検証の山」を突き崩し始めた**: これまで§4に積み上がってきた「実プレイ未検証」項目群のうち、Prismium Bow(§3AJ)・アーマー(§5項目0-2a)・Prism Realm(§5項目0-2b)の3件が、今回までに実際のユーザープレイによって具体的な問題として顕在化した。これは「横展開で機能を増やし続けるだけでなく、既存機能の実地検証・改善に軸足を移すべき」という過去セッションで繰り返されてきた議論(§5「議論したい論点」の常連)に対する、初めての具体的で実証的な後押しと言える。
+- **「新ブロック追加時のタグ登録漏れ」が2回連続で発生した**: Prismium Block Wall(session 35で発覚)・Prismium Core Wall(session 37で発覚)ともに、原因は全く同じ「`minecraft:walls`タグへの追加忘れ」だった。個々のブロック追加時にその都度気をつけるだけでなく、§5項目4に書いた「全ブロック×全タグの機械的な突き合わせ」を一度どこかのセッションで実施し、同種の見落としを先回りして潰しておく方が、後から1件ずつユーザー報告を待つより効率的ではないか。
+- **並行セッション間のコンフリクト対応**: セッション#37は、PROGRESS.md更新の最終push時に別の対話セッションとのコンフリクトに遭遇した(§3AK-4)。今回は§3AK-4に書いた手順(`reset --hard origin/main`からの再適用)で解決できたが、今後複数セッションが同時に長い変更を行った場合、より複雑なコンフリクトが起きる可能性がある。PROGRESS.mdのような「毎回全員が触る」ファイルの構造上、この種の衝突は今後も起こり得ることを念頭に置くこと。
 
 ### コミット/プッシュ状況
 
-このセッションの変更は3コミット + タグ1つ: `20167e7`(README刷新、issue #4対応)、`61430fe`(release.yml + RELEASE_NOTES.md新規、issue #3対応)、`b1e0e4f`(Prismium Core建築バリエーション3種)、および本PROGRESS.md更新コミット。加えて`v0.1.0`タグを`b1e0e4f`に打ってpushした(MOD初のタグ付きリリース)。`git fetch origin main`で差分無し(並行セッション無し)、mainへのpush・タグのpushともプロキシ変数無改変で一発成功。GitHub Issue確認は今回も機能し、issue #3・#4(新規)、issue #1・#2(既存、対応済み判断)を確認した。
+このセッションの変更は2コミット: `5507f17`(Prismium Core Wall接続バグ修正)、`1aa3f76`(Chiseled Prismium Core追加)、および本PROGRESS.md更新コミット。push前に`git fetch origin main`で直前セッション(§3AJ)以降の新規push(`06141a0`、ci commitのみ)を検知し、`git rebase origin/main`で追従してから`git push origin main`(プロキシ変数無改変で一発成功、コミット到着は`06e4c8f`で確認)。その後、本PROGRESS.md更新コミットのpush時に再度`non-fast-forward`で拒否され、並行対話セッションのコミット`3cba26d`(装備/Prism Realmフィードバック追記)を検知、`reset --hard origin/main`でやり直して`3cba26d`の内容を保持したまま本更新を再構築した(§3AK-4参照)。GitHub Issue確認は簡易手法に切り替えて実施し、新規Issue・新規コメントとも無いことを確認した。v0.1.0リリースの存在自体は再確認できたが、添付jarの中身までは今回も確認できていない。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、今回のpush(3コミット + PROGRESS.md更新コミット)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず。タグpushによるrelease.ymlの起動はDiscord通知の対象外(build-and-notify.ymlとは別ワークフローのため)。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、今回のpush(2コミット + PROGRESS.md更新コミット)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず。
