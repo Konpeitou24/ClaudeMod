@@ -13,6 +13,10 @@ import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.phys.BlockHitResult;
 
+import java.util.Map;
+import java.util.UUID;
+import java.util.WeakHashMap;
+
 /**
  * Prismium Chronoflame (session 49, scheduled): PROGRESS.md section 5 item
  * 12(a)(ii) - the second of the two Rift Shard-family follow-up items the
@@ -78,12 +82,43 @@ import net.minecraft.world.phys.BlockHitResult;
  * or lighting-update hiccups; the in-game feel/usefulness of a fixed
  * 6-hour step size (chosen as "a quarter of a day, an easy mental model"
  * rather than anything play-tested).
+ *
+ * <p><b>Session 50 addition - per-player cooldown</b>: PROGRESS.md's
+ * "discussion points" section flagged that this block, as shipped in
+ * session 49, has no rate limit at all - a player can hold right-click
+ * and spam {@code use()} every tick, making day/night effectively
+ * togglable at will with no cost beyond the original craft. This did not
+ * change the crafting cost (still a modest clock + 2 glowstone dust + 4
+ * Prismium Shard - the repo owner has not weighed in on whether the cost
+ * itself is a problem), but adds a {@value #COOLDOWN_TICKS}-tick
+ * (5 second) per-player cooldown as the smallest change that removes the
+ * "hold click, get instant full day/night control" degenerate case while
+ * leaving the core mechanic and its cost untouched. Tracked in a static
+ * {@link WeakHashMap} keyed by player {@link UUID} (server-side only,
+ * never persisted) rather than a block-entity field, consistent with
+ * this class's existing "the block itself holds no state" design - the
+ * cooldown belongs to the *player*, not to any particular Chronoflame
+ * block, matching how e.g. ender pearl cooldown is per-player rather
+ * than per-item-stack.
  */
 public class PrismiumChronoflameBlock extends Block {
 
     /** A quarter of a full 24000-tick Minecraft day, i.e. 6 in-game
      * hours per click - see class doc for why this size was chosen. */
     private static final long TIME_STEP = 6000L;
+
+    /** 5 real-time seconds at 20 ticks/second - see class doc, session 50
+     * addition. */
+    private static final long COOLDOWN_TICKS = 100L;
+
+    /** Player UUID -> the serverLevel game-time (not day-time; {@link
+     * ServerLevel#getGameTime()} always advances monotonically, unlike
+     * day-time which this very block can rewind) at which that player's
+     * cooldown expires. WeakHashMap so entries for players who log off
+     * for good don't accumulate forever; server-side only, rebuilt (empty)
+     * on every server restart, which is fine since a cooldown surviving a
+     * restart was never a requirement. */
+    private static final Map<UUID, Long> COOLDOWN_UNTIL = new WeakHashMap<>();
 
     public PrismiumChronoflameBlock(Properties properties) {
         super(properties);
@@ -100,6 +135,18 @@ public class PrismiumChronoflameBlock extends Block {
             // expected to actually be reached.
             return InteractionResult.PASS;
         }
+
+        long gameTime = serverLevel.getGameTime();
+        Long cooldownUntil = COOLDOWN_UNTIL.get(player.getUUID());
+        if (cooldownUntil != null && gameTime < cooldownUntil) {
+            // Still on cooldown (session 50, see class doc): swallow the
+            // interaction quietly (CONSUME, not SUCCESS/PASS) so the
+            // client doesn't play its default "nothing happened" sound
+            // path twice, but do nothing further - no sound, no message,
+            // no day-time change.
+            return InteractionResult.CONSUME;
+        }
+        COOLDOWN_UNTIL.put(player.getUUID(), gameTime + COOLDOWN_TICKS);
 
         boolean rewind = player.isShiftKeyDown();
         long current = serverLevel.getDayTime();
