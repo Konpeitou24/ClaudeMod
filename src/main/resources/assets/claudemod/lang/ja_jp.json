@@ -68,5 +68,6 @@
     "gui.claudemod.wardstone_status_idle": "待機中",
     "item.claudemod.prismium_bow": "プリズミウムの弓",
     "item.claudemod.prismium_guardian_charm": "プリズミウムの護符",
-    "item.claudemod.prismium_featherstone": "プリズミウムの羽石"
+    "item.claudemod.prismium_featherstone": "プリズミウムの羽石",
+    "item.claudemod.prismium_emberguard": "プリズミウムの火除け石"
 }

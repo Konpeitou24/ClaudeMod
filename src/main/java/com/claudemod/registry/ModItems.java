@@ -11,6 +11,7 @@ import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumBowItem;
+import com.claudemod.item.PrismiumEmberguardItem;
 import com.claudemod.item.PrismiumFeatherstoneItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumGuardianCharmItem;
@@ -218,6 +219,12 @@ public class ModItems {
     // Rift Shard/Locator/Guardian Charm pattern.
     public static final RegistryObject<Item> PRISMIUM_FEATHERSTONE = ITEMS.register("prismium_featherstone",
             () -> new PrismiumFeatherstoneItem(new Item.Properties()));
+
+    // Prismium Emberguard (session 32): the mod's second purely passive
+    // accessory - see PrismiumEmberguardItem / PrismiumEmberguardHandler.
+    // Same "stacks normally, presence-only" treatment as Featherstone.
+    public static final RegistryObject<Item> PRISMIUM_EMBERGUARD = ITEMS.register("prismium_emberguard",
+            () -> new PrismiumEmberguardItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

@@ -68,5 +68,6 @@
     "gui.claudemod.wardstone_status_idle": "Idle",
     "item.claudemod.prismium_bow": "Prismium Bow",
     "item.claudemod.prismium_guardian_charm": "Prismium Guardian Charm",
-    "item.claudemod.prismium_featherstone": "Prismium Featherstone"
+    "item.claudemod.prismium_featherstone": "Prismium Featherstone",
+    "item.claudemod.prismium_emberguard": "Prismium Emberguard"
 }

@@ -56,6 +56,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_LOCATOR.get());
                         output.accept(ModItems.PRISMIUM_GUARDIAN_CHARM.get());
                         output.accept(ModItems.PRISMIUM_FEATHERSTONE.get());
+                        output.accept(ModItems.PRISMIUM_EMBERGUARD.get());
                     })
                     .build());
 

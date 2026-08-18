@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "M": { "item": "minecraft:magma_cream" },
+        "B": { "item": "minecraft:blaze_powder" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        " M ",
+        "BSB",
+        " M "
+    ],
+    "result": {
+        "item": "claudemod:prismium_emberguard",
+        "count": 1
+    }
+}
