@@ -60,6 +60,19 @@ public class EnergyStorageBlockItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
+        // GitHub issue #7 (session 38): "no explanation anywhere for how
+        // the mod's items/energy blocks are meant to be used". A full
+        // in-game guide book/manual (closer to what the report actually
+        // asks for, comparing to Create's approach) is a much bigger
+        // feature than fits in one session - see PROGRESS.md handoff.
+        // As an immediate, low-risk improvement this adds one always-
+        // shown, gray usage-hint line per energy block, sourced from a
+        // "<block translation key>.usage" lang entry (see en_us.json/
+        // ja_jp.json) so every one of this class's six users (Cell,
+        // Generator, Cable, Pylon, Restorer, Wardstone) gets a hint for
+        // free without needing six separate Item subclasses.
+        tooltip.add(Component.translatable(this.getDescriptionId(stack) + ".usage")
+                .withStyle(ChatFormatting.GRAY));
         CompoundTag blockEntityTag = stack.getTagElement("BlockEntityTag");
         if (blockEntityTag == null || !blockEntityTag.contains("Energy")) {
             return;

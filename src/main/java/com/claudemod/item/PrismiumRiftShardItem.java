@@ -4,6 +4,7 @@ import com.claudemod.dimension.ModDimensions;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -22,6 +23,8 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
 
 import java.util.Set;
+
+import javax.annotation.Nullable;
 
 /**
  * Session 14: Prismium Rift Shard - the mod's first (and, for now, only)
@@ -90,6 +93,23 @@ public class PrismiumRiftShardItem extends Item {
 
     public PrismiumRiftShardItem(Item.Properties properties) {
         super(properties);
+    }
+
+    // GitHub issues #7 ("no in-game explanation of items") and #9 ("no
+    // way to reach the Prismium dimension") - session 38. This item was
+    // always the mod's only way in/out of the Prism Realm (see class
+    // doc above), but nothing in-game ever said so; a player would have
+    // to find it in the creative inventory/JEI and guess. A one-line
+    // tooltip is a much smaller fix than the "proper portal" the issue
+    // asks for (see PROGRESS.md handoff for that larger, still-open
+    // idea), but directly closes the "I have no idea how to get there"
+    // gap for anyone who already has (or can craft) the item.
+    @Override
+    public void appendHoverText(ItemStack stack, @Nullable Level level,
+                                 java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
+        super.appendHoverText(stack, level, tooltip, flag);
+        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
+                .withStyle(net.minecraft.ChatFormatting.GRAY));
     }
 
     @Override
