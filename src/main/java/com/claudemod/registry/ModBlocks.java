@@ -1,6 +1,7 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.block.PrismBrambleBlock;
 import com.claudemod.block.PrismLilyBlock;
 import com.claudemod.block.PrismiumBloomBlock;
 import com.claudemod.block.PrismiumCableBlock;
@@ -197,6 +198,25 @@ public class ModBlocks {
                     .instabreak()
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .lightLevel(state -> 3)
+                    .noOcclusion()));
+
+    // Prism Bramble (session 43): the mod's second plant exclusive to
+    // the Prism Realm dimension (see PrismBrambleBlock / PROGRESS.md
+    // section 5 item 9(c)). Deliberately given a different silhouette
+    // from Prism Lily (thorny three-pronged fan vs. rounded flower) so
+    // the two exclusive plants read as different species at a glance,
+    // not a palette-swapped duplicate. Reuses Lily's exact block
+    // properties (MapColor.COLOR_PURPLE, same "family") except a
+    // slightly dimmer light level (2 vs Lily's 3) - a bramble is
+    // meant to read as a duller understory plant next to Lily's
+    // brighter bloom, not a third near-identical light source.
+    public static final RegistryObject<Block> PRISM_BRAMBLE = BLOCKS.register("prism_bramble",
+            () -> new PrismBrambleBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 2)
                     .noOcclusion()));
 
     // Prismium Pylon (session 19): the mod's first FE *consumer*, closing
