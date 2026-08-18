@@ -107,6 +107,19 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
         return getBurnTime() / 20;
     }
 
+    /** GitHub issue #8 ("発電できない" - opening the Generator's GUI
+     * shows no sign that it is actually generating): mirrors
+     * {@link PrismiumGeneratorBlockEntity#serverTick}'s own condition for
+     * whether *this* tick would add FE (queued burn time, and buffer not
+     * already full) so {@link com.claudemod.client.screen.PrismiumGeneratorScreen}
+     * can show an explicit status label instead of leaving the player to
+     * infer activity from the flame gauge and energy bar alone - the same
+     * explicit-status treatment {@link PrismiumPylonMenu#isActive()} and
+     * {@link PrismiumWardstoneMenu} already give Pylon/Wardstone. */
+    public boolean isGenerating() {
+        return getBurnTime() > 0 && getEnergy() < getMaxEnergy();
+    }
+
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
         return ItemStack.EMPTY;

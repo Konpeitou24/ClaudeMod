@@ -55,6 +55,16 @@ public class PrismiumGeneratorScreen extends AbstractContainerScreen<PrismiumGen
     private static final int FILL_BASE = 0xFF3FBDB8;
     private static final int FILL_HILITE = 0xFF66D9D2;
 
+    // GitHub issue #8 status label colors (session, see
+    // PrismiumGeneratorMenu#isGenerating's doc): green while actively
+    // adding FE this tick, amber while paused because the buffer is
+    // already full (queued fuel remains but has nowhere to go yet - the
+    // exact situation GitHub issue #15 also flagged as confusing), gray
+    // once there is no queued burn time left at all.
+    private static final int STATUS_ACTIVE = 0xFF4CD97B;
+    private static final int STATUS_FULL = 0xFFE0A83C;
+    private static final int STATUS_NO_FUEL = 0xFF8A8A8A;
+
     public PrismiumGeneratorScreen(PrismiumGeneratorMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
@@ -100,6 +110,29 @@ public class PrismiumGeneratorScreen extends AbstractContainerScreen<PrismiumGen
     @Override
     protected void renderLabels(GuiGraphics guiGraphics, int mouseX, int mouseY) {
         guiGraphics.drawString(font, title, 8, 6, 0x404040, false);
+
+        // GitHub issue #8 ("UIを開いても発電できている様子はない"): an
+        // explicit status word, matching the pattern already established
+        // by Pylon/Wardstone's status lamp+label (see PrismiumPylonScreen)
+        // instead of leaving the player to infer activity from the flame
+        // gauge and energy bar alone. Three states rather than those two
+        // machines' plain active/idle, because a Generator can be
+        // "burning but temporarily paused" (buffer full) in a way a
+        // pure FE-consumer never is - see PrismiumGeneratorMenu#isGenerating.
+        String statusKey;
+        int statusColor;
+        if (menu.isGenerating()) {
+            statusKey = "gui.claudemod.generator_status_active";
+            statusColor = STATUS_ACTIVE;
+        } else if (menu.getBurnTime() > 0) {
+            statusKey = "gui.claudemod.generator_status_full";
+            statusColor = STATUS_FULL;
+        } else {
+            statusKey = "gui.claudemod.generator_status_no_fuel";
+            statusColor = STATUS_NO_FUEL;
+        }
+        Component statusText = Component.translatable(statusKey);
+        guiGraphics.drawString(font, statusText, FLAME_X + FLAME_WIDTH + 8, FLAME_Y, statusColor, false);
 
         Component burnText = Component.translatable("gui.claudemod.burn_seconds", menu.getBurnSeconds());
         guiGraphics.drawString(font, burnText, FLAME_X + FLAME_WIDTH + 8, FLAME_Y + FLAME_HEIGHT / 2 - 4, 0x404040, false);
