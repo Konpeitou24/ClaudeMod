@@ -1702,60 +1702,101 @@ session 40の申し送り(§5旧項目9-c、「Prism Realm限定の植物をさ�
 
 変更は1コミット: `e5874bd`(Prism Bramble一式: Java 2ファイル・アセット7ファイル・スクリプト1ファイル)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し、クローン後origin/mainに動きなし)、素のまま`git push origin main`で一発成功(session 34以降、10セッション連続でこの運用のまま成功)。push後`git fetch`のポーリングで`ci: update built jar`(`405e586`)の到着を確認し、ビルド成功を確認済み。
 
+## 3AR. セッション#44で実装した内容: Prism Vine(Prism Realm専用の3つ目の植物) + Chiseled Prismium Coreの扱いを検討して見送り
+
+### 3AR-0. セッション開始時の状況確認
+
+`git clone`は`~/work`(今回は`/tmp`配下ではなくホームディレクトリ配下の新規パス)を使用し、書き込み権限をclone直後の`echo test >> .writetest && rm .writetest`で確認してから作業を開始した(session 43の申し送り§5項目7通り)。`/tmp/work`には今回も別セッション由来と思われる`nobody:nogroup`所有ファイルが残っており、書き込み・削除とも不可だったため最初から回避した。
+
+`git log`/`git fetch origin main`で直前セッション(#43)最終コミット`b9e3eed`の直後に`ci: update built jar`(`12b48df`)が付いていることを確認し、前回ビルドは成功と判断(修正対応は不要)。
+
+**GitHub Issue確認**: `curl https://github.com/Konpeitou24/ClaudeMod/issues?q=is%3Aissue`→`grep -o 'issues/[0-9]*'`の方式(session 38確立)で一覧を取得。Open: #2, #3, #5, #6, #7, #8, #9(session 43時点から変化なし)。#10・#11・#12は404で新規Issue無し。各Issueページの`totalCount`をgrepしたが、全Issueで共通して同じ値(`0`と`2`)が出ており、これは前回セッションが根拠にしていた「コメント数」ではなく無関係な値(ラベル数等)を拾っていた可能性がある - **次回、この`totalCount`grepが本当にコメント数を表しているか要検証**(今回はこの値だけでは新規コメントの有無を判断できなかったため、Issue一覧のURL構成に変化が無いことのみを根拠にした)。
+
+**【重要な訂正】`api.github.com`への到達性について**: session 43のPROGRESS.mdは「`api.github.com`は到達可能」と記載していたが、今回`curl`で`https://api.github.com/repos/.../actions/runs`を叩いたところ`HTTP_CODE:000`(接続失敗)で到達できなかった。一方`https://github.com/...`(api無し)は`HTTP_CODE:200`で問題なく到達できた。プロキシのアローリストが`github.com`のみを許可し`api.github.com`は含まれていない可能性が高い(セッションごとに環境が変わる可能性も否定できないため、次回も念のため両方試すこと)。**今回はビルド結果の確認を`https://github.com/<repo>/commits/main.atom`(Atomフィード、api.github.com不要)で代替した** - `ci: update built jar [skip ci]`コミットの有無とタイムスタンプで成功/失敗が分かるため、api.github.comが使えない場合の実用的な代替手段として次回以降も使えることを確認した。
+
+### 3AR-1. 実装: Prism Vine(Prism Realm専用の3つ目の植物、§5旧項目9-c継続)
+
+session 43の申し送り(§5項目9-c、「3種目を追加するなら、垂直に伸びる2種(Lily/Bramble共に上向き)とは違う成長方向のシルエットが差別化になりそう」)に沿って、Prism Lily(session 40, 丸く中央対称)・Prism Bramble(session 43, 上方向に伸びる非対称3方向フロンド)に続く3つ目のPrism Realm専用植物として**Prism Vine**(プリズムバイン)を追加した。
+
+- **設計**: 地面を這う低く横広がりのタングル(蔓)。シルエットのバウンディングボックスをキャンバス下半分(y=7-15)に集中させ、Lily(y=0-10、全高・中央対称)ともBramble(y=1-9、上部集中)とも明確に異なる"成長方向"にした。左右非対称の3クラスタ(左/中央/右)が下部で1本の波打つ塊に融合し、右上に1本だけ中間線を超えて伸びるツルが飛び出す構成。
+- **テクスチャー制作で発生した問題と修正**: Lily/Brambleが確立した「erosion depth(輪郭からの層の深さ)でシェーディングを決める」手法をそのまま踏襲したところ、このVineの線幅がほぼ全域1〜2pxしかないため、depth計算がほぼ全ピクセルでdepth=1(最も暗いoutline色)になってしまい、自己レビュー(24倍・4倍プレビューをRead)で「ほぼ真っ黒な塊にしか見えない」ことが判明した(全57ピクセル中51がoutline、5band分布に破綻していた)。これを受けて**シェーディング方式を「erosion depth」から「上下方向の開放判定(directional/top-lit banding)」に変更**した - 各ピクセルについて直上・直下が透明(mask外)かどうかを見て、両方開いていれば最明色(HILITE、宙に浮く枝先が光を受ける想定)、上のみ開いていればMID、下のみ開いていればBASE、両方塞がっていればSHADOW、という4バンド構成にした。再計算後の分布はHILITE 9・MID 18・BASE 18・SHADOW 12となり、24倍・4倍プレビューの再レビューで紫の濃淡がはっきり見える蔓として認識できることを確認した。**この「erosion depthは太い塊向き、細い線状シルエットには方向性ライティングが必要」という教訓は次回以降、細い線状の植物・装飾を作る際に再利用できる。**
+- **Java/登録**: `PrismVineBlock`はPrismLilyBlock/PrismBrambleBlockと同じ骨格(素の`Block`、cross-quadモデル、`canSurvive`は下のブロックのsturdy-top判定)。ただしバウンディングボックスがLily/Brambleより低いため、当たり判定(`VoxelShape`)の高さを13→9に縮小した(見た目のシルエットにおおよそ合わせるための調整、厳密なピクセル一致ではない)。`ModBlocks`/`ModItems`/`ModCreativeTabs`/lang(en_us/ja_jp)に登録。`MapColor.COLOR_PURPLE`(Lily/Brambleと同じ「家族」)、光レベルは3種の中で最も暗い1(Bramble 2、Lily 3)にし、「日陰に這う地味な下生え」という位置づけにした。
+- **アクセント配置の差別化**: Lily(中央の雌しべ1箇所)・Bramble(側面フロンド先端2箇所)に続き、Vineは「タングルに絡む果実(ベリー)2箇所」というマゼンタアクセントの置き方にし、3種とも異なる配置ルールを持つようにした。
+- **worldgen**: `configured_feature`/`placed_feature`/`biome_modifier`はLily/Brambleの構造をそのまま踏襲し、`biomes`を`["claudemod:prism_realm"]`のみに絞ることでRealm専用にした。生成数はBramble(2)と同じcount 2にした(意図のみ、バランス未検証)。
+
+**自己レビュー**: シェーディング方式変更後の`prism_vine.png`を24倍(近接視点相当)・4倍(ホットバーアイコン相当)の両方でチェッカーボード背景付きプレビューをoutputsマウント側にコピーして`Read`で目視確認。低く横広がりの非対称なタングルとして、Lily(丸い中央対称の花)ともBramble(縦に伸びる3本の棘)とも一目で見分けがつくシルエットになっていることを確認した。全ピクセルのアルファ値が0/255のみであることもコードで確認済み(透過崩れ無し)。
+
+**未検証**: 実機のホットバー・インベントリでの見え方、Prism Realmでの実際の生成密度・バランス(このサンドボックスでは検証不可)。
+
+### 3AR-2. 検討: Chiseled Prismium Coreの柄刷新は今回見送り(§5旧項目0-d再検討)
+
+session 42の申し送り(「`chiseled_prismium_core.png`はパレットのみ新、柄は未刷新。ユーザーに刷新希望か確認できていない」)を受けて着手を検討したが、`gen_prismium_chiseled_block.py`と`gen_prismium_chiseled_core.py`の両方を確認し、実際のテクスチャーもプレビュー画像で目視した結果、**現状の設計は意図的に一貫した「彫刻(chiseled)ファミリー」の見た目になっている**ことが分かった: Chiseled Block・Chiseled Coreはどちらも「1pxの外枠+内側の陥没パネルリング+ベベル帯」という共通の"彫刻された石材"の構図を共有し、中央モチーフだけが素材ごとに異なる(Blockはひし形ルーン、Coreは放射コアクラスタ)という設計。一方、プレーン版(Block/Core)はユーザーの手描きに由来する「斜めグラデーション+四隅マゼンタジェム」という別の視覚言語を持つ。
+
+つまり現状は「プレーン版=手描き由来の有機的グラデーション」「彫刻版=対称的な石材パネル」という**2つの一貫したサブファミリー**になっており、Chiseled Coreだけを手描き版の柄(斜めグラデーション+中央リング)に寄せると、むしろ兄弟であるChiseled Blockとの一貫性が崩れてしまう(彫刻版同士で見た目がバラバラになる)というトレードオフがあることが判明した。ユーザーが実際に望んでいるのが「Chiseled CoreだけをBlockの新デザインに追従させる」ことなのか、「彫刻版2種をまとめてプレーン版の新スタイルに作り直す」ことなのかは自動実行セッションでは確認できないため、**今回は柄の変更を見送り、この分析結果をそのままここに記録して次回以降の判断材料とする**ことにした。中途半端に片方だけ変更して一貫性を崩すより、確認が取れるまで現状維持する方が安全と判断した。
+
+### 3AR-3. commit・push・ビルド確認
+
+変更は1コミット: `17ccac4`(Prism Vine一式: Java 2ファイル・アセット7ファイル・スクリプト1ファイル)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し、クローン後origin/mainに動きなし)、素のまま`git push origin main`で一発成功(session 34以降、11セッション連続でこの運用のまま成功)。push後、`api.github.com`が使えなかったため`https://github.com/Konpeitou24/ClaudeMod/commits/main.atom`のポーリングに切り替え、`ci: update built jar`(`e3d419f`)の到着(タイムスタンプ`2026-08-18T12:20:47Z`)を確認し、ビルド成功を確認済み。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-0. **【最優先、継続】ユーザーからの装備/Prism Realm/テクスチャー見た目フィードバックは、session 39・40・42・43で段階的に着手中。**
+0. **【最優先、継続】ユーザーからの装備/Prism Realm/テクスチャー見た目フィードバックは、session 39・40・42・43・44で段階的に着手中。**
    - (a) 【session 39対応】Prismiumアーマーの「のっぺり」感 → ベベル+バンドテクスチャー追加。実機(3人称視点)での見え方は未検証。ユーザーの反応待ち。
    - (b) 【session 39部分対応】Prism Realmがオーバーワールドに似すぎている問題 → 専用バイオーム(色・霧・パーティクル)を新設(session 39)。地面ブロック自体の専用化は依然未着手(項目9-a参照)。
-   - (c) 【session 40・43で着手、継続】専用植物が無い問題 → Prism Lily(session 40)に続き、Prism Bramble(session 43、§3AQ参照)を追加し、Prism Realm専用植物は2種になった。地形の形状・ブロックパレット(草ブロック/土/石)は依然未着手のまま(項目9-a参照)。
-   - (d) 【session 42で対応、§3AP参照、継続未対応分あり】ユーザーが手作りしたPrismium Core用の新テクスチャーを採用済み。**未対応: `chiseled_prismium_core.png`は独自デザインのまま(パレットのみ新、柄は未刷新)。ユーザーに「彫刻版も刷新してほしいか」を確認できていない(自動実行セッションのため質問不可) - 次回、Issue経由か次のインタラクティブセッションで確認すること。**
+   - (c) 【session 40・43・44で着手、今回で3種完了】専用植物が無い問題 → Prism Lily(session 40)・Prism Bramble(session 43)に続き、Prism Vine(session 44、§3AR-1参照)を追加し、Prism Realm専用植物は3種になった。3種とも異なる「成長方向」(Lily: 全高・中央対称、Bramble: 上部集中、Vine: 下部集中・横広がり)とアクセント配置ルールを持つ。地形の形状・ブロックパレット(草ブロック/土/石)は依然未着手のまま(項目9-a参照、引き続き最優先の未着手ギャップ)。
+   - (d) 【session 42で対応、§3AP参照】ユーザーが手作りしたPrismium Core用の新テクスチャーを採用済み。**session 44で`chiseled_prismium_core.png`の柄刷新を検討したが、Chiseled Block/Coreが共有する既存の「彫刻ファミリー」の一貫性を崩すリスクがあるため見送った(§3AR-2に分析結果を記録)。次回、Issue経由か次のインタラクティブセッションで「Chiseled CoreだけをBlockの新デザインに寄せたいか、彫刻版2種ともプレーン版の新スタイルに作り直したいか」をユーザーに確認すること - 確認が取れるまでは現状維持が安全。**
 
-1. **【最優先、恒例】まず`git log`/`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** session 43は1コミット(`e5874bd`、Prism Bramble一式 - §3AQ参照)をpushし、直後に`ci: update built jar`(`405e586`)が付いたことを確認済み。**session 43のbiome_modifier/placed_feature変更(新規4ファイル)もsession 39-41同様、CIビルド(コンパイル)が通ることと実際にゲーム内でデータパックが正しく読み込まれる/機能することは別問題。次回、GitHub Issueに新規のクラッシュ・データパックエラー報告が無いか特に注意して確認すること。**
+1. **【最優先、恒例】まず`git log`/`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** session 44は1コミット(`17ccac4`、Prism Vine一式 - §3AR参照)をpushし、直後に`ci: update built jar`(`e3d419f`)が付いたことを確認済み。**session 44のbiome_modifier/placed_feature変更(新規3ファイル)もsession 39-43同様、CIビルド(コンパイル)が通ることと実際にゲーム内でデータパックが正しく読み込まれる/機能することは別問題。次回、GitHub Issueに新規のクラッシュ・データパックエラー報告が無いか特に注意して確認すること。**
 
-2. 【session 43で実施済み】GitHub Issue確認(`/issues`一覧の`grep -o 'issues/[0-9]*'`→各Issueページを個別curlしてtitle/state/コメント数相当のtotalCountをgrepする方式、session 38で確立)を実施した。Open Issue #2, #3, #5, #6, #7, #8, #9はsession 41時点から変化なし(新規コメント・クローズの兆候無し、`"totalCount":0`のまま)。#1・#4はCLOSEDのまま。#10・#11は404で新規Issue無し。次回も同じ手順で毎回巡回すること。
+2. **【session 44で判明、重要】`api.github.com`は今回のセッションでは`curl`から到達不可だった(`HTTP_CODE:000`)。** session 43のPROGRESS.mdは「到達可能」と記載していたが、環境がセッションごとに変わる可能性がある。**次回はまず`api.github.com`を軽く試し、ダメなら`https://github.com/<repo>/commits/main.atom`(Atomフィード、api.github.com不要)でビルド結果を確認する方式に切り替えること**(session 44で実際にこの代替手段が機能することを確認済み)。GitHub Issue一覧・個別ページの取得(`https://github.com/<repo>/issues`等)は今回も`github.com`経由で問題なく到達できた。
 
-3. 【継続】session 38で対応したIssue #5・#6・#7・#8・#9は今回(session 43)も新しいコメント・クローズの兆候なし(全てOPENのまま)。実プレイでの検証待ちの状態が続いている。引き続き優先的に追跡すること。
+3. **【session 44で要検証、新規】Issue確認で使っていた`totalCount`grep(session 38確立)が、実際にはコメント数を反映していない可能性がある。** session 44では全Open Issueで同じ`totalCount`値(`0`と`2`)が出ており、これがコメント数なのか無関係な値(ラベル数等)なのか切り分けられなかった。次回、1つのIssueページのHTML構造を丁寧に読んで、コメント数を正確に拾えるgrepパターンを再確立すること(現状は「Issue一覧のURL構成に変化が無い=新規Issueは無い」という粗い判定はできているが、「既存Issueに新規コメントが付いたか」は今のところ確実には判定できていない)。
 
-4. 【session 41で初着手、継続注視】Issue #2(ツールの見た目)はsession 41でツルハシ/斧/シャベルのシルエットを再設計した(§3AO-1参照)。session 43では追加対応していない。ホットバー縮小表示での自己レビューでは以前より改善したが、完全に別物には見えづらいとも感じており、次回以降ユーザーの反応を確認すること。もし改善が不十分なら、次はvanilla実物のツール構図により忠実に寄せる作り直しを検討する必要がある。
+4. 【継続】session 38で対応したIssue #5・#6・#7・#8・#9はsession 44時点でも全てOPENのまま(コメント数の正確な判定は上記項目3参照だが、少なくともIssueのクローズは無い)。実プレイでの検証待ちの状態が続いている。引き続き優先的に追跡すること。
 
-5. 【継続、優先度中】Issue #9(プリズミウムディメンションへ行く手段が分かりにくい)の本格的なポータル機構は今回も未着手(ツールチップでの案内のみ、session 38)。
+5. 【session 41で初着手、継続注視】Issue #2(ツールの見た目)はsession 41でツルハシ/斧/シャベルのシルエットを再設計した(§3AO-1参照)。session 43・44では追加対応していない。次回以降ユーザーの反応を確認すること。もし改善が不十分なら、次はvanilla実物のツール構図により忠実に寄せる作り直しを検討する必要がある。
 
-6. 【再確認】git pushは今回も素のまま`git push origin main`で一発成功した(並行セッションが無かったため rebase 等は不要)。今回も「①まず素のまま試す→②`access denied by the git proxy`が出たらプロキシ変数を空にする」の順で問題なかった。session 34以降、10セッション連続でこの運用のまま成功している。
+6. 【継続、優先度中】Issue #9(プリズミウムディメンションへ行く手段が分かりにくい)の本格的なポータル機構は今回も未着手(ツールチップでの案内のみ、session 38)。
 
-7. 【継続、今回also確認】`/tmp/work`(前セッションが使ったパス)は今回も別セッション由来の`nobody:nogroup`所有ファイルで書き込み不可だった(`git pull`が`.git/FETCH_HEAD`で`Permission denied`)。今回は`/tmp/work3`という新規パスに逃がして解決した。確実性を優先するなら`/tmp/cm_$(date +%s%N)`のような一意なパスに`mkdir -p`してからcloneする方式(session 39で確立)を使うこと。**cloneした直後に`echo test >> <何らかのファイル>`のような簡単な書き込みテストを行い、権限があるか確認してから作業を始めるとよい(session 43で`git status`だけでは書き込み不可に気付けず、`git pull`で初めて発覚した)。**
+7. 【再確認】git pushは今回も素のまま`git push origin main`で一発成功した(並行セッションが無かったため rebase 等は不要)。session 34以降、11セッション連続でこの運用のまま成功している。
 
-8. 【継続、優先度中】v0.2.0タグ付きリリースの中身(添付jarのファイル名・サイズ)確認は今回も着手していない。
+8. 【継続、今回also確認】`/tmp/work`(前セッションが使ったパス)は今回も別セッション由来の`nobody:nogroup`所有ファイルで書き込み不可だった。今回は`~/work`(ホームディレクトリ配下)という新規パスに逃がして解決した。**確実性を優先するなら、cloneした直後に`echo test >> <何らかのファイル>`のような簡単な書き込みテストを行い、権限があるか確認してから作業を始めること(session 39以降の確立済みプラクティス)。**
 
-9. 【継続、優先度高】Prism Realm用の専用地形は、session 41で(b)資源密度アップに着手し、session 43で(c)植物を2種に増やしたことで、残る(a)地面ブロックの専用化がさらに際立つギャップになった。次回以降、以下を検討する価値がある:
-    - (a) 【未着手、最もリスクが高い】専用の`noise_settings`を作り、surface_ruleでPrism Realmバイオーム限定のブロック(例: 新規「Prismium Soil」ブロック)に草ブロック/土を置き換える。§2-9で判明した通りWebSearch/web_fetchで一次情報源に当たれるので、次回着手する際はsurface_rule/noise_settingsのスキーマをまず検索で裏取りしてから進めるとリスクを下げられる可能性がある。
-    - (b) 【session 41で対応済み、§3AO-2参照】既存のPrismium鉱石/結晶ブルーム/結晶スパイクの生成頻度をPrism Realm限定で引き上げるbiome_modifier(鉱石5→12・ブルーム4→10・スパイク2→6、オーバーワールド側は元のまま)。実機で密度差が体感できるかは未検証。
-    - (c) 【session 40・43で対応、継続】Prism Realm限定の植物をPrism Lily・Prism Bramble(session 43、§3AQ参照)の2種に拡張した。確立済みの「biome_modifierを`claudemod:prism_realm`のみに絞る」+「手打ちシルエット(ASCIIダンプで事前確認)+rim/erosionシェーディング」の技法はそのまま再利用できる。3種目を追加するなら、今度は地面付近を這う低木・つる植物など、垂直に伸びる2種(Lily/Bramble共に上向き)とは違う成長方向のシルエットが差別化になりそう。
+9. 【継続、優先度中】v0.2.0タグ付きリリースの中身(添付jarのファイル名・サイズ)確認は今回も着手していない。
 
-10. 【継続】Prismium Block/Core建築バリエーション計8種、5GUI、Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・Prism Realm関連一式(Prism Lily・Prism Bramble含む)は、いずれも実プレイでの検証が一切無いまま積み上がっている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+10. 【継続、優先度高、今回さらに際立ったギャップ】Prism Realm用の専用地形は、session 41で(b)資源密度アップ、session 40・43・44で(c)植物を3種に増やしたことで、残る(a)地面ブロックの専用化がさらに際立つギャップになった。次回以降、以下を検討する価値がある:
+    - (a) 【未着手、最もリスクが高い】専用の`noise_settings`を作り、surface_ruleでPrism Realmバイオーム限定のブロック(例: 新規「Prismium Soil」ブロック)に草ブロック/土を置き換える。WebSearch/web_fetchで一次情報源に当たれることが確認済み(session 43、§2-9参照)なので、次回着手する際はsurface_rule/noise_settingsのスキーマをまず検索で裏取りしてから進めるとリスクを下げられる可能性がある。
+    - (b) 【session 41で対応済み、§3AO-2参照】既存のPrismium鉱石/結晶ブルーム/結晶スパイクの生成頻度をPrism Realm限定で引き上げるbiome_modifier。実機で密度差が体感できるかは未検証。
+    - (c) 【session 40・43・44で対応、3種で一区切り】Prism Realm限定の植物をPrism Lily・Prism Bramble・Prism Vine(session 44、§3AR-1参照)の3種に拡張した。確立済みの「biome_modifierを`claudemod:prism_realm`のみに絞る」+「手打ちシルエット(ASCIIダンプで事前確認)+方向性/erosionシェーディング」の技法はそのまま再利用できるが、3種そろって性格が出そろった今、4種目を急いで足すよりは(a)の地面ブロック専用化に着手する方が優先度は高いと考えられる。
 
-11. 【継続、次の展開候補、ただし項目0・3・9を優先すること】
-    - (a) 【session 43で再検討、依然見送り】Prismium Arrow(session 30で見送り)。session 43でWebSearchが実際に一般サイトへ到達できることを確認した(§2-9・§3AQ-1参照)ため試みたが、vanilla `ArrowRenderer`の正確なUV座標までは検索で特定できず、今回も見送った。次回挑戦するなら、Yarn/MCPマッピングのソースを直接ホストするリポジトリを名指しで検索する等、より的を絞ったクエリを試す価値がある。
+11. 【継続】Prismium Block/Core建築バリエーション計8種、5GUI、Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・Prism Realm関連一式(Prism Lily・Prism Bramble・Prism Vine含む)は、いずれも実プレイでの検証が一切無いまま積み上がっている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+
+12. 【継続、次の展開候補、ただし項目0・4・10を優先すること】
+    - (a) 【session 43で再検討、依然見送り】Prismium Arrow(session 30で見送り)。vanilla `ArrowRenderer`の正確なUV座標が検索でも特定できず見送り継続。次回挑戦するなら、Yarn/MCPマッピングのソースを直接ホストするリポジトリを名指しで検索する等、より的を絞ったクエリを試す価値がある。
     - (b) GUIスロット化(`SlotItemHandler`等)、Prismium Cableの接続見た目・送電網ロジックの作り込み。
     - (c) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。
     - (d) Generatorの発電速度・バッファサイズの見直し。
     - (e) Issue #7が本来求めている本格的なガイド/図鑑システム。
 
-12. **【session 43で新規、重要】WebSearch/`mcp__workspace__web_fetch`が一般サイト(minecraft.wiki、Forge Forums等)に到達できることを再確認した(§2-9参照)。** session 36以降「github.com以外は全滅」という誤った一般化がこのファイルに定着していたが、実際には`bash`内`curl`がプロキシのアローリストで塞がれているホスト(api.github.com/discord.com/Maven等)が限定的にあるだけで、検索・一般Webページ取得は別経路で機能する。次回以降、記憶ベースの再現に頼っている実装(vanilla API仕様、worldgenスキーマ、レンダリング関連のUV/座標など)に着手する際は、まずこれらのツールで一次情報源に当たることを検討すること。
+13. 【session 43由来、継続】WebSearch/`mcp__workspace__web_fetch`が一般サイト(minecraft.wiki、Forge Forums等)に到達できることを確認済み(§2-9参照)。記憶ベースの再現に頼っている実装(vanilla API仕様、worldgenスキーマ、レンダリング関連のUV/座標など)に着手する際は、まずこれらのツールで一次情報源に当たることを検討すること。
 
 ### 議論したい論点・改善案
 
-- **「biome_modifierでの注入」と「biome側features配列への直接登録」のどちらがPrism Realm専用植生の"正しい"やり方か**: session 40はリスク回避を優先してbiome_modifier方式(§3AN-1で理由を明記)を選び、session 43のBrambleも同じ方式を踏襲した。結果としてこのMOD内で一貫した「新しい地表装飾はbiome_modifierで注入する」パターンが今のところ崩れていない(Ore/Bloom/Spike/Lily/Bramble全て同じ仕組み)というメリットがあるが、次回以降さらに植生を追加する際も同じ判断で良いか、一度立ち止まって検討する価値がある。
-- **テクスチャー制作の「ASCIIダンプで事前確認してからPNG化する」手法(session 43で導入)について**: Lily(session 40)は「PNG生成→Read確認→やり直し」を3回繰り返して収束させたのに対し、Bramble(session 43)は先に`--debug`フラグでターミナル上にASCIIアートを出力し、シルエットの重なり・バランスをその場で調整してからPNG化することで、Read確認は最終仕上がり1回で済んだ。ただし、ASCII確認では色・陰影のコントラスト(暗すぎないか等)までは分からず、結局`HILITE_FLECKS`の追加という形で1回の追加調整が発生した - 「シルエットの事前確認」と「配色・陰影の最終確認」は別々のチェックポイントとして両方必要、という教訓として次回以降のテクスチャー制作に活かす価値がある。
-- **アーマーのバンドテクスチャーは「近くで見ればファセット状クリスタルに見える」ことをピクセル単位の読み出しで確認したが、実際のゲーム内解像度・視距離でどう見えるかは別問題**(session 39から継続、未解決): 2行おきの縞模様が遠目でチラつき(モアレのような見た目)になる可能性はゼロではない。ユーザーが「まだのっぺりしている」あるいは逆に「うるさい/チカチカする」のどちらのフィードバックを返すかで、次の調整方向(コントラストを上げる/下げる)が変わってくる。
+- **Chiseled Block/Coreの「彫刻ファミリー」を維持するか、プレーン版の新スタイルに合わせて作り直すか(session 44で新規に浮上、§3AR-2参照)**: 現状は2つの一貫したサブファミリー(プレーン=手描き由来の有機的グラデーション、彫刻=対称的な石材パネル)が共存している。これ自体はデザインとして破綻していないが、ユーザーが「新しいプリズミウムブロックに対応できていない」と感じた対象に彫刻版も含まれていた可能性はある。次回、ユーザーに直接意図を確認できる機会があれば優先的に聞くべき論点。
+- **細い線状シルエットのテクスチャーにはerosion depthではなく方向性(top-lit)バンディングを使うべき、という教訓(session 44、§3AR-1参照)**: Lily/Brambleのerosion depth手法は面が広い塊向きで、Vineのような1-2px幅の線状シルエットには機能しなかった(ほぼ全ピクセルが最暗色になった)。次回、細い装飾(つる、ひび割れ模様、配線风のディテール等)を作る際はこの教訓を最初から適用し、erosion depthを試す前に線幅を見積もってどちらの手法が適切か判断するとよい。
+- **「biome_modifierでの注入」と「biome側features配列への直接登録」のどちらがPrism Realm専用植生の"正しい"やり方か**(session 40以降継続): session 40・43・44と3種の植物すべて同じbiome_modifier方式で一貫しているが、地面ブロック専用化(項目10-a)に着手する際は同じ設計判断が地形システムにも適用できるか改めて検討する価値がある。
+- **アーマーのバンドテクスチャーは「近くで見ればファセット状クリスタルに見える」ことをピクセル単位の読み出しで確認したが、実際のゲーム内解像度・視距離でどう見えるかは別問題**(session 39から継続、未解決): ユーザーが「まだのっぺりしている」あるいは逆に「うるさい/チカチカする」のどちらのフィードバックを返すかで、次の調整方向が変わってくる。
 
 ### コミット/プッシュ状況
 
-session 43の変更は1コミット: `e5874bd`(Prism Bramble一式: Java 2ファイル・アセット7ファイル・スクリプト1ファイル、§3AQ参照)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し)、素のまま`git push origin main`で一発成功。push後`git fetch`ポーリングで`ci: update built jar`(`405e586`)の到着を確認し、ビルド成功を確認済み。
+session 44の変更は1コミット: `17ccac4`(Prism Vine一式: Java 2ファイル・アセット7ファイル・スクリプト1ファイル、§3AR-1参照)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し)、素のまま`git push origin main`で一発成功。push後、`api.github.com`が到達不可だったため`https://github.com/Konpeitou24/ClaudeMod/commits/main.atom`のポーリングに切り替え、`ci: update built jar`(`e3d419f`)の到着を確認し、ビルド成功を確認済み。
 
-GitHub Issue確認は**session 43で実施済み**(§5項目2参照)。Open #2, #3, #5, #6, #7, #8, #9、CLOSED #1・#4、新規Issue無し(#10・#11は404)。
+GitHub Issue確認は**session 44で実施済み**(上記項目2・3参照)。Open #2, #3, #5, #6, #7, #8, #9、CLOSED #1・#4、新規Issue無し(#10・#11・#12は404)。ただしコメント数の正確な判定方法は要検証(項目3参照)。
+
+Chiseled Prismium Coreの柄刷新は**検討の上、今回は見送り**(§3AR-2参照、既存の彫刻ファミリーとの一貫性を優先)。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続、ただし§2-9の発見を踏まえると、discord.com自体が本当にWebSearch/web_fetch経由でも到達不可か次回検証する価値はあるかもしれない - 未検証)。GitHub Actions側の通知は、今回のpush(`e5874bd`)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず(`ci: update built jar`到着で成功は確認済み)。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続、未検証のまま)。GitHub Actions側の通知は、今回のpush(`17ccac4`)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず(`ci: update built jar`到着で成功は確認済み)。
