@@ -1,30 +1,48 @@
 #!/usr/bin/env python3
-"""Generate the 4 item-icon states for Prismium Bow (session 29).
+"""Generate the 4 item-icon states for Prismium Bow (session 29, reworked
+session 36 in response to direct user feedback with in-game screenshots:
+"the way tools are held in general looks weird" - specifically, the bow
+appeared to float away from the hand in third person and rendered as a
+huge, oddly-oriented shape in first person).
 
-The mod's first ranged weapon and the companion piece to Prismium Shield
-(session 28) - see PrismiumBowItem and PROGRESS.md session 28 handoff
-item 6(a). Extending vanilla's BowItem means the item needs the same
-4-texture "pull state" set vanilla's own bow uses: a resting icon plus
-three progressively-more-drawn frames, switched between at runtime by
-the "pulling"/"pull" item-model overrides in prismium_bow.json (see
-ClientModEvents for the matching ItemProperties registration).
+Root cause (session 36 diagnosis): this mod's other handheld items -
+Prismium's 5 basic tools (see gen_prismium_tools.py) and the Grappling
+Hook - are all drawn along the same bottom-left-to-top-right *diagonal*
+of the 16x16 canvas, which is the standard Minecraft convention for
+"item/handheld"-style held items (it's how vanilla's own tool and bow
+textures are drawn too) - that diagonal is what lines up correctly with
+the game's built-in in-hand item display transforms. The original
+session-29 bow, however, was explicitly drawn as a *vertical* longbow
+(see the removed docstring text below, kept here for context: "a
+vertical longbow silhouette (C-curve bulging left, tips at top/bottom)")
+- a deliberate design choice at the time, but one that fights the
+built-in hand transform instead of working with it, which is almost
+certainly why it looked wrong once actually seen in hand (this sandbox
+cannot render the game, so this mismatch went unnoticed for 7 sessions
+until a real screenshot surfaced it).
 
-Visual language: a vertical longbow silhouette (C-curve bulging left,
-tips at top/bottom) built from the tool/armor family's neutral steel
-(STEEL_*, identical hex values to gen_prismium_shield.py /
-gen_prismium_tools.py for cross-item consistency - this is a metal-cored
-bow, not a plain wood one) with a small wood-wrapped grip at the
-midpoint (WOOD_*, same palette as the shield's face) for material
-variety. The bowstring uses the mod's Prismium accent purple
-(PRISMIUM_ACCENT/_HILITE) instead of plain white/grey - an "energy
-string" that reads as part of the Prismium family at a glance, the same
-"one accent color ties it together" strategy used by every other
-accessory item in the mod. The string's draw point moves right (AWAY
-from the grip/limb) across the four frames to sell the pull motion, and
-a wood (shaft) + steel (head) + prismium-accent (fletching) arrow
-appears, progressively further nocked, in the two most-drawn frames -
-the head stays fixed just past the grip on the shot-direction (left)
-side while the fletched nock end tracks the string outward (right).
+This revision keeps the original's visual language (steel recurve limb,
+small wood-wrapped grip at the middle, Prismium-accent-purple string,
+string bending away from the grip + a wood/steel/accent arrow nocking
+progressively further as the bow is drawn - see the session-29 self
+-review notes below, which are still the correct animation logic and
+were NOT the problem) but re-derives the limb/string/arrow geometry
+along the same diagonal spine the rest of the mod's handheld items use:
+base_point(t) = (1+t, 14-t) for t in 0..13, i.e. the exact same
+bottom-left (1,14) grip anchor gen_prismium_tools.py's draw_handle()
+starts from.
+
+Because a diagonal "add o to both x and y" step covers sqrt(2)x the
+on-screen distance of the original's single-axis-only offset, the old
+bulge/pull magnitudes were divided by sqrt(2) (see INV_SQRT2 below) so
+the curve keeps the same visual "reach" instead of overshooting into the
+canvas corner - an early test draft that skipped this correction
+produced a limb that flew out to a corner, disconnected from the string,
+reading as a checkmark/slash rather than a bow (a case of the mistake
+this docstring is now warning future edits about).
+
+Original session-29 self-review notes (still accurate, kept verbatim
+since the animation logic they describe is unchanged by this rework):
 
 Self-review note (round 1): an early draft kept the string perfectly
 straight in all four frames and only moved the arrow, which read as
@@ -43,28 +61,44 @@ of the arrow is fixed (head, near the grip) versus which end moves with
 the string (the fletched nock). This is the mistake to watch for if this
 script is ever copied as a template for another bow-like item: always
 sanity-check "does the string bend away from the grip, not into it?"
-before calling a draw-state texture done.
+before calling a draw-state texture done. (In this session-36 diagonal
+rework, "away from the grip" becomes "further in the +offset direction,
+toward the lower-right" - see draw_string's `pull` parameter.)
+
+Session-36 self-review: three drafts were tried before this one. Draft 1
+reused the original single-axis bulge magnitudes unscaled, which sent
+the limb flying out to the canvas corner, disconnected from the string
+(read as a checkmark, not a bow). Draft 2 cut the bulge to a flat small
+constant, which fixed the corner-overshoot but made the curve too subtle
+to read as a bow at all (looked like a single messy diagonal smudge).
+This final version derives the bulge by dividing the original vertical
+design's already-tuned per-position magnitudes by sqrt(2) (the exact
+correction for a two-axis diagonal step vs. the original's single-axis
+step) - previewed at 1x/2x/4x/8x upscale, this reads as a recognizable
+diagonal recurve bow at 4x/8x (the roughly hotbar-icon-equivalent
+sizes) and as a plausible diagonal-with-crossbar smudge at 1x/2x, same
+legibility ballpark as the mod's other 16x16 icons at those sizes.
 
 Deterministic (no RNG - every pixel is placed explicitly). Run from repo
 root: python3 scripts/textures/gen_prismium_bow.py
 """
+import math
 from pathlib import Path
 
 from PIL import Image
 
 SIZE = 16
+INV_SQRT2 = 1 / math.sqrt(2)
 REPO_ROOT = Path(__file__).resolve().parents[2]
 ASSETS = REPO_ROOT / "src/main/resources/assets/claudemod/textures"
 
 # ---- palette (shared with gen_prismium_shield.py / gen_prismium_tools.py
 # for cross-item family consistency) ---------------------------------------
 STEEL_OUTLINE = "#1B1B22"
-STEEL_SHADOW = "#3A3A46"
 STEEL_BASE = "#5B5B6B"
 STEEL_HILITE = "#8A8A9C"
 
 WOOD_OUTLINE = "#241407"
-WOOD_SHADOW = "#5C3A1E"
 WOOD_BASE = "#8A5A30"
 WOOD_HILITE = "#B07D48"
 
@@ -78,11 +112,9 @@ def hexrgb(h):
 
 
 S_OUTLINE = hexrgb(STEEL_OUTLINE)
-S_SHADOW = hexrgb(STEEL_SHADOW)
 S_BASE = hexrgb(STEEL_BASE)
 S_HILITE = hexrgb(STEEL_HILITE)
 W_OUTLINE = hexrgb(WOOD_OUTLINE)
-W_SHADOW = hexrgb(WOOD_SHADOW)
 W_BASE = hexrgb(WOOD_BASE)
 W_HILITE = hexrgb(WOOD_HILITE)
 ACCENT = hexrgb(PRISMIUM_ACCENT)
@@ -98,110 +130,127 @@ def set_px(px, x, y, color):
         px[x, y] = (*color, 255)
 
 
-# The limb: a vertical C-curve, one or two pixels wide per row, bulging
-# left toward x=3 at the vertical middle and narrowing to tips at the
-# very top/bottom rows. (row, [x, ...]) - explicit per-row pixel lists
-# rather than a formula, so the curve can be hand-tuned.
-LIMB_ROWS = {
-    1: [9, 10],
-    2: [7, 8],
-    3: [6],
-    4: [5],
-    5: [4],
-    6: [3],
-    7: [3],
-    8: [3],
-    9: [3],
-    10: [4],
-    11: [5],
-    12: [6],
-    13: [7, 8],
-    14: [9, 10],
-}
-GRIP_ROWS = (7, 8)  # wood-wrapped grip section, middle of the limb
+def base_point(t):
+    """The bow's diagonal spine, t in 0..13 - the same bottom-left grip
+    anchor (1, 14) every other handheld item in this mod starts its
+    handle/shaft from (see gen_prismium_tools.py's draw_handle)."""
+    return 1 + t, 14 - t
+
+
+# The original (session 29) vertical design's horizontal bulge-from-tip
+# -baseline, kept as the source of truth for the curve's *shape* (it was
+# already tuned to look like a recognizable recurve limb) and scaled by
+# 1/sqrt(2) below since a diagonal (o, o) pixel step covers sqrt(2)x the
+# on-screen distance of the original's single-axis o step.
+_ORIGINAL_VERTICAL_BULGE = [0, 2, 3.5, 4.5, 5.5, 6.2, 6.5, 6.5, 6.2, 5.5, 4.5, 3.5, 2, 0]
+BULGE = [round(v * INV_SQRT2) for v in _ORIGINAL_VERTICAL_BULGE]
+GRIP_T = (6, 7)  # wood-wrapped grip, the middle of the spine - also
+                  # where the bulge is largest, matching a recurve bow's
+                  # riser sitting at the curve's belly.
+
+
+def limb_band(t):
+    """Perpendicular-offset(s) for this spine position, toward the
+    upper-left (negative x, negative y) - 2px thick near the tips (t in
+    0,1,12,13) like the original, 1px thick along the rest of the limb."""
+    o = BULGE[t]
+    if t in (0, 1, 12, 13):
+        return [-o, -o - 1]
+    return [-o]
 
 
 def draw_limb(px):
-    limb_pts = set()
-    for y, xs in LIMB_ROWS.items():
-        for x in xs:
-            limb_pts.add((x, y))
+    pts = set()
+    per_t = {}
+    for t in range(14):
+        bx, by = base_point(t)
+        band = []
+        for o in limb_band(t):
+            point = (bx + o, by + o)
+            band.append(point)
+            pts.add(point)
+        per_t[t] = band
 
-    for y, xs in LIMB_ROWS.items():
-        for x in xs:
-            if y in GRIP_ROWS:
-                color = W_HILITE if x == max(xs) else W_BASE
+    for t in range(14):
+        is_grip = t in GRIP_T
+        for i, (x, y) in enumerate(per_t[t]):
+            if is_grip:
+                color = W_HILITE if i == 0 else W_BASE
             else:
-                color = S_HILITE if (x + y) % 3 == 0 else S_BASE
+                color = S_HILITE if i == 0 else S_BASE
             set_px(px, x, y, color)
 
-    # Outline the limb silhouette.
-    for (x, y) in limb_pts:
+    # Outline the limb silhouette (grip section gets the wood outline).
+    grip_pts = {p for t in GRIP_T for p in per_t[t]}
+    for (x, y) in pts:
         for (dx, dy) in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
             nx, ny = x + dx, y + dy
-            if (nx, ny) not in limb_pts and 0 <= nx < SIZE and 0 <= ny < SIZE:
-                if px[nx, ny][3] == 0:
-                    outline = W_OUTLINE if y in GRIP_ROWS else S_OUTLINE
-                    px[nx, ny] = (*outline, 255)
+            if (nx, ny) not in pts and 0 <= nx < SIZE and 0 <= ny < SIZE and px[nx, ny][3] == 0:
+                outline = W_OUTLINE if (x, y) in grip_pts else S_OUTLINE
+                px[nx, ny] = (*outline, 255)
 
-    return limb_pts
+    return pts
 
 
-def draw_string(px, mid_x, limb_pts):
-    """String from the top tip (row 1, x=10) to the bottom tip (row 14,
-    x=10), smoothly bending toward mid_x at the vertical center (between
-    rows 7/8). Uses a continuous linear interpolation (by distance from
-    the center row) rather than a handful of hand-picked per-row values,
-    so the line has no discontinuities/gaps - an early draft picked
-    per-row x values by hand and produced a viscerally "broken dashed
-    line" look once previewed at 16x16 (see this script's module
-    docstring self-review note) because the values did not change
-    monotonically row-to-row."""
-    center = 7.5
-    half_span = 6.5  # distance from center to row 1 or row 14
-    string_x = {}
-    for y in range(1, 15):
-        t = 1.0 - abs(y - center) / half_span  # 0 at the tips, 1 at the center
-        x = round(10 - t * (10 - mid_x))
-        string_x[y] = x
+def draw_string(px, pull, limb_pts):
+    """String from tip to tip along the spine, bending toward the
+    lower-right (away from the limb's upper-left bulge, i.e. away from
+    the grip/riser) as the bow is drawn further - `pull` grows 0 (rest)
+    -> 1 -> 3 -> 5 across the four frames, same progression as the
+    original vertical design's mid_x, scaled by 1/sqrt(2) for the same
+    reason as the limb bulge. A resting offset of 1 (instead of 0) keeps
+    the string a hair off the limb even unstrung, so the two don't visually
+    merge into one line."""
+    pts = {}
+    for t in range(14):
+        bx, by = base_point(t)
+        tri = 1.0 - abs(t - 6.5) / 6.5  # 0 at the tips, 1 at the center
+        o = 1 + round(pull * tri * INV_SQRT2)
+        x, y = bx + o, by + o
+        pts[t] = (x, y)
         if (x, y) in limb_pts:
             continue
-        color = ACCENT_HILITE if y in (1, 14) else ACCENT
+        color = ACCENT_HILITE if t in (0, 13) else ACCENT
         set_px(px, x, y, color)
-    return string_x
+    return pts
 
 
-def draw_arrow(px, head_x, nock_x, nock_y_range, limb_pts):
-    """A horizontal arrow resting across the grip: a steel head at the
-    far (left) end pointing past the limb toward the shot direction, a
-    wood shaft, and a Prismium-accent fletching flare at the nock end
-    (right), which sits on the string and therefore must be the end that
-    moves as the bow is drawn further - see draw_string / make_frame for
-    why "further drawn" means "nock_x grows", not shrinks."""
-    mid_row = (nock_y_range[0] + nock_y_range[-1]) // 2
-    for x in range(head_x, nock_x):
-        # Unlike draw_string, the arrow is drawn *over* the grip rather
-        # than stopping at it - a nocked arrow visually rests on top of
-        # the riser, it does not vanish behind it.
-        set_px(px, x, mid_row, W_BASE)
-    set_px(px, head_x, mid_row, S_HILITE)
-    set_px(px, head_x + 1, mid_row - 1, S_BASE)
-    set_px(px, head_x + 1, mid_row + 1, S_BASE)
-    # Fletching flare at the nock end (2 pixels, above/below the shaft).
-    if (nock_x + 1, mid_row - 1) not in limb_pts:
-        set_px(px, nock_x + 1, mid_row - 1, ACCENT)
-    if (nock_x + 1, mid_row + 1) not in limb_pts:
-        set_px(px, nock_x + 1, mid_row + 1, ACCENT)
+def draw_arrow(px, pull, limb_pts):
+    """A nocked arrow resting across the grip, perpendicular to the bow's
+    diagonal spine: a steel head fixed just past the grip on the
+    shot-direction (upper-left) side, a wood shaft, and a Prismium-accent
+    fletching flare at the nock end, which sits on the string and tracks
+    it outward (lower-right) as the draw increases - mirrors the original
+    vertical design's head-fixed/nock-tracks-string logic exactly, just
+    rotated onto the new diagonal axis."""
+    bx, by = base_point(6)
+    bx2, by2 = base_point(7)
+    cx, cy = round((bx + bx2) / 2), round((by + by2) / 2)
+    edge_o = round(2 * INV_SQRT2)
+    head = (cx - BULGE[6] - edge_o, cy - BULGE[6] - edge_o)
+    nock_o = round(pull * INV_SQRT2)
+    nock = (cx + nock_o + 1, cy + nock_o + 1)
+
+    steps = max(abs(nock[0] - head[0]), abs(nock[1] - head[1]))
+    for i in range(steps + 1):
+        t = i / steps
+        x = round(head[0] + (nock[0] - head[0]) * t)
+        y = round(head[1] + (nock[1] - head[1]) * t)
+        if (x, y) not in limb_pts:
+            set_px(px, x, y, W_BASE)
+    set_px(px, head[0], head[1], S_HILITE)
+    # Fletching flare either side of the nock end.
+    set_px(px, nock[0], nock[1] - 1, ACCENT)
+    set_px(px, nock[0] - 1, nock[1], ACCENT)
 
 
-def make_frame(mid_x, arrow=None):
+def make_frame(pull, arrow):
     img = new_img()
     px = img.load()
     limb_pts = draw_limb(px)
-    draw_string(px, mid_x, limb_pts)
-    if arrow is not None:
-        head_x, nock_x = arrow
-        draw_arrow(px, head_x, nock_x, GRIP_ROWS, limb_pts)
+    draw_string(px, pull, limb_pts)
+    if arrow:
+        draw_arrow(px, pull, limb_pts)
     return img
 
 
@@ -209,17 +258,11 @@ def main():
     out_dir = ASSETS / "item"
     out_dir.mkdir(parents=True, exist_ok=True)
 
-    # mid_x grows (string bends further right, AWAY from the grip at
-    # x=3) as the draw progresses - see draw_string's docstring and the
-    # session's self-review note above for why the earlier draft had
-    # this backwards. head_x/nock_x for the arrow: the head stays fixed
-    # just past the grip (pointing toward the shot direction, left) while
-    # nock_x tracks the string's own rightward pull.
     frames = {
-        "prismium_bow": make_frame(mid_x=10, arrow=None),
-        "prismium_bow_pulling_0": make_frame(mid_x=11, arrow=None),
-        "prismium_bow_pulling_1": make_frame(mid_x=13, arrow=(1, 13)),
-        "prismium_bow_pulling_2": make_frame(mid_x=15, arrow=(1, 15)),
+        "prismium_bow": make_frame(pull=0, arrow=False),
+        "prismium_bow_pulling_0": make_frame(pull=1, arrow=False),
+        "prismium_bow_pulling_1": make_frame(pull=3, arrow=True),
+        "prismium_bow_pulling_2": make_frame(pull=5, arrow=True),
     }
     for name, img in frames.items():
         out_path = out_dir / f"{name}.png"
