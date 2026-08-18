@@ -118,9 +118,16 @@ def make_prismium_cell():
     for (x, y) in [(3, 3), (12, 3), (3, 12), (12, 12)]:
         px[x, y] = (*casing_mid, 255)
 
-    # 6) A single accent "terminal" pixel on the top casing band, a small
-    # nod to a battery's terminal without adding real clutter.
-    px[7, 1] = (*accent, 255)
+    # 6) [Removed after review] This used to place a single accent
+    # "terminal" pixel on the top casing band (px[7, 1]) as a nod to a
+    # battery terminal. At 16x16 scale it read as a stray, unexplained
+    # magenta dot rather than an intentional detail - and no sibling
+    # texture in the family (block/generator/pylon/lantern/etc.) uses an
+    # isolated single accent pixel disconnected from its main glow
+    # window; they all keep the accent color contained to corner/gauge
+    # details next to the glass. Removed for consistency with that
+    # convention - the two gauge bars in step 4 already carry the
+    # "charge indicator" idea without the stray dot.
 
     # 7) Crisp 1px outline border, matching the rest of the family. Drawn
     # last so it stays crisp even where it overlaps the casing highlight.
