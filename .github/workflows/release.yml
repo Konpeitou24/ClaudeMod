@@ -1,0 +1,60 @@
+name: Release
+
+# Fires when a semantic-version tag (vX.Y.Z) is pushed. Builds the mod and
+# publishes a GitHub Release with the jar attached. Added in response to
+# GitHub issue #3 ("リリースについて" - please cut versioned releases).
+#
+# How to cut a release (for future sessions / maintainers):
+#   1. Bump `mod_version` in gradle.properties (semantic versioning).
+#   2. Update RELEASE_NOTES.md with a summary for the new version (this file's
+#      contents become the top of the release body; generate_release_notes
+#      below appends an auto-generated commit changelog after it).
+#   3. Commit those changes to main as usual.
+#   4. Tag the commit and push the tag, e.g.:
+#        git tag v0.2.0
+#        git push origin v0.2.0
+#      This workflow does the rest (build + publish release), independently
+#      of the regular build-and-notify.yml workflow that runs on every push
+#      to main.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Build with Gradle
+        run: ./gradlew build --stacktrace
+
+      - name: Find built jar
+        id: jar
+        run: |
+          JAR=$(find build/libs -maxdepth 1 -name "*.jar" ! -name "*-sources.jar" | head -n 1)
+          echo "path=$JAR" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ClaudeMod ${{ github.ref_name }}
+          files: ${{ steps.jar.outputs.path }}
+          body_path: RELEASE_NOTES.md
+          generate_release_notes: true
