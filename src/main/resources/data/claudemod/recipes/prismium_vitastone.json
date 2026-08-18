@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "G": { "item": "minecraft:ghast_tear" },
+        "M": { "item": "minecraft:glistering_melon_slice" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        " G ",
+        "MSM",
+        " G "
+    ],
+    "result": {
+        "item": "claudemod:prismium_vitastone",
+        "count": 1
+    }
+}

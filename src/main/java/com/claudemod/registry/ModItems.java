@@ -18,6 +18,7 @@ import com.claudemod.item.PrismiumGuardianCharmItem;
 import com.claudemod.item.PrismiumLocatorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
 import com.claudemod.item.PrismiumShieldItem;
+import com.claudemod.item.PrismiumVitastoneItem;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.AxeItem;
 import net.minecraft.world.item.BlockItem;
@@ -225,6 +226,13 @@ public class ModItems {
     // Same "stacks normally, presence-only" treatment as Featherstone.
     public static final RegistryObject<Item> PRISMIUM_EMBERGUARD = ITEMS.register("prismium_emberguard",
             () -> new PrismiumEmberguardItem(new Item.Properties()));
+
+    // Prismium Vitastone (session 33): the mod's third purely passive
+    // accessory - see PrismiumVitastoneItem / PrismiumVitastoneHandler.
+    // Same "stacks normally, presence-only" treatment as Featherstone/
+    // Emberguard.
+    public static final RegistryObject<Item> PRISMIUM_VITASTONE = ITEMS.register("prismium_vitastone",
+            () -> new PrismiumVitastoneItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
