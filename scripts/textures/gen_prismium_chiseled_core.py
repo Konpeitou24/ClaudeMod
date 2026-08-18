@@ -164,15 +164,32 @@ def make_preview(img, scales=(4, 8, 16)):
     return preview
 
 
+def use_user_submitted_chiseled_core_texture():
+    """Copy the user's hand-drawn Chiseled Prismium Core art in as the real asset.
+
+    Same-day follow-up to the plain Prismium Core art adoption
+    (gen_prismium_core.py's use_user_submitted_core_texture()): the user
+    also hand-made a dedicated texture for the chiseled/masonry variant,
+    replacing make_chiseled_core()'s programmatic framed-panel + radiant
+    core cluster design. Converts to RGBA (source PNG is plain RGB) but
+    does not otherwise touch a single pixel.
+    """
+    src = REPO_ROOT / "scripts/textures/reference/user_submitted_chiseled_prismium_core_2026-08-18.png"
+    img = Image.open(src).convert("RGBA")
+    assert img.size == (SIZE, SIZE), f"expected {SIZE}x{SIZE}, got {img.size}"
+    out = ASSETS / "block/chiseled_prismium_core.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out)
+    print(f"wrote {out.relative_to(REPO_ROOT)} (from user-submitted art, not make_chiseled_core())")
+
+
 def main():
     out_dir = ASSETS / "block"
     out_dir.mkdir(parents=True, exist_ok=True)
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
 
-    img = make_chiseled_core()
-    out_path = out_dir / "chiseled_prismium_core.png"
-    img.save(out_path)
-    print(f"wrote {out_path}")
+    use_user_submitted_chiseled_core_texture()
+    img = Image.open(ASSETS / "block/chiseled_prismium_core.png")
 
     preview = make_preview(img)
     preview_path = BUILD_DIR / "preview_chiseled_prismium_core.png"
