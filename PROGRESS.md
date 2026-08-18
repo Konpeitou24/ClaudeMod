@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-18 (セッション #43)
+最終更新: 2026-08-19 (セッション #47、対話セッション)
 
 ---
 
@@ -1956,77 +1956,147 @@ WebSearchで実例と照合し、2つの独立した原因を特定(いずれも
 - **GitHub添付ファイル(`user-attachments/files/...`のクラッシュログ等)は`curl -sL`でダウンロード可能**(`github.com`経由でS3署名付きURLにリダイレクトされる)。Issue調査でユーザーが貼ったクラッシュログ・スクリーンショット等を直接読めることが分かった。
 - **`api.github.com`アクセス不能を前提に、「JSON目印ファイル+CI側での実処理」という中継パターンが2件目になった**(1件目: `PENDING_ISSUES.json`→Discord通知、2件目: `RELEASES_TO_DELETE.json`→リリース削除)。今後も「サンドボックスから直接is APIを叩けないが、ネットワーク制限のないActionsランナーなら可能」な操作(例: Issueのクローズ・コメント投稿等)はこのパターンで実現できる。**次の有力候補は「Issueへの返信・クローズ」**(現状、Issue #5・#10・#11のような対応済みのIssueをクローズする手段がサンドボックスに無く、手動 or ユーザー任せになっている)。
 
+## 3AW. 対話セッション(session 47、定期実行ではなく本人との直接チャット): Prism Realm地形の全面フラットワールド化 + Rift Shard着地バグ修正 + Prismium Deep Wraith新設 + Issueクローズ中継の新設
+
+### 3AW-0. 経緯
+
+本セッションは1時間ごとの定期実行ではなく、こんぺいとうさん(リポジトリオーナー)本人とのCowork上での直接チャットとして始まった。スクリーンショット付きで「プリズミウムディメンションに普通の土や石が生成されている」という報告と、Rift Shardのテレポート位置バグ、新規アイテム案(リスポーン地点アイテム・時間操作ブロック)、Prism Realmの草花が未活用という指摘の計4点を受け取った。地形の話は設計判断が要る大きな変更のため、`AskUserQuestion`で「進め方」「地形の方針」を確認したところ、「段階的でかまわない、ただ地中も含めたい」「まずフラット地形・フラット海を作り、うまくいき次第バイオームを追加し、最後にフラットを撤去するイメージ」という具体的な方針の提示があり、加えて「海にテレポートしそうならプリズミウム土の9x1x9プラットフォームを作る」「Prismium WraithがDrownedになってしまうので専用の水生モブにしてほしい」「雲がオーバーワールドの雲で不自然」という3点が追加された。実装方法自体は一任された。
+
+### 3AW-1. 調査: 地形が汚染されていた根本原因
+
+`data/claudemod/dimension/prism_realm.json`を確認したところ、`generator.type: "minecraft:noise"` + `settings: "minecraft:overworld"`だった。つまりバイオームタグだけがカスタムで、地形の形状・材質そのものはバニラのオーバーワールド生成をそのまま流用しており、session 45のPrismium Soil Featureは地表の`grass_block`/`dirt`/`coarse_dirt`のみを置換する後付けの塗り替えに過ぎなかった。地中の石・取りこぼした地表がバニラのままだったのは、この設計そのものが原因だった。
+
+### 3AW-2. 実装: Prismium Stone(新規ブロック、地形フラット化の下地)
+
+`scripts/textures/gen_prismium_stone.py`: 既存の`prismium_ore.png`から実際のピクセル色を`Counter`でサンプリングし(記憶で再現せず一次情報から抽出)、その5段階のグレーをそのまま使ったヴァニラ石調のモットル地に、鉱石本体のシアン系アクセントを1タイルあたり3〜5px程度だけ極めて控えめに散らした。「鉱石の親戚だと分かるが、鉱石そのものには見えない」という狙い。チェッカーボード+4x4タイル敷き詰めプレビューをRead目視確認済み(アルファは全面255、シーム不自然なし)。`ModBlocks`/`ModItems`/`ModCreativeTabs`/`mineable/pickaxe`タグ/blockstate・block/itemモデル/loot table/lang(en/ja)一式を既存の`prismium_ore`と同じパターンで登録。
+
+### 3AW-3. 実装: Prism Realmをフラット「ウォーターワールド」に全面書き換え
+
+WebSearchで`minecraft:flat`チェンクジェネレーターのJSONスキーマ(`generator.settings.{biome,layers,lakes,features,structure_overrides}`)を確認し、さらに`features`(バイオーム由来のplaced featureを生成するかどうかのフラグ、デフォルトfalse)の意味を別途裏取りした上で`true`に設定(既存のPrismium植物/ソイル/スポーンbiome_modifierを引き続き動かすために必須と判断)。
+
+新しい`data/claudemod/dimension/prism_realm.json`:
+```
+bedrock(1) → prismium_stone(59) → prismium_soil(1) → water(68, 海面y=64)
+```
+バイオームは`claudemod:prism_realm`のまま変更していないため、既存の`effects`(空色・霧色等)やbiome_modifier群(Wraithスポーン、Lily/Bramble/Vine/Soil)は無変更でそのまま乗る設計。ユーザー本人の方針(「まずフラット地形・フラット海」)に従い、地中も含め完全にオーバーワールド由来のブロックを排除した。**この設計により、当面ディメンションのほぼ全域が深さ約68ブロックの海になる**(陸地は今後のバイオーム追加セッションで作る前提、ユーザーも承知済み)。
+
+**副作用として予想されること(未検証、次回以降要注意)**: 既存のPrism Lily/Bramble/Vine Featureは(セッション45時点の実装で)地表がほぼ全域水没する影響で配置に失敗し続ける可能性が高い(生育条件が水没を想定していないため)。クラッシュはしないはずだが、見た目上「植物が生えなくなった」状態になる見込み。PrismiumSoilFeatureも同様に「置換対象のgrass_block/dirtがそもそも存在しない」ため実質no-opになる(実害はない)。
+
+### 3AW-4. 実装: Rift Shardの着地バグ修正
+
+`PrismiumRiftShardItem#findSafeRealmLanding`を新設。以下の対策を実施:
+1. `realmLevel.getChunk(x >> 4, z >> 4)`を明示的に呼び、ハイトマップ読み取り前にチャンクの完全生成を強制(`ServerLevel#getChunk(int,int)`はデフォルトで`ChunkStatus.FULL`を要求する)。従来のバグ(地中/岩盤下への着地)の最有力な原因は、チャンク未生成のままハイトマップを読み、ワールド最下部付近のデフォルト値を「地表」と誤認していたことと推測(実機確認はできていないため確証はない)。
+2. 算出したY座標が`minBuildHeight()`(ワールド床面)以下という明らかに異常な値の場合、現在のフラット地形の海面に基づく安全な定数(y=65)にフォールバック。
+3. **ユーザー提案通り**: 着地地点の直下が液体(水/溶岩)であれば、その9x1x9範囲を`prismium_soil`で埋めて足場を作ってから着地させる。現状ディメンションのほぼ全域が海のため、当面はほぼ毎回この足場生成が発動する見込み。
+帰還経路(Prism Realm→オーバーワールド等)にも同じチャンク強制生成の防御策を追加(バグ報告の対象ではなかったが、一貫性のため)。
+
+### 3AW-5. 実装: Prismium Deep Wraith(新規モブ、水中変質先の専用エンティティ)
+
+`PrismiumWraithEntity`はvanilla `Zombie`を直接継承しているため、何もしなければ水没放置で`Zombie#doUnderWaterConversion()`が呼ばれ`EntityType.DROWNED`(バニラのドラウンド)に変質してしまう(既存コードは一切これを上書きしていなかった)。`doUnderWaterConversion()`をオーバーライドし、`protected`な`convertToZombieType(EntityType)`を独自のターゲット型で呼び出すよう変更(このメソッド自体が変換の実処理を汎用的にやってくれるため、変換先を差し替えるだけで済む)。
+
+新設した`PrismiumDeepWraithEntity`は、session 12の陸上Wraithと全く同じ「vanilla `Zombie`を直接継承し、`ZombieModel`をそのまま流用してテクスチャーだけ差し替える」という最低リスクの方針を踏襲。差分:
+- `canBreatheUnderwater()`をtrueに(溺れダメージ・浮上行動を無効化)
+- HP34/攻撃力3/移動速度0.23とやや水中向けに調整(未検証、勘によるバランス)
+- 環境音/被弾音/死亡音をVex→Guardianに変更(「水中の脅威」寄りの音響に)
+- テクスチャー(`gen_prismium_deep_wraith.py`)は陸上Wraith用スクリプトのパレットのみ差し替え(石肌グレー→濃紺の「水没した玄武岩」調、紫のコアシャード→緑がかったバイオルミネッセンス調)、発光ひび割れのシアン系は共通のまま残し「同じ生物の別状態」に見えるよう意図した。プレビューをRead目視確認済み(アルファ0/255のみ、輪郭明瞭)。
+- スポーン配置(`SpawnPlacementRegisterEvent`)は登録していない(変換とスポーンエッグ経由でしか生成されないため、自然スポーン述語は評価される機会が無いと判断)。
+- 本格的な遊泳AI(vanilla Drownedの`SmoothSwimmingMoveControl`相当)は未実装。デフォルトのZombie地上ナビゲーションのままで、海底を歩くことはできるが優雅な遊泳はしない(実機検証なしにナビゲーター自作はリスクが高いと判断、次回以降の改善候補)。
+
+### 3AW-6. 雲の見た目(ユーザー指摘4点目)は調査のみ、実装は見送り
+
+`dimension_type`の`effects: "minecraft:overworld"`がオーバーワールドと同じ雲(高さ192、白色)を描画させている原因と判明。Forgeの`RegisterDimensionSpecialEffectsEvent`でクライアント専用のカスタム`DimensionSpecialEffects`を登録すれば雲だけを無効化できる(雲の高さにNaNを渡すのがバニラのNether/End方式との一致から有力な手法と推測)ことをWebSearchで確認したが、**この仕組みはクライアント専用のレンダリングコードで、CIの`runGameTestServer`検証(ヘッドレスサーバー)では一切カバーされない**(コンパイルさえ通れば見た目のミスはビルドが全部グリーンのまま気付かれない、まさにv0.3.0を生んだのと同種のリスク)。`DimensionSpecialEffects`抽象クラスの正確なコンストラクタ引数・抽象メソッド一覧を一次情報で確定させられなかった(javadocページの直接取得がprovenance制限で不可、代替検索でも断片的な情報しか得られず)ため、確信の持てないまま実装するのは避け、**今回は見送った**。次回セッションへの申し送りに技法の要点(下記§5参照)を残す。
+
+### 3AW-7. 実装: GitHub Issue #10/#11/#6/#8をクローズ(自動セッション#47の前半、参考: このファイル上部の§には別記あり)
+
+このセッション開始前(直前の定期実行分)で、`ISSUES_TO_CLOSE.json` + `build-and-notify.yml`への新ステップ(`gh issue comment`+`gh issue close`、`issues: write`権限追加)を新設し、#10・#11(v0.3.1で修正済み)と、クローズ漏れに気付いた#6・#8(いずれもsession 38で修正済みだが放置されていた)をキューに入れてpush済み。CI実行で`ci: clear processed ISSUES_TO_CLOSE entries`コミットの到着を確認し、4件とも実際にクローズされたことを確認済み(詳細は本ファイル該当箇所参照)。Prismium Shieldの`blocking`述語ItemProperties未登録(session 38のモデルJSONだけ先行していた)もこの流れで発見・修正した。
+
+### 3AW-8. commit・push・ビルド確認
+
+計4コミットをpush: `46ca652`(Prismium Stone)、`a87fe92`(フラットワールド化)、`5b8ef62`(Prismium Deep Wraith)、`3228072`(Rift Shard修正)。push前に`git fetch`で並行セッション無しを確認、一発成功。**`runGameTestServer`によるデータパック検証で`status=ok`を確認済み**(コミット`3228072`、CI実行`32153801947`) - 新しいflatジェネレーター・新規ブロック・新規エンティティを含む変更一式が、実際にヘッドレスサーバーのレジストリ読み込みを通過することを確認できた。ただし前述の通りこれは「サーバー側が起動できる」ことの確認であり、クライアント側の見た目(地形の実際の見え方、モブのテクスチャー、Rift Shardの着地感)は未検証のまま。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-00000. **【最優先・新規・全セッション必読、対話セッション(session 46直後)】リリース運用方針を改訂した(§3AS-4b参照)。「大きな区切り」を待たず、mainにpushしたセッションは原則毎回パッチ版(Z)をリリースすること。** 条件: (1) 通常ビルド成功、(2) データパックJSONを変更した回は`builds/last_datapack_validation_summary.txt`が`status=ok`であることを確認してから。マイナー版(Y)は従来通り大きな区切りでのみ。ユーザー(こんぺいとう)からの明示的な依頼(「バグの特定・修正にせっかくのセマンティックバージョニングのZをうまく活用してこまやかにリリースしておくと良い」)に基づく方針変更。**この対話セッション自体ではまだ実行していない** - 次回の定期実行セッションから開始すること。
+000000. **【最優先・新規・全セッション必読、session 47対話セッション】Prism Realmの地形をフラット「ウォーターワールド」に全面書き換えた(§3AW-3参照)。次回以降のセッションはこれを前提に動くこと。**
+   - 現在のディメンションは`minecraft:flat`(bedrock→prismium_stone→prismium_soil→water、海面y=64)で、**ほぼ全域が深さ約68ブロックの海**。陸地・実際のバイオーム多様性はまだ無い。
+   - ユーザー(こんぺいとう)本人の明示的な方針: 「うまくいきしだい、どんどんバイオームを追加し、最後にフラット地形とフラット海を削除するイメージ」。次回以降、実際に陸地・複数バイオームを追加していくフェーズに入ってよい(本人から一任されている)。
+   - **既存のPrism Lily/Bramble/Vine Feature(session 18〜)は、地表がほぼ全域水没した影響で配置に失敗し続けている可能性が高い(未検証)。** 次に陸地/バイオームを追加するセッションで、これらの植物Featureの配置条件(水没を想定していない生育条件)も一緒に見直す必要がある。
+   - `runGameTestServer`で`status=ok`(コミット`3228072`)まで確認済みだが、これは「サーバーが起動できる」ことの確認に過ぎない。**実際にPrism Realmへ行って地形・水・Prismium Stoneの見た目を確認できたユーザーの反応がまだ無い、最優先で見ること。**
 
-0000. **【継続、session 46】CIに2つの新しいJSON中継の仕組みが増えた。存在を忘れないこと。**
-   - `RELEASES_TO_DELETE.json`(タグ名の配列): pushすると`build-and-notify.yml`がそのタグのGitHub Releaseとタグ自体を`gh release delete --cleanup-tag`で削除し、ファイルを空配列に戻す。`PENDING_ISSUES.json`と全く同じ「サンドボックスはAPIを直接叩けないのでJSON経由でCIに代行させる」パターン(§3AV-3参照)。
-   - データパック検証結果: `builds/last_datapack_validation_summary.txt`(`status=ok`/`registry_failure`/`other_failure`の一言)、`builds/last_datapack_validation_errors.log`(エラー行抜粋)、`builds/last_datapack_validation_tail.log`(ログ末尾500行)。**biome/biome_modifier/worldgen系のJSONを新規追加・変更した回は、pushしたら必ずこれをpull/確認すること。`status=registry_failure`または`other_failure`のまま放置しない。** 現状`continue-on-error: true`でビルド全体は失敗にならないため、見落とすと気づかないまま実機だけが壊れたリリースが出る(まさに今回のv0.3.0がそれだった)。
+00000. **【継続・重要】雲の見た目修正(Prism Realmがオーバーワールドと同じ白い雲を描画してしまう問題)は、調査のみ行い実装を見送った(§3AW-6参照)。次回以降の実装メモ:**
+   - 原因: `dimension_type`の`effects: "minecraft:overworld"`がオーバーワールドと同じ雲(高さ192)を描画させている。
+   - 正攻法: Forgeの`RegisterDimensionSpecialEffectsEvent`(MODバス、クライアント専用)でカスタム`net.minecraft.client.renderer.DimensionSpecialEffects`サブクラスを登録し、`dimension_type`の`effects`フィールドをそのカスタムIDに変える。
+   - 安易な代替案(`effects`を`"minecraft:the_end"`や`"minecraft:the_nether"`に変えるだけ)は**却下済み**: Endは`sky_color`/`fog_color`をバイオーム側の値ごと無視して強制的に暗黒/星空にしてしまう(Mojira MC-198544で確認)ため、これまで丁寧に調整してきた紫の空が壊れる。Netherも同様に専用の空表現が無く、雰囲気が大きく変わってしまう。
+   - **一次情報での裏取りが今回完遂できなかった**: `DimensionSpecialEffects`抽象クラスの正確なコンストラクタ引数・abstractメソッド一覧(javadocページの直接取得がprovenance制限で失敗、断片的な検索結果からは「コンストラクタ第一引数に`Float.NaN`を渡すと雲が消える」ことまでは確認できたが、全メソッドシグネチャの確証は得られなかった)。次回、`mcsrc.dev`(JS実行が要る可能性、要検討)や`DimensionSpecialEffects.SkyType`など周辺クラスのjavadocから確度を上げてから実装すること。
+   - **リスク上の注意**: この機能はクライアント専用レンダリングコードのため、CIの`runGameTestServer`(ヘッドレスサーバー)では一切検証できない。コンパイルさえ通れば実装ミスがあってもビルドは全部グリーンのまま気付けない(v0.3.0を生んだのと同種の死角)。実装する際は特に慎重に、シンプルな実装(継承元のOverworld相当の挙動を極力保ったまま雲の高さだけNaNにする)に留めること。
 
-000. **【最優先・継続・全セッション必読】Issue対応ポリシー(§3AU参照): Issueに対応するかどうかは投稿者が`Konpeitou24`かどうかで判断する。** `Konpeitou24`以外の投稿は`PENDING_ISSUES.json`に登録した上で保留(→Discord通知)。バグかどうかは投稿者を問わず検証してよく、バグと判断できれば直してよい。クローズ済みIssueは確認不要。individual Issueページ(`/issues/<番号>`)を1件ずつ見ること(一覧ページの一括スクレイピングは信頼性が低い、§3AU-5)。session 46終了時点でOpenは #2, #3, #6, #7, #9 の5件(#5・#8は既に対応済みでOpenのまま=ユーザー確認待ちの可能性、要再確認)。**#10・#11はsession 46で修正しv0.3.1をリリース済みだが、Issue自体はまだOpenのまま**(サンドボックスにはIssueをクローズする手段が無いため)。次回、v0.3.1で解決したことをコメントで報告してクローズを促す、あるいは§3AV-4で触れた新しいJSON中継(`ISSUES_TO_CLOSE.json`のようなもの)をCIに追加することを検討する価値がある。
+0000. 【継続、session 46〜】CIのJSON中継の仕組みが3つになった。
+   - `RELEASES_TO_DELETE.json`(タグ名配列)→リリース削除(§3AV-3)。
+   - `ISSUES_TO_CLOSE.json`(`{number, comment}`配列)→Issueへのコメント+クローズ(**session 47対話セッションで新設**、§3AW-7参照)。`issues: write`権限を`build-and-notify.yml`に追加済み。
+   - データパック検証結果: `builds/last_datapack_validation_summary.txt`/`_errors.log`/`_tail.log`。**biome/biome_modifier/worldgen/dimension系のJSONを変更した回は必ず確認すること**(今回のフラットワールド化でも実際に確認し`status=ok`だった)。
 
-00. **【緊急対応完了、経緯だけ記録】v0.3.0はシングルプレイ画面すら開けない致命的な不具合があり(Issue #11)、session 46で原因特定・修正・v0.3.1リリース・v0.3.0削除まで完了した(§3AV参照)。** 原因は`biomes`フィールドへのタグ配列指定ミスと`carvers`の型ミスという、CIの通常ビルドでは検知できないデータパックのスキーマ誤り。今回新設した`runGameTestServer`による実機相当の検証(§3AV-1参照)で`status=ok`を確認済み。**次回、ユーザーが実際にv0.3.1で問題なく遊べているかの確認(Issue #11への反応)を最優先で見ること。**
+000. 【最優先・継続・全セッション必読】Issue対応ポリシー(§3AU参照、変更なし): 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。**session 47時点でOpenなのは #2, #3, #7, #9 の4件のみ**(#5は下記参照、#6・#8・#10・#11はこのセッションでクローズ済み)。個別ページ(`/issues/<番号>`)を1件ずつ確認する方式を継続すること(一覧ページの一括スクレイピングは信頼性が低い、§3AU-5)。
 
-0. **【継続】ユーザーからの装備/Prism Realm/テクスチャー見た目フィードバックは、session 39・40・42・43・44・対話セッション・45で段階的に着手し、Prism Realm地形専用化(色・密度・植生・地面)は完了済み。** 防具のシェーディングは実機(3人称視点)での見え方が未検証のまま。ユーザーの反応待ち。
+00. **【新規・重要】Issue #5(「スポーンエッグでスポーンした瞬間に消える」)は意図的にクローズしていない、要判断。** session 38の元の修正(`shouldDespawnInPeaceful`オーバーライド)はsession 46でIssue #10対応のため撤回済みで、Wraithは再び標準のバニラ挙動(Peaceful難易度では即座に消える)に戻っている。もし#5の報告環境がPeaceful難易度だったなら、**この動作はバグではなく全ての敵対Mobに共通する仕様**であり、その場合は「仕様である」旨をコメントして本人の判断を仰ぐのが筋。逆にNormal以上の難易度でも再現するなら別の原因調査が必要。次回、本人に確認するかコメントで説明を試みること。
 
-1. **【最優先、恒例】まず`git log`/`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** session 46は複数コミット+タグ`v0.3.1`をpushし、`ci: update built jar`到着・`status=ok`(データパック検証)・リリースアセットのHEADリクエストで302・v0.3.0の404(削除確認)まで全て確認済み(§3AV-3参照)。
+0. 【継続、優先度大幅低下】装備の見た目フィードバックはsession 39〜45で一通り対応済み。今回はPrism Realm地形の方が優先度が高かったため深追いしていない。防具の3人称シェーディングは引き続き実機未検証。
 
-2. **`api.github.com`はsession 46でも到達不可だった(session 44から継続)。** `https://github.com/<repo>/commits/main.atom`のポーリングで代替。`github.com`の`/blob/<branch>/<path>`ページのJSON埋め込み技法(§3AT-1)に加え、**session 46で新たに確認: `github.com/user-attachments/files/<id>/<filename>`形式のIssue添付ファイル(クラッシュログ等)も`curl -sL`で直接ダウンロードできる**(S3署名付きURLへの302リダイレクトを`curl -L`が追う)。ユーザーがIssueに貼ったログ・スクショを直接読めることが分かったので、今後クラッシュ報告系のIssueはまずこれを試すこと。
+1. 【最優先・恒例】まず`git log`/`git fetch origin main`し、`ci: update built jar`→`ci: update datapack validation results`の順に到着しているか確認する。**session 47対話セッションは4コミットpushし、両方の到着・`status=ok`まで確認済み**(§3AW-8参照)。
 
-3. 【継続】Issueのコメント数の正確な取得は今回も未着手(優先度が下がっている)。
+2. `api.github.com`は今回も到達不可(継続)。Issueページ個別取得・添付ファイルダウンロード(`user-attachments/files/...`)は引き続き有効な手法。
 
-4. 【継続】Issue #6・#7・#9は引き続きOpenのまま。#5・#8は対応済みだがOpenのまま(session 38・session??時点の対応がユーザーに確認取れているか不明、次回個別ページで再確認する価値がある)。
+3. 【継続、優先度低】Issueのコメント数の正確な取得は未着手のまま。
+
+4. 【更新】Issue #2(ツールの見た目)・#7(MOD内説明不足)・#9(ディメンションへの行き方が分かりにくい)は引き続きOpen。#9は今回のRift Shard修正・フラットワールド化で状況が変わった可能性があるが、Issue自体への言及・クローズはまだ行っていない(着地バグ修正がIssue #9の趣旨とは別問題のため、クローズはしていない)。
 
 5. 【継続、優先度中】Issue #2(ツールの見た目)はsession 41で再設計して以降、追加対応していない。
 
-6. 【継続、優先度中】Issue #9(プリズミウムディメンションへ行く手段が分かりにくい)の本格的なポータル機構は未着手(ツールチップ案内のみ)。
+6. 【継続、優先度中、状況変化あり】Issue #9の本格的なポータル機構は依然未着手。ただし今回Rift Shardの着地安全性が改善されたため、「行き方が分かりにくい」体験そのものは多少改善された可能性がある(ツールチップ案内は既存のまま)。
 
-7. 【継続、重要】タグをpushする前に必ずmainブランチのpushが成功したことを確認してからタグをpushする順序を、session 46でも徹底した(問題なし)。
+7. 【継続、重要】タグより先にmainのpush成功を確認する順序を徹底(今回はタグを切っていないため該当なし)。
 
-8. 【継続、重要】cloneした場所での書き込みテストを毎回行うこと(session 46は`~/work`で問題なし)。
+8. 【継続、重要】cloneした場所での書き込みテストを毎回行うこと。**session 47対話セッションでは`~/work`が既に使えたが、`/tmp`配下は今回も別セッションの残骸で書き込み不可だった(継続する既知の問題)。**
 
-9. 【継続】リリース(v0.2.0/v0.3.0[削除済み]/v0.3.1)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
+9. 【継続】リリース(v0.3.1等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
 
-10. 【完了】Prism Realm用の専用地形(a〜c)はsession 45で出揃った。地面ブロック(Prismium Soil)を含め、実機での動作確認はまだ無い。
+10. 【完了】Prism Realmの地形専用化(旧: noise再利用+Feature塗り替え)は、**session 47でアプローチごと刷新され、flatジェネレーターへの全面移行が完了した**(§3AW-3参照)。実機での動作確認はまだ無い。
 
-11. 【継続、最重要度が上昇】Prismium Block/Core建築バリエーション、5GUI、Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・Prism Realm関連一式は、いずれも実プレイでの検証が一切無いまま積み上がっている。**今回、v0.3.0が「実プレイの第一歩(シングルプレイを開く)」すら踏み出せない状態でリリースされていたと判明したことは、この「実プレイ検証ゼロ」の積み重ねが実際にユーザーの手を止めてしまった実例。次回以降、新機能追加のペースを落としてでも、pushのたびに§0000のデータパック検証結果を確認する習慣を必ず徹底すること。**
+11. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能が積み上がり続けている。session 47もその例外ではない(Prismium Stone/Deep Wraith/フラットワールド/Rift Shard修正、いずれも未検証)。**新機能追加のたびに、pushのたびのデータパック検証結果確認を徹底すること**(引き続き最重要の習慣)。
 
-12. 【継続、次の展開候補、ただし上記緊急項目群を優先】
-    - (a) Prismium Arrow(session 30・43で見送り継続)。
-    - (b) GUIスロット化、Prismium Cableの接続見た目・送電網ロジック。
-    - (c) 【優先度が相対的に上昇、継続】新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。今回はIssue #10・#11対応で時間を使い切ったため未着手のまま持ち越し。次回、緊急案件が無ければ最有力候補。
-    - (d) Generatorの発電速度・バッファサイズの見直し。
-    - (e) Issue #7が本来求めている本格的なガイド/図鑑システム。
-    - (f) 【session 46で新規発案】IssueクローズのCI中継(`ISSUES_TO_CLOSE.json`のような仕組み、§3AV-4参照)。地味だが、Issue #5・#8・#10・#11のように「対応済みなのにOpenのまま放置」が積み重なっている現状を解消できる。
+12. 【継続、次の展開候補、優先度は下記の通り更新】
+    - (a) 【新規・ユーザー要望】Rift Shardのクラフト派生アイテム2種: (i) ベッドのようにリスポーン地点を設定できるアイテム、(ii) 自由に時間を変えられるが破壊時にアイテムとしてドロップしない焚火のようなブロック。**このセッションでは未着手、次回以降の有力候補。**
+    - (b) 【新規・ユーザー要望】Prism Realmの草花(Prism Lily/Bramble/Vine)を「活用できないものになっている」との指摘(染料・クラフト素材等への用途追加)。**未着手。** ただし§000000の通り、これらの植物が今のフラット水没地形でそもそも配置できているか自体を先に確認・修正する必要がある可能性が高い。
+    - (c) 雲の見た目修正(§00000参照、調査済み・実装待ち)。
+    - (d) Prism Realmへの陸地・複数バイオーム追加(ユーザー本人の段階的移行計画の次のステップ)。
+    - (e) Prismium Deep Wraithの本格的な遊泳AI(vanilla Drowned相当のSmoothSwimmingMoveControl)。
+    - (f) Prismium Arrow(session 30・43で見送り継続)。
+    - (g) GUIスロット化、Prismium Cableの接続見た目・送電網ロジック。
+    - (h) Generatorの発電速度・バッファサイズの見直し。
+    - (i) Issue #7が本来求めている本格的なガイド/図鑑システム。
 
-13. 【継続】WebSearch/`mcp__workspace__web_fetch`は一般サイトに到達可能。**session 46で新たに確認**: `forge:add_features`/`forge:add_spawns`の`biomes`フィールド構文、biome JSONの`carvers`フィールド構文は、いずれも記憶に頼らずWebSearchで実例確認してから直したことで、根拠のある修正ができた(§3AV-1参照)。今後もworldgen/レジストリ系のJSONを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
+13. 【継続】worldgen/レジストリ系のJSONを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。**session 47でも`minecraft:flat`ジェネレーターの`features`フラグの意味(デフォルトfalseだとbiome由来のfeatureが一切生成されない)をWebSearchで確認してから`true`に設定した**ことで、既存のPrismium植物/スポーンfeatureが動かなくなるリスクを未然に防いだ(§3AW-3参照)。
 
 ### 議論したい論点・改善案
 
-- **`runGameTestServer`による検証はまだ2回しか成功実行していない(session 46)**: 継続的に安定して動くか、CI実行時間がどの程度増えるか、次回以降数回見てから`continue-on-error`を外して本当のゲートにするか判断すること。
-- **Issueをクローズする手段がサンドボックスに無い問題(§4項目12-f参照)**: `RELEASES_TO_DELETE.json`と同じパターンで解決できそうだが、今回は緊急対応で手一杯だったため設計のみで実装は次回以降に持ち越し。
-- **PrismiumSoilFeature.javaの`context.origin()`前提は依然未検証(session 45から継続)**。
-- **noise_settings/surface_ruleによる「本格的な」地面専用化は選択肢として残るが優先度は低い(session 45から継続)**。
-- **細い線状シルエットのテクスチャーには方向性(top-lit)バンディングを使うべき、という教訓(session 44)**は次回、細い装飾を作る際に再適用すること。
-- **今回のバグ(Issue #11)から得た最大の教訓**: 「CIが緑=安全」という思い込みが、実は「コンパイルが通る」以上を保証していなかった。今後も、Javaコードのリファクタリングだけでなく、JSON1つの追加・変更であっても、pushしたら必ずデータパック検証結果を見る習慣を持つこと。
+- **フラットワールド化は「地中の石を無くす」という目的には即効性があるが、当面ディメンションの体験が「ほぼ全域が海」になるというトレードオフがある。** ユーザー本人が把握・了承済みの設計だが、次に陸地/バイオームを追加するまでの間、実際にプレイした際の第一印象(「歩ける場所がない」)をどう感じるか、次回セッション開始時にユーザーへの確認をおすすめしたい。
+- **Prismium Deep Wraithの遊泳AIが無い状態で、実際に水中で「らしく」動くかは全くの未知数。** 陸上を歩くだけのゾンビ的な動きになる可能性が高く、狙った「専用の水生モブ」感が薄い場合は次回、本格的なAI実装を検討すること。
+- **雲の修正は技法までは分かったが実装は未確認のまま持ち越し。** クライアント専用コードでCIのセーフティネットが効かない領域なので、次回実装する際は特に慎重に。
+- **既存のPrism Lily/Bramble/Vine Featureがフラット水没地形でどうなるかは、次回セッション開始時に最優先で確認すべき(データパック検証はレジストリ読み込みしか見ておらず、feature配置の成否そのものはCIから見えない)。**
+- **`runGameTestServer`はsession 47対話セッションでも問題なく動作し続けている(累計5回目のstatus=ok)。** 安定して動いている実績が積み上がってきたので、`continue-on-error`を外して本当のゲートにするかの判断時期が近づいている。
 
 ### コミット/プッシュ状況
 
-session 46は以下の6コミット+タグ`v0.3.1`をpush:
-1. `33eb163` Wraithがピースフルで消えない不具合修正(Issue #10)
-2. `21c5cd6` CI: データパック検証+リリース削除リレー新設
-3. `a72d574` Gradle HTTPタイムアウト延長(1回目の検証実行がタイムアウトしたため)
-4. `9b1fab2` Issue #11の根本原因修正(biomes配列内タグ+carvers型ミス)
-5. `20425c1` v0.3.1リリース準備(バージョン更新・RELEASE_NOTES・v0.3.0削除キュー)
-6. `git tag v0.3.1`+push(mainのpush成功を確認してから実行、§項目7参照)
+session 47(対話セッション、定期実行ではない)は以下の4コミットをpush:
+1. `46ca652` Prismium Stone新設(地形フラット化の下地ブロック)
+2. `a87fe92` Prism Realmをflatジェネレーター(ウォーターワールド)に全面書き換え
+3. `5b8ef62` Prismium Deep Wraith新設 + Wraith→Drowned変質の停止
+4. `3228072` Rift Shard着地バグ修正(チャンク強制生成+水上足場)
 
-全てpush前に`git fetch origin main`で並行セッションの有無を確認(全て無し)。データパック検証は計3回実行され、1回目`other_failure`(ネットワークタイムアウト)、2回目`registry_failure`(真のバグを捕捉)、3回目以降(修正後、v0.3.1コミット含め2回)`status=ok`を確認済み。v0.3.0リリースは`gh release delete --cleanup-tag`で削除確認(404)、v0.3.1は公開確認(200、添付jarへのHEADリクエストで302)。
+push前に`git fetch origin main`で並行セッション無しを確認、一発成功。`ci: update built jar`→`ci: update datapack validation results`(`status=ok`、コミット`3228072`、CI実行`32153801947`)まで到着を確認済み。
 
-GitHub Issue確認は個別ページ方式で#1〜#11を確認: Open #2, #3, #6, #7, #9, #10(修正済みだがOpenのまま), #11(同上)。CLOSED #1, #4。#5・#8は過去に対応済みのはずだがOpenのまま(要再確認、上記項目4参照)。新規Issueは#10・#11のみ(いずれもKonpeitou24さん本人)、`PENDING_ISSUES.json`への追加は無し(保留対象0件のまま)。
+このセッション開始前の直前の定期実行分(同じセッション内で継続)では、`ISSUES_TO_CLOSE.json`中継の新設+Issue #10・#11・#6・#8のクローズ、Prismium Shieldの`blocking`ItemProperties欠落修正も行っている(詳細は本ファイルの該当箇所参照)。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側の通知(ビルド結果・データパック検証結果)は、今回6回のpush(うち1回はタグ)に対応する分がSecret設定済みであれば送信されているはず。RELEASES_TO_DELETE.json経由のリリース削除自体はDiscord通知の対象にしていない(必要なら次回以降検討)。
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側の通知は今回4回のpushに対応する分がSecret設定済みであれば送信されているはず。
