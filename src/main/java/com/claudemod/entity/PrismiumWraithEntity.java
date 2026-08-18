@@ -53,39 +53,51 @@ public class PrismiumWraithEntity extends Zombie {
     }
 
     /**
-     * GitHub issue #5 (session 38): reported "spawns via spawn egg then
-     * vanishes immediately". Root cause analysis (no in-game repro
-     * possible in this sandbox - see PROGRESS.md's standing note on this
-     * limitation): vanilla {@code Monster} overrides
-     * {@code shouldDespawnInPeaceful()} to {@code true}, so any
-     * {@code Monster} subclass (this one included, via {@link Zombie})
-     * is force-discarded the instant {@code Mob#checkDespawn()} runs on
-     * a world set to Peaceful difficulty - regardless of how it was
-     * spawned (natural spawn, spawn egg, /summon). This is the single
-     * most common cause of "my hostile mob spawns then instantly
-     * disappears" reports in Forge/Fabric modding communities (confirmed
-     * via WebSearch, e.g. a 2013 Forge Forums thread titled exactly that,
-     * resolved by the reporter realizing their world was on Peaceful).
-     * Vanilla mobs that are technically hostile-classified but not meant
-     * to vanish outright (Enderman, Zombified Piglin) override this same
-     * method back to {@code false} for the same reason. A "guardian"
-     * mob that is supposed to reliably protect Prismium ore deposits
-     * fits that same exception better than a generic Peaceful-mode
-     * shambler, so this override is a deliberate, permanent design
-     * choice, not just a peaceful-difficulty workaround: even players
-     * who keep Peaceful set for parts of their world should still be
-     * able to find a Wraith guarding ore if they wander into one.
-     * <b>Unverified</b>: could not reproduce or confirm the original bug
-     * in this sandbox, so it is possible peaceful difficulty was not the
-     * actual cause reported in issue #5 - if the bug persists after this
-     * change ships, the next things to check are spawn-position collision
-     * (egg placing the entity inside solid terrain) and the mob-cap /
-     * tracking-range settings (see {@link com.claudemod.registry.ModEntities}).
+     * GitHub issue #5 (session 38) reported "spawns via spawn egg then
+     * vanishes immediately" on a Peaceful-difficulty world. Session 38's
+     * diagnosis was correct (vanilla {@code Monster} subclasses despawn
+     * instantly on Peaceful via {@code shouldDespawnInPeaceful() == true},
+     * regardless of spawn method), but its fix - overriding that method to
+     * {@code false} so the Wraith would never despawn on Peaceful - was a
+     * misdiagnosis of what needed fixing: that despawn behaviour is not a
+     * ClaudeMod bug, it is the same standard, expected vanilla rule every
+     * hostile mob follows (using a hostile-mob spawn egg on a
+     * Peaceful-difficulty world despawns the mob instantly - this is
+     * intentional upstream behaviour, confirmed by the very same Forge
+     * Forums thread cited in the old revision of this javadoc, where the
+     * "bug" turned out to be the reporter's world being on Peaceful).
+     *
+     * That override then caused a real regression, reported directly by
+     * the repo owner as GitHub issue #10 ("ピースフルでレイスがスポーンして
+     * しまう" - a Wraith ends up existing/visible on a Peaceful world):
+     * because the override made the Wraith immune to the peaceful despawn
+     * sweep, any Wraith already alive when a player switched their world
+     * to Peaceful (or spawned one via egg while on Peaceful) would now
+     * stick around indefinitely instead of vanishing like every other
+     * hostile mob - which reads as "a hostile mob spawns/persists even on
+     * Peaceful", clearly not the intended behaviour for a plain
+     * MobCategory.MONSTER entity.
+     *
+     * Fix (this session): removed the override entirely, restoring the
+     * inherited {@code Monster} default ({@code true}). The Wraith now
+     * despawns on Peaceful exactly like a vanilla Zombie, matching player
+     * expectations and closing issue #10. Natural spawning was never the
+     * problem in either direction - {@link com.claudemod.event.ModEntityEvents}
+     * already registers {@code Monster::checkMonsterSpawnRules} (which
+     * itself refuses to naturally spawn anything while
+     * {@code Difficulty.PEACEFUL}) as this entity's spawn placement
+     * predicate, so natural overworld/Prism Realm spawning was already
+     * correctly gated; only spawn-egg/summon-triggered instances plus the
+     * "already alive, difficulty changed under it" case were affected by
+     * this override, and both are fixed by removing it.
+     * <b>Unverified</b>: like all worldgen/entity behaviour in this mod,
+     * not confirmed in an actual running game client from this sandbox -
+     * if a hostile-mob-on-Peaceful report resurfaces after this change,
+     * re-open this method as the first thing to check.
      */
-    @Override
-    public boolean shouldDespawnInPeaceful() {
-        return false;
-    }
+    // (shouldDespawnInPeaceful intentionally left at the inherited Monster
+    // default of true - see the javadoc above for why an override here was
+    // tried and reverted.)
 
     @Override
     protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
