@@ -29,13 +29,19 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * (session 38, see that item's class doc). The repo owner's own proposal
  * for this feature (PROGRESS.md §5 old item 9(j): "Prismium Coreの枠に
  * Prismiumを投げ込む" - throw Prismium into a Prismium Core frame) is
- * implemented essentially literally: build a hollow rectangular frame out
- * of {@code PRISMIUM_CORE} blocks (interior 2 wide x 3 tall, identical
- * proportions to vanilla's minimum Nether portal frame, chosen so the
- * shape is already familiar to any Minecraft player) and right-click one
- * of the frame blocks while holding a Prismium Shard - see
+ * implemented essentially literally: build a hollow rectangular frame
+ * (interior 2 wide x 3 tall, identical proportions to vanilla's minimum
+ * Nether portal frame, chosen so the shape is already familiar to any
+ * Minecraft player) and right-click one of the frame blocks while
+ * holding a Prismium Shard - see
  * {@link com.claudemod.event.PrismiumPortalIgniteHandler} for the frame
- * detection/ignition logic that places this block.
+ * detection/ignition logic that places this block. The frame's material
+ * originally had to be a uniform ring of {@code PRISMIUM_CORE}; as of the
+ * direct-chat session on 2026-08-19 it was replaced, per the repo owner's
+ * explicit request, with a mixed-material recipe (top/bottom rows of
+ * {@code PRISMIUM_BLOCK}, left/right columns of
+ * {@code PRISMIUM_BLOCK_WALL}) - see that handler class's javadoc for the
+ * full rationale.
  *
  * <p>Unlike vanilla's {@code NetherPortalBlock}, this class does not
  * extend that vanilla class (it's not public API meant for subclassing,
@@ -45,11 +51,21 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * <ul>
  *   <li>{@link #AXIS} (reusing {@code BlockStateProperties.HORIZONTAL_AXIS},
  *   restricted to X/Z, the same property vanilla's nether portal uses) so
- *   the two frame orientations get visually distinct block states, even
- *   though the current block model does not yet rotate the texture per
- *   axis (see {@code assets/claudemod/models/block/prismium_portal.json}
- *   - a known simplification, first-version-of-a-block-entirely-new-
- *   to-the-mod tradeoff, noted in PROGRESS.md).</li>
+ *   the two frame orientations get a visually distinct block model: as of
+ *   the direct-chat session on 2026-08-19 (see
+ *   {@link com.claudemod.event.PrismiumPortalIgniteHandler}'s javadoc for
+ *   the accompanying frame-recipe change), {@code
+ *   assets/claudemod/models/block/prismium_portal.json} is a thin,
+ *   2-pixel-deep membrane with only north/south faces (matching vanilla's
+ *   nether portal silhouette, replacing the original full-cube {@code
+ *   cube_all} model) and its blockstate applies a 90-degree Y rotation
+ *   for {@code axis=z} so the thin side faces the right way in both
+ *   orientations. The texture itself
+ *   ({@code assets/claudemod/textures/block/prismium_portal.png}) is now
+ *   an 8-frame animation strip with a matching {@code .png.mcmeta}
+ *   (interpolated, 2 ticks/frame) instead of a single static frame - each
+ *   frame is the previous one rolled diagonally by 2 pixels so it loops
+ *   seamlessly and keeps the exact original color palette.</li>
  *   <li>No collision ({@link #getCollisionShape} returns empty) so players
  *   can walk straight through, like vanilla portals.</li>
  *   <li>Indestructible by normal means ({@code strength(-1.0F)}, no loot
@@ -141,19 +157,36 @@ public class PrismiumPortalBlock extends Block {
     /**
      * Ambient swirl particles, purely cosmetic (client-side only). Loosely
      * modeled on vanilla's nether portal ambiance but much sparser (one
-     * particle attempt per tick instead of several) since this block is a
-     * full solid-looking cube rather than a thin membrane, and did not
-     * need to fight against a "how do I make people notice this is
-     * special" problem as hard.
+     * particle attempt per tick instead of several).
+     *
+     * <p>Direct-chat session update (2026-08-19): now that the block
+     * model is a thin membrane instead of a full cube (see this class's
+     * top javadoc), particles are spawned hugging the model's thin
+     * dimension (the axis picked here mirrors {@link #AXIS} - see
+     * {@code prismium_portal.json}, which is thin along Z for
+     * {@code axis=x} and gets rotated 90 degrees for {@code axis=z}, so
+     * "thin along Z before rotation" is exactly right for both) rather
+     * than spread across the full block volume, so the particles
+     * visually hug the plane instead of drifting away from it inside
+     * empty space that no longer has a model there. <b>Unverified</b>:
+     * no in-game confirmation this reads correctly for both axis values.
      */
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
         if (random.nextInt(4) != 0) {
             return;
         }
+        Direction.Axis axis = state.getValue(AXIS);
         double x = pos.getX() + random.nextDouble();
         double y = pos.getY() + random.nextDouble();
         double z = pos.getZ() + random.nextDouble();
+        double thinJitter = (random.nextDouble() - 0.5D) * 0.125D;
+        if (axis == Direction.Axis.X) {
+            // Model is thin along Z before the blockstate's rotation.
+            z = pos.getZ() + 0.5D + thinJitter;
+        } else {
+            x = pos.getX() + 0.5D + thinJitter;
+        }
         level.addParticle(ParticleTypes.PORTAL, x, y, z,
                 (random.nextDouble() - 0.5D) * 0.5D, -random.nextDouble(), (random.nextDouble() - 0.5D) * 0.5D);
     }
