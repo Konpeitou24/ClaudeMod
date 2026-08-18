@@ -151,15 +151,40 @@ def make_preview(img, scales=(4, 8, 16)):
     return preview
 
 
+def use_user_submitted_chiseled_block_texture():
+    """Copy the user's hand-drawn Chiseled Prismium Block art in as the real asset.
+
+    Same-day follow-up to the Chiseled Prismium Core art adoption
+    (gen_prismium_chiseled_core.py's use_user_submitted_chiseled_core_texture(),
+    session/commit b581f54): the user proposed reusing Chiseled Core's new
+    concentric-ring frame for Chiseled Block too, but with the center gem
+    recolored to magenta (Block's own accent color, echoing its corner
+    gem clusters) instead of Core's white/light "glowing core" center -
+    keeping the plain-vs-chiseled visual language consistent between the
+    two families while still telling Block and Core apart by center hue.
+    They then hand-drew the actual texture (not a simple palette-swap of
+    the Core file - about 100 of 256 pixels differ from
+    chiseled_prismium_core.png, mostly minor shading variation in the
+    inner rings) and asked for it to replace make_chiseled_block()'s
+    programmatic diamond-rune design. Converts to RGBA (source PNG is
+    plain RGB) but does not otherwise touch a single pixel.
+    """
+    src = REPO_ROOT / "scripts/textures/reference/user_submitted_chiseled_prismium_block_2026-08-18.png"
+    img = Image.open(src).convert("RGBA")
+    assert img.size == (SIZE, SIZE), f"expected {SIZE}x{SIZE}, got {img.size}"
+    out = ASSETS / "block/chiseled_prismium_block.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    img.save(out)
+    print(f"wrote {out.relative_to(REPO_ROOT)} (from user-submitted art, not make_chiseled_block())")
+
+
 def main():
     out_dir = ASSETS / "block"
     out_dir.mkdir(parents=True, exist_ok=True)
     BUILD_DIR.mkdir(parents=True, exist_ok=True)
 
-    img = make_chiseled_block()
-    out_path = out_dir / "chiseled_prismium_block.png"
-    img.save(out_path)
-    print(f"wrote {out_path}")
+    use_user_submitted_chiseled_block_texture()
+    img = Image.open(ASSETS / "block/chiseled_prismium_block.png")
 
     preview = make_preview(img)
     preview_path = BUILD_DIR / "preview_chiseled_prismium_block.png"
