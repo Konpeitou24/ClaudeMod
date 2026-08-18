@@ -63,7 +63,9 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  *   orientations. The texture itself
  *   ({@code assets/claudemod/textures/block/prismium_portal.png}) is now
  *   an 8-frame animation strip with a matching {@code .png.mcmeta}
- *   (interpolated, 2 ticks/frame) instead of a single static frame - each
+ *   (interpolated, 10 ticks/frame - slowed down from an initial 2 after
+ *   the repo owner reported the faster version was flickery/eye-straining)
+ *   instead of a single static frame - each
  *   frame is the previous one rolled diagonally by 2 pixels so it loops
  *   seamlessly and keeps the exact original color palette.</li>
  *   <li>No collision ({@link #getCollisionShape} returns empty) so players
@@ -105,6 +107,23 @@ import net.minecraft.world.phys.shapes.VoxelShape;
  * normal speed (vs. sprinting/elytra-flying through too fast for a
  * single tick of overlap to register - a real risk this session could not
  * rule out).
+ *
+ * <p><b>Direct-chat session follow-up (2026-08-19, same day as the thin
+ * model/animation/recipe changes above)</b>: after seeing the new thin
+ * model in-game (screenshot provided), the repo owner reported two more
+ * bugs: (1) breaking part of the frame did not deactivate the portal
+ * (unlike vanilla's nether portal, which fizzles when its frame is
+ * broken) - fixed by {@link com.claudemod.event.PrismiumPortalFrameBreakHandler},
+ * a new listener on {@code BlockEvent.BreakEvent} (see that class's
+ * javadoc for why a break-event listener was used instead of {@code
+ * neighborChanged}, and why {@code neighborChanged} alone would have
+ * missed the frame's corner blocks); and (2) the block's selection/pick
+ * outline was still a full block-sized cube even though collision was
+ * already disabled, making the portal feel much "bigger" to aim/interact
+ * with than its thin visual - fixed by overriding {@link #getShape} below
+ * to return the same thin box as the render model instead of the
+ * default full cube. Both fixes are <b>unverified</b> in an actual
+ * client/server, same as everything else in this class.
  */
 public class PrismiumPortalBlock extends Block {
 
@@ -124,6 +143,28 @@ public class PrismiumPortalBlock extends Block {
     public VoxelShape getCollisionShape(BlockState state, net.minecraft.world.level.BlockGetter level,
                                          BlockPos pos, CollisionContext context) {
         return Shapes.empty();
+    }
+
+    /**
+     * Direct-chat session follow-up (2026-08-19): the selection/pick
+     * outline (used for the block-highlight box and for ray tracing what
+     * the player is looking at) defaults to a full block-sized cube
+     * unless overridden - {@link #getCollisionShape} only affects
+     * whether entities physically collide with/walk through the block,
+     * it does not affect this. Left at the default, the portal felt much
+     * "bigger" to aim at / interact with than its thin visual model. This
+     * mirrors the same thin box used by
+     * {@code assets/claudemod/models/block/prismium_portal.json} (thin
+     * along Z for {@code axis=x}, thin along X for {@code axis=z} - see
+     * that model/this class's top javadoc for why the axes work out this
+     * way).
+     */
+    @Override
+    public VoxelShape getShape(BlockState state, net.minecraft.world.level.BlockGetter level,
+                                BlockPos pos, CollisionContext context) {
+        return state.getValue(AXIS) == Direction.Axis.X
+                ? Block.box(0.0D, 0.0D, 7.0D, 16.0D, 16.0D, 9.0D)
+                : Block.box(7.0D, 0.0D, 0.0D, 9.0D, 16.0D, 16.0D);
     }
 
     @Override
