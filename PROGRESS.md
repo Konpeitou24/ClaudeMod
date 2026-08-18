@@ -2305,78 +2305,115 @@ push後、`git fetch`のポーリングで`8e45a48`(`ci: update built jar`)→`3
 
 **未検証(このセッションでは確認不可能な範囲)**: 実際にゲーム内で(a)自動生成された帰還用ポータルが意図した位置(アンカーからX+4、着地Yの高さ)に正しく出現するか、(b)水上でも床がちゃんと敷かれて浮いた枠にならないか、(c)そのポータルに歩いて入ると本当に元の場所(Overworld側の出発地点)に戻れるか。ロジック上は`teleportBackFromRealm`の既存の永続データ読み込みに乗るだけなので理屈上は動くはずだが、実機確認はまだ無い。
 
+
+## 3BD. セッション#54(定期実行)で実装した内容: Prismium Chronoflameのトップ面テクスチャー刷新
+
+### 3BD-1. 状況確認
+
+`/tmp/work`・`/tmp/work2`は今回も過去セッションの残骸(`nobody`所有、削除・書き込み不可)だったため、一意な新規パス(`/tmp/cm_<epoch nanoseconds>/ClaudeMod`)にcloneして進めた(継続する既知の問題、§5参照)。`api.github.com`への到達性は今回は試していない(下記の通り`github.com`個別issueページの直接`curl`のみで用が足りたため)。
+
+`builds/last_datapack_validation_summary.txt`で`commit=1a3ac110...`・`status=ok`を確認。これはsession 53が最後にpushしたPROGRESS.md更新コミット(`1a3ac11`)に対応しており、**前回ビルドは成功**だった。
+
+Open Issue確認(`github.com/<owner>/<repo>/issues/<番号>`への個別`curl`→レスポンスHTML中の`"state":"OPEN"/"CLOSED"`文字列をgrep、確立済み手法): **#2がCLOSEDに変わっていた**(session 53時点では#2・#7・#9の3件がOpenと記録されていたが、今回確認したところ**Open は #7・#9 の2件のみ**)。誰が・いつ・どういう経緯で#2をクローズしたかは今回の簡易grepでは特定できなかった(埋め込みJSONから`closed_at`/`closer`のフィールドを探したが今回のパターンでは見つからず、ページ構造の変化か抽出パターンの問題か切り分けていない)。少なくとも**session 52で発覚した「`ISSUES_TO_CLOSE.json`によるクローズ試行が黙って失敗する」問題(§3BB-0参照)とは無関係に、#2は今回の確認時点で確かにCLOSED**だった。#10以降の番号のissueは存在しない(404)ことも確認し、新規issueは無いことを確認した。
+
+### 3BD-2. 今回の方針決定
+
+PROGRESS.md §5の展開候補一覧のうち、直前2セッション(52・53)が続けてPrismium Portal(装備・ディメンション機構)に集中していたため、今回は毛色を変えて**既存コンテンツの磨き込み**(§5旧項目8の"改善のタネ"の精神)を選んだ。具体的にはsession 49の`gen_prismium_chronoflame.py`の自己レビュー欄に**明記されていた既知の弱点**「中央の"2本の針"は小サイズ(1x)ではほぼ中心のグロウに埋もれて視認できず、時計の針として明確に読み取れるとは言い難い」を今回の対象に選んだ。理由: (a) 具体的な自己批判点が既に文書化済みで対象が明確、(b) 新規ブロック/アイテムの追加ではなく既存ブロックのモデル・テクスチャー改善なので、Java側の新規ロジック(=実機未検証のまま積み上がる新機構)を増やさずに視覚的な完成度を上げられる、(c) スコープが1セッションで完結しやすい。
+
+### 3BD-3. 実装: `cube_all` → `cube_column`モデルへの分割 + 新規トップ面テクスチャー
+
+- `models/block/prismium_chronoflame.json`を`minecraft:block/cube_all`(単一テクスチャー)から`minecraft:block/cube_column`(`end`=上下面、`side`=側面の2テクスチャー制)に変更。側面テクスチャーは既存の`prismium_chronoflame.png`をそのまま流用(石造りの祠+グロウという既存の見た目は変更なし)。
+- 新規`scripts/textures/gen_prismium_chronoflame_top.py`で上下面専用の新規テクスチャー`textures/block/prismium_chronoflame_top.png`を生成。既存の`gen_prismium_chronoflame.py`と同じPrismiumパレット定数・同じ石材グレーサンプルを再利用し、新しい配色は一切追加していない。
+- 上面デザイン: 中心からの実距離(Chebyshevではなくユークリッド距離、`math.sqrt`)で描く円形の文字盤リング(既存より一回り大きい、専用面なので余裕がある)、`math.radians`で正確に等間隔配置した12個の目盛り(12/3/6/9時位置のみhilite色で強調)、そして**時計の針を`PRISMIUM_OUTLINE`(暗い濃緑)で描画**。
+- **針の色を暗色にしたのが今回の核心的な修正点**: session 49版は針を`CORE_WHITE`(明るい白)で描いていたため、同じく明るい中心グロウに埋もれて見えなくなっていた(=「明るい背景に明るい針」という単純な配色ミスだったと今回判明)。実際、今回も最初の実装案では針を`core_white`(分)・`accent`ピンク(時)で描いたところプレビューでほぼ視認できず、`Read`で確認した上で暗色に描き直す1回のイテレーションを行った(下記3BD-4参照)。
+
+### 3BD-4. 自己レビュー(2回実施、1回作り直し)
+
+1回目: `build/preview_prismium_chronoflame_top.png`(1x/4x/8xチェッカーボード合成)を生成し`Read`で確認したところ、文字盤リング・目盛りは明瞭だったが、針(`core_white`の分針・`accent`の時針)が中心の白グロウにほぼ完全に埋もれて視認できなかった。これは「時計に見えるようにする」という今回の目的そのものが未達成の状態だったため、作り直しを決断。
+
+2回目: 針の色を`PRISMIUM_OUTLINE`(暗色)に変更し再生成・再`Read`。さらに念のためPythonで生の16x16ピクセルグリッドをASCIIアート化して各ピクセルの座標を数値的に確認し(目視だけでなく機械的にも検証)、分針(12時方向、長さ6)と時針(~3:30方向、長さ4)がそれぞれ中心から異なる方向に伸びる暗色のマークとして意図通り配置されていることを確認した。1x表示では2本の針が視覚的に1つの暗い鉤形(フック状)に融合して見え、「2本の別々の針」というより「中心から伸びる何らかの指示マーク」程度の読み取りやすさに留まるが、**session 49版(針が実質的に不可視だった)からは明確な改善**と判断し、これ以上の作り直しはしなかった(残る弱点は下記3BD-5・§5に正直に記録)。
+
+側面テクスチャーは変更していないため、side用の既存`prismium_chronoflame.png`は今回のレビュー対象外(session 49で既にレビュー済み)。
+
+### 3BD-5. 今回の既知の限界(正直な記録)
+
+- 2本の針が同色(`PRISMIUM_OUTLINE`)なので、1x表示では「2本の針」ではなく「1つの鉤形の暗いマーク」に見える。実機で見たときに「時計」と即座に読み取れるかは不明(このセッションでは実プレイ確認不可)。次回以降、針の長さだけで時針・分針を区別する、または1px隙間を空けて2本を視覚的に分離する等の再挑戦の余地がある(§5参照)。
+- `PrismiumChronoflameBlock`のJava側ロジック(時刻変更・クールダウン)は今回無変更。あくまでモデル・テクスチャーのみの変更。
+- Java側の変更は無し(`cube_column`は軸プロパティ不要な静的モデルなので、blockstate JSONも`variants: {"": ...}`のまま無変更で成立する)。
+- ビルド・データパック検証(レジストリ読み込み)は成功したが、これは「新しいモデルJSON・テクスチャーファイルの参照が壊れていない」ことの検証であり、「ゲーム内で実際に上面が新テクスチャーで描画されるか」「side/endの割り当てが意図通りか(上下逆転や面の取り違えが無いか)」の実プレイ確認ではない(このMOD全体の標準的な限界、継続)。
+
+### 3BD-6. commit・push・ビルド確認
+
+1コミット: `fa6c237` "Add dedicated clock-face top texture for Prismium Chronoflame"。
+
+push前に`git fetch origin main`で並行セッションの有無を確認(無し、`origin/main`はsession 53最終コミット`1a3ac11`+CI副産物`4123147`のまま)。プロキシ回避策無しで素の`git push origin main`が一発成功(session 49以降継続、6回連続)。
+
+push後、`git fetch`のポーリングで`3dd88cf`(`ci: update built jar`)→`147b01c`(`ci: update datapack validation results`)の順に到着を確認。`builds/last_datapack_validation_summary.txt`が`status=ok  commit=fa6c237...`を記録 = **通常ビルド・データパック検証とも成功**。`builds/last_datapack_validation_errors.log`の中身はJVM/Forge起動時の通常のDEBUG/WARNノイズ(`server.properties`未検出、`Reflective setAccessible`関連等、既存セッションでも繰り返し見られたのと同種のもの)のみで、`Failed to load registries`等の実害は無し。
+
+**未検証(このセッションでは確認不可能な範囲)**: 実際にゲーム内でPrismium Chronoflameの上面が新しい文字盤テクスチャーで描画されるか、側面との継ぎ目が不自然でないか、そして肝心の「時計に見えるかどうか」という主観的な見た目の評価そのもの。
+
 ## 5. 次回セッションへの申し送り
 
-### すぐやるべきこと
+### 今回の最重要な新情報
 
-0000000000. **【session 53で対応済み、実機未検証】Prismium Portalの片道問題は§3BC-3の`ensureReturnPortal`で解消した(上記(a)案を実装)。Realm到着時に必ず帰還用ポータルが自動生成されるようになったが、実機でこの生成物が本当に正しい位置・見た目で出現し、歩いて入れば戻れるかはまだ未検証。次回セッションでIssue #9や本人からのフィードバックがあれば最優先で確認すること。特に水上に生成された場合の見た目(浮いた床に見えないか)は要注意。**
+- **Open Issueは#7・#9の2件に減少した**(session 53時点の3件から、#2がCLOSEDに変わったため)。誰が・どう閉じたかは特定できていない(§3BD-1参照)。次回セッション開始時、まずissue一覧を再確認し、この情報が引き続き正しいか(#2が本当にCLOSEDのままか、新規issueが無いか)を確認すること。
+- **Prismium Chronoflameのモデルを`cube_all`から`cube_column`に変更し、上面専用テクスチャーを追加した(§3BD参照)。実機で上下面・側面の割り当てが正しいか、"時計に見える"という目的が達成されているかは未検証。** 次回セッションでフィードバックがあれば最優先で確認し、無ければ実機確認の代替手段(せめてブロックモデルの構造だけでもより厳密にレビューする等)を検討すること。
 
-000000000. **【解消済み、参考として残す】旧・最優先事項だった「Prismium Portalは実機未検証」自体は継続する制約(このMOD全体がプレイテスト不能なサンドボックス下で開発されているため)。上記0000000000と合わせて読むこと。**
+### すぐやるべきこと(継続項目、優先度順は前回から概ね維持)
 
-00000000. **【新規】GitHub Actionsの`actions/runs` API(`api.github.com`)は、`web_fetch`ツール経由でも到達はできるが、キャッシュされた古い結果を返すことがある(§3BB-0で確認)。ビルド確否の一次情報は引き続き`builds/last_datapack_validation_summary.txt`の`commit=`欄を使うこと。**
+1. **Prismium Chronoflameの針が同色で1本の鉤形に見えてしまう問題(§3BD-4・§3BD-5参照)**: 針の長さだけで時針・分針を区別する、1px隙間を空ける等、再挑戦の余地がある新規の改善候補。
 
-0000000. **【新規】`ISSUES_TO_CLOSE.json`によるクローズは失敗することがある(§3BB-0で発覚、原因不明)。ファイルは失敗してもリセットされてしまうため、クローズを依頼したはずのIssueが実際にはOpenのままになりうる。次回以降、クローズを依頼した回の次のセッションでは、必ずIssue一覧を再確認して本当にクローズされたか検証する習慣をつけること(今回のように「前回の記録では閉じたはずが実は開いたまま」というズレが起こりうる)。**
+2. **Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。** Realm到着時に帰還用ポータルが正しい位置・見た目(特に水上での床の敷き方)で生成されるかを、次回以降フィードバックがあれば最優先で確認すること。
 
-000000. **【継続・全セッション必読】Prism Realmの地形はflat「ウォーターワールド」のまま(変更なし、§3AW-3参照)。** 陸地・複数バイオーム追加は引き続き次の大型テーマ候補(下記9-d)。
+3. GitHub Actionsの`actions/runs` API(`api.github.com`)はキャッシュされた古い結果を返すことがある(継続、§3BB-0)。ビルド確否の一次情報は引き続き`builds/last_datapack_validation_summary.txt`の`commit=`欄を使うこと。今回はissue状態の確認に`api.github.com`を使わず、`github.com/<owner>/<repo>/issues/<番号>`への直接`curl`+`"state":"OPEN"/"CLOSED"`のgrepという、`api.github.com`に依存しない手法で代替できることを確認した(今回はこちらのみで完結、次回以降もこの手法を優先してよい)。
 
-00000. 雲の見た目修正(session 50)は依然実機未検証(継続)。
+4. `ISSUES_TO_CLOSE.json`によるクローズは過去に失敗した実績がある(継続、§3BB-0)。ただし今回#2がCLOSEDになっていたことから、少なくとも一部は(誰かの手動操作か、遅延したCIリレーかは不明だが)最終的には反映されるらしいことが分かった。原因追及は依然困難。
 
-0000. CIのJSON中継の仕組みが3つ(継続、変更なし): `RELEASES_TO_DELETE.json`、`ISSUES_TO_CLOSE.json`(ただし上記の信頼性問題に注意)、データパック検証結果ログ3種。
+5. 【継続・全セッション必読】Prism Realmの地形はflat「ウォーターワールド」のまま(変更なし)。陸地・複数バイオーム追加は引き続き次の大型テーマ候補(下記7-d)。
 
-000. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。**session 52時点でOpenなのは #2, #7, #9 の3件、全て投稿者本人。**
+6. 雲の見た目修正(session 50)は依然実機未検証(継続)。
 
-00. Issue #2(ツールの見た目、区別しづらさ)はsession 41で再設計して以降、追加対応していない。今回も時間の都合で見送った。引き続き次回以降の見直し候補。
-
-0. Issue #7(エネルギー系ブロックの使い方が分かりにくい、CreateMod並みの説明が欲しい)は既存の一行tooltipだけでは解決しきれていない。§5項目9(旧)の本格ガイド/図鑑システムが本来の解決策として残っている。
-
-1. 【最優先・恒例】まず`git log`/`git fetch origin main`し、`ci: update built jar`→`ci: update datapack validation results`の順に到着しているか確認する。今回はさらに`ci: clear processed ISSUES_TO_CLOSE entries`も間に挟まる(Issueクローズキューを使った回のみ)。
-
-2. `api.github.com`はbashの`curl`からは引き続き到達不可(継続)。`web_fetch`ツールでは到達できるがキャッシュに注意(§3BB-0、上記00000000も参照)。
-
-3. 【継続、優先度中】Issue #2は再度見直しの余地あり(変更なし)。
-
-4. 【継続、重要】タグより先にmainのpush成功を確認する順序を徹底。
-
-5. 【継続、重要】cloneした場所での書き込みテストを毎回行うこと。`/tmp`配下は今回も(session 47・50・51に続き)別セッションの残骸で書き込み不可だった。一意なパス(例: `/tmp/cmwork`のような、他セッションと衝突しにくい名前)を使うこと。
-
-6. 【継続】リリース(v0.4.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
-
-7. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能が積み上がり続けている。Prismium Portal(今回)も例外ではない。**新機能追加のたびに、pushのたびのデータパック検証結果確認を徹底すること**(引き続き最重要の習慣、ただし今回確認した通りこれは「レジストリが読み込める」ことの検証であって「実際に遊べる」ことの検証ではない点に注意)。
-
-8. 【継続、次の展開候補、優先度は下記の通り】
-    - (a) Prismium Portalの片道問題の解消(上記000000000参照、新規最優先候補)。
-    - (b) Rift Shard派生アイテム2種は実装済み。Chronoflameの見た目改善は未着手。
+7. 【継続、次の展開候補、優先度は目安】
+    - (a) 【新規】Prismium Chronoflameの針の視認性、さらなる改善(上記1)。
+    - (b) Rift Shard派生アイテム2種は実装済み。Chronoflameの見た目改善は今回一歩進めたが継続。
     - (c) Prism Realmの草花の生成確認(密度・見た目とも)はまだ無い。
     - (d) Prism Realmへの陸地・複数バイオーム追加(継続する大型テーマ)。
     - (e) Prismium Deep Wraithの本格的な遊泳AI。
-    - (f) Prismium Arrow(session 30・43で見送り継続)。
+    - (f) Prismium Arrow: session 30・43で見送り継続(vanilla `ArrowRenderer`が使う正確なUV座標が検索でも特定できなかったため)。次回挑戦する場合は、Yarn/MCPマッピングの実ソースリポジトリ(例: `FabricMC/yarn`や`MinecraftForge`関連のGitHubリポジトリを名指しで検索)を試す、または「正確なUV値」にこだわらず`getTextureLocation`を使う既知の一般的な矢テクスチャー配置パターン(多くのMod入門チュートリアルで示される簡易的なレイアウト)を採用し、その旨をREADME/PROGRESSに明記する、という妥協案も検討候補。
     - (g) GUIスロット化、Prismium Cableの接続見た目・送電網ロジック。
     - (h) Generatorの発電速度・バッファサイズの見直し。
     - (i) Issue #7が求める本格的なガイド/図鑑システム。
-    - (j) 【一部着手】Issue #9のポータル機構は今回実装したが、片道問題(上記a)が残っている。
+    - (j) Issue #9のポータル機構は片道問題まで対応済み(session 53)、実機未検証のみ残る(上記2)。
 
-9. 【継続】worldgen/レジストリ系のJSONを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
+8. 【継続】worldgen/レジストリ系のJSONを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
 
-10. 【継続】`git push`前のプロキシ環境変数回避策について: session 49以降5回連続で、回避策無しの素の`git push origin main`が一発成功している。引き続き「まず素のpushを試す→エラーが出たら回避策」の順序を徹底すること。
+9. 【継続】`git push`前のプロキシ環境変数回避策について: session 49以降6回連続で、回避策無しの素の`git push origin main`が一発成功している。引き続き「まず素のpushを試す→エラーが出たら回避策」の順序を徹底すること。
+
+10. 【継続】cloneした場所での書き込みテストを毎回行うこと。`/tmp`配下は今回も(session 47・50・51・53に続き)別セッションの残骸で書き込み不可だった。一意なパス(例: タイムスタンプ付き)を使うこと。
+
+11. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。**今回確認した時点でOpenなのは #7, #9 の2件、いずれも投稿者本人。**
+
+12. 【継続】リリース(v0.4.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
+
+13. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能が積み上がり続けている。今回のChronoflame改修も例外ではない。新機能追加のたびに、pushのたびのデータパック検証結果確認は徹底しているが、これは「レジストリが読み込める」ことの検証であって「実際に遊べる/意図通り見える」ことの検証ではない点に引き続き注意。
 
 ### 議論したい論点・改善案
 
-- **Prismium Portalの片道問題**(上記最優先事項)。片道テレポートは体験として明確に不完全なので、次回セッションは実装で解消するか、少なくとも本人に「現状は片道専用でRift Shardが無いと戻れない」旨を明示する方が良いかもしれない。
-- **`ISSUES_TO_CLOSE.json`リレーの信頼性問題**。CIログを直接見る手段がこのサンドボックスには無いため、失敗の根本原因究明は困難。せめて「前回キューに入れたのに今回もOpenのままだったら再度キューに入れる」という今回のような対症療法を、今後もパターンとして繰り返すしかなさそう。
-- フラットワールド化のトレードオフについて、ユーザー本人からのフィードバックはまだ届いていない模様(継続)。
-- `runGameTestServer`は`continue-on-error`を外して本当のゲートにするかの判断時期が近づいている(継続、session 48から)。
+- Chronoflameの針が1色で融合して見える問題(上記1)は、pixel artの16x16という制約下で「2本の針を明確に区別する」ことの一般的な難しさを示す好例。今後似たような「小さな面積に複数の情報を詰め込む」テクスチャーを作る際は、色だけでなく長さ・太さ・隙間といった複数の手がかりを最初から併用する設計にした方が良いかもしれない。
+- Issue #2が(記録上の経緯が追えないまま)CLOSEDになっていた件は、このMODのIssue管理が完全にはこのエージェントのセッション単位の記録だけで把握しきれていないことを示している。GitHubの実際の状態を都度直接確認する今回のような習慣を今後も継続すべき。
+- Prismium Portalの片道問題(session 53)・Chronoflameの見た目(今回)と、2セッション続けて「新規大型機能の追加」ではなく「既存機能の磨き込み」を選んだ。§5の展開候補(g)(h)(i)のような、より大きく未着手のテーマにもそろそろ着手すべきタイミングかもしれない(継続的な論点)。
 
 ### コミット/プッシュ状況
 
-session 53(定期実行)は以下の1コミットをpush(§3BC-5参照):
-1. `e7bd7a5` Fix Prismium Portal one-way problem: auto-build return portal in Realm
+session 54(定期実行)は以下の1コミットをpush(§3BD-6参照):
+1. `fa6c237` Add dedicated clock-face top texture for Prismium Chronoflame
 
-push前に`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功(session 49以降継続)。push後、`ci: update built jar`(`8e45a48`)→`ci: update datapack validation results`(`34cf92e`、`status=ok  commit=e7bd7a5...`)の到着を確認済み。
+push前に`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功(session 49以降継続)。push後、`ci: update built jar`(`3dd88cf`)→`ci: update datapack validation results`(`147b01c`、`status=ok  commit=fa6c237...`)の到着を確認済み。
 
 このPROGRESS.md更新コミット自体のCI結果は、次回セッション開始時に確認すること。
 
-参考(session 52、変更なし): 以下の3コミットをpush(§3BB-3参照): `cb1b2e2` Extract Prism Realm teleport logic into PrismiumTeleportHelper / `b435411` Add Prismium Portal: standing dimension gateway (GitHub issue #9) / `0336842` Queue Issues #3, #5, #6, #8 for closing via CI relay。
+参考(session 53、変更なし): `e7bd7a5` Fix Prismium Portal one-way problem: auto-build return portal in Realm。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`)がpush・タグの両方に対応する通知を送信済みのはず(Secret設定済み前提)。
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`)がpushに対応する通知を送信済みのはず(Secret設定済み前提)。
