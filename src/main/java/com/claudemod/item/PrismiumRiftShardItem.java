@@ -1,6 +1,7 @@
 package com.claudemod.item;
 
 import com.claudemod.dimension.ModDimensions;
+import com.claudemod.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.nbt.CompoundTag;
@@ -21,6 +22,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.levelgen.Heightmap;
+import net.minecraft.world.level.material.FluidState;
 
 import java.util.Set;
 
@@ -167,7 +169,7 @@ public class PrismiumRiftShardItem extends Item {
         save.putFloat("pitch", player.getXRot());
         player.getPersistentData().put(RETURN_TAG_KEY, save);
 
-        int landingY = realmLevel.getHeight(Heightmap.Types.MOTION_BLOCKING, REALM_ANCHOR.getX(), REALM_ANCHOR.getZ());
+        int landingY = findSafeRealmLanding(realmLevel, REALM_ANCHOR.getX(), REALM_ANCHOR.getZ());
         double destX = REALM_ANCHOR.getX() + 0.5;
         double destZ = REALM_ANCHOR.getZ() + 0.5;
 
@@ -175,6 +177,61 @@ public class PrismiumRiftShardItem extends Item {
         realmLevel.playSound(null, destX, landingY, destZ,
                 SoundEvents.ENDERMAN_TELEPORT, SoundSource.PLAYERS, 1.0F, 1.0F);
         return true;
+    }
+
+    /**
+     * Session 47 fix (repo owner report, interactive session): the shard
+     * used to land players inside solid terrain or below bedrock in the
+     * Prism Realm. The dimension's chunk generator has separately been
+     * rewritten this session to a flat "waterworld" (see
+     * data/claudemod/dimension/prism_realm.json and PROGRESS.md) rather
+     * than reusing overworld noise settings, which removes most of the
+     * uncertainty this method used to have about what terrain shape it
+     * might land on - but two defensive measures are added here on top of
+     * that, since the exact previous failure mode was never confirmed:
+     * <ol>
+     *   <li>Force the destination chunk to fully generate before reading
+     *   its heightmap ({@link ServerLevel#getChunk(int, int)} with no
+     *   extra arguments defaults to requiring {@code ChunkStatus.FULL}).
+     *   A heightmap read against a not-yet-generated/not-yet-loaded chunk
+     *   is the most likely explanation for the old bug (an uninitialised
+     *   or default heightmap value near the world's bottom would read as
+     *   "solid ground" far below where any real terrain is).</li>
+     *   <li>Clamp against anything at or below {@code minBuildHeight()}
+     *   (the world floor / bedrock level) as clearly invalid, falling back
+     *   to a known-safe constant tied to the current flat layout's water
+     *   surface (see the dimension json's layer heights) rather than
+     *   trusting a bogus value.</li>
+     * </ol>
+     * Per the user's own suggestion: if the landing column's surface turns
+     * out to be liquid (true almost everywhere right now, since the flat
+     * generator makes most of the dimension an open sea until biomes/land
+     * are added in a future session), a 9x1x9 {@code prismium_soil}
+     * platform is carved into the water's surface first so the player
+     * always lands on solid ground rather than treading water.
+     */
+    private static final int REALM_FALLBACK_SURFACE_Y = 65;
+
+    private int findSafeRealmLanding(ServerLevel realmLevel, int x, int z) {
+        realmLevel.getChunk(x >> 4, z >> 4);
+
+        int landingY = realmLevel.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z);
+        if (landingY <= realmLevel.getMinBuildHeight()) {
+            landingY = REALM_FALLBACK_SURFACE_Y;
+        }
+
+        BlockPos underfoot = new BlockPos(x, landingY - 1, z);
+        FluidState fluid = realmLevel.getFluidState(underfoot);
+        if (!fluid.isEmpty()) {
+            for (int dx = -4; dx <= 4; dx++) {
+                for (int dz = -4; dz <= 4; dz++) {
+                    BlockPos platformPos = underfoot.offset(dx, 0, dz);
+                    realmLevel.setBlockAndUpdate(platformPos, ModBlocks.PRISMIUM_SOIL.get().defaultBlockState());
+                }
+            }
+        }
+
+        return landingY;
     }
 
     private boolean teleportBackFromRealm(MinecraftServer server, ServerPlayer player) {
@@ -205,6 +262,9 @@ public class PrismiumRiftShardItem extends Item {
             BlockPos spawn = overworld.getSharedSpawnPos();
             destX = spawn.getX() + 0.5;
             destZ = spawn.getZ() + 0.5;
+            // Session 47: same "force the chunk to actually generate before
+            // trusting its heightmap" defensive fix as findSafeRealmLanding.
+            overworld.getChunk(spawn.getX() >> 4, spawn.getZ() >> 4);
             destY = overworld.getHeight(Heightmap.Types.MOTION_BLOCKING, spawn.getX(), spawn.getZ());
         }
 
