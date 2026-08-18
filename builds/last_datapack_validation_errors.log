@@ -1,10 +1,40 @@
-2880:java.net.SocketTimeoutException: Read timed out
-2921:java.net.SocketTimeoutException: Read timed out
-3058:java.net.SocketTimeoutException: Read timed out
-3204:java.net.SocketTimeoutException: Read timed out
-3696:FAILURE: Build failed with an exception.
-3710:* Exception is:
-3711:org.gradle.api.tasks.TaskExecutionException: Execution failed for task ':downloadAssets'.
-3720:	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
-3742:Caused by: java.lang.RuntimeException: Failed to get asset: minecraft/lang/szl.json
-3843:	at org.gradle.api.internal.tasks.execution.CatchExceptionTaskExecuter.execute(CatchExceptionTaskExecuter.java:36)
+3685:[14:03:37] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from forge-1.20.1-47.4.0_mapped_official_1.20.1.jar, it does not contain dependency information.
+3686:[14:03:37] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from , it does not contain dependency information.
+3687:[14:03:37] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from main, it does not contain dependency information.
+3688:[14:03:37] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from mclanguage-1.20.1-47.4.0.jar, it does not contain dependency information.
+3689:[14:03:37] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from javafmllanguage-1.20.1-47.4.0.jar, it does not contain dependency information.
+3690:[14:03:37] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from fmlcore-1.20.1-47.4.0.jar, it does not contain dependency information.
+3691:[14:03:37] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from lowcodelanguage-1.20.1-47.4.0.jar, it does not contain dependency information.
+3792:[14:03:38] [main/DEBUG] [mixin/]: Error cleaning class output directory: .mixin.out
+3890:java.lang.UnsupportedOperationException: Reflective setAccessible(true) disabled
+3921:java.lang.IllegalAccessException: class io.netty.util.internal.PlatformDependent0$7 (in module io.netty.common) cannot access class jdk.internal.misc.Unsafe (in module java.base) because module java.base does not export jdk.internal.misc to module io.netty.common
+3922:	at jdk.internal.reflect.Reflection.newIllegalAccessException(Reflection.java:392) ~[?:?] {}
+4312:[14:03:45] [main/ERROR] [minecraft/Settings]: Failed to load properties from file: server.properties
+4313:java.nio.file.NoSuchFileException: server.properties
+4314:	at sun.nio.fs.UnixException.translateToIOException(UnixException.java:92) ~[?:?] {}
+4315:	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106) ~[?:?] {}
+4316:	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111) ~[?:?] {}
+4346:[14:03:46] [main/ERROR] [minecraft/RegistryDataLoader]: Registry loading errors:
+4347:> Errors in registry forge:biome_modifier:
+4348:>> Errors in element claudemod:add_prismium_bloom:
+4349:java.lang.IllegalStateException: Failed to parse claudemod:forge/biome_modifier/add_prismium_bloom.json from pack main
+4377:Caused by: java.lang.RuntimeException: Not a JSON object: ["#minecraft:is_overworld"]; Not a JSON object: ["#minecraft:is_overworld"]
+4383:>> Errors in element claudemod:add_prismium_ore:
+4384:java.lang.IllegalStateException: Failed to parse claudemod:forge/biome_modifier/add_prismium_ore.json from pack main
+4412:Caused by: java.lang.RuntimeException: Not a JSON object: ["#minecraft:is_overworld"]; Not a JSON object: ["#minecraft:is_overworld"]
+4418:>> Errors in element claudemod:add_prismium_spike:
+4419:java.lang.IllegalStateException: Failed to parse claudemod:forge/biome_modifier/add_prismium_spike.json from pack main
+4447:Caused by: java.lang.RuntimeException: Not a JSON object: ["#minecraft:is_overworld"]; Not a JSON object: ["#minecraft:is_overworld"]
+4453:>> Errors in element claudemod:add_prismium_wraith_spawn:
+4454:java.lang.IllegalStateException: Failed to parse claudemod:forge/biome_modifier/add_prismium_wraith_spawn.json from pack main
+4482:Caused by: java.lang.RuntimeException: Not a JSON object: ["#minecraft:is_overworld","claudemod:prism_realm"]; Not a JSON object: ["#minecraft:is_overworld","claudemod:prism_realm"]
+4488:> Errors in registry minecraft:root:
+4489:>> Errors in element minecraft:worldgen/biome:
+4490:java.lang.IllegalStateException: Unbound values in registry ResourceKey[minecraft:root / minecraft:worldgen/biome]: [claudemod:prism_realm]
+4517:> Errors in registry minecraft:worldgen/biome:
+4518:>> Errors in element claudemod:prism_realm:
+4519:java.lang.IllegalStateException: Failed to parse claudemod:worldgen/biome/prism_realm.json from pack main
+4547:Caused by: java.lang.RuntimeException: Not a JSON object: []
+4554:[14:03:46] [main/WARN] [minecraft/Main]: Failed to load datapacks, can't proceed with server load. You can either fix your datapacks or reset to vanilla with --safeMode
+4555:java.util.concurrent.ExecutionException: java.lang.IllegalStateException: Failed to load registries due to above errors
+4574:Caused by: java.lang.IllegalStateException: Failed to load registries due to above errors

@@ -1,1 +1,1 @@
-status=other_failure  commit=21c5cd6057b12f7e6d8144765605426d8d0374a7  run=32145401180
+status=registry_failure  commit=a72d574196403bd1bf4a726d19d037bbe38d56f4  run=32145783949
