@@ -2072,6 +2072,53 @@ push後、`git fetch`による到着確認で以下を確認済み:
 
 `api.github.com`への`curl`到達性は今回も`000`/DNS解決不可(プロキシ変数を空にしても同様、`Could not resolve host`)で、この点は継続する既知の制約(§2-9参照、`WebSearch`/`web_fetch`は別経路のため引き続き問題なく利用できた)。
 
+## 3AY. セッション#49(定期実行)で実装した内容: Prismium Chronoflame(時間操作ブロック)新設
+
+### 3AY-1. 状況確認・今回の方針決定
+
+セッション開始時、`git clone`後`git log`/PROGRESS.mdを確認し、session 48の2コミット(`c540434`Prism Lily/Bramble/Vine修正、`e133a85`Prismium Rift Anchor新設)がpush済みで、その後のCI副産物(`ci: update built jar`コミット`9d8fdb5`、`ci: update datapack validation results`コミット`5086750`、`status=ok`)まで到着していることを`git log`で確認した(`api.github.com`への`curl`は今回も`Could not resolve host`で到達不可、継続する既知の制約)。ビルドは前回時点で緑だったため、今回のセッションは新規実装に着手して問題ない状態だった。
+
+§5(旧)項目12(a)にあった、本人からの要望「Rift Shardのクラフト派生アイテム2種」のうち、(i)リスポーン地点アイテムはsession 48で実装済みだったため、今回は残る(ii)「時間を自由に変えられる焚火状ブロック(破壊時にアイテムとしてドロップしない)」に着手することにした。session 48の申し送りに実装イメージの下書きが既に残されていたため、それを踏襲しつつAPIの裏取りから始めた。
+
+### 3AY-2. API裏取り: `noLootTable()` / `ServerLevel#setDayTime(long)`
+
+- `BlockBehaviour.Properties#noLootTable()`: WebSearch→1.20.1のForgeマッピング済みjavadocミラー(`lexxie.dev/forge/1.20.1`)を直接Fetchし、引数無しの`public BlockBehaviour.Properties noLootTable()`として実在することを確認。呼ぶとブロックにloot tableが一切紐付かなくなる(破壊しても常に何もドロップしない)仕様のため、このブロック用の`loot_tables/blocks`JSONは意図的に作成していない。
+- `ServerLevel#setDayTime(long)`: 同じくWebSearch+2系統のクロスチェックで確認。(1) 1.18.2 Forgeマッピング済みjavadocミラーの検索結果スニペットで`public void setDayTime(long p_8616_)`というシグネチャを確認。(2) CraftTweakerの公式ドキュメント(`docs.blamejared.com`、ForgeのZenScriptラッパーだが実体はバニラAPIの薄いラップ)で`ServerLevel`が`dayTime`という「Setterあり・Getterなし」のプロパティを持つことを確認し、これが同じ`setDayTime`呼び出しの存在を裏付ける形で一致した。`Level`(クライアント/サーバー共通の抽象クラス)自体にはsetterが無く、`ServerLevel`だけが持つ点も確認済み。
+
+### 3AY-3. 実装: PrismiumChronoflameBlock / PrismiumChronoflameBlockItem
+
+- `PrismiumChronoflameBlock`: 既存のエネルギー機械群(`BaseEntityBlock`+BlockEntity)ではなく、`PrismiumSpikeBlock`と同じ「状態を持たないなら素の`Block`で十分」という方針で素の`Block`継承にした(このブロックはBlockEntityに保持すべき状態を一切持たない - 単に`use()`のたびに*レベル側*の時刻カウンタを動かすだけのため)。
+  - 右クリック: 現在の次元(呼び出された`Level`、`ServerLevel`にキャスト)の`getDayTime()`に対し±6000tick(=1日の1/4=ゲーム内6時間、日の出→正午に相当)して`setDayTime`。シフト+右クリックで逆方向。
+  - 結果が負にならないよう0でクランプ(ワールド生成直後の数分間に巻き戻しを連打した場合の防御。moon phase計算等、`getDayTime`の負値入力時の挙動を全て監査したわけではないため、素直に0でクランプする安全側の実装とした)。
+  - サウンドは新規追加せず、本MOD内で既に使用実績のある`SoundEvents.AMETHYST_BLOCK_CHIME`をピッチ違いで流用(進む=高ピッチ、戻す=低ピッチ)。「既にレビュー済みの安全な要素を再利用する」という本MODの一貫方針を踏襲。
+  - `player.displayClientMessage`で"Time advanced/rewound by 6 hours"系のアクションバーメッセージ(既存の各エネルギー機械のcharged/fullメッセージと同じ`message.claudemod.*`キー命名パターン)。
+- `PrismiumChronoflameBlockItem`: `EnergyStorageBlockItem`(session 11)・`PrismiumRiftAnchorItem`(session 48)と全く同じ「ツールチップ追加専用の`BlockItem`サブクラス」パターンを踏襲し、`appendHoverText`で「破壊してもドロップしない」という本ブロック最大の非直感的挙動を、設置前にプレイヤーへ明示するツールチップを追加した。
+
+### 3AY-4. テクスチャー: gen_prismium_chronoflame.py
+
+`cube_all`の16x16、全6面共通の1枚絵。以下の3要素を合成:
+1. 石材の縁取り(`gen_prismium_stone.py`がPrismium鉱石本体から一次サンプリング済みの5段階グレーをそのまま再利用) - 「プリズミウム系の石材で組まれた祭壇」という設定に、新しいグレーを憶測で追加せず流用。
+2. 中央の放射状グロウ(`gen_prismium_lantern.py`のチェビシェフ距離による同心円バンド技法をそのまま再利用) - 既にsession 4の自己レビューで小サイズでも視認性良好と確認済みの技法。
+3. 新規要素: 外周に12個の時計目盛り風アクセント(ACCENT系のピンク)+中心から突き出た2本の細い「針」(CORE_WHITE)。文字盤を精密に描くのではなく、本MODの一貫した「詳細を描き込みすぎず、抑制的なアクセントで意味を持たせる」流儀(`gen_prismium_stone.py`のドキュメント内で言及されている方針)に沿って、最小限のピクセルで「時計」を示唆する程度に留めた。
+
+**自己レビュー(Read目視確認済み)**: `build/preview_prismium_chronoflame.png`を1x/4x/8xのチェッカーボード合成+2x2タイル継ぎ目確認付きで生成しRead。アルファ値は全面255(cube_allなので透過は無い想定通り)。実際に見た印象として、外周の12個の目盛りは輪郭として視認できるものの、中央の「2本の針」は小サイズ(1x)ではほぼ中心のグロウに埋もれて「上向きの小さな突起」程度にしか見えず、時計の針として明確に読み取れるとは言い難い。ただし、輝くクリスタルコアのブロックとしての見た目自体は他のPrismium系ブロックと統一感があり、視認性・シルエットの明瞭さに問題は無いと判断し、作り直しはしなかった(「時計」の示唆は弱いが、ノイズや透過崩れの類の失敗ではないため)。次回以降、より明確に「時計」だと分かる見た目にしたい場合はカスタムブロックモデル(cube_allではなくtop面だけ文字盤にする等)を検討する余地がある(下記§5参照)。
+
+### 3AY-5. 登録・レシピ・タグ・lang
+
+- `ModBlocks.PRISMIUM_CHRONOFLAME`: mapColor CYAN、strength(3.5f, 9.0f)(PRISMIUM_LANTERNのstrength(3.5f,3.5f)を基準に、"半永久的な祭壇"という設定に合わせて爆発耐性のみ勘で引き上げた、未検証のバランス調整)、sound AMETHYST、lightLevel 14、`noLootTable()`。
+- `ModItems.PRISMIUM_CHRONOFLAME_ITEM`: 上記`PrismiumChronoflameBlockItem`を使うBlockItem登録。
+- `ModCreativeTabs`: 出力タブへ追加(Rift Anchorの直後)。
+- `data/minecraft/tags/blocks/mineable/pickaxe.json`へ追加(ドロップは無いが、採掘速度倍率・破壊エフェクトの一貫性のため他のPrismium系ブロックと同じくピッケル対応に)。
+- レシピ(`prismium_chronoflame.json`、shapeless): `minecraft:clock`×1 + `minecraft:glowstone_dust`×2 + `claudemod:prismium_shard`×4。時計(時間の象徴)+グロウストーン(光/炎の象徴)+プリズミウムの欠片、という意味付け。
+- en/ja lang: ブロック名・ツールチップ・アクションバーメッセージ2種(advance/rewind)を追加。
+
+### 3AY-6. commit・push・ビルド確認
+
+1コミット(`114215e`)をpush。push前に`git fetch origin main`で並行セッション無し(前回のCI副産物`5086750`が最新のまま)を確認してから素の`git push origin main`を実行したところ、**プロキシ環境変数を空にする回避策を使わずに一発で成功した**(参考: session 46の申し送りではこの回避策が「必要になることがある」と記録されていたが、今回は不要だった。プロキシ経由の可否はセッションごとに変動する可能性があるため、次回以降も「まず素のpushを試し、失敗したら回避策」の順序で対応することを推奨、§5参照)。
+
+push後、`ci: update built jar`(コミット`ddb4f1c`)→`ci: update datapack validation results`(コミット`7b30c42`、`status=ok`、対象コミット`114215e`)の到着を`git fetch`で確認済み。`builds/last_datapack_validation_errors.log`の内容も確認し、既存の既知ノイズ(Forgeのjarjarメタデータ警告、`server.properties`未検出、`removeErroringBlockEntities`設定補正等、毎回出る無害なログ)のみで、今回の変更に起因する新規エラーは無かった。ビルドjarのサイズも266594→271688バイトへ増加しており、新規クラス・テクスチャーが実際に取り込まれたことも確認できた。ただしこれも例によって「サーバーが起動できる」ことの確認に過ぎず、実際にブロックを設置・右クリックして時刻が変わる様子や、テクスチャーの実機描画は未検証(下記§5参照)。
+
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
@@ -2100,7 +2147,7 @@ push後、`git fetch`による到着確認で以下を確認済み:
 
 0. 【継続、優先度大幅低下】装備の見た目フィードバックはsession 39〜45で一通り対応済み。今回はPrism Realm地形の方が優先度が高かったため深追いしていない。防具の3人称シェーディングは引き続き実機未検証。
 
-1. 【最優先・恒例】まず`git log`/`git fetch origin main`し、`ci: update built jar`→`ci: update datapack validation results`の順に到着しているか確認する。**session 48は2コミットpushし、両方の到着・`status=ok`まで確認済み**(§3AX-5参照)。
+1. 【最優先・恒例】まず`git log`/`git fetch origin main`し、`ci: update built jar`→`ci: update datapack validation results`の順に到着しているか確認する。**session 49は1コミットpushし、両方の到着・`status=ok`(コミット`114215e`)まで確認済み**(§3AY-6参照)。
 
 2. `api.github.com`は今回も到達不可(継続)。Issueページ個別取得・添付ファイルダウンロード(`user-attachments/files/...`)は引き続き有効な手法。
 
@@ -2120,10 +2167,10 @@ push後、`git fetch`による到着確認で以下を確認済み:
 
 10. 【完了】Prism Realmの地形専用化(旧: noise再利用+Feature塗り替え)は、**session 47でアプローチごと刷新され、flatジェネレーターへの全面移行が完了した**(§3AW-3参照)。実機での動作確認はまだ無い。
 
-11. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能が積み上がり続けている。session 47もその例外ではない(Prismium Stone/Deep Wraith/フラットワールド/Rift Shard修正、いずれも未検証)。**新機能追加のたびに、pushのたびのデータパック検証結果確認を徹底すること**(引き続き最重要の習慣)。
+11. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能が積み上がり続けている。session 47(Prismium Stone/Deep Wraith/フラットワールド/Rift Shard修正)、session 48(Prism Lily/Bramble/Vine修正/Rift Anchor)に続き、**session 49のPrismium Chronoflameも例外ではない**(`setDayTime`が本当に狙い通り動くか、6時間ステップの体感、テクスチャーの実機での見え方、いずれも未検証)。**新機能追加のたびに、pushのたびのデータパック検証結果確認を徹底すること**(引き続き最重要の習慣)。
 
 12. 【継続、次の展開候補、優先度は下記の通り更新】
-    - (a) ユーザー要望のRift Shard派生アイテム2種のうち、**(i)リスポーン地点を設定できるアイテムはsession 48で実装済み(`PrismiumRiftAnchorItem`、§3AX-4参照、実機未検証)**。(ii) 自由に時間を変えられるが破壊時にアイテムとしてドロップしない焚火のようなブロックは**引き続き未着手、次回の最有力候補**。実装イメージ(session 48時点の下書き): `noLootTable()`でドロップ無効化した通常`Block`、右クリックで`level.setDayTime(現在時刻 + 一定量)`(ディメンションごとに独立した時刻を持つ想定)を進める/シフト+右クリックで戻す、程度のシンプルな設計に留めるのが無難(篝火型の見た目・パーティクル演出は後回しでよい)。
+    - (a) ユーザー要望のRift Shard派生アイテム2種は**両方実装済みになった**: (i)リスポーン地点アイテムはsession 48(`PrismiumRiftAnchorItem`、§3AX-4参照、実機未検証)、(ii)時間操作ブロックはsession 49(`PrismiumChronoflameBlock`、§3AY-3参照、実機未検証)。(ii)については見た目の改善余地あり(§議論参照): 現状`cube_all`で全面同じテクスチャーのため「時計」を示す針が小サイズでは埋もれて見づらい。次回以降、top面だけ文字盤にするカスタムモデル、または連打による時刻乱高下を防ぐクールダウン等を検討してもよい(いずれも今回は見送り、未着手)。
     - (b) 【新規・ユーザー要望】Prism Realmの草花(Prism Lily/Bramble/Vine)を「活用できないものになっている」との指摘(染料・クラフト素材等への用途追加)。**未着手。** ただし§000000の通り、これらの植物が今のフラット水没地形でそもそも配置できているか自体を先に確認・修正する必要がある可能性が高い。
     - (c) 雲の見た目修正(§00000参照、調査済み・実装待ち)。
     - (d) Prism Realmへの陸地・複数バイオーム追加(ユーザー本人の段階的移行計画の次のステップ)。
@@ -2135,6 +2182,8 @@ push後、`git fetch`による到着確認で以下を確認済み:
 
 13. 【継続】worldgen/レジストリ系のJSONを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。**session 47でも`minecraft:flat`ジェネレーターの`features`フラグの意味(デフォルトfalseだとbiome由来のfeatureが一切生成されない)をWebSearchで確認してから`true`に設定した**ことで、既存のPrismium植物/スポーンfeatureが動かなくなるリスクを未然に防いだ(§3AW-3参照)。
 
+14. 【新規・session 49】`git push`前のプロキシ環境変数回避策(`https_proxy=""`等)について: session 49では**回避策を使わず素の`git push origin main`が一発で成功した**(§3AY-6参照)。これまでPROGRESS.mdは「proxy経由だと`access denied by the git proxy`で失敗することがある」と記録してきたが、少なくとも今回のセッションではその問題は再現しなかった。到達性はセッションごとの環境差でおそらく変動するため、次回以降も**「まず素のpushを試す→`access denied by the git proxy`等のエラーが出たら回避策に切り替える」の順序**を徹底し、最初から回避策ありきで進めないこと(不要な変数unsetがかえって`Could not resolve host`を誘発する場合もある、今回`https_proxy=""`を試しに使ったところ逆にDNS解決自体が失敗した実例あり)。
+
 ### 議論したい論点・改善案
 
 - **フラットワールド化は「地中の石を無くす」という目的には即効性があるが、当面ディメンションの体験が「ほぼ全域が海」になるというトレードオフがある。** ユーザー本人が把握・了承済みの設計だが、次に陸地/バイオームを追加するまでの間、実際にプレイした際の第一印象(「歩ける場所がない」)をどう感じるか、次回セッション開始時にユーザーへの確認をおすすめしたい。
@@ -2143,15 +2192,16 @@ push後、`git fetch`による到着確認で以下を確認済み:
 - **Prism Lily/Bramble/Vine Featureの未生成バグはsession 48でheightmap変更+waterlogged化により修正したが、これもデータパック検証(レジストリ読み込みの成否のみ)では確認できない領域なので、次回セッション開始時に「実際に生成されているか」を最優先で確認すべき(§3AX-2/3AX-3、§5旧000000参照)。**
 - **Prismium Rift Anchor(session 48)の`forced=true`リスポーン地点が、Prism Realmのほぼ全域が海という現状の地形でどこに着地させるかは全くの未知数。** バニラの安全地点探索ロジックが水中を避けてくれる保証は無く、悪くすると溺れる位置に復活する可能性がある。実プレイ確認が最優先。
 - **`runGameTestServer`はsession 48でも問題なく動作し続けている(累計6回目のstatus=ok)。** 安定して動いている実績が積み上がってきたので、`continue-on-error`を外して本当のゲートにするかの判断時期が近づいている。
+- **Prismium Chronoflame(session 49)は「時刻を自由に操作できる」という、生存要素(モンスターのスポーン・農作物の成長サイクル等)に直接影響する強力な機能。** 現状クラフトコストが控えめ(時計+グロウストーン2個+プリズミウムの欠片4個)で、連打制限も無いため、良くも悪くも「昼夜をほぼ無効化できる」バランスになっている可能性がある。これが意図した範囲か(探索の快適化ツールとして歓迎か、難易度を損なう問題か)は本人の感想を聞いてから判断したい論点。
+- **`runGameTestServer`はsession 49でも問題なく動作し続けている(累計7回目のstatus=ok)。** 安定して動いている実績が積み上がってきたので、`continue-on-error`を外して本当のゲートにするかの判断時期が近づいている(session 48からの持ち越し、引き続き検討事項)。
 
 ### コミット/プッシュ状況
 
-session 48(定期実行)は以下の2コミットをpush(§3AX-5参照):
-1. `c540434`(push時ハッシュ、rebase後) Prism Lily/Bramble/Vine未生成バグ修正(heightmap変更+waterlogged化)
-2. `e133a85` Prismium Rift Anchor新設
+session 49(定期実行)は以下の1コミットをpush(§3AY-6参照):
+1. `114215e` Prismium Chronoflame新設(時間操作ブロック、`PrismiumChronoflameBlock`/`PrismiumChronoflameBlockItem`、テクスチャー、レジストリ登録、レシピ、lang)
 
-push前に`git fetch origin main`を実行したところ、session 47の2コミット分のCI副産物(`ci: update built jar`/`ci: update datapack validation results`)が新たに到着していたため`git pull --rebase origin main`で取り込んでからpush。`ci: update built jar`(`6a04bb8`)→`ci: update datapack validation results`(`cf48f1f`、`status=ok`、コミット`e133a85`)まで到着を確認済み。
+push前に`git fetch origin main`を実行し、session 48後のCI副産物(`ci: update built jar`コミット`9d8fdb5`/`ci: update datapack validation results`コミット`5086750`)から進んでいない(=並行セッション無し)ことを確認してから、リベース不要でそのまま`git push origin main`。**今回はプロキシ回避策無しで一発成功**(§5項目14参照)。`ci: update built jar`(`ddb4f1c`)→`ci: update datapack validation results`(`7b30c42`、`status=ok`、対象コミット`114215e`)まで到着を確認済み。ビルドjarサイズが266594→271688バイトへ増加したことも確認し、新規クラス・テクスチャーが実際に取り込まれたことを裏付けた。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側の通知は今回2回のpushに対応する分がSecret設定済みであれば送信されているはず。
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側の通知は今回1回のpushに対応する分がSecret設定済みであれば送信されているはず。
