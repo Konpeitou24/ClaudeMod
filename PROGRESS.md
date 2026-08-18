@@ -1582,6 +1582,50 @@ session 39の申し送り(§5旧項目9)「Prism Realm用の専用ブロック�
 
 **未検証事項**: 他の全ての新規コンテンツと同様、CIビルド(コンパイル+datapack読み込みの一部)が通ること以上の検証はできていない。特に(a)`add_prism_lily.json`のbiome_modifierが実際にPrism Realmワールド生成時にLilyを生やすか、(b)16x16テクスチャーの実ゲーム内表示(4倍プレビューでの自己レビューはしたが、実機の照度・距離での見え方は別)、(c)`claudemod:prism_realm`のみを対象にした`biomes`配列(既存3つは全て`#minecraft:is_overworld`込みの配列だった)がForgeのbiome predicateとして単一ID配列でも問題なく解釈されるか、は次回以降のGitHub Issue・ユーザーフィードバック待ち。
 
+## 3AO. セッション#41で実装した内容: Issue #2対応(ツールの見た目改善) + Prism Realm資源密度アップ(項目9-b対応)
+
+### 3AO-0. セッション開始時の状況確認
+
+`git clone`は`/tmp/cm_$(date +%s)`という一意なパスで実施(session 39以降の教訓通り、`/tmp/work`系は今回も別セッション所有の残骸で使えない可能性を避けるため最初から一意パスにした)。`git log origin/main`で直前セッション(#40)最終コミット`da91742`(PROGRESS.md更新)の直後に`ci: update built jar`(`9f96553`)が付いていることを確認し、前回ビルドは成功と判断(修正対応は不要)。
+
+`api.github.com`は今回も未使用。GitHub Issue確認はsession 38以降確立の`/issues`一覧の`grep -o 'issues/[0-9]*'`→各Issueページを個別curlしてtitle/state/totalCountをgrepする方式に加え、今回は`<meta property="og:description">`から本文冒頭を直接抜き出す手法(session 38で確立済み)も使い、Issue #2・#5の実際の文面を再確認した。Open: #2, #3, #5, #6, #7, #8, #9(前回session 40から変化なし)。新規Issue・新規コメントの兆候(#10・#11ページは404)は無かった。
+
+### 3AO-1. Issue #2修正: ツール(ツルハシ/斧/シャベル)の見た目改善
+
+Issue #2の本文を`og:description`から直接確認: 「各ツールの見た目が、そのツールと一致しません。さらにどれも似通っているため、区別がつかず持ち替えに苦労します。公式が出しているツールを参考にしながら作っていければと思います。」
+
+session 13で一度「フォーク/くさび/薄い刃/横棒」という4種の異なる内部形状に redesign 済みだったが、このセッションで実際に`scripts/textures/gen_prismium_tools.py`を実行して5本の現行テクスチャーをホットバー相当の縮小サイズまで含めたプレビュー画像として並べて`Read`で確認したところ、**ツルハシと斧が依然としてほぼ同じ「ティール色のくさび状の塊」に見え、シャベルも柄の先の丸い宝石のようにしか見えず、ユーザーの指摘が今なお的中していることを確認した**(session 13以降、この問題は未解決のまま放置されていたことになる)。
+
+原因分析: session 13の redesign は頭部の「内部の切れ込み」だけを変えていたが、16x16という極小キャンバスでは細部の違いは縮小表示で潰れてしまい、**全体のバウンディングシルエット(縦長か横長か、開いているか塊か)が違わないと区別できない**という教訓に至った(session 40のPrism Lilyテクスチャー制作での学び「パラメトリック計算より手打ちの行スパン指定の方が読みやすい」と同系統の教訓)。これを踏まえ、`scripts/textures/gen_prismium_tools.py`のツルハシ・斧・シャベルの3関数を再設計した:
+
+- **ツルハシ**: 頭部を「共有ソケットから左右に開く2本の細いプロング」にし、中央に大きな隙間を作る"開いた"シルエットにした(以前より横に広く・浅くして"V字フォーク"感を強調)。
+- **斧**: 頭部を「柄に沿ってフラッシュな1本の太く平たい長方形ブロック」にした - 先端が尖らず、上端がフラットな横長のブロックにすることで、ツルハシの"開いたV字"とは対照的な"詰まった塊"のシルエットにした。上端にハイライトの帯を1行追加し、刃のエッジらしさを演出。
+- **シャベル**: 頭部を「細い柄がそのまま続く、上端が丸くなく平らな細長い長方形パレット」にし、以前の丸みを帯びた宝石状の塊(5行)から縦長のパレット(7行)に変更、頂点の尖った菱形を廃した。
+
+ホーとソード(横棒/ガード付き剣)は既に十分区別できていたため変更していない。
+
+**自己レビュー**: 12倍(近接視点相当)と2倍(ホットバーアイコン相当)の両方の縮小率でチェッカーボード背景付きプレビューを`outputs`マウント側にコピーして`Read`で目視確認。ツルハシは明確なV字フォーク、斧は横長のブロック、シャベルは細長いパレットとして視認でき、少なくとも3本を並べた際に session 13版より判別しやすくなったことを確認した(ただしホットバー縮小表示ではツルハシ以外の2本は依然完全に別物には見えづらく、改善はしたが完璧ではないと判断している - 詳細は§4/§5参照)。全ピクセルのアルファ値が0/255のみであることもコードで確認済み(透過崩れ無し)。
+
+**未検証**: 実機のホットバー・インベントリでの見え方(このサンドボックスでは検証不可)。ユーザーが「公式ツールを参考に」と要望している"vanilla系デザインへの寄せ"は今回は行っていない(あくまで5本を互いに区別しやすくすることを優先した)。もし今回の改善でも「似ている」「そのツールに見えない」というフィードバックが続く場合、次はvanillaの実際のpickaxe/axe/shovelアイテムテクスチャーの構図(斜め45度の柄+特徴的な頭部形状)によりで忠実に寄せる根本的な作り直しを検討する必要がある。
+
+### 3AO-2. 実装: Prism Realmの既存資源(鉱石/結晶ブルーム/結晶スパイク)密度アップ(§5旧項目9-b対応)
+
+session 40の申し送り(項目9-b、「既存のPrismium鉱石/結晶ブルーム/結晶スパイクの生成頻度をPrism Realm限定で引き上げるbiome_modifier」)に着手した。
+
+これまで`add_prismium_ore.json`/`add_prismium_bloom.json`/`add_prismium_spike.json`の3つのbiome_modifierは`biomes`に`["#minecraft:is_overworld", "claudemod:prism_realm"]`という共通配列を指定しており、同じ`placed_feature`(=同じ生成数)をオーバーワールドとPrism Realm両方に適用していた。これではPrismiumの"本拠地"であるはずのPrism Realmが、オーバーワールドの適当なバイオームと資源密度で差別化されていないことになる。
+
+- 既存3つのbiome_modifierを`"#minecraft:is_overworld"`のみを対象にするよう変更(生成数は元のまま: 鉱石5・ブルーム4・スパイク2)。
+- 新規に`add_prismium_ore_realm_boost.json`/`add_prismium_bloom_realm_boost.json`/`add_prismium_spike_realm_boost.json`の3ファイルを追加し、`claudemod:prism_realm`のみを対象に、それぞれ新規の`placed_feature`(`prismium_ore_placed_realm`/`prismium_bloom_placed_realm`/`prismium_spike_placed_realm`)を割り当てた。生成数はオーバーワールド比でおよそ2.5〜3倍(鉱石5→12・ブルーム4→10・スパイク2→6)にした。underlying の`configured_feature`・ブロック自体は既存のものをそのまま再利用しており、新規Java・新規テクスチャーは不要だった。
+- Prismium Wraithのスポーン頻度(`add_prismium_wraith_spawn.json`)は今回は変更していない(項目9-bが求めていたのは資源3種のみで、モブ密度はバランス調整の意味合いが強く別問題と判断したため、意図的に対象外)。
+
+**自己レビュー**: 変更・新規作成した全JSONファイル(biome_modifier 6本 + placed_feature 3本)を`python3 -c "import json; json.load(open(...))"`で構文チェックし、全てパース可能であることを確認した。
+
+**未検証**: 全てデータパックJSONのみの変更(Javaは未変更)だが、(a)Forgeのbiome predicateが単一要素の`["claudemod:prism_realm"]`配列を正しく解釈するか(session 40のPrism Lily biome_modifierで既に同じパターンを使っているため恐らく問題ないはずだが、Lily自体もまだ実機未検証)、(b)実際にPrism Realmで鉱石・結晶の密度がオーバーワールドより明確に高く感じられるか、はいずれも次回以降のユーザーフィードバック待ち。
+
+### 3AO-3. commit・push・ビルド確認
+
+変更は2コミット: `f343ab0`(Issue #2ツール見た目改善)、`576f9ab`(Prism Realm資源密度アップ)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し、クローン後origin/mainに動きなし)、素のまま`git push origin main`で一発成功(プロキシ回避策は不要、session 34以降8セッション連続でこの運用のまま成功)。push後`git fetch`のポーリングで`ci: update built jar`(`045c3d5`)の到着を確認し、両コミットとも通常ビルドが成功したことを実証済み。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
@@ -1591,13 +1635,13 @@ session 39の申し送り(§5旧項目9)「Prism Realm用の専用ブロック�
    - (b) 【session 39部分対応】Prism Realmがオーバーワールドに似すぎている問題 → 専用バイオーム(色・霧・パーティクル)を新設(session 39)。
    - (c) 【session 40で着手】専用植物が無い問題 → Prism Lily(Prism Realm限定、biome_modifierで`claudemod:prism_realm`のみに注入、§3AN参照)を追加。地形の形状・ブロックパレット(草ブロック/土/石)は依然未着手のまま(項目9参照)。
 
-1. **【最優先、恒例】まず`git log`/`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** session 40は1コミット(`6030bfc`、Prism Lily追加 - §3AN参照)をpushし、直後に`ci: update built jar`(`44e3953`)が付いたことを確認済み。**session 40のPrism Lily worldgen(configured_feature/placed_feature/biome_modifier、いずれも新規)もsession 39のPrism Realmバイオーム同様、CIビルド(コンパイル)が通ることと実際にゲーム内でデータパックが正しく読み込まれる/機能することは別問題。次回、GitHub Issueに新規のクラッシュ・データパックエラー報告が無いか特に注意して確認すること。**
+1. **【最優先、恒例】まず`git log`/`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** session 41は2コミット(`f343ab0`ツール見た目改善、`576f9ab`Prism Realm資源密度アップ - §3AO参照)をpushし、直後に`ci: update built jar`(`045c3d5`)が付いたことを確認済み。**session 41のbiome_modifier/placed_feature変更(新規6ファイル)もsession 39-40同様、CIビルド(コンパイル)が通ることと実際にゲーム内でデータパックが正しく読み込まれる/機能することは別問題。次回、GitHub Issueに新規のクラッシュ・データパックエラー報告が無いか特に注意して確認すること。**
 
 2. 【継続】GitHub Issue確認は`/issues`一覧の`grep -o 'issues/[0-9]*'`→各Issueページを個別curlしてtitle/state/コメント数相当のtotalCountをgrepする方式(session 38で確立)を今回も使用、有効だった。`"totalCount":0`が本当にコメント数を表しているかは3セッション連続で変化なしのため依然未検証のまま。もし次回、明らかにコメントが付いているはずのIssueで`totalCount:0`のままなら、このフィールドはコメント数を表していない可能性が高いので、別の判定手段を検討すること。
 
 3. 【継続】session 38で対応したIssue #5・#6・#7・#8・#9は今回(session 40)も新しいコメント・クローズの兆候なし(全てOPENのまま)。実プレイでの検証待ちの状態が続いている。引き続き優先的に追跡すること。
 
-4. 【継続、優先度中】Issue #2(ツールの見た目が似通っていて区別しづらい)は今回も対応しなかった。
+4. 【session 41で初着手、継続注視】Issue #2(ツールの見た目)はsession 41でツルハシ/斧/シャベルのシルエットを再設計した(§3AO-1参照)。ホットバー縮小表示での自己レビューでは以前より改善したが、完全に別物には見えづらいとも感じており、次回以降ユーザーの反応を確認すること。もし改善が不十分なら、次はvanilla実物のツール構図により忠実に寄せる作り直しを検討する必要がある。
 
 5. 【継続、優先度中】Issue #9(プリズミウムディメンションへ行く手段が分かりにくい)の本格的なポータル機構は今回も未着手(ツールチップでの案内のみ、session 38)。
 
@@ -1607,10 +1651,10 @@ session 39の申し送り(§5旧項目9)「Prism Realm用の専用ブロック�
 
 8. 【継続、優先度中】v0.2.0タグ付きリリースの中身(添付jarのファイル名・サイズ)確認は今回も着手していない。
 
-9. 【継続、優先度高】Prism Realm用の専用地形は、session 40でPrism Lily(植物)を追加したことでさらにギャップが明確になった: 生えている草木は専用でも、その下の地面(草ブロック/土/石)は依然オーバーワールドと同じまま。次回以降、以下のいずれか(または組み合わせ)を検討する価値がある:
-    - (a) 専用の`noise_settings`を作り、surface_ruleでPrism Realmバイオーム限定のブロック(例: 新規「Prismium Soil」ブロック)に草ブロック/土を置き換える。session 39時点から変わらず最もリスクが高く、着手できていない案。
-    - (b) 既存のPrismium鉱石/結晶ブルーム/結晶スパイクの生成頻度をPrism Realm限定で引き上げるbiome_modifier(現状は`#minecraft:is_overworld`と共通の頻度)。
-    - (c) 【session 40で一部着手、Prism Lily1種のみ】Prism Realm限定の植物をさらに追加(低木・つる植物など、Lilyとは違うシルエットのものが望ましい)。今回確立した「biome_modifierを`claudemod:prism_realm`のみに絞る」+「rim/erosionシェーディングで手打ちシルエットからテクスチャーを作る」の2つの技法はそのまま再利用できる。
+9. 【継続、優先度高】Prism Realm用の専用地形は、session 41で(b)資源密度アップに着手したことで、残る(a)地面ブロックの専用化がさらに際立つギャップになった。次回以降、以下を検討する価値がある:
+    - (a) 【未着手、最もリスクが高い】専用の`noise_settings`を作り、surface_ruleでPrism Realmバイオーム限定のブロック(例: 新規「Prismium Soil」ブロック)に草ブロック/土を置き換える。
+    - (b) 【session 41で対応済み、§3AO-2参照】既存のPrismium鉱石/結晶ブルーム/結晶スパイクの生成頻度をPrism Realm限定で引き上げるbiome_modifier(鉱石5→12・ブルーム4→10・スパイク2→6、オーバーワールド側は元のまま)。実機で密度差が体感できるかは未検証。
+    - (c) 【session 40で一部着手、Prism Lily1種のみ、継続】Prism Realm限定の植物をさらに追加(低木・つる植物など、Lilyとは違うシルエットのものが望ましい)。確立済みの「biome_modifierを`claudemod:prism_realm`のみに絞る」+「rim/erosionシェーディングで手打ちシルエットからテクスチャーを作る」の2つの技法はそのまま再利用できる。
 
 10. 【継続】Prismium Block/Core建築バリエーション計8種、5GUI、Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・Prism Realm関連一式(Prism Lily含む)は、いずれも実プレイでの検証が一切無いまま積み上がっている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
 
@@ -1629,10 +1673,10 @@ session 39の申し送り(§5旧項目9)「Prism Realm用の専用ブロック�
 
 ### コミット/プッシュ状況
 
-session 40の変更は1コミット: `6030bfc`(Prism Lily追加、§3AN参照)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し)、素のまま`git push origin main`で一発成功。push後`git fetch`ポーリングで`ci: update built jar`(`44e3953`)の到着を確認し、ビルド成功を確認済み。
+session 41の変更は2コミット: `f343ab0`(Issue #2ツール見た目改善)、`576f9ab`(Prism Realm資源密度アップ、§3AO参照)。push前に`git fetch origin main`で並行セッションの有無を確認(今回は無し)、素のまま`git push origin main`で一発成功。push後`git fetch`ポーリングで`ci: update built jar`(`045c3d5`)の到着を確認し、ビルド成功を確認済み。
 
 GitHub Issue確認は§0-2/session 38確立の運用ルール通り実施。Open: #2, #3, #5, #6, #7, #8, #9(前回から変化なし)。#1・#4はCLOSED。API権限の制約によりこのセッションからIssueをクローズすることはできない。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、今回のpush(`6030bfc`)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず(`ci: update built jar`到着で成功は確認済み)。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、今回のpush(`f343ab0`/`576f9ab`)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず(`ci: update built jar`到着で成功は確認済み)。
