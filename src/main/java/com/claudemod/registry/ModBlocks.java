@@ -9,6 +9,7 @@ import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
 import com.claudemod.block.PrismiumChronoflameBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
+import com.claudemod.block.PrismiumPortalBlock;
 import com.claudemod.block.PrismiumPylonBlock;
 import com.claudemod.block.PrismiumRestorerBlock;
 import com.claudemod.block.PrismiumSpikeBlock;
@@ -474,6 +475,23 @@ public class ModBlocks {
                     .strength(3.5f, 9.0f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 14)
+                    .noLootTable()));
+
+    // Session 52: Prismium Portal, the mod's first standing dimension
+    // gateway (see PrismiumPortalBlock's class doc for the full design/
+    // GitHub issue #9 writeup). No BlockItem is registered for this in
+    // ModItems - like vanilla's nether_portal, it should never be
+    // obtainable as an item, only ever placed by
+    // PrismiumPortalIgniteHandler igniting a Prismium Core frame.
+    // strength(-1.0F) + noLootTable() together make it unbreakable/
+    // undroppable by any normal means, matching vanilla portal blocks.
+    public static final RegistryObject<Block> PRISMIUM_PORTAL = BLOCKS.register("prismium_portal",
+            () -> new PrismiumPortalBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .noCollission()
+                    .strength(-1.0f)
+                    .sound(SoundType.GLASS)
+                    .lightLevel(state -> 11)
                     .noLootTable()));
 
     public static void register(IEventBus eventBus) {

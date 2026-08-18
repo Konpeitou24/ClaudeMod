@@ -9,6 +9,7 @@ import com.claudemod.client.screen.PrismiumRestorerScreen;
 import com.claudemod.client.screen.PrismiumWardstoneScreen;
 import com.claudemod.entity.client.PrismiumDeepWraithRenderer;
 import com.claudemod.entity.client.PrismiumWraithRenderer;
+import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModItems;
 import com.claudemod.registry.ModMenuTypes;
@@ -111,6 +112,20 @@ public class ClientModEvents {
             ItemProperties.register(ModItems.PRISMIUM_SHIELD.get(), new ResourceLocation("blocking"),
                     (stack, level, entity, seed) ->
                             entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F);
+
+            // Session 52: Prismium Portal (see PrismiumPortalBlock's class
+            // doc) needs a translucent render type instead of the default
+            // opaque cutout every other block in this mod uses so far -
+            // otherwise its semi-transparent texture would render with
+            // alpha treated as fully opaque/hard-cutout, looking wrong.
+            // ItemBlockRenderTypes#setRenderLayer is the standard Forge
+            // 1.20.1 mechanism for this (mirrors vanilla's own client init
+            // call for Blocks.NETHER_PORTAL -> RenderType.translucent()),
+            // and like MenuScreens#register above touches client-only
+            // rendering state, so it is likewise deferred via enqueueWork
+            // rather than called directly on this parallel-dispatched event.
+            net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                    ModBlocks.PRISMIUM_PORTAL.get(), net.minecraft.client.renderer.RenderType.translucent());
         });
     }
 }
