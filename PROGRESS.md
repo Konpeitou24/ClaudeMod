@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-18 (セッション #32)
+最終更新: 2026-08-18 (セッション #33)
 
 ---
 
@@ -1048,7 +1048,33 @@ Featherstoneの「小石+対角の何か+Prismiumティールジェム」とい�
 ### 3AE-4. commit・push・ビルド確認
 2コミット: `4582a16`(Featherstoneフィードバック追加)・`e041cb2`(Emberguard一式)。push前の`git fetch`で差分無し(並行セッション無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後`git fetch`をポーリングし、`61a83a1`(`ci: update built jar [skip ci]`)の到着を確認、jarサイズが187,595→192,077バイトに増加したことを確認して、本物のビルド成功を確定させた。
 
+## 3AF. セッション#33: Prismium Vitastone(3つ目のパッシブ・アクセサリ、`LivingHealEvent`)
+
+### 3AF-0. 状況確認
+`~/work3`(前回セッション申し送り通り、`/tmp`直下の固定パスは`nobody:nogroup`所有で今回も使用不可だったため、ホーム直下の新規パスに切り替え)にfresh clone。直前セッション最終コミット`9c63a0a`(PROGRESS.md更新)の直後に`d522da9`(`ci: update built jar [skip ci]`)が付いていることを`git log`で確認し、前回のビルド成功を確定させた(§5項目1の恒例チェック、今回も`git fetch`ポーリングではなくclone直後の`git log`で足りた)。
+
+GitHub Issue確認(§0-2の運用ルール)は今回も実施できなかった: `api.github.com`は`https_proxy`経由で`blocked-by-allowlist`(403)、プロキシ環境変数を空にしても直接到達不可(exit 56、接続不可)。`https://github.com/Konpeitou24/ClaudeMod/issues`への非ログイン`curl`はHTTP 200を返すが、ReactによるクライアントサイドレンダリングのためOpen Issue件数・内容は生HTMLからは読み取れなかった(セッション#23の§4-37で見つかった同じ制約が継続)。「確認したが0件だった」ではなく「確認手段が機能せず未確認」である旨をここに明記する。
+
+### 3AF-1. 実装: Prismium Vitastone(MOD3個目の完全パッシブ・アクセサリ)
+Featherstone(session 31, `LivingFallEvent`)・Emberguard(session 32, `LivingDamageEvent`)が確立した「Itemクラスは空、全ロジックはEventBusSubscriberハンドラー側、multiplyしてcancelしない、インベントリ全体(items/armor/offhand)を走査、発動時にパーティクル+サウンド」という型を、session 32のPROGRESS.md申し送り(§5旧項目6-e)で名指しされていた通り3件目の実例として踏襲した。今回はダメージ軽減ではなく、被回復量(ヒール量)の増幅が対象。
+
+- **イベント選定**: `LivingHealEvent`(`LivingEntity#heal(float)`が呼ばれるたびに発火、`getAmount()`/`setAmount(float)`を持つ)を採用。自然回復・Regenerationエフェクト・金リンゴ・ヒールポーション・トーテム等、あらゆる回復経路を一箇所でまとめて拾える。
+- **API裏取りの確信度(今回の改善点)**: Featherstone/Emberguardは一般的な(バージョン不特定または古い)javadocミラーでの確認に留まっていたが、今回は`https://lexxie.dev/forge/1.20.1/net/minecraftforge/event/entity/living/LivingHealEvent.html`というForge **1.20.1専用**のjavadocミラーを`web_fetch`で直接取得し、`getAmount()`/`setAmount(float)`のシグネチャをそのバージョン向けページで直接確認できた。これはPROGRESS.md §4-8/§4-47等で繰り返し指摘されてきた「バージョン間の変遷が混ざって古い情報を掴んでしまうリスク」への対策として、検索クエリに明示的にバージョン番号を含めるべきという教訓を今回実践した結果であり、このMODの他のイベントAPI裏取りより一段高い確信度がある(とはいえ実機動作確認はゼロ、§4参照)。
+- **倍率**: 1.2倍(+20%)。Featherstone(75%軽減)・Emberguard(50%軽減)より明確に控えめな数値にした理由: ダメージ軽減と異なり、回復量の増幅はInstant Health IIのような単発大量回復や、長時間のRegenerationエフェクトと乗算的に重なるため、常時無条件で効く軽減系パッシブより暴走(強すぎ)のリスクが構造的に高いと判断した。バランスの実証は無く、あくまで判断のみ。
+- スキャン対象は`Inventory.items`/`armor`/`offhand`の3リスト、Featherstone/Emberguardと全く同じ実装パターン。プレイヤー限定(`Player`以外の`LivingEntity`は無視)、クライアント側は早期return。
+- フィードバック: `ParticleTypes.HEART` + `SoundEvents.EXPERIENCE_ORB_PICKUP`(「何かを得た」感を意図、Featherstone/Emberguardより明るく主張する音を選定)を増幅発動時に再生。ただし`heal()`は自然回復等で頻発しうるため、Featherstone/Emberguardより発火頻度が高くなりうる(=フィードバックがうるさく感じられるリスクがある)点は新規の懸念として3AF-2で記載。
+- レシピ: ギャストの涙x2 + キラキラのメロンx2 + Prismium Shardx1、田字型配置(Featherstone/Emberguardと同型の`crafting_shaped`)。ネザー由来素材を要求する点でEmberguardと難度感を揃えた。
+- lang: en `Prismium Vitastone` / ja `プリズミウムの活力石`。
+- クリエイティブタブ・アイテムモデル(`minecraft:item/generated`継承)もFeatherstone/Emberguardと同一パターンで追加。
+
+### 3AF-2. テクスチャー: Prismium Vitastoneのアイテムアイコン(`scripts/textures/gen_prismium_vitastone.py`)
+Featherstone/Emberguardの「小石+対角の何か+Prismiumティールジェム」という構図・石本体の配色をそのまま流用しつつ(石自体は3アイテムとも主役ではないため統一)、対角の要素をバニラのHUDハート形状そのまま(見慣れた形をあえて再利用し、初見でも「回復系アイテム」と一目で伝わることを優先)のピンク/マゼンタ色にし、ハートの先端から石へ向けて小さなスパーク(輝点)を数個トレイル状に配置した。パレットはFeatherstone(白/寒色ティール)・Emberguard(橙/赤)と明確に異なるピンク/マゼンタ系にし、3種を並べても即座に見分けがつくようにした。**目視レビュー実施済み**(4x/8x/16xプレビューシートを`outputs`フォルダ経由でRead toolにより確認): 16x拡大で見ると、上部の二山ハートのノッチ・ハイライト/シャドウの塗り分け・下部のスパークのトレイル・石内部のティールジェムのいずれも明瞭に視認でき、意図しないノイズや透過崩れは見られなかった。初稿での作り直しは無し(コード生成時に色計算ロジックの重複コードに気づいて整理したのみ、見た目自体は一発採用)。アルファ値は`{0, 255}`のみで中間透過やにじみは無し。
+
+### 3AF-3. commit・push・ビルド確認
+1コミット: `01756d1`(Prismium Vitastone一式: Item/Handler新規、ModItems/ModCreativeTabs更新、lang(en/ja)更新、モデル/テクスチャー/レシピ新規、生成スクリプト新規)。push前の`git fetch origin main`で差分無し(並行セッション無し、リモート最新は`d522da9`のまま)。
+
 ## 4. 既知の不具合・未完了事項(正直に書く)
+
 
 
 1. **朗報: ビルド自体は実証済み**(§2-4、§3C-4参照)。セッション#5終了時点のmainは、実際にコンパイルが通る状態(Run 12 "completed successfully"、キャッシュバスティング済みURLで確認、jar自動コミットも到着済み)。ただしこれは「コンパイルが通る」ことの確認であり、以下は依然として**未検証**:
@@ -1248,35 +1274,41 @@ Featherstoneの「小石+対角の何か+Prismiumティールジェム」とい�
     - `LivingDamageEvent`が他MOD・vanilla自身の装備(耐火防具エンチャント等)による軽減が既に適用された後の値に対して`setAmount`で更に乗算する形になるはずだが、複数の`LivingDamageEvent`リスナーが競合した場合の実行順序(Forgeの`priority`未指定、デフォルトNORMAL)がこのMOD・他MOD込みで意図通りに働くかは検証できていない。
     - テクスチャー(黒炭化した岩+炎の穂先+Prismiumジェム)は自己レビュー(4x/8x/16xプレビュー)で「Featherstoneと対になる見た目」として通ったが、実際のインベントリ/ホットバー表示での視認性・Featherstoneとの区別しやすさは未確認。
 
+49. 【セッション#33で新規発覚】Prismium Vitastone(§3AF-1・§3AF-2)は以下すべて未検証・既知の割り切り:
+    - MOD初の`LivingHealEvent`リスナーであり、CIビルドが通ること以上の検証(実際に何らかの方法で回復した瞬間に増幅が発生するか、パーティクル・サウンドが正しいタイミングで再生されるか)は一度もできていない。
+    - `HEAL_MULTIPLIER = 1.2F`(+20%)という数値は「Featherstone/Emberguardより意図的に控えめにした」判断のみに基づき、実プレイでの強さ/弱さ(特にInstant Health等の単発大量回復や長時間Regenerationとの乗算的な重なり)の検証は一切行っていない。
+    - `LivingHealEvent`が自然回復のように**非常に高頻度**で発火しうる経路に対しても毎回パーティクル・サウンドを鳴らす設計になっており、これがFeatherstone(落下時のみ)・Emberguard(火/溶岩ダメージ時のみ)よりも体感で「うるさい」演出になっていないかは、このサンドボックスでは音や映像の確認自体ができないため未検証(ハンドラーのjavadocにも明記済み)。もし実際にうるさいと分かった場合、対応案としては「回復量が一定以上の時だけ演出する」「自然回復(1エネルギー相当の微量回復)だけ演出を抑制する」等が考えられる。
+    - `LivingHealEvent`のAPIシグネチャ自体はForge 1.20.1専用のjavadocミラーで直接確認できた(§3AF-1参照)ため、このMOD内の他のイベントAPIより裏取りの確信度は高いが、それでも「実際にForge 1.20.1ランタイムで同じ挙動をするか」はCIビルドの成否でしか確認できない。
+    - テクスチャー(ピンク/マゼンタのハート+スパークトレイル+Prismiumジェム)は自己レビューでは明瞭だったが、実際のインベントリ/ホットバー表示での視認性や、Featherstone/Emberguardとの実機での見分けやすさは未確認。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-1. **【最優先、恒例】まず`git fetch origin main`し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#32終了時点では、`e041cb2`(Prismium Emberguard追加)の直後に`61a83a1`が付いており、ビルド成功(jarサイズ187,595→192,077バイト増加)を確認済み。プロキシ回避策は今回も不要で、素の`git push origin main`が一度で成功した。
-2. **【重要、今回新規】GitHub Issue確認の手段が今回は機能しなかった**(§3AE-0参照)。`api.github.com`はプロキシに`blocked-by-allowlist`で拒否され、プロキシを空にしても別のSOCKSプロキシ経由でやはり失敗、`mcp__workspace__web_fetch`はキャッシュされた2026-08-16時点の古いデータしか返さず、`github.com`への直接`curl`も同じ古いキャッシュだった。次回まずこの制約が今日限りのものか再現するか確認し、もし依然として塞がっていたら無理にリトライを繰り返さず(session 23の教訓通り数回のリトライは価値があるが)、「確認できなかった」と正直にPROGRESS.mdに書くこと。Issue一覧確認自体はセッション#9以来の運用ルール(§0-2)なので、手段が塞がっていても「今回は確認未了」である旨は必ず記録する。
-3. 【継続、環境まわり】固定パスの作業ディレクトリ(`/tmp/work`・`/tmp/work2`・`/tmp/ClaudeMod`・`/tmp/ClaudeMod_work`)は今回も`nobody:nogroup`または別ユーザー所有で使用不可だった(既存の`/tmp/ClaudeMod`・`/tmp/ClaudeMod_work`は`git config --global --add safe.directory`まではできたが書き込み自体が`Permission denied`)。`/tmp/cmwork`のような当該セッション内で新規に作った一意ディレクトリを使うこと(今回はこれで問題なく動作)。他セッションと同時に走る可能性がある以上、`mktemp -d`や`$(date +%s)_$RANDOM`付きのパス名を使うと安全度が上がる。
-4. 【新規、優先度中】Prismium Emberguard(セッション#32、§3AE-2)は実プレイ未検証の新規パッシブアイテム。次に何かを検証できる機会があれば、実際に溶岩やファイアチャージ等でダメージを受けてみて軽減が効くか(`LivingDamageEvent`が本当に発火し`setAmount`が効くか)を確認したい。もしCIビルドがコンパイルエラーで落ちていたら、まず`LivingDamageEvent`のメソッド名(`getAmount`/`setAmount`)や`DamageTypeTags.IS_FIRE`のフィールド名を疑うこと(§3AE-2参照)。
-5. 【継続、優先度高】Prism Realm/Rift Shard・Wraith・Locator・Bloom/Spike・Cable(接続モデル)・全5GUI・Shield・Bow・Guardian Charm・Featherstone・Emberguardは、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想だが、§5項目2の通り今回はIssue確認手段自体が不安定)を最優先で拾うこと(§0-2の運用ルール通り)。
+1. **【最優先、恒例】まず`git log`(または`git fetch origin main`)し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#33開始時点では、`e041cb2`(Emberguard追加)の直後に`61a83a1`が付いており、ビルド成功(jarサイズ増加)を確認済み。セッション#33終了時点でのpush(`01756d1`)の結果は次回セッション冒頭で必ず確認すること。
+2. **【継続、重要】GitHub Issue確認の手段が今回も機能しなかった**(§3AF-0参照)。`api.github.com`はプロキシに`blocked-by-allowlist`で拒否、プロキシを空にしても直接到達不可、`github.com/.../issues`への直接curlはHTTP 200を返すもののReactのクライアントサイドレンダリングで中身が読み取れない状態がセッション#23以来続いている。次回もまずこの制約が今日も続くか確認し、駄目なら「確認できなかった」と正直に記録すること(§0-2の運用ルール自体は今後も維持)。
+3. 【継続、環境まわり】固定パスの作業ディレクトリ(`/tmp/work`・`/tmp/work2`・`/tmp/ClaudeMod`・`/tmp/ClaudeMod_work`等)は今回も`nobody:nogroup`所有で使用不可だった。ホームディレクトリ直下に新規ディレクトリ(今回は`~/work3`)を作ってcloneするのが安全(`mktemp -d`や日時付きの一意な名前を使うとさらに安全度が上がる、という過去セッションの推奨は引き続き有効)。
+4. 【新規、優先度中】Prismium Vitastone(セッション#33、§3AF-1)は実プレイ未検証の新規パッシブアイテム。次に何かを検証できる機会があれば、実際に何らかの方法(自然回復・ポーション・金リンゴ等)で回復してみて増幅が効くか(`LivingHealEvent`が本当に発火し`setAmount`が効くか)を確認したい。もしCIビルドがコンパイルエラーで落ちていたら、まず`LivingHealEvent`のメソッド名(`getAmount`/`setAmount`)を疑うこと(§3AF-1参照、ただし今回はForge 1.20.1専用javadocミラーで直接確認済みなので、他のイベントAPIよりは可能性は低いと考えている)。
+5. 【継続、優先度高】Prism Realm/Rift Shard・Wraith・Locator・Bloom/Spike・Cable(接続モデル)・全5GUI・Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastoneは、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue経由が理想だが、§5項目2の通り引き続きIssue確認手段自体が不安定)を最優先で拾うこと(§0-2の運用ルール通り)。
 6. 【継続、次の展開候補】
    - (a) Prismium Featherstoneのテクスチャー再検討(§4-46): 羽根がまだ結晶シャードっぽく見える件、時間があれば別アプローチを試す価値がある。
    - (b) Prismium Arrow: session 30で見送った(ArrowRendererのUVレイアウトをこのサンドボックスから裏取りする決定的な方法が見つからなかった)。次回挑戦する場合は、vanillaのUV前提に依存しない独自レンダリング方式を検討するか、逆コンパイル済みソースを提供するリポジトリを探すこと(session 30参照)。
    - (c) GUIスロット化(`SlotItemHandler`等)、Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックの作り込み。
    - (d) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。カスタムエンティティ+レンダラーはAPI裏取りが難しい領域 - 挑戦する場合はWraithの実装を参考にすること。
-   - (e) 【継続、パターンが2件に増えた】Featherstone(LivingFallEvent)・Emberguard(LivingDamageEvent)に続く、まだ手を付けていないForgeイベント(`AnvilRepairEvent`、`PlayerXpEvent`、`LivingHealEvent`、`LivingEntityUseItemEvent`等)を使った新規パッシブ/セミパッシブ装備の追加。「イベントリスナー1個+インベントリ走査+multiplyしてcancelしない+発動時フィードバック」という型が2件の実例で固まってきたので、3件目以降は横展開しやすいはず。
-   - (f) 【新規】§3AE-0で見つかったGitHub API/Webページへのアクセス不調が来セッションでも続く場合、Issue確認以外の運用(ビルド確認等)への影響有無も含めて状況を記録し、必要なら`mcp__workspace__web_fetch`のprovenance制限(検索結果に出てきたURLしか直接フェッチできない)を回避する別の手段(例えば一度WebSearchでissueページ自体を検索結果に含めてから`web_fetch`する等)を試す価値がある。
+   - (e) 【パターンが3件に増えた、そろそろ横展開の飽和に注意】Featherstone(`LivingFallEvent`)・Emberguard(`LivingDamageEvent`)・Vitastone(`LivingHealEvent`)と3件揃ったことで「イベントリスナー1個+インベントリ走査+multiplyしてcancelしない+発動時フィードバック」という型は十分実証された。4件目を作る前に、一度§5項目5の「検証が一切無いまま積み上がっている」問題への対応(例えばプレイ動画・スクリーンショットを求める、ユーザーに直接動作確認を依頼する等、この型自体の妥当性を1件でも実証する試み)を検討する価値が高まっている。
+   - (f) 【継続】§3AE-0/§3AF-0で見つかったGitHub API/Webページへのアクセス不調が来セッションでも続く場合、Issue確認以外の運用への影響有無も含めて状況を記録すること。
 
 ### 議論したい論点・改善案
 
-- **プレイテストの手段が無い問題**: 依然として最大のボトルネック(継続)。Emberguard追加でさらに「機能するかどうか自体が未検証」なコンテンツが積み上がった。次にプレイフィードバックが得られた際は、新規コンテンツの追加よりもこの検証を最優先すべきという声がさらに強くなっている(継続)。
-- **「装備しなくても効くアイテム」カテゴリの拡充(継続、一部対応)**: session 31で挙がっていた「発動が分かりにくい」懸念に対し、今回Featherstoneへフィードバック(パーティクル/サウンド)を追加し、Emberguardも最初からフィードバック付きで実装した。これで「所持しているだけで効く」系アイテム2種とも発動時の手がかりを持つ状態になった。ただし「音や光を見聞きできるか」自体をこのサンドボックスでは検証できないため、対応の効果自体はまだ未確認(§4-47参照)。
-- **修理手段・パッシブ効果の設計パターンの蓄積(継続)**: 「1つのイベントリスナー+シンプルな判定+multiply+フィードバック」という低リスクなパターンが、session 30の修理素材統一・session 31のFeatherstone・今回のEmberguardの3件で実例が積み上がった。次回以降、新規アイテムを検討する際はまずこの路線が使えないか確認すると、API裏取りの手間を抑えつつコンテンツを増やしやすい(継続的な教訓として明記)。
-- **「てんこ盛り」路線の継続(継続)**: セッション#28のShield・#29のBow・#30のGuardian Charm・#31のFeatherstoneに続き、#32でEmberguardを追加し、5セッション連続で新規装備/アクセサリが増えた(ただし今回はFeatherstoneのフィードバック追加という「既存機能を深める」作業も同時に行った点は過去4セッションとやや異なる)。次回以降もこの路線を継続するか、GUIスロット化やCableの作り込みといった「既存機能を深める」路線に本腰を入れて戻るかは、引き続き判断が分かれるところ(継続)。
-- **【新規】GitHub API/Webアクセスの不安定さそのものについて**: session 23でも「古いキャッシュが返る」問題は報告されていたが、今回はそれに加えて`api.github.com`が完全にブロックされる(403)状況も発生した。原因(サンドボックス側のネットワークポリシー変更、プロキシの一時的な問題、時間帯による変動など)は不明。この不確実性がある前提で、次回以降も「ビルド確認はgitネイティブな手段(fetch+ログ+jarサイズ比較)を主軸にし、API/Web経由の確認は補助的に試す程度に留める」という今回取った方針を標準としてよいと思われる。
+- **プレイテストの手段が無い問題**: 依然として最大のボトルネック(継続)。Vitastone追加でさらに「機能するかどうか自体が未検証」なコンテンツが積み上がった。パッシブアクセサリ3種(Featherstone/Emberguard/Vitastone)がいずれも「CIビルドが通る」以上の検証ゼロという状態で、そろそろこのカテゴリの拡充よりも実証を優先すべきタイミングに来ていると考える(継続、今回さらに強まった意見)。
+- **API裏取りの確信度向上策(新規)**: 今回`LivingHealEvent`をForge 1.20.1専用のjavadocミラー(lexxie.dev)で直接確認できたことで、他のイベント/クラスについても同様にバージョン固定のjavadocミラーが存在するか確認し、可能な限りそちらを一次情報源にする運用に切り替える価値があると考える。次回以降、新しいAPIを使う前は「(APIクラス名) 1.20.1」のようにバージョンを明示したクエリを最初から使うことを標準にしたい。
+- **「装備しなくても効くアイテム」カテゴリの飽和(新規)**: session 30の修理素材統一・session 31のFeatherstone・session 32のEmberguard・session 33のVitastoneと、低リスクな「イベント1つ+multiply+フィードバック」パターンが4件連続で使われた。パターン自体は完成度が高く再利用しやすいが、次回以降は横展開を続けるより、(1)このパターンの妥当性を実際に確認する、(2)全く異なる種類のコンテンツ(GUIスロット化・Cable送電網・新MOB等)に手を伸ばす、のいずれかに舵を切ることを推奨する。
+- **「てんこ盛り」路線の継続 vs 深掘り(継続、今回も横展開側を選択)**: セッション#28以降6セッション連続(Shield→Bow→Guardian Charm→Featherstone→Emberguard→Vitastone)で新規装備/アクセサリが増え続けている。次回は上記の通り「深掘り」側への切り替えを強く推奨する。
 
 ### コミット/プッシュ状況
 
-このセッションの変更は2コミット: `4582a16`(Prismium Featherstoneへのパーティクル/サウンドフィードバック追加: `PrismiumFeatherstoneHandler.java`更新のみ)・`e041cb2`(Prismium Emberguard一式: `PrismiumEmberguardItem.java`・`PrismiumEmberguardHandler.java`新規、`ModItems.java`・`ModCreativeTabs.java`・lang(en/ja)更新、`models/item/prismium_emberguard.json`・`textures/item/prismium_emberguard.png`・`data/claudemod/recipes/prismium_emberguard.json`・`gen_prismium_emberguard.py`新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し)、素の`git push origin main`が一度で成功(プロキシ回避策は不要だった)。push後、`git fetch`のポーリングで`ci: update built jar [skip ci]`コミット(`61a83a1`)の到着を確認し、`git show <commit>:builds/ClaudeMod-latest.jar | wc -c`でビルド済みjarのサイズ増加(187,595→192,077バイト)を確認して、本物のビルド成功を確定させた。新規アイテムテクスチャーは`outputs`フォルダ経由で目視レビュー(4x/8x/16x拡大のプレビューシート)を実施し、Featherstoneと対になる暖色/寒色の対比が明瞭であることを確認した上で採用した(§3AE-3参照、今回はやり直し無しで一発採用)。GitHub issueの確認は§3AE-0・§5項目2に記載の通り、今回はAPI/Webアクセスの不調により実施できなかった(「確認したが無かった」ではなく「確認手段自体が機能しなかった」)。
+このセッションの変更は1コミット: `01756d1`(Prismium Vitastone一式: `PrismiumVitastoneItem.java`・`PrismiumVitastoneHandler.java`新規、`ModItems.java`・`ModCreativeTabs.java`・lang(en/ja)更新、`models/item/prismium_vitastone.json`・`textures/item/prismium_vitastone.png`・`data/claudemod/recipes/prismium_vitastone.json`・`gen_prismium_vitastone.py`新規)。他セッションとの並行は検知せず(push前の`git fetch`で差分無し、リモート最新は前回セッション終了時点の`d522da9`のまま)。新規アイテムテクスチャーは`outputs`フォルダ経由で目視レビュー(4x/8x/16x拡大のプレビューシート)を実施し、Featherstone/Emberguardと並べたときの区別しやすさを確認した上で採用した(§3AF-2参照、作り直し無し)。GitHub issueの確認は§3AF-0・§5項目2に記載の通り、今回もAPI/Webアクセスの不調により実施できなかった(「確認したが無かった」ではなく「確認手段自体が機能しなかった」)。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、`61a83a1`のビルド成功時に(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、今回のpush(`01756d1`)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず。
