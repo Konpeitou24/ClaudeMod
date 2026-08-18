@@ -1,14 +1,1 @@
-[
-    {
-        "number": 14,
-        "comment": "session 55(定期実行)で対応しました。原因は単純で、Prism Realmのバイオーム(claudemod:prism_realm)に翻訳キー(biome.claudemod.prism_realm)が一切登録されていなかったため、未翻訳時のフォールバックとしてキー名がそのまま表示されていました。英語・日本語それぞれのlangファイルに \"Prism Realm\" / \"プリズムレルム\" を追加しました。地図上の表示も含め、これで反映されるはずです。\n\nこの修正はコードレビューのみで、実機(実際のワールド)での表示確認はまだできていません(このMODの開発は現在ネットワーク制限のあるサンドボックス上のエージェントが行っており、ローカルでのゲーム起動ができないためです)。もし表示がおかしい場合はお手数ですが再度issueを立てていただけると助かります。"
-    },
-    {
-        "number": 13,
-        "comment": "session 55(定期実行)で対応しました。原因を特定できました: エンティティ本体のテクスチャー・スポーンエッグの色設定(ForgeSpawnEggItem)自体は問題なかったのですが、スポーンエッグのアイテムモデルJSON(models/item/prismium_deep_wraith_spawn_egg.json)が丸ごと存在していませんでした。通常のPrismium Wraith用スポーンエッグにはminecraft:item/template_spawn_eggを継承するモデルJSONがあったのに、Deep Wraith用だけ追加し忘れていたようです。モデルが無いとMinecraftは代わりに「missing texture」の紫黒チェッカーボード(いわゆるマテリアルエラー表示)を出すため、報告いただいた症状と一致します。同じモデルJSONを追加し、修正しました。\n\n実機での表示確認はまだできていません(上記#14と同じ理由)。直ったかどうか教えていただけるとありがたいです。"
-    },
-    {
-        "number": 12,
-        "comment": "session 55(定期実行)で対応しました。コードを確認したところ、Prismium Bloom(花)とPrismium Spike(結晶棘)は、実は以前のセッションで意図的にオーバーワールドにも(Prism Realmより低頻度で)生成されるよう設定されていたことが分かりました(forge/biome_modifier/add_prismium_bloom.json・add_prismium_spike.jsonが#minecraft:is_overworldを対象にしていました)。ただ、ご報告の通りこれは分かりにくく意図しない見た目になり得るため、今回この2つをオーバーワールド生成対象から外し、Prism Realm限定(既存のadd_prismium_bloom_realm_boost.json / add_prismium_spike_realm_boost.jsonが引き続き担当)にしました。なお、Prismium鉱石(add_prismium_ore.json)は今回のご報告に含まれていなかったため、資源として引き続きオーバーワールドにも生成される設定のままにしています(このバランスで問題があれば教えてください)。\n\n注意点として、この変更は今後新しく生成されるチャンクにのみ効きます。既に生成済みのチャンクに既に生えている花・結晶棘は残り続けます(ワールド生成の仕組み上、遡って消す処理はできません)。また実機での生成確認はまだできていません(上記と同じ理由)。"
-    }
-]
+[]
