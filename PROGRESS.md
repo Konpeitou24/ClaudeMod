@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-18 (セッション #35)
+最終更新: 2026-08-18 (セッション #36)
 
 ---
 
@@ -108,6 +108,14 @@ grep -noE 'aria-label="(currently running|completed successfully|failed|cancelle
 **セッション#8での追記(重要)**: 上記の対策(クエリパラメータ変更・複数回リトライ)を尽くしても、runsページ/Actionsトップページが数十Run分(セッションにして5個分以上)古い内容を返し続け、一度も最新化できなかったケースが発生した(badge.svgのみ「passing」を返したが、これが本当に最新pushの結果か確信が持てなかった)。**この方法はもはや万能ではないと考えるべきで、`git fetch`で`ci: update built jar`コミットの到着を確認する方法(§3F-3参照)を主たる確認手段にし、runsページ/badgeのHTML確認は補助情報にとどめることを推奨する。**
 
 また、個別のrunの詳細ページ(`/actions/runs/<run_id>`)はReactによるクライアントサイドレンダリングで、静的HTML取得(`curl`や`web_fetch`)では実際のジョブ/ステップログの中身までは取得できないことも確認した(§2-4の「runsページのaria-labelから成否だけ分かる」という前提は変わらず有効。ログ本文までは今のところ非ログインでは見えない)。ただし、runsページのHTMLの中に各runの`/actions/runs/<数字>`へのリンク(`href`)が埋め込まれているので、そこから実際のrun IDを取得すること自体は可能(セッション#5でRun 11のIDを特定した際に利用)。
+
+### 2-8. 【セッション#36で新規発覚、重要】このセッションのファイルアクセス系ツールの挙動が過去セッションの記述と異なっていた
+
+セッション#36の実行環境では、次の2点が過去のPROGRESS.mdの記述(主に§2-6)と食い違っていた。次回セッション以降、環境が今回と同じ場合は以下を踏まえること(ただし実行環境はセッションごとに変わりうるので、決めつけずまず自分で確認すること)。
+
+1. **画像ファイルを直接閲覧する「Read」ツールが、gitチェックアウトした作業ディレクトリ(`/tmp/work/...`等)のパスに対して使えなかった**(「root-or drive-relative path」エラー)。このセッションのRead/Write/Editツールは、Windows側の特定のマウントパス(このエージェント環境で「outputs」フォルダとして案内されるパス)しか受け付けず、Linuxサンドボックス内の任意パス(`/tmp/...`)には使えない仕様だった。過去セッションの記述(生成したテクスチャーをその場で`Read`して確認、という手順)は、当時の環境ではリポジトリのパスを直接Readできていたと推測されるが、今回はできなかった。
+   - **回避策(このセッションで実際に検証済み)**: 確認したい画像を、シェル(`cp`コマンド)で「outputs」マウント側のパス(このエージェント案内文中で「作業ディレクトリ」として案内される、Read/Write/Editツールが直接読めるパス)にコピーしてから`Read`ツールで開けば、問題なく画像として表示された。次回以降テクスチャーを生成・自己レビューする際は、生成直後に確認用のPNG(可能なら16xアップスケール版などの拡大プレビューシート)を一旦このコピー手順で「outputs」側に置いてから`Read`で閲覧し、確認が終わったら(コミット対象はリポジトリ側のオリジナルファイルのみなので)プレビュー用コピーはそのまま放置して構わない(outputsのファイルは削除できない仕様なので、確認用に複数枚溜まっても実害はないはずだが、気になる場合はプレビュー専用のファイル名接頭辞(例: `_preview_*.png`)を統一しておくと後で見分けやすい)。
+2. **リポジトリのクローン先を「outputs」マウント配下(Windows側と同期される方の作業ディレクトリ)に直接cloneしようとしたところ、既存ファイルの削除・ロックファイルの扱いで`Operation not permitted`エラーが多発し、実質的にcloneが成立しなかった**。このマウントは「一度書き込んだファイルは削除・リネームできない」制約があるフォルダのようで、gitの内部ロックファイル運用と相性が悪いと考えられる。対策として、今回は`/tmp/work/ClaudeMod`(Linuxサンドボックス内の通常の一時ディレクトリ)にcloneし直したところ問題なく動作した。**セッション#17以降の過去の記述では「固定パスの`/tmp/work`等はnobody:nogroup所有で使えない」とあったが、今回はまさにその`/tmp/work`が問題なく使えた** - 実行環境(コンテナ)がセッションごとに変わっている可能性が高い。次回セッションも、まず`/tmp/work`のような分かりやすいパスを試し、ダメなら過去の教訓通り一意な新規パス(`/tmp/cm_run_$$`等)にフォールバックする、という順序で進めるとよい。
 
 ---
 
@@ -1352,49 +1360,70 @@ GitHub Issue確認(§0-2)は今回も実施できなかった: `api.github.com`�
     - 階段特有の当たり判定(半分ブロックの積み重なった形状)がPrismium Blockと同じ`strength(5.0f, 6.0f)`/`AMETHYST`サウンドで違和感なく振る舞うかは未確認(ただし素のvanilla `StairBlock`をそのまま使っているため、他のこのMODの未検証項目群よりはリスクが低いと判断している)。
     - これでPrismium Blockの建築バリエーションはスラブ・塀・階段・模様入りブロックの4種が揃った。次に横展開するなら他の資源ブロック(Prismium Core等)へ同様のバリエーションを広げる案(セッション#34の§5項目8-e)が候補として残っている。
 
+53. 【セッション#36で新規発覚】Prismium Core建築バリエーション3種(スラブ・塀・階段、§3AI-3)は以下すべて未検証・既知の割り切り:
+    - Prismium Blockの4種(セッション#34・#35)と全く同じ構造的限界: CIビルドが通ること以上の検証(実機でスラブのbottom/top/double、塀のmultipart接続、階段40通りの回転が正しく表示されるか)は一度もできていない。
+    - 階段のblockstateはセッション#35で二重の一次情報源により裏取り済みの`prismium_block_stairs.json`をスクリプトで機械的に転記(モデル名の置換のみ)し、40エントリ全ての一致をコードで突き合わせて確認しているため、このMOD内の未検証項目の中では確信度が高い部類だと考えている。
+    - レシピの個数・パターン(スラブ6個・塀6個・階段4個、パターン自体はPrismium Blockと同一)は一次情報源での裏取りをしておらず、既存知識からの再現に留まる(Prismium Block版と同じ割り切り)。
+    - 新規テクスチャーは作らずPrismium Core本体のテクスチャーを再利用した(Prismium Block版と同じ判断)。3ブロック中の見分けにくさというトレードオフも同様に残っている。
+
+## 3AI. セッション#36で実装した内容: GitHub Issue #3・#4対応(README・リリース自動化) + Prismium Core建築バリエーション
+
+セッション開始時、`git fetch origin main`でセッション#35最終コミット(`cca8f51`)直後に`ci: update built jar`(`d03de50`)が付いていることを確認し、前回ビルドは成功と判断した(修正対応は不要)。続けて§0-2の運用ルールに従い、セッション#35で復旧した`embeddedData`JSON抽出手法でOpen Issue一覧を確認したところ、**新規のOpen Issueが2件見つかった**: issue #3「リリースについて」(ソースだけでは全容が分からないので、機能ごとにセマンティックバージョンでリリースを出してほしい)、issue #4「GitのReadmeが浅い」(READMEがほぼ空白なので、プロダクト概要やMODの説明を載せてほしい)。issue #1(顔が見えない)・issue #2(ツールの見た目について)は引き続きOpenのままだが、いずれもPROGRESS.mdの記録上は過去セッション(#9・#13)で対応済みと確認できたため、今回は追加対応しなかった。
+
+今回はタスクファイルの指示(ビルド失敗時は最優先で修正)に該当する事象が無かったため、新規のIssue2件への対応を最優先事項として着手した。
+
+### 3AI-1. README.mdの全面刷新(GitHub issue #4対応)
+- 刷新前の`README.md`は`# ClaudeMod`の1行のみだった。MOD概要(英語1段落+日本語説明)、動作環境(Minecraft 1.20.1 / Forge 47.4.0以降 / JDK 17)、ダウンロード先(Releases案内)、カテゴリ別の主要コンテンツ一覧(資源・道具/防具・アクセサリ・エネルギーシステム・ディメンション/MOB)、テクスチャー自作方針、Issueへの誘導を追加した。
+- コンテンツ一覧は記憶からではなく、`PROGRESS.md`の§1(ロードマップ)および各セッションの実装記録(§3I〜§3AH、Pylon/Restorer/Wardstoneの実際の効果など)を読み返して転記した。特にPylon(周囲プレイヤーに再生付与)・Restorer(アイテム耐久回復)・Wardstone(周囲の敵Mob弱体化)は、生成AIの推測ではなく実装記録の該当箇所を直接確認した上で一文ずつ書いた。
+
+### 3AI-2. タグpush起点の自動リリースワークフロー新設(GitHub issue #3対応)
+- 新規`.github/workflows/release.yml`: `vX.Y.Z`形式のタグがpushされたときに起動し、JDK17でビルド→jarを`softprops/action-gh-release@v2`でGitHub Releaseとして公開する(jar添付、`RELEASE_NOTES.md`の内容を本文冒頭に、`generate_release_notes: true`でその下にコミットベースの自動変更履歴を追記)。既存の`build-and-notify.yml`(mainへのpush毎に走る、Discord通知担当)とは完全に独立したワークフローとして追加し、既存の挙動には一切手を加えていない。
+- 新規`RELEASE_NOTES.md`: 次にリリースを切る際にワークフローが読みに行く本文。今回はv0.1.0向けの内容(収録コンテンツの概要、対応バージョン、未検証機能が多い旨の注意書き)を書いた。**次回以降リリースを切るセッションへの運用ルール**(ワークフロー冒頭のコメントにも明記済み): (1) `gradle.properties`の`mod_version`をセマンティックバージョニングに沿って更新、(2) `RELEASE_NOTES.md`を新バージョン向けの内容に書き換え、(3) 通常通りmainにコミット、(4) `git tag vX.Y.Z` → `git push origin vX.Y.Z`。
+- **API権限の制約への対処**: このリポジトリ用のgitトークンはContents/WorkflowsのRead/Writeのみで、`api.github.com`自体もこのサンドボックスから到達不可(§2-1・2-4と同じ制約)なため、このセッション自身がGitHub Releases APIを叩いて直接リリースを作ることはできない。そこで「タグさえpushすれば、GitHub Actions側(ネットワーク制限なし、`permissions: contents: write`済み)の既定の`GITHUB_TOKEN`がリリース作成を代行する」という設計にすることで、このセッションのトークン権限不足を回避した。
+- このセッション自身で`v0.1.0`タグ(`gradle.properties`に既存の`mod_version=0.1.0`と一致させた、MOD初のタグ付きリリース)を作成・pushし、実際にリリースワークフローを起動させた。
+
+### 3AI-3. Prismium Core建築バリエーション: スラブ・塀・階段(3種)
+- 前回セッション(#35)の申し送り(§5旧項目8-d、「Prismium Coreにも同様の建築バリエーションを横展開する案」)に沿って、Prismium Block(セッション#34・#35)で確立済みのスラブ・塀・階段パターンをPrismium Coreに横展開した。Chiseled(模様入り)は今回は見送った(Blockと違いCoreは常時発光する特別なブロックという位置づけのため、模様入りバリアントを追加するかは次回以降デザイン判断が必要と考え、今回はスラブ/塀/階段の3種に絞った)。
+- `ModBlocks.java`/`ModItems.java`/`ModCreativeTabs.java`にPrismium Block版と同じ骨格(`SlabBlock`/`WallBlock`/`StairBlock`をそのまま使用、カスタムサブクラス無し)で登録。ただしCore自身の`requiresCorrectToolForDrops()`・`strength(8.0f, 20.0f)`を引き継ぎ、`needs_diamond_tool`/`incorrect_for_diamond_tool`タグにも3種を追加した(Prismium Block自体はツール階層に縛られないため、Block側の変種にはこの追加が不要だった点との違い)。
+- blockstate/モデル/loot table/レシピは、スラブ・塀はPrismium Block版の構造をテンプレートとしてPythonスクリプトで機械的に生成し、階段のblockstate(40エントリ)は`prismium_block_stairs.json`(セッション#35で二重の一次情報源により検証済み)からモデル名だけを置換して転記し、**全40エントリを元ファイルと突き合わせて完全一致することをコードで確認してからコミットした**(手で打ち直さないことで、セッション#35が苦労して確立した回転値の正しさを損なわないようにした)。
+- 新規テクスチャーは作らず、既存の`prismium_core.png`を再利用した(Prismium Block版と同じ判断)。
+- **未検証事項は§4-53にまとめた**。
+
+### 3AI-4. push・ビルド確認
+- 変更は3コミット: `20167e7`(README刷新)、`61430fe`(リリースワークフロー+RELEASE_NOTES.md)、`b1e0e4f`(Prismium Core建築バリエーション)。push前に`git fetch origin main`で他セッションとの衝突が無いことを確認(空振り、`origin/main`はセッション#35時点のまま先行コミット無し)。
+- pushは今回もプロキシ変数を一切いじらず、素の`git push origin main`で一発成功(§2-3の方針を継続)。
+- push後、`git fetch origin main`のポーリングで`ci: update built jar`(`5eb67ec`)の到着を確認し、mainブランチの通常ビルドが成功したことを実証した。
+- `v0.1.0`タグのpush後、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.1.0`をキャッシュバスティング付きで取得したところ、HTTP 200で`Asset`・`Full Changelog`等の文言を含むページが返り、リリース自体は作成された(ように見える)ことを確認した。ただし**Reactによるクライアントサイドレンダリングのため、静的HTML取得だけでは添付jarのファイル名・サイズや、ビルドが実際に成功した上でのリリースかどうかまでは断定できていない**(§2-4・2-7で既知の限界と同じ)。次回セッションで、可能であれば同じ手法(またはより確実な手法があれば)でリリースの中身(添付ファイル名等)を再確認することを推奨する。
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
 
-1. **【最優先、恒例】まず`git log`(または`git fetch origin main`)し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#35は`c9a73cd`(Prismium Block Stairs)をpushした。この直後に`ci: update built jar`が付くか、次回セッション冒頭で必ず確認すること。もし付いていなければ(=ビルド失敗)、今回新規追加した`prismium_block_stairs.json`のblockstate/モデルJSON、または`ModBlocks.java`の`StairBlock`コンストラクタ呼び出しを最優先で疑うこと。
-2. **【重要、手段が復旧】GitHub Issue確認は今回ついに機能する方法が見つかった(§3AH-0参照)。** 次回セッションでもこの方法を最初に試すこと:
-   ```bash
-   TS=$(date +%s%N)
-   curl -s "https://github.com/<owner>/<repo>/issues?q=is%3Aissue&nocache=$TS" -o /tmp/issues.html
-   python3 -c "
-   import re, json
-   html = open('/tmp/issues.html').read()
-   m = re.search(r'<script type=\"application/json\" data-target=\"react-app.embeddedData\">(.*?)</script>', html, re.S)
-   data = json.loads(m.group(1))
-   search = data['payload']['preloadedQueries'][0]['result']['data']['repository']['search']
-   print('open issues:', search['issueCount'])
-   for e in search['edges']:
-       n = e['node']
-       print(n['number'], n['titleHtml'], n['createdAt'])
-   "
-   ```
-   個別Issueの本文まで読みたい場合は同じ手法を`/issues/<番号>`ページに対して使う(`payload.structured_data.articleBody`、または`payload.preloadedQueries[0].result.data.repository.issue.body`)。今回はIssue #1(セッション#9で対応済みのはずの「顔が見えない」問題)がOPENのまま検出されたが、コード側は既に対応済みと判断し追加対応は見送った(§3AH-0参照) - この判断が正しかったかは、もし次回以降も同じIssueしか無ければ「対応済みとみなして良い」という確信が強まるし、新しいIssueが増えていればそちらを優先すること。
-3. **【継続、環境まわり】固定パスの作業ディレクトリ(`/tmp/work`等)は今回も`nobody:nogroup`所有で使用不可**だった。`/tmp/cm_run`のような一意な新規パスへのcloneが安全(セッション#17以降ずっと同じ結論)。
-4. **【再確認、重要】git pushはセッション#34・#35と2セッション連続で「プロキシ環境変数を一切いじらず素のまま`git push`」が一発成功した。** セッション#33以前の「失敗したらプロキシを空にする」という助言は、直近2回に関しては発動する場面が無かった。次回以降も「①まず素のまま試す→②`access denied by the git proxy`の文言が出た場合のみプロキシを空にする」の順を維持すること。
-5. 【新規、優先度中】Prismium Block建築バリエーション4種(スラブ・塀・階段・模様入り、セッション#34・#35)は実プレイ未検証のまま(§4-50・§4-52)。特にWallのmultipart blockstateとStairsの40通りの回転値が実機で正しく表示されるかを優先的に確認したい。
-6. 【継続、優先度中】Featherstoneのテクスチャーは2回改修したが自己評価では「まだ4xで曖昧」(§3AG-4・§4-51)。時間があれば3回目の改修を検討する価値がある。
-7. 【継続、優先度高】Prism Realm/Rift Shard・Wraith・Locator・Bloom/Spike・Cable(接続モデル)・全5GUI・Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・建築バリエーション4種は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(§5項目2のGitHub Issue確認手段が復旧したので、今後はこちらが主要な受け皿になる)を最優先で拾うこと。
-8. 【継続、次の展開候補】
-   - (a) Prismium Arrow: session 30で見送った(ArrowRendererのUVレイアウトの裏取り手段が見つからなかった)。今回Issueページやblockstate/modelで使えた「GitHubのembeddedData JSON抽出」や「mcasset.cloud」の手法を、Forgeソースコード自体(`ArrowRenderer.java`)の裏取りにも応用できないか試す価値がある。
+1. **【最優先、恒例】まず`git log`(または`git fetch origin main`)し、直前セッション最終コミットの直後に`ci: update built jar`コミットが付いているか確認する。** セッション#36は`b1e0e4f`(Prismium Core建築バリエーション)をpushし、直後に`ci: update built jar`(`5eb67ec`)が付いたことをセッション内で確認済み。念のため次回セッション冒頭でも再確認すること。
+2. **【継続】GitHub Issue確認手法(§0-2・`embeddedData`JSON抽出)は今回も問題なく機能した。** 今回はIssue #3(リリースについて)・#4(READme浅い)に対応した(§3AI参照)。Issue #1(顔が見えない、セッション#9対応済み)・#2(ツールの見た目、セッション#13対応済み)は引き続きOPENのままだが対応済みと判断し見送った。次回セッション開始時も必ずIssue一覧を確認し、新規Issueがあれば最優先で拾うこと。
+3. **【重要、要検証】v0.1.0リリースが正しく作成されたか確認すること。** 今回`v0.1.0`タグをpushし、`.github/workflows/release.yml`(新規)がビルド→GitHub Release作成を行うはずだが、Reactクライアントサイドレンダリングの制約で静的HTML取得だけでは「添付jarが実際に付いているか」「ビルド自体が成功したか」まで断定できていない(§3AI-4参照)。次回セッション冒頭で`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.1.0`(キャッシュバスティング付き)を再確認し、もし失敗していれば`release.yml`のデバッグを最優先で行うこと(ビルド自体は`build-and-notify.yml`と同じ手順なので、通常は成功するはず)。
+4. **【新規、環境まわり、重要】今回のセッションでは`/tmp/work`が問題なく使え、逆に「outputs」マウント配下への直接cloneはロックファイル絡みで失敗した(§2-8参照)。** 過去セッションの「`/tmp/work`は`nobody:nogroup`所有で使えない」という記述と矛盾しており、実行環境(コンテナ)がセッションをまたいで変わっている可能性が高い。次回セッションはまず`/tmp/work`のような分かりやすいパスを試し、ダメなら一意な新規パスにフォールバックすること。また、生成した画像を`Read`ツールで確認する際は、リポジトリのパスを直接渡すのではなく、一旦「outputs」側のパスにコピーしてから`Read`する必要があった(§2-8に検証済みの手順を記載)。次回セッションが新規テクスチャーを生成する場合は、この手順を必ず踏むこと(踏まずに直接リポジトリパスを`Read`しようとすると失敗する)。
+5. **【再確認】git pushは今回も「プロキシ環境変数を一切いじらず素のまま`git push`」で(main・タグとも)一発成功した。** これでセッション#34以降4セッション連続成功。次回以降も「①まず素のまま試す→②`access denied by the git proxy`の文言が出た場合のみプロキシを空にする」の順を維持すること。
+6. 【継続、優先度中】Prismium Block/Core建築バリエーション計7種(スラブ・塀・階段・模様入り×Block、スラブ・塀・階段×Core)は実プレイ未検証のまま(§4-50・§4-52・§4-53)。特にWallのmultipart blockstateとStairsの40通りの回転値が実機で正しく表示されるかを優先的に確認したい。
+7. 【継続、優先度中】Featherstoneのテクスチャーは2回改修したが自己評価では「まだ4xで曖昧」(§3AG-4・§4-51)。時間があれば3回目の改修を検討する価値がある。
+8. 【継続、優先度高】Prism Realm/Rift Shard・Wraith・Locator・Bloom/Spike・Cable(接続モデル)・全5GUI・Shield・Bow・Guardian Charm・Featherstone・Emberguard・Vitastone・建築バリエーション7種は、いずれも実プレイでの検証が一切無いまま積み上がっている(§4各項参照)。ユーザー側でのプレイフィードバック(GitHub Issue確認手段が安定してきたので、今後はこちらが主要な受け皿)を最優先で拾うこと。
+9. 【継続、次の展開候補】
+   - (a) Prismium Arrow: session 30で見送った(ArrowRendererのUVレイアウトの裏取り手段が見つからなかった)。「GitHubのembeddedData JSON抽出」や「mcasset.cloud」の手法を、Forgeソースコード自体(`ArrowRenderer.java`)の裏取りにも応用できないか試す価値がある。
    - (b) GUIスロット化(`SlotItemHandler`等)、Prismium Cable(§4-18・§4-36)の接続見た目・送電網ロジックの作り込み。
    - (c) 新MOB2体目(現状Prismium Wraith1体のみ、session 12から進展なし)。カスタムエンティティ+レンダラーはAPI裏取りが難しい領域。
-   - (d) Prismium Coreにも同様の建築バリエーション(スラブ/壁/階段/模様入り)を横展開する案(セッション#34の§5項目8-eから継続)。今回`mcasset.cloud`+複数ミラーの突き合わせという裏取り手法が確立できたので、以前より低リスクで着手できるはず。
+   - (d) Prismium Coreの模様入りブロック(Chiseled)は今回あえて見送った(§3AI-3参照、常時発光ブロックにどうデザインすべきか要検討)。追加するなら次回以降で。
+   - (e) `RELEASE_NOTES.md`の運用が今回始まったばかりなので、次に何らかのまとまった機能追加をしたセッションで、実際に`mod_version`を上げてタグを切る運用を1回試してみると、release.ymlの手順(§3AI-2のワークフロー冒頭コメント参照)が正しく機能するかの2回目の実証になる。
 
 ### 議論したい論点・改善案
 
-- **一次情報源の裏取り手法がここ2セッションで大きく前進した**: セッション#34のMinecraft Wiki(blockstateの一般スキーマ)に続き、セッション#35では`mcasset.cloud`(バージョン別vanillaアセットブラウザ)と、GitHubリポジトリに同梱された実データ(edayot/model_resolverのフィクスチャ)という2つの新しい情報源を開拓し、これらを突き合わせることで階段の40通りの回転値を確信を持って転記できた。この「複数の独立した情報源を突き合わせる」というパターンは、今後Prismium Arrow(ArrowRendererのUVレイアウト)のような他の「記憶だけでは自信が持てない」実装にも応用できる可能性が高い。次回以降、新しいAPIやアセット構造を扱う際はまずこの手法を試すことを標準の手順にする価値がある。
-- **GitHub Issue確認手段の復旧は運用上のブレークスルー**: §0-2の運用ルールが設定されて以来、実に25セッション近く「確認できなかった」が続いていた。今回の`embeddedData`JSON抽出手法により、次回以降は安定してIssue確認ができる見込み(ただし1回の成功だけでは断言できないので、次回も同じ手順が機能するか再確認すること)。もしこの手法が今後も安定するなら、§0-2の運用ルールの「確認手段自体が機能しなかった」という言い訳が使えなくなる - 毎回確実に確認する習慣を徹底すること。
-- **建築バリエーション路線の完成**: スラブ・塀・階段・模様入りブロックの4点セットがPrismium Blockに揃った。セッション#34で提起した「これで建築バリエーションとして実用に足るか」という論点は、次に(a)他の資源ブロックへの横展開、または(b)装備/アクセサリ路線・GUI/送電網の作り込みのどちらを優先すべきか、という判断に移る段階に来ていると考える。
+- **Issue駆動の対応が定着しつつある**: セッション#13(issue #2)・#9(issue #1)に続き、今回issue #3・#4にも対応できた。GitHub Issue確認手段(§0-2)が安定して機能するようになったことで、ロードマップ主導の機能追加と、ユーザーフィードバック主導の改善のバランスを取れるようになってきている。今後も毎回のセッション冒頭でのIssue確認を欠かさないこと。
+- **リリース運用は始まったばかりで実証が1回のみ**: v0.1.0タグでの初回リリースは、ワークフロー自体の実行成功をこのセッション内で完全には確認しきれていない(§5項目3参照)。次回以降、実際にバージョンを上げてタグを切るセッションが出てきて初めて「運用として回る」と言えるので、油断せず経過を見守ること。
+- **建築バリエーション路線がPrismium Coreにも広がった**: Prismium Block(4種)・Prismium Core(3種、Chiseled除く)で計7種の建築バリアントが揃った。次に他の資源ブロックへさらに広げるか、装備/アクセサリ・GUI/送電網の作り込みに戻るかは、引き続き判断が分かれるところ(セッション#35から継続する論点)。
 
 ### コミット/プッシュ状況
 
-このセッションの変更は2コミット: `c9a73cd`(Prismium Block Stairs一式: `ModBlocks.java`・`ModItems.java`・`ModCreativeTabs.java`更新、blockstate/models/loot_table/recipe新規、`mineable/pickaxe.json`・lang(en/ja)更新)、および本PROGRESS.md更新コミット。`git fetch origin main`で差分無し(並行セッション無し)、pushは一発成功(§5項目4参照)。GitHub Issue確認は今回初めて実施でき、Issue #1(OPEN、セッション#9で対応済みのはず)を検出した(§3AH-0参照)。
+このセッションの変更は3コミット + タグ1つ: `20167e7`(README刷新、issue #4対応)、`61430fe`(release.yml + RELEASE_NOTES.md新規、issue #3対応)、`b1e0e4f`(Prismium Core建築バリエーション3種)、および本PROGRESS.md更新コミット。加えて`v0.1.0`タグを`b1e0e4f`に打ってpushした(MOD初のタグ付きリリース)。`git fetch origin main`で差分無し(並行セッション無し)、mainへのpush・タグのpushともプロキシ変数無改変で一発成功。GitHub Issue確認は今回も機能し、issue #3・#4(新規)、issue #1・#2(既存、対応済み判断)を確認した。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、今回のpush(`c9a73cd`および本PROGRESS.md更新コミット)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず。
+Discord Webhookへの送信はサンドボックスから到達不可のため試みていない(継続)。GitHub Actions側の通知は、今回のpush(3コミット + PROGRESS.md更新コミット)のビルド成否に応じて(Secretが設定済みであれば)送信されているはず。タグpushによるrelease.ymlの起動はDiscord通知の対象外(build-and-notify.ymlとは別ワークフローのため)。
