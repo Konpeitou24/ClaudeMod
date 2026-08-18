@@ -2,7 +2,10 @@ package com.claudemod.energy;
 
 import com.claudemod.blockentity.PrismiumCableBlockEntity;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
@@ -222,5 +225,111 @@ public final class EnergyPushHelper {
             }
         }
         return moved;
+    }
+
+    /** Every how many ticks {@link #visualizeFlow} is allowed to actually
+     * run its (cheap but non-zero) cable-path BFS and emit particles.
+     * GitHub issue #15 comment (session 56 handoff item 3-b): "電力の流れが
+     * 目視できない" (can't see energy actually moving through the network).
+     * Purely cosmetic and server-authoritative (uses
+     * {@link ServerLevel#sendParticles}, which itself only actually
+     * bothers networking to clients that are within tracking range - see
+     * vanilla's own {@code ChunkMap}), so throttling this hard is just
+     * extra insurance against a large network doing a visualization BFS
+     * every single tick on top of the real energy-push BFS. */
+    private static final int FLOW_PARTICLE_INTERVAL_TICKS = 10;
+
+    /** Cap on how many of the (potentially many) cable positions found
+     * along a network get a particle spawned per call - a long run of
+     * cable does not need a particle at every single block to read as
+     * "energy is flowing here", and capping this keeps the packet count
+     * bounded regardless of network size. */
+    private static final int MAX_FLOW_PARTICLE_POSITIONS = 6;
+
+    /**
+     * Purely cosmetic companion to {@link #pushThroughNetwork}: walks the
+     * same kind of connected-cable run (a lighter, receiver-agnostic BFS -
+     * it does not move or query any energy, so it is safe to call even on
+     * ticks where {@code pushThroughNetwork} found nothing to push) and
+     * spawns a handful of small spark particles along a sampled subset of
+     * the cable positions it finds, so a player looking at a Prismium
+     * Cable run can actually see that something is moving through it
+     * instead of only reading numbers off a GUI. Intentionally separate
+     * from {@code pushThroughNetwork} rather than folded into it (e.g. by
+     * changing that method's return type to include the visited-cable
+     * list): keeps the already-fixed (GitHub issue #15) energy-movement
+     * BFS untouched and easy to reason about in isolation, at the cost of
+     * a second, independent, much-throttled traversal.
+     *
+     * <p>Callers are expected to only invoke this from a *source*
+     * (Generator) tick, not from every individual cable's own tick -
+     * calling it once per network per tick (from the source) is enough
+     * for the visual effect and avoids O(cable count) redundant BFS runs
+     * across the same physical network that calling it from every cable
+     * would cause. Callers should also gate the call behind
+     * {@code level.getGameTime() % FLOW_PARTICLE_INTERVAL_TICKS == 0}
+     * (see {@link #FLOW_PARTICLE_INTERVAL_TICKS}) before invoking this at
+     * all, so the BFS itself is skipped entirely on most ticks rather
+     * than run-but-throttled-after-the-fact.
+     *
+     * <p>No-op on the logical client and no-op if {@code level} is not a
+     * {@link ServerLevel} (particles are spawned via
+     * {@code ServerLevel#sendParticles} so they actually reach nearby
+     * clients, matching the pattern already used by
+     * {@code PrismiumFeatherstoneHandler}/{@code PrismiumEmberguardHandler}/
+     * {@code PrismiumVitastoneHandler}/{@code PrismiumGuardianCharmHandler}
+     * elsewhere in this mod).
+     *
+     * <p><b>Not yet verified in-game</b> (no local build available in this
+     * sandbox - see PROGRESS.md): the particle type
+     * ({@link ParticleTypes#ELECTRIC_SPARK}), spawn density, and whether
+     * ten-tick throttling still reads as "continuous flow" rather than
+     * "flickering" are all first-guess values.
+     */
+    /** Convenience overload using the same hop cap as {@link #pushThroughNetwork(Level, BlockPos, PrismiumEnergyStorage, int)}'s default, so callers don't have to duplicate that magic number. */
+    public static void visualizeFlow(Level level, BlockPos startPos) {
+        visualizeFlow(level, startPos, DEFAULT_MAX_CABLE_HOPS);
+    }
+
+    public static void visualizeFlow(Level level, BlockPos startPos, int maxCableHops) {
+        if (!(level instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        Set<BlockPos> visitedCables = new HashSet<>();
+        visitedCables.add(startPos);
+        Deque<BlockPos> frontier = new ArrayDeque<>();
+        frontier.add(startPos);
+        List<BlockPos> cablePath = new ArrayList<>();
+
+        int hops = 0;
+        while (!frontier.isEmpty() && hops < maxCableHops) {
+            int frontierSize = frontier.size();
+            for (int i = 0; i < frontierSize; i++) {
+                BlockPos current = frontier.poll();
+                for (Direction direction : Direction.values()) {
+                    BlockPos neighborPos = current.relative(direction);
+                    BlockEntity neighbor = level.getBlockEntity(neighborPos);
+                    if (neighbor instanceof PrismiumCableBlockEntity && visitedCables.add(neighborPos)) {
+                        frontier.add(neighborPos);
+                        cablePath.add(neighborPos);
+                    }
+                }
+            }
+            hops++;
+        }
+
+        if (cablePath.isEmpty()) {
+            return;
+        }
+
+        RandomSource random = level.getRandom();
+        int sampleCount = Math.min(MAX_FLOW_PARTICLE_POSITIONS, cablePath.size());
+        for (int i = 0; i < sampleCount; i++) {
+            BlockPos p = cablePath.get(random.nextInt(cablePath.size()));
+            serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                    p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5,
+                    1, 0.2, 0.2, 0.2, 0.01);
+        }
     }
 }

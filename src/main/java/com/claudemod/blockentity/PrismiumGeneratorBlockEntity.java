@@ -228,6 +228,15 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
             // tick. See EnergyPushHelper#pushThroughNetwork's doc.
             if (EnergyPushHelper.pushThroughNetwork(level, pos, generator.energyStorage, MAX_EXTRACT)) {
                 changed = true;
+                // Session 57 (GitHub issue #15 comment): "電力の流れが目視
+                // できない". Purely cosmetic, heavily throttled (see
+                // EnergyPushHelper#visualizeFlow's doc) - only called from
+                // the source's own tick, never from individual cables, so
+                // this runs once per network per interval rather than once
+                // per cable.
+                if (level.getGameTime() % 10 == 0) {
+                    EnergyPushHelper.visualizeFlow(level, pos);
+                }
             }
         }
 
