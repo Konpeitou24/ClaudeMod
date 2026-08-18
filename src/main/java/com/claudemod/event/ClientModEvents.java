@@ -80,6 +80,22 @@ public class ClientModEvents {
             ItemProperties.register(ModItems.PRISMIUM_BOW.get(), new ResourceLocation("pulling"),
                     (stack, level, entity, seed) ->
                             entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F);
+
+            // Session 47 / GitHub issue #6 follow-up: prismium_shield.json's
+            // "overrides" list already switches to prismium_shield_blocking.json
+            // when the "blocking" property equals 1 (added session 38, commit
+            // 8d35154), but nothing ever registered an ItemPropertyFunction for
+            // that property id on this item - "blocking" is not a built-in
+            // generic predicate, vanilla only wires it up for Items.SHIELD
+            // itself (ItemProperties handles this per-item, exactly like
+            // "pull"/"pulling" above are per-item for bows, not automatic for
+            // every BowItem subclass). Without this registration the override
+            // could never fire. Mirrors LivingEntity#isBlocking's own check
+            // (getUseItem().getUseAnimation() == UseAnim.BLOCK) so it flips to
+            // 1 exactly while this exact stack is actively being used to block.
+            ItemProperties.register(ModItems.PRISMIUM_SHIELD.get(), new ResourceLocation("blocking"),
+                    (stack, level, entity, seed) ->
+                            entity != null && entity.isUsingItem() && entity.getUseItem() == stack ? 1.0F : 0.0F);
         });
     }
 }

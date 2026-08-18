@@ -17,31 +17,53 @@ import net.minecraft.world.level.Level;
  * sessions in a row, #23-27, had been GUI-only work).
  *
  * <p>Deliberately does <b>not</b> extend vanilla's {@link
- * net.minecraft.world.item.ShieldItem}. That class hard-codes an
- * in-hand 3D model built from banner-pattern layers baked onto
- * {@code textures/entity/shield_base_nopattern.png}/{@code
- * shield_base.png} via a dedicated {@code BlockEntityWithoutLevelRenderer}
- * - reproducing that correctly would require a custom ISTER and a very
- * specific texture layout, an unrelated and much larger yak-shave than
- * "add a working shield". Web search (session 28, query "Forge 1.20.1
- * custom shield item UseAnim.BLOCK getUseDuration example not extending
- * ShieldItem") confirmed this is a well-known modding shortcut: any
- * plain {@link Item} that overrides {@link #getUseAnimation} to return
- * {@link UseAnim#BLOCK} and starts using itself in {@link #use} gets
- * vanilla's full blocking behavior for free (see
- * {@code LivingEntity#isBlocking}, which only checks
- * {@code getUseItem().getUseAnimation() == UseAnim.BLOCK} - it does not
- * care whether the item is actually a {@code ShieldItem}), including
- * axe-disable and shield-bash knockback, at the cost of rendering as a
- * flat 2D icon in-hand instead of a 3D banner-capable model - an
- * acceptable trade for a first pass (same "function over full 3D
- * polish" call already made for {@link PrismiumGrapplingHookItem} and
- * {@link PrismiumLocatorItem}, neither of which has a custom in-hand
- * model either).
+ * net.minecraft.world.item.ShieldItem}. Web search (session 28, query
+ * "Forge 1.20.1 custom shield item UseAnim.BLOCK getUseDuration example
+ * not extending ShieldItem") confirmed this is a well-known modding
+ * shortcut: any plain {@link Item} that overrides {@link
+ * #getUseAnimation} to return {@link UseAnim#BLOCK} and starts using
+ * itself in {@link #use} gets vanilla's full blocking behavior for free
+ * (see {@code LivingEntity#isBlocking}, which only checks {@code
+ * getUseItem().getUseAnimation() == UseAnim.BLOCK} - it does not care
+ * whether the item is actually a {@code ShieldItem}), including
+ * axe-disable and shield-bash knockback, without needing to reproduce
+ * vanilla ShieldItem's banner-pattern machinery at all.
+ *
+ * <p><b>Session 38 update (GitHub issue #6, "盾を手に持ってもアイテムの
+ * まま")</b>: the in-hand look this class originally shipped with (a
+ * flat 2D icon, since the item model at the time was a plain {@code
+ * minecraft:item/generated}) turned out to look wrong enough in real
+ * play that the repo owner filed a bug. Investigation found vanilla's
+ * own shield does <i>not</i> actually need a {@code
+ * BlockEntityWithoutLevelRenderer}/ISTER as this class originally
+ * assumed - it gets its 3D look from an ordinary "elements"-based item
+ * model JSON (box geometry + UVs, the same mechanism block models use),
+ * which is plain data and requires no Java rendering code at all.
+ * {@code models/item/prismium_shield.json} was rebuilt on that basis
+ * (two boxes: a body panel + a center boss, see that file and its
+ * {@code scripts/textures/gen_prismium_shield_base.py} texture
+ * generator), and now renders as a real 3D held shape instead of a
+ * flat sprite. {@code getUseAnimation}/{@code getUseDuration}/{@code
+ * use} below are unaffected by any of this - they only drive the
+ * blocking <i>behavior</i>, not the model.
+ *
+ * <p><b>Session 47 follow-up</b>: the session-38 model file already had
+ * an {@code "overrides": [{"predicate": {"blocking": 1}, ...}]} entry
+ * pointing at {@code prismium_shield_blocking.json}, but no Java code
+ * had ever registered an {@code ItemPropertyFunction} for the
+ * "blocking" property id on this item (unlike vanilla, which only wires
+ * that id up for {@code Items.SHIELD} specifically - every item needs
+ * its own registration, see {@code ClientModEvents#registerScreens},
+ * same pattern already used there for Prismium Bow's "pull"/"pulling").
+ * That gap is now closed, but {@code prismium_shield_blocking.json} is
+ * currently byte-for-byte the same geometry as the resting model, so
+ * blocking still looks visually identical to idle - giving the two
+ * states genuinely different poses/transforms remains open for a
+ * future session.
  *
  * <p>{@code use()} mirrors vanilla {@code ShieldItem#use}'s own body
  * (confirmed against the 1.16.5/1.18.2 ShieldItem javadocs found during
- * the same search - the method shape has been stable across those
+ * the session-28 search - the method shape has been stable across those
  * versions and this mod's other {@code Item#use} overrides already
  * establish the 1.20.1 {@code (Level, Player, InteractionHand) ->
  * InteractionResultHolder<ItemStack>} signature works, see
@@ -51,13 +73,10 @@ import net.minecraft.world.level.Level;
  *
  * <p><b>Unverified</b>: no in-game playtest yet (no Minecraft client
  * available in this sandbox, see PROGRESS.md's standing note on this).
- * In particular the flat-icon in-hand rendering (no 3D model/ISTER) is
- * untested - it should render fine as a generic held-item sprite like
- * any other non-block item, but has not been visually confirmed. If a
- * future session wants a true 3D in-hand shield look, that would mean
- * either extending {@code ShieldItem} after all and supplying the
- * banner-layout texture it expects, or writing a custom
- * {@code BlockEntityWithoutLevelRenderer}/ISTER - out of scope here.
+ * The 3D model's orientation/scale/thickness across first/third
+ * person and GUI, and whether the "blocking" override actually flips
+ * on screen now that it is registered, have not been visually
+ * confirmed.
  */
 public class PrismiumShieldItem extends Item {
 
