@@ -192,7 +192,6 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
      * both sides and has to check explicitly.
      */
     public static void serverTick(Level level, BlockPos pos, BlockState state, PrismiumGeneratorBlockEntity generator) {
-        boolean wasBurning = generator.burnTime > 0;
         boolean changed = false;
 
         if (generator.burnTime > 0
@@ -211,8 +210,31 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
             }
         }
 
+        // GitHub issue #8 (session 38): reported "burn-time display goes
+        // up but nothing looks like it's actually generating". Root
+        // cause found by inspection (no in-game repro available - see
+        // PROGRESS.md standing note): this method used to compare a
+        // *locally recomputed* wasBurning/isBurning pair, both derived
+        // from generator.burnTime at the start and end of this same
+        // tick. burnTime only ever changes by at most 1 per tick (the
+        // decrement above), so that comparison could only ever observe
+        // the 1->0 transition (fuel running out) - the 0->positive
+        // transition (addFuel() being called from PrismiumGeneratorBlock
+        // #use, an entirely separate method invocation on a previous
+        // tick) was invisible to it, because by the time this method's
+        // "wasBurning" line ran, burnTime was already > 0 from the start
+        // of the tick. Net effect: the LIT blockstate could switch from
+        // true to false, but could never switch from false to true - the
+        // block's glowing "active" texture would never turn on even
+        // though burnTime/energy generation were working correctly the
+        // whole time, exactly matching the "no sign of it operating"
+        // complaint. Fixed by comparing against the block's *actual*
+        // current LIT value (read from the passed-in BlockState, which
+        // reflects whatever was last written to the world) instead of a
+        // second burnTime sample - this correctly catches both
+        // directions of the transition.
         boolean isBurning = generator.burnTime > 0;
-        if (isBurning != wasBurning) {
+        if (state.getValue(BlockStateProperties.LIT) != isBurning) {
             level.setBlock(pos, state.setValue(BlockStateProperties.LIT, isBurning), 3);
         }
 
