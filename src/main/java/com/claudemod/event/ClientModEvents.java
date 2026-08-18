@@ -1,6 +1,7 @@
 package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.client.render.PrismRealmEffects;
 import com.claudemod.client.screen.PrismiumCellScreen;
 import com.claudemod.client.screen.PrismiumGeneratorScreen;
 import com.claudemod.client.screen.PrismiumPylonScreen;
@@ -16,6 +17,7 @@ import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
+import net.minecraftforge.client.event.RegisterDimensionSpecialEffectsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -40,6 +42,16 @@ public class ClientModEvents {
         event.registerEntityRenderer(ModEntities.PRISMIUM_WRAITH.get(), PrismiumWraithRenderer::new);
         // Session 47: Prismium Deep Wraith, same registration pattern.
         event.registerEntityRenderer(ModEntities.PRISMIUM_DEEP_WRAITH.get(), PrismiumDeepWraithRenderer::new);
+    }
+
+    @SubscribeEvent
+    public static void registerDimensionEffects(RegisterDimensionSpecialEffectsEvent event) {
+        // Session 50: give Prism Realm its own DimensionSpecialEffects
+        // instead of reusing "minecraft:overworld" (see PrismRealmEffects
+        // javadoc for the full investigation/citations). The
+        // ResourceLocation key here must match the "effects" value in
+        // data/claudemod/dimension_type/prism_realm_type.json exactly.
+        event.register(new ResourceLocation(ClaudeMod.MOD_ID, "prism_realm"), new PrismRealmEffects());
     }
 
     @SubscribeEvent
