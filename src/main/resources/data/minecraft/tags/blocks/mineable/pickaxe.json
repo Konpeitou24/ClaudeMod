@@ -15,6 +15,9 @@
         "claudemod:chiseled_prismium_block",
         "claudemod:prismium_block_slab",
         "claudemod:prismium_block_wall",
-        "claudemod:prismium_block_stairs"
+        "claudemod:prismium_block_stairs",
+        "claudemod:prismium_core_slab",
+        "claudemod:prismium_core_wall",
+        "claudemod:prismium_core_stairs"
     ]
 }

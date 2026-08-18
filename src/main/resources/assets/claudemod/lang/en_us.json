@@ -74,5 +74,8 @@
     "item.claudemod.prismium_guardian_charm": "Prismium Guardian Charm",
     "item.claudemod.prismium_featherstone": "Prismium Featherstone",
     "item.claudemod.prismium_emberguard": "Prismium Emberguard",
-    "item.claudemod.prismium_vitastone": "Prismium Vitastone"
+    "item.claudemod.prismium_vitastone": "Prismium Vitastone",
+    "block.claudemod.prismium_core_slab": "Prismium Core Slab",
+    "block.claudemod.prismium_core_wall": "Prismium Core Wall",
+    "block.claudemod.prismium_core_stairs": "Prismium Core Stairs"
 }

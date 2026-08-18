@@ -1,0 +1,16 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "building",
+    "pattern": [
+        "###"
+    ],
+    "key": {
+        "#": {
+            "item": "claudemod:prismium_core"
+        }
+    },
+    "result": {
+        "item": "claudemod:prismium_core_slab",
+        "count": 6
+    }
+}

@@ -78,6 +78,16 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_BLOCK_STAIRS_ITEM = ITEMS.register("prismium_block_stairs",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK_STAIRS.get(), new Item.Properties()));
 
+    // Prismium Core building variety (session 36). See ModBlocks.
+    public static final RegistryObject<Item> PRISMIUM_CORE_SLAB_ITEM = ITEMS.register("prismium_core_slab",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CORE_SLAB.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_CORE_WALL_ITEM = ITEMS.register("prismium_core_wall",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CORE_WALL.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_CORE_STAIRS_ITEM = ITEMS.register("prismium_core_stairs",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CORE_STAIRS.get(), new Item.Properties()));
+
     // Prismium Lantern (session 4): a cheap, tool-tier-independent light
     // source block for exploration. See ModBlocks for the block stats.
     public static final RegistryObject<Item> PRISMIUM_LANTERN_ITEM = ITEMS.register("prismium_lantern",

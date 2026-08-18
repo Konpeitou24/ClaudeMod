@@ -293,6 +293,37 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)));
 
+    // Prismium Core building variety (session 36): extends the slab/wall/
+    // stairs trio already proven out on Prismium Block (sessions 34-35,
+    // PROGRESS.md handoff item 8-d) to Prismium Core. Same low-risk
+    // rationale - plain vanilla SlabBlock/WallBlock/StairBlock, no custom
+    // subclasses - but keeps Core's own stats (requiresCorrectToolForDrops,
+    // strength 8.0/20.0) instead of Prismium Block's, and reuses Core's
+    // own texture. Also added to needs_diamond_tool/incorrect_for_diamond_tool
+    // (see data/minecraft/tags/blocks/) so the harvest-tier exclusivity
+    // carries over to these variants too.
+    public static final RegistryObject<Block> PRISMIUM_CORE_SLAB = BLOCKS.register("prismium_core_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(8.0f, 20.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_CORE_WALL = BLOCKS.register("prismium_core_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(8.0f, 20.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_CORE_STAIRS = BLOCKS.register("prismium_core_stairs",
+            () -> new StairBlock(() -> PRISMIUM_CORE.get().defaultBlockState(),
+                    BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(8.0f, 20.0f)
+                    .sound(SoundType.AMETHYST)));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }
