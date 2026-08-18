@@ -2119,6 +2119,61 @@ push後、`git fetch`による到着確認で以下を確認済み:
 push後、`ci: update built jar`(コミット`ddb4f1c`)→`ci: update datapack validation results`(コミット`7b30c42`、`status=ok`、対象コミット`114215e`)の到着を`git fetch`で確認済み。`builds/last_datapack_validation_errors.log`の内容も確認し、既存の既知ノイズ(Forgeのjarjarメタデータ警告、`server.properties`未検出、`removeErroringBlockEntities`設定補正等、毎回出る無害なログ)のみで、今回の変更に起因する新規エラーは無かった。ビルドjarのサイズも266594→271688バイトへ増加しており、新規クラス・テクスチャーが実際に取り込まれたことも確認できた。ただしこれも例によって「サーバーが起動できる」ことの確認に過ぎず、実際にブロックを設置・右クリックして時刻が変わる様子や、テクスチャーの実機描画は未検証(下記§5参照)。
 
 
+## 3AZ. セッション#50(定期実行)で実装した内容: Prism Realmの雲修正 + Prismium Chronoflameクールダウン追加 + Prism Lily/Bramble/Vineの染料用途追加
+
+### 3AZ-1. 状況確認
+
+`git clone`後`git log`で、session 49の1コミット(`114215e` Prismium Chronoflame)とCI副産物(`ci: update built jar`コミット`f1afc6b`、`ci: update datapack validation results`コミット`dcc1812`、`status=ok`、対象コミット`9bea604`のPROGRESS.md更新コミットまで含めて到着済み)を確認した。ビルドは緑の状態からの開始。
+
+`api.github.com`への到達性を確認したところ、今回はプロキシ経由(`blocked-by-allowlist`)・プロキシ環境変数を空にした場合(`Could not resolve host`)の両方で失敗し、継続する既知の制約(§2-9等参照)。Issue個別ページの`WebFetch`は今回試みていない(後述の理由で今回はIssue対応ではなく§5の技術的申し送り事項に集中したため)。
+
+### 3AZ-2. 実装: Prism Realmの雲修正(§5旧00000、session 47から3セッション持ち越しの課題)
+
+session 47で「一次情報での裏取りが完遂できなかった」として実装を見送っていた項目に、今回本腰を入れて取り組んだ。
+
+**API裏取り(WebSearch+WebFetch、複数の一次情報源で確定)**:
+- `RegisterDimensionSpecialEffectsEvent`(`nekoyue.github.io/ForgeJavaDocs-NG`の1.19.3 javadocミラーを直接Fetch): モッドバス・クライアント専用で発火し、`register(ResourceLocation dimensionType, DimensionSpecialEffects effects)`という単純なメソッドを持つことを確認。
+- `DimensionSpecialEffects`本体(同ミラー): protectedコンストラクタが`(float cloudLevel, boolean hasGround, SkyType skyType, boolean forceBrightLightmap, boolean constantAmbientLight)`の5引数であることを確認。抽象メソッドは`getBrightnessDependentFogColor(Vec3, float)`と`isFoggyAt(int, int)`の2つのみ(session 47時点で「abstractメソッド一覧が確定できない」としていた懸念はこれで解消)。
+- `SkyType`列挙型(1.18.2ミラー、値自体はバージョン間で不変と判断): `NONE`/`NORMAL`/`END`の3値を確認。
+- **雲を消す仕組みの核心(cloudLevelにNaNを渡す)**: `OverworldEffects`/`NetherEffects`/`EndEffects`の各javadocページ自体にはフィールド初期値が載っていなかったため、追加でWebSearchを実施。(1) Forge Forumsの実例コードが`super(Float.NaN, true, SkyType.NONE, false, true)`という、まさにcloudLevel引数にFloat.NaNを渡すコンストラクタ呼び出しをそのまま示していた。(2) 無関係な別プロジェクト(Sodium、Issue #2147のタイトルが「Float.NaN in clouds_height of the DimensionEffects」)がこの事実を独立に裏付けていた。**session 47時点で「javadocページの直接取得がprovenance制限で失敗」としていた壁を、直接のクラス定義ではなく実例コード+症状報告という別の一次情報の組み合わせで突破した形。**
+
+**実装**:
+- `com.claudemod.client.render.PrismRealmEffects`(新規、クライアント専用パッケージ): `super(Float.NaN, true, SkyType.NORMAL, false, false)`。`hasGround`/`skyType`/両light系フラグはOverworldEffectsと同じ値にし(Prism Realmは地面と水平線のあるダイムンションで、Nether/Endの特殊な空とは性質が違うため)、cloudLevelだけをNaNに差し替える設計。
+- `getBrightnessDependentFogColor`: vanilla `OverworldEffects`の正確な実装(明るさに応じた0.94/0.06等の係数)は今回もWebSearchで一次情報を確定できなかったため、**確信の持てない数値を真似るのではなく**、`fogColor.multiply(brightness, brightness, brightness)`という単純な線形近似で代替した(この点はクラスのjavadocに明記)。見た目への影響は「雷雨・夜間のフォグの濃さがvanillaと厳密には一致しない」程度の低リスクな部分だと判断。
+- `isFoggyAt`は常に`false`(Prism Realmに常時濃霧効果は不要と判断)。
+- `ClientModEvents`に`registerDimensionEffects`(`RegisterDimensionSpecialEffectsEvent`購読)を新設し、`claudemod:prism_realm`というResourceLocationキーで登録。
+- `data/claudemod/dimension_type/prism_realm_type.json`の`effects`を`"minecraft:overworld"`から`"claudemod:prism_realm"`に変更(このキーがJava側の登録キーと一致している必要がある、コメントで明記)。
+
+**未検証(このサンドボックスに実機/ビルド環境が無いため、毎回のことだが正直に明記)**: 実際にPrism Realmへ行って雲が消えているか、フォグの見た目に違和感が無いかは未確認。session 47の懸念通り、この種のクライアント専用レンダリングコードはCIの`runGameTestServer`(ヘッドレスサーバー)では一切検証できない領域。次回セッション、あるいはユーザー本人が実際にプレイした際に最優先で確認すべき項目。
+
+### 3AZ-3. 実装: Prismium Chronoflameに per-player クールダウンを追加(session 49からの持ち越し議論点への対応)
+
+session 49の「議論したい論点」で「連打制限が無く、良くも悪くも昼夜をほぼ無効化できるバランスになっている可能性がある」と指摘されていた点に対応した。クラフトコスト自体(時計+グロウストーン2個+プリズミウムの欠片4個)は今回変更していない(コスト自体が問題かはユーザー本人の感想待ち、と申し送り済みだったため)。
+
+`PrismiumChronoflameBlock`に、プレイヤーUUID→クールダウン終了ゲームタイムを保持する`static final Map<UUID, Long> COOLDOWN_UNTIL`(`WeakHashMap`)を追加。5秒(100ゲームティック)の間は`use()`を呼んでも何も起きない(サウンド・メッセージ・時刻変更のいずれも発生しない)よう`InteractionResult.CONSUME`を早期returnする形にした。`WeakHashMap`を選んだ理由: このブロック自体は状態を持たないという既存の設計方針(§3AY-3のjavadoc参照)を踏襲しつつ、クールダウンは「ブロック」ではなく「プレイヤー」に属する情報だと考えたため(エンダーパールのクールダウンがアイテムスタックではなくプレイヤー単位であるのと同じ発想)。プレイヤーがログアウトして`Player`オブジェクトがGCされれば、キーのUUIDも回収される想定(サーバー再起動をまたいだ永続化は元々要件になかったため許容)。
+
+**未検証**: 5秒という長さが実際のプレイ感としてちょうど良いか(短すぎて意味がない/長すぎて不便)は未検証、勘による選択。
+
+### 3AZ-4. 実装: Prism Lily/Bramble/Vineに紫色染料へのクラフト用途を追加(§5旧12(b)対応)
+
+ユーザーからの「Prism Realmの草花が活用できないものになっている」という指摘(session 47対話セッションで受け取り、§5旧12(b)として持ち越されていた)に対応した。3種はいずれも`MapColor.COLOR_PURPLE`の紫系パレットで統一されている(`ModBlocks`の登録コメント参照)ため、紫色染料への変換という自然な用途を選んだ。
+
+- `prism_lily` → `minecraft:purple_dye` ×2(vanillaのライラック→赤紫色の染料×2と同じ「花本体は多め」の考え方)
+- `prism_bramble` → `minecraft:purple_dye` ×1
+- `prism_vine` → `minecraft:purple_dye` ×1
+(茎・蔓の類なので花より少なめ、という区別)
+
+いずれも`minecraft:crafting_shapeless`の単純な1入力1出力レシピ3つ(新規ファイル、新規アイテム・テクスチャーは無し)。本MODは既存レシピも一切advancement連動の開放システムを使っていない(`data/claudemod/advancements`ディレクトリ自体が存在しない)ことを確認した上で、その既存方針にそのまま合わせた(レシピブックには出ないが、パターンを知っていれば最初からクラフト可能)。
+
+**注記**: §5旧000000で継続して指摘されている通り、この3種の植物が現在のフラット水没地形で実際に生成されているかどうか自体、まだ実機確認できていない。生成されていなければ、この染料レシピ自体は「入手手段が実質存在しない」機能になってしまう。次回以降、植物の生成確認と合わせてこの点も評価すること。
+
+### 3AZ-5. commit・push・ビルド確認
+
+計3コミットをpush: `6ac92a9`(雲修正)、`5fa6b2c`(Chronoflameクールダウン)、`b77579e`(Prism植物の染料化)。push前に`git fetch origin main`で並行セッション無し(`dcc1812`のまま進んでいない)を確認してから`git push origin main`を実行し、**プロキシ回避策無しで一発成功**(session 49に続き2回連続。§5項目14の「まず素のpushを試す」方針を継続)。
+
+このセッション終了時点では、pushしたばかりのため`ci: update built jar`/`ci: update datapack validation results`の到着はまだ確認できていない(git fetchのタイミングの都合、次回セッション開始時に最優先で確認すること)。**特に今回は`PrismRealmEffects`という新規クラスと`RegisterDimensionSpecialEffectsEvent`の購読というこのMOD初のクライアント専用レンダリングAPI呼び出しを含むため、コンパイルが通るかどうか(=`runGameTestServer`のstatus=ok)を次回真っ先に確認すること。** また、データパック検証(`runGameTestServer`)はヘッドレスサーバーでの検証なので、クライアント専用コードである`PrismRealmEffects`/`ClientModEvents#registerDimensionEffects`自体は当該テストの実行対象に含まれない可能性が高い(サーバーはクライアントバス/`Dist.CLIENT`専用リスナーをロードしない)点に注意 - ここが緑でも雲修正が実際に機能する保証にはならない。dimension_type JSON(`effects`フィールド変更)がレジストリ読み込みでエラーにならないかは検証対象になるはず。
+
+
 ## 5. 次回セッションへの申し送り
 
 ### すぐやるべきこと
@@ -2129,12 +2184,9 @@ push後、`ci: update built jar`(コミット`ddb4f1c`)→`ci: update datapack v
    - **【session 48で修正済み】Prism Lily/Bramble/Vine Featureが水没地形で一切生成されなくなっていた問題を修正した(§3AX-2/3AX-3参照)。** heightmapを`OCEAN_FLOOR_WG`に変更+3ブロックをwaterlogged化。ただし**実際にチャンクを生成してみての生成確認(密度・見た目とも)はまだ無い、次回最優先で確認すること。**
    - `runGameTestServer`で`status=ok`(コミット`e133a85`)まで確認済みだが、これは「サーバーが起動できる」ことの確認に過ぎない。**実際にPrism Realmへ行って地形・水・Prismium Stoneの見た目、および今回waterlogged化した植物の見え方を確認できたユーザーの反応がまだ無い、最優先で見ること。**
 
-00000. **【継続・重要】雲の見た目修正(Prism Realmがオーバーワールドと同じ白い雲を描画してしまう問題)は、調査のみ行い実装を見送った(§3AW-6参照)。次回以降の実装メモ:**
-   - 原因: `dimension_type`の`effects: "minecraft:overworld"`がオーバーワールドと同じ雲(高さ192)を描画させている。
-   - 正攻法: Forgeの`RegisterDimensionSpecialEffectsEvent`(MODバス、クライアント専用)でカスタム`net.minecraft.client.renderer.DimensionSpecialEffects`サブクラスを登録し、`dimension_type`の`effects`フィールドをそのカスタムIDに変える。
-   - 安易な代替案(`effects`を`"minecraft:the_end"`や`"minecraft:the_nether"`に変えるだけ)は**却下済み**: Endは`sky_color`/`fog_color`をバイオーム側の値ごと無視して強制的に暗黒/星空にしてしまう(Mojira MC-198544で確認)ため、これまで丁寧に調整してきた紫の空が壊れる。Netherも同様に専用の空表現が無く、雰囲気が大きく変わってしまう。
-   - **一次情報での裏取りが今回完遂できなかった**: `DimensionSpecialEffects`抽象クラスの正確なコンストラクタ引数・abstractメソッド一覧(javadocページの直接取得がprovenance制限で失敗、断片的な検索結果からは「コンストラクタ第一引数に`Float.NaN`を渡すと雲が消える」ことまでは確認できたが、全メソッドシグネチャの確証は得られなかった)。次回、`mcsrc.dev`(JS実行が要る可能性、要検討)や`DimensionSpecialEffects.SkyType`など周辺クラスのjavadocから確度を上げてから実装すること。
-   - **リスク上の注意**: この機能はクライアント専用レンダリングコードのため、CIの`runGameTestServer`(ヘッドレスサーバー)では一切検証できない。コンパイルさえ通れば実装ミスがあってもビルドは全部グリーンのまま気付けない(v0.3.0を生んだのと同種の死角)。実装する際は特に慎重に、シンプルな実装(継承元のOverworld相当の挙動を極力保ったまま雲の高さだけNaNにする)に留めること。
+00000. **【session 50で実装完了、次回最優先で実機確認】雲の見た目修正(§3AZ-2参照)。** `com.claudemod.client.render.PrismRealmEffects`(cloudLevel=Float.NaN)を新設し、`ClientModEvents#registerDimensionEffects`で`claudemod:prism_realm`として登録、`dimension_type`の`effects`もそれに合わせて変更した。session 47〜49で3セッション持ち越しだった「一次情報での裏取り」は、今回`RegisterDimensionSpecialEffectsEvent`/`DimensionSpecialEffects`/`SkyType`のjavadocミラーを直接Fetchし、さらにFloat.NaNの意味についてはForge Forumsの実例コード+Sodium側Issueタイトルという独立した2系統の情報源で確定させた(詳細は§3AZ-2)。
+   - **未検証(最優先)**: 実際にPrism Realmで雲が消えているか。クライアント専用レンダリングコードのため`runGameTestServer`では検証できない領域(v0.3.0を生んだのと同種の死角、引き続き注意)。
+   - `getBrightnessDependentFogColor`はvanilla `OverworldEffects`の正確な実装を確定できなかったため、線形近似(`fogColor.multiply(brightness,brightness,brightness)`)で代替している。フォグの見た目に軽微な違和感が出る可能性がある(低リスクと判断して実装は進めた)。
 
 0000. 【継続、session 46〜】CIのJSON中継の仕組みが3つになった。
    - `RELEASES_TO_DELETE.json`(タグ名配列)→リリース削除(§3AV-3)。
@@ -2147,7 +2199,7 @@ push後、`ci: update built jar`(コミット`ddb4f1c`)→`ci: update datapack v
 
 0. 【継続、優先度大幅低下】装備の見た目フィードバックはsession 39〜45で一通り対応済み。今回はPrism Realm地形の方が優先度が高かったため深追いしていない。防具の3人称シェーディングは引き続き実機未検証。
 
-1. 【最優先・恒例】まず`git log`/`git fetch origin main`し、`ci: update built jar`→`ci: update datapack validation results`の順に到着しているか確認する。**session 49は1コミットpushし、両方の到着・`status=ok`(コミット`114215e`)まで確認済み**(§3AY-6参照)。
+1. 【最優先・恒例】まず`git log`/`git fetch origin main`し、`ci: update built jar`→`ci: update datapack validation results`の順に到着しているか確認する。**session 50は3コミット(`6ac92a9`/`5fa6b2c`/`b77579e`)をpushしたが、セッション終了時点ではCI副産物の到着をまだ確認できていない(§3AZ-5参照)。次回、真っ先にこの3コミット分の`status=ok`を確認すること。** 特に`6ac92a9`(雲修正)はこのMOD初のクライアント専用レンダリングAPI呼び出しを含むため、コンパイルが通るか(=データパック検証がビルド自体に失敗せず走るか)を優先して見ること。
 
 2. `api.github.com`は今回も到達不可(継続)。Issueページ個別取得・添付ファイルダウンロード(`user-attachments/files/...`)は引き続き有効な手法。
 
@@ -2170,9 +2222,9 @@ push後、`ci: update built jar`(コミット`ddb4f1c`)→`ci: update datapack v
 11. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能が積み上がり続けている。session 47(Prismium Stone/Deep Wraith/フラットワールド/Rift Shard修正)、session 48(Prism Lily/Bramble/Vine修正/Rift Anchor)に続き、**session 49のPrismium Chronoflameも例外ではない**(`setDayTime`が本当に狙い通り動くか、6時間ステップの体感、テクスチャーの実機での見え方、いずれも未検証)。**新機能追加のたびに、pushのたびのデータパック検証結果確認を徹底すること**(引き続き最重要の習慣)。
 
 12. 【継続、次の展開候補、優先度は下記の通り更新】
-    - (a) ユーザー要望のRift Shard派生アイテム2種は**両方実装済みになった**: (i)リスポーン地点アイテムはsession 48(`PrismiumRiftAnchorItem`、§3AX-4参照、実機未検証)、(ii)時間操作ブロックはsession 49(`PrismiumChronoflameBlock`、§3AY-3参照、実機未検証)。(ii)については見た目の改善余地あり(§議論参照): 現状`cube_all`で全面同じテクスチャーのため「時計」を示す針が小サイズでは埋もれて見づらい。次回以降、top面だけ文字盤にするカスタムモデル、または連打による時刻乱高下を防ぐクールダウン等を検討してもよい(いずれも今回は見送り、未着手)。
-    - (b) 【新規・ユーザー要望】Prism Realmの草花(Prism Lily/Bramble/Vine)を「活用できないものになっている」との指摘(染料・クラフト素材等への用途追加)。**未着手。** ただし§000000の通り、これらの植物が今のフラット水没地形でそもそも配置できているか自体を先に確認・修正する必要がある可能性が高い。
-    - (c) 雲の見た目修正(§00000参照、調査済み・実装待ち)。
+    - (a) ユーザー要望のRift Shard派生アイテム2種は**両方実装済みになった**: (i)リスポーン地点アイテムはsession 48(`PrismiumRiftAnchorItem`、§3AX-4参照、実機未検証)、(ii)時間操作ブロックはsession 49(`PrismiumChronoflameBlock`、§3AY-3参照)。(ii)については**session 50で5秒間の per-player クールダウンを追加した**(§3AZ-3参照、連打対策)が、クラフトコスト自体の見直しはまだ未着手。見た目の改善余地(`cube_all`で「時計」の針が小サイズだと埋もれる)も引き続き未着手。
+    - (b) 【session 50で対応】Prism Realmの草花(Prism Lily/Bramble/Vine)の用途不足指摘に、紫色染料への変換レシピを追加した(§3AZ-4参照)。**ただし§000000の通り、これらの植物が今のフラット水没地形で実際に生成されているか自体が未確認のままなので、染料レシピの「入手経路」が機能しているかは間接的に未検証。次回、植物の自然生成確認と合わせて評価すること。**
+    - (c) 【session 50で実装】雲の見た目修正(§00000/§3AZ-2参照)。実機確認は次回最優先。
     - (d) Prism Realmへの陸地・複数バイオーム追加(ユーザー本人の段階的移行計画の次のステップ)。
     - (e) Prismium Deep Wraithの本格的な遊泳AI(vanilla Drowned相当のSmoothSwimmingMoveControl)。
     - (f) Prismium Arrow(session 30・43で見送り継続)。
@@ -2188,20 +2240,24 @@ push後、`ci: update built jar`(コミット`ddb4f1c`)→`ci: update datapack v
 
 - **フラットワールド化は「地中の石を無くす」という目的には即効性があるが、当面ディメンションの体験が「ほぼ全域が海」になるというトレードオフがある。** ユーザー本人が把握・了承済みの設計だが、次に陸地/バイオームを追加するまでの間、実際にプレイした際の第一印象(「歩ける場所がない」)をどう感じるか、次回セッション開始時にユーザーへの確認をおすすめしたい。
 - **Prismium Deep Wraithの遊泳AIが無い状態で、実際に水中で「らしく」動くかは全くの未知数。** 陸上を歩くだけのゾンビ的な動きになる可能性が高く、狙った「専用の水生モブ」感が薄い場合は次回、本格的なAI実装を検討すること。
-- **雲の修正は技法までは分かったが実装は未確認のまま持ち越し。** クライアント専用コードでCIのセーフティネットが効かない領域なので、次回実装する際は特に慎重に。
+- **【session 50で実装】雲の修正はコード自体は完了したが、実機での見た目確認はまだ無い。** クライアント専用コードでCIのセーフティネットが効かない領域なので、次回セッション(あるいはユーザー本人のプレイ)で最優先に見るべき項目であることに変わりはない。
 - **Prism Lily/Bramble/Vine Featureの未生成バグはsession 48でheightmap変更+waterlogged化により修正したが、これもデータパック検証(レジストリ読み込みの成否のみ)では確認できない領域なので、次回セッション開始時に「実際に生成されているか」を最優先で確認すべき(§3AX-2/3AX-3、§5旧000000参照)。**
 - **Prismium Rift Anchor(session 48)の`forced=true`リスポーン地点が、Prism Realmのほぼ全域が海という現状の地形でどこに着地させるかは全くの未知数。** バニラの安全地点探索ロジックが水中を避けてくれる保証は無く、悪くすると溺れる位置に復活する可能性がある。実プレイ確認が最優先。
 - **`runGameTestServer`はsession 48でも問題なく動作し続けている(累計6回目のstatus=ok)。** 安定して動いている実績が積み上がってきたので、`continue-on-error`を外して本当のゲートにするかの判断時期が近づいている。
-- **Prismium Chronoflame(session 49)は「時刻を自由に操作できる」という、生存要素(モンスターのスポーン・農作物の成長サイクル等)に直接影響する強力な機能。** 現状クラフトコストが控えめ(時計+グロウストーン2個+プリズミウムの欠片4個)で、連打制限も無いため、良くも悪くも「昼夜をほぼ無効化できる」バランスになっている可能性がある。これが意図した範囲か(探索の快適化ツールとして歓迎か、難易度を損なう問題か)は本人の感想を聞いてから判断したい論点。
-- **`runGameTestServer`はsession 49でも問題なく動作し続けている(累計7回目のstatus=ok)。** 安定して動いている実績が積み上がってきたので、`continue-on-error`を外して本当のゲートにするかの判断時期が近づいている(session 48からの持ち越し、引き続き検討事項)。
+- **Prismium Chronoflame(session 49)の「連打すれば実質時刻無効化」という懸念には、session 50で5秒クールダウンを追加して対応した(§3AZ-3)。** ただしクラフトコスト自体(時計+グロウストーン2個+プリズミウムの欠片4個)は据え置きのままで、これが「探索の快適化ツール」として妥当か「難易度を損なう」かという根本の論点自体は依然本人の感想待ち。クールダウンの長さ(5秒)自体も勘による選択で未検証。
+- **`runGameTestServer`はsession 49でも問題なく動作し続けている(累計7回目のstatus=ok)。** 安定して動いている実績が積み上がってきたので、`continue-on-error`を外して本当のゲートにするかの判断時期が近づいている(session 48からの持ち越し、引き続き検討事項)。session 50でpushした3コミットの検証結果(特に新規クライアント専用コードを含む雲修正コミット)がどう出るかも、この判断の材料にすること。
 
 ### コミット/プッシュ状況
 
-session 49(定期実行)は以下の1コミットをpush(§3AY-6参照):
-1. `114215e` Prismium Chronoflame新設(時間操作ブロック、`PrismiumChronoflameBlock`/`PrismiumChronoflameBlockItem`、テクスチャー、レジストリ登録、レシピ、lang)
+session 50(定期実行)は以下の3コミットをpush(§3AZ-5参照):
+1. `6ac92a9` Prism Realmの雲修正(`PrismRealmEffects`新設、`ClientModEvents#registerDimensionEffects`、dimension_type JSON変更)
+2. `5fa6b2c` Prismium Chronoflameへのper-playerクールダウン追加
+3. `b77579e` Prism Lily/Bramble/Vineの紫色染料クラフト対応(新規レシピ3件)
 
-push前に`git fetch origin main`を実行し、session 48後のCI副産物(`ci: update built jar`コミット`9d8fdb5`/`ci: update datapack validation results`コミット`5086750`)から進んでいない(=並行セッション無し)ことを確認してから、リベース不要でそのまま`git push origin main`。**今回はプロキシ回避策無しで一発成功**(§5項目14参照)。`ci: update built jar`(`ddb4f1c`)→`ci: update datapack validation results`(`7b30c42`、`status=ok`、対象コミット`114215e`)まで到着を確認済み。ビルドjarサイズが266594→271688バイトへ増加したことも確認し、新規クラス・テクスチャーが実際に取り込まれたことを裏付けた。
+push前に`git fetch origin main`を実行し、session 49後のCI副産物(`ci: update built jar`コミット`f1afc6b`/`ci: update datapack validation results`コミット`dcc1812`)から進んでいない(=並行セッション無し)ことを確認してから、リベース不要でそのまま`git push origin main`。**今回もプロキシ回避策無しで一発成功**(session 49に続き2回連続、§5項目14参照)。
+
+**【このPROGRESS.md更新中に追記】** PROGRESS.md本文執筆中に`git fetch`したところ、`ci: update built jar`(コミット`61e3074`)→`ci: update datapack validation results`(コミット`4883e69`、`status=ok`、対象コミット`b77579e`)の到着を確認できた。**つまり今回追加した`PrismRealmEffects`/`RegisterDimensionSpecialEffectsEvent`購読を含む3コミットは、コンパイルレベルでは問題なくビルドが通り、データパック検証(ヘッドレスサーバーのレジストリ読み込み)も`status=ok`だった。** これでこのMOD初のクライアント専用レンダリングAPI呼び出しがビルドを壊していないことは確認できたが、§00000で繰り返し書いている通り、これは「サーバーが起動できる」ことの確認に過ぎず、**雲が実際に消えて見えるかどうかの視覚的な確認はまだ無い**(引き続き次回最優先)。このPROGRESS.md更新コミット自体のCI結果は、次回セッション開始時に確認すること。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側の通知は今回1回のpushに対応する分がSecret設定済みであれば送信されているはず。
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側の通知は今回3回分のコミットに対応する分がSecret設定済みであれば送信されているはず(1回のpushで3コミットまとめてなので、CIの実行自体は1回のはず)。
