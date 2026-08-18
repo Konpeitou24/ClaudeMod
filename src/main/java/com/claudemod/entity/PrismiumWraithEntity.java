@@ -99,6 +99,28 @@ public class PrismiumWraithEntity extends Zombie {
     // default of true - see the javadoc above for why an override here was
     // tried and reverted.)
 
+    /**
+     * Session 47 (interactive session, repo owner request): without this
+     * override, a Prismium Wraith left fully submerged long enough would
+     * silently turn into a plain vanilla {@code Drowned} via inherited
+     * {@code Zombie} behaviour - {@code Zombie#doUnderWaterConversion()}
+     * normally calls {@code this.convertToZombieType(EntityType.DROWNED)}.
+     * {@code convertToZombieType} is {@code protected} on {@code Zombie}
+     * and does the actual entity swap generically (health/position/
+     * equipment/etc. all transfer to the new entity, same mechanism
+     * vanilla uses for Zombie-to-ZombieVillager and Husk-to-Zombie), so it
+     * can be redirected to any other {@code Zombie} subtype just by
+     * overriding this one method and calling it with a different target
+     * type - no need to reimplement the conversion machinery itself.
+     * Redirects to {@link PrismiumDeepWraithEntity} instead, so the Wraith
+     * stays visually/thematically "in-family" underwater rather than
+     * becoming a reskinned vanilla mob.
+     */
+    @Override
+    protected void doUnderWaterConversion() {
+        this.convertToZombieType(com.claudemod.registry.ModEntities.PRISMIUM_DEEP_WRAITH.get());
+    }
+
     @Override
     protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
         // Deliberately empty: a Prismium Wraith should never spawn holding

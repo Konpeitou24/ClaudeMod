@@ -6,6 +6,7 @@ import com.claudemod.client.screen.PrismiumGeneratorScreen;
 import com.claudemod.client.screen.PrismiumPylonScreen;
 import com.claudemod.client.screen.PrismiumRestorerScreen;
 import com.claudemod.client.screen.PrismiumWardstoneScreen;
+import com.claudemod.entity.client.PrismiumDeepWraithRenderer;
 import com.claudemod.entity.client.PrismiumWraithRenderer;
 import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModItems;
@@ -37,6 +38,8 @@ public class ClientModEvents {
     @SubscribeEvent
     public static void registerRenderers(EntityRenderersEvent.RegisterRenderers event) {
         event.registerEntityRenderer(ModEntities.PRISMIUM_WRAITH.get(), PrismiumWraithRenderer::new);
+        // Session 47: Prismium Deep Wraith, same registration pattern.
+        event.registerEntityRenderer(ModEntities.PRISMIUM_DEEP_WRAITH.get(), PrismiumDeepWraithRenderer::new);
     }
 
     @SubscribeEvent

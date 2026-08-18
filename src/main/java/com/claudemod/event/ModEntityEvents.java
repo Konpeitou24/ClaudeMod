@@ -42,6 +42,13 @@ public class ModEntityEvents {
     @SubscribeEvent
     public static void registerAttributes(EntityAttributeCreationEvent event) {
         event.put(ModEntities.PRISMIUM_WRAITH.get(), PrismiumWraithEntity.createAttributes().build());
+        // Session 47: Prismium Deep Wraith needs its own attribute supplier
+        // registered even though it is never naturally spawned - it is
+        // still a full LivingEntity constructed via
+        // PrismiumWraithEntity#doUnderWaterConversion (and by its spawn
+        // egg), and attempting to tick a living entity with no registered
+        // AttributeSupplier throws/crashes.
+        event.put(ModEntities.PRISMIUM_DEEP_WRAITH.get(), com.claudemod.entity.PrismiumDeepWraithEntity.createAttributes().build());
     }
 
     @SubscribeEvent

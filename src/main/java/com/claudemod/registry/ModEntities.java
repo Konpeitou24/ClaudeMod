@@ -1,6 +1,7 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.entity.PrismiumDeepWraithEntity;
 import com.claudemod.entity.PrismiumWraithEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -28,6 +29,20 @@ public class ModEntities {
                             .sized(0.6F, 1.95F)
                             .clientTrackingRange(8)
                             .build("prismium_wraith"));
+
+    // Session 47: Prismium Deep Wraith, the dedicated conversion target
+    // PrismiumWraithEntity#doUnderWaterConversion redirects to instead of
+    // vanilla Drowned. Same size as the land Wraith (same base body/model).
+    // Deliberately has no SpawnPlacementRegisterEvent registration (see
+    // ModEntityEvents) - it is never placed by natural chunk spawning, only
+    // by conversion (or its spawn egg), so a spawn placement predicate
+    // would never actually be consulted.
+    public static final RegistryObject<EntityType<PrismiumDeepWraithEntity>> PRISMIUM_DEEP_WRAITH =
+            ENTITY_TYPES.register("prismium_deep_wraith",
+                    () -> EntityType.Builder.of(PrismiumDeepWraithEntity::new, MobCategory.MONSTER)
+                            .sized(0.6F, 1.95F)
+                            .clientTrackingRange(8)
+                            .build("prismium_deep_wraith"));
 
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
