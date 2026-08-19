@@ -1,0 +1,6 @@
+{
+    "variants": {
+        "lit=false": { "model": "claudemod:block/prismium_smelter" },
+        "lit=true": { "model": "claudemod:block/prismium_smelter_lit" }
+    }
+}

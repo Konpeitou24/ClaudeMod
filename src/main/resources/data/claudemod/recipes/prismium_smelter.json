@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "I": { "item": "minecraft:iron_ingot" },
+        "P": { "item": "claudemod:prismium_shard" },
+        "F": { "item": "minecraft:furnace" }
+    },
+    "pattern": [
+        "IPI",
+        "PFP",
+        "IPI"
+    ],
+    "result": {
+        "item": "claudemod:prismium_smelter",
+        "count": 1
+    }
+}

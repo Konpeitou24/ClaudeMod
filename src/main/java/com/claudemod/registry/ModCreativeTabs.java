@@ -26,6 +26,7 @@ public class ModCreativeTabs {
                     .title(Component.translatable("itemGroup.claudemod.claudemod_tab"))
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.PRISMIUM_SHARD.get());
+                        output.accept(ModItems.PRISMIUM_INGOT.get()); // session 68
                         output.accept(ModItems.PRISMIUM_ORE_ITEM.get());
                         output.accept(ModItems.DEEPSLATE_PRISMIUM_ORE_ITEM.get());
                         output.accept(ModItems.PRISMIUM_STONE_ITEM.get()); // session 47
@@ -81,6 +82,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_MAGNET_CHARM.get()); // session 65
                         output.accept(ModItems.PRISMIUM_GEYSER_ITEM.get()); // session 66
                         output.accept(ModItems.PRISMIUM_PULVERIZER_ITEM.get()); // session 67
+                        output.accept(ModItems.PRISMIUM_SMELTER_ITEM.get()); // session 68
                     })
                     .build());
 

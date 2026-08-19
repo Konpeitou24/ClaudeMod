@@ -4,6 +4,7 @@ import com.claudemod.ClaudeMod;
 import com.claudemod.menu.PrismiumCellMenu;
 import com.claudemod.menu.PrismiumGeneratorMenu;
 import com.claudemod.menu.PrismiumPulverizerMenu;
+import com.claudemod.menu.PrismiumSmelterMenu;
 import com.claudemod.menu.PrismiumPylonMenu;
 import com.claudemod.menu.PrismiumRestorerMenu;
 import com.claudemod.menu.PrismiumWardstoneMenu;
@@ -99,6 +100,15 @@ public class ModMenuTypes {
             MENU_TYPES.register("prismium_pulverizer", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
                 BlockPos pos = extraData.readBlockPos();
                 return new PrismiumPulverizerMenu(windowId, inv, pos);
+            }));
+
+    /** Session 68: the mod's seventh GUI, see {@link PrismiumSmelterMenu}
+     * for why Smelter reuses Pulverizer's exact menu shape (second
+     * item-processing machine in the same production chain). */
+    public static final RegistryObject<MenuType<PrismiumSmelterMenu>> PRISMIUM_SMELTER_MENU =
+            MENU_TYPES.register("prismium_smelter", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
+                BlockPos pos = extraData.readBlockPos();
+                return new PrismiumSmelterMenu(windowId, inv, pos);
             }));
 
     public static void register(IEventBus eventBus) {

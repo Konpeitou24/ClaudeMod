@@ -14,6 +14,7 @@ import com.claudemod.block.PrismiumPortalBlock;
 import com.claudemod.block.PrismiumPulverizerBlock;
 import com.claudemod.block.PrismiumPylonBlock;
 import com.claudemod.block.PrismiumRestorerBlock;
+import com.claudemod.block.PrismiumSmelterBlock;
 import com.claudemod.block.PrismiumSnareBlock;
 import com.claudemod.block.PrismiumSpikeBlock;
 import com.claudemod.block.PrismiumWardstoneBlock;
@@ -316,6 +317,20 @@ public class ModBlocks {
     // better for something flickering on/off that quickly.
     public static final RegistryObject<Block> PRISMIUM_PULVERIZER = BLOCKS.register("prismium_pulverizer",
             () -> new PrismiumPulverizerBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 8 : 0)));
+
+    // Prismium Smelter (session 68): the mod's seventh GUI'd energy
+    // block and second item-processing machine - see
+    // PrismiumSmelterBlockEntity for why (Ore -> Shard -> Ingot chain).
+    // Same casing/strength/sound family as every other machine block;
+    // light level matches Pulverizer's active-glow treatment (8 while
+    // lit) since this block's LIT state toggles on the same per-
+    // operation cadence, not a steadier multi-second pulse.
+    public static final RegistryObject<Block> PRISMIUM_SMELTER = BLOCKS.register("prismium_smelter",
+            () -> new PrismiumSmelterBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_CYAN)
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)

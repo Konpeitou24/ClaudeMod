@@ -5,6 +5,7 @@ import com.claudemod.blockentity.PrismiumCableBlockEntity;
 import com.claudemod.blockentity.PrismiumCellBlockEntity;
 import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
 import com.claudemod.blockentity.PrismiumPulverizerBlockEntity;
+import com.claudemod.blockentity.PrismiumSmelterBlockEntity;
 import com.claudemod.blockentity.PrismiumPylonBlockEntity;
 import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
 import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
@@ -60,6 +61,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("prismium_pulverizer",
                     () -> BlockEntityType.Builder.of(PrismiumPulverizerBlockEntity::new,
                             ModBlocks.PRISMIUM_PULVERIZER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<PrismiumSmelterBlockEntity>> PRISMIUM_SMELTER =
+            BLOCK_ENTITIES.register("prismium_smelter",
+                    () -> BlockEntityType.Builder.of(PrismiumSmelterBlockEntity::new,
+                            ModBlocks.PRISMIUM_SMELTER.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

@@ -7,6 +7,7 @@ import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
 import com.claudemod.blockentity.PrismiumPylonBlockEntity;
 import com.claudemod.blockentity.PrismiumPulverizerBlockEntity;
 import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
+import com.claudemod.blockentity.PrismiumSmelterBlockEntity;
 import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
 import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
@@ -50,6 +51,15 @@ public class ModItems {
     // Raw crystal shard, the mod's first crafting resource. Mined from
     // Prismium Ore, will later fuel the Prismium Energy system.
     public static final RegistryObject<Item> PRISMIUM_SHARD = ITEMS.register("prismium_shard",
+            () -> new Item(new Item.Properties()));
+
+    // Prismium Ingot (session 68): the mod's first refined-material
+    // item, produced by Prismium Smelter from Prismium Shards - see
+    // PrismiumSmelterBlockEntity. Plain Item like PRISMIUM_SHARD; no
+    // crafting recipe consumes it yet this session (see PROGRESS.md),
+    // deliberately left as a forward-looking resource for a future
+    // session the same way PRISMIUM_SHARD itself once was.
+    public static final RegistryObject<Item> PRISMIUM_INGOT = ITEMS.register("prismium_ingot",
             () -> new Item(new Item.Properties()));
 
     public static final RegistryObject<Item> PRISMIUM_ORE_ITEM = ITEMS.register("prismium_ore",
@@ -319,6 +329,16 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_PULVERIZER_ITEM = ITEMS.register("prismium_pulverizer",
             () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_PULVERIZER.get(), new Item.Properties(),
                     PrismiumPulverizerBlockEntity.CAPACITY));
+
+    // Prismium Smelter (session 68): BlockItem for the mod's seventh FE
+    // consumer / second item-processing machine. See
+    // ModBlocks.PRISMIUM_SMELTER. Same EnergyStorageBlockItem
+    // persistence/tooltip treatment as every other Prismium Energy block
+    // - same known limitation as Pulverizer/Generator: only the "Energy"
+    // NBT key persists across break/place, not the input/output slots.
+    public static final RegistryObject<Item> PRISMIUM_SMELTER_ITEM = ITEMS.register("prismium_smelter",
+            () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_SMELTER.get(), new Item.Properties(),
+                    PrismiumSmelterBlockEntity.CAPACITY));
 
     // Prismium Featherstone (session 31): the mod's first purely passive
     // accessory - see PrismiumFeatherstoneItem / PrismiumFeatherstoneHandler.
