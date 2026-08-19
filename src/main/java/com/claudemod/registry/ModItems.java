@@ -348,6 +348,10 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_SNARE_ITEM = ITEMS.register("prismium_snare",
             () -> new BlockItem(ModBlocks.PRISMIUM_SNARE.get(), new Item.Properties()));
 
+    // Prismium Geyser (session 66): BlockItem for ModBlocks.PRISMIUM_GEYSER.
+    public static final RegistryObject<Item> PRISMIUM_GEYSER_ITEM = ITEMS.register("prismium_geyser",
+            () -> new BlockItem(ModBlocks.PRISMIUM_GEYSER.get(), new Item.Properties()));
+
     // Prismium Magnet Charm (session 65): the mod's fourth purely
     // passive accessory - see PrismiumMagnetCharmItem /
     // PrismiumMagnetCharmHandler. Same "stacks normally, presence-only"

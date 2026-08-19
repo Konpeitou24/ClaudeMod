@@ -79,6 +79,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_CHRONOFLAME_ITEM.get()); // session 49
                         output.accept(ModItems.PRISMIUM_SNARE_ITEM.get()); // session 64
                         output.accept(ModItems.PRISMIUM_MAGNET_CHARM.get()); // session 65
+                        output.accept(ModItems.PRISMIUM_GEYSER_ITEM.get()); // session 66
                     })
                     .build());
 

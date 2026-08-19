@@ -1,0 +1,8 @@
+{
+    "type": "forge:add_features",
+    "biomes": [
+        "claudemod:prism_realm"
+    ],
+    "features": "claudemod:prismium_geyser_placed",
+    "step": "vegetal_decoration"
+}

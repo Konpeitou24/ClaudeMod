@@ -9,6 +9,7 @@ import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
 import com.claudemod.block.PrismiumChronoflameBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
+import com.claudemod.block.PrismiumGeyserBlock;
 import com.claudemod.block.PrismiumPortalBlock;
 import com.claudemod.block.PrismiumPylonBlock;
 import com.claudemod.block.PrismiumRestorerBlock;
@@ -511,6 +512,26 @@ public class ModBlocks {
                     .instabreak()
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .noOcclusion()));
+
+    // Prismium Geyser (session 66): the mod's second "gimmick" block
+    // after Prismium Snare above, and the first with a positive/
+    // traversal-boosting effect (see PrismiumGeyserBlock class doc for
+    // the stepOn-vs-entityInside API rationale). A full, solid, walkable
+    // cube (unlike Snare's no-collision cross-quad) since stepOn needs an
+    // entity to actually be supported on top of the block. Strength/
+    // sound modeled on Prismium Core (a "built into the ground" utility
+    // block) rather than Lantern's hand-breakable stats, since a launch
+    // pad that's too easy to break defeats a "found this out in the
+    // world" discovery moment. Modest lightLevel (5) - noticeable but not
+    // meant to compete with Lantern (15) or Core (10) as a light source,
+    // this is a gimmick block first.
+    public static final RegistryObject<Block> PRISMIUM_GEYSER = BLOCKS.register("prismium_geyser",
+            () -> new PrismiumGeyserBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 8.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 5)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
