@@ -5,6 +5,7 @@ import com.claudemod.blockentity.PrismiumCableBlockEntity;
 import com.claudemod.blockentity.PrismiumCellBlockEntity;
 import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
 import com.claudemod.blockentity.PrismiumPylonBlockEntity;
+import com.claudemod.blockentity.PrismiumPulverizerBlockEntity;
 import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
 import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
 import com.claudemod.item.EnergyStorageBlockItem;
@@ -305,6 +306,19 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_WARDSTONE_ITEM = ITEMS.register("prismium_wardstone",
             () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_WARDSTONE.get(), new Item.Properties(),
                     PrismiumWardstoneBlockEntity.CAPACITY));
+
+    // Prismium Pulverizer (session 67): BlockItem for the mod's sixth FE
+    // consumer / first item-processing machine. See
+    // ModBlocks.PRISMIUM_PULVERIZER. Same EnergyStorageBlockItem
+    // persistence/tooltip treatment as every other Prismium Energy block
+    // - note this only persists the "Energy" NBT key (see that class's
+    // doc), not the input/output item slots, so items left in the
+    // Pulverizer's slots when it is broken are lost, exactly the same
+    // known limitation PrismiumGeneratorBlockEntity's fuel slot already
+    // has (never fixed there either - see PROGRESS.md).
+    public static final RegistryObject<Item> PRISMIUM_PULVERIZER_ITEM = ITEMS.register("prismium_pulverizer",
+            () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_PULVERIZER.get(), new Item.Properties(),
+                    PrismiumPulverizerBlockEntity.CAPACITY));
 
     // Prismium Featherstone (session 31): the mod's first purely passive
     // accessory - see PrismiumFeatherstoneItem / PrismiumFeatherstoneHandler.

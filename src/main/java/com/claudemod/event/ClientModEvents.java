@@ -5,6 +5,7 @@ import com.claudemod.client.ModKeyMappings;
 import com.claudemod.client.render.PrismRealmEffects;
 import com.claudemod.client.screen.PrismiumCellScreen;
 import com.claudemod.client.screen.PrismiumGeneratorScreen;
+import com.claudemod.client.screen.PrismiumPulverizerScreen;
 import com.claudemod.client.screen.PrismiumPylonScreen;
 import com.claudemod.client.screen.PrismiumRestorerScreen;
 import com.claudemod.client.screen.PrismiumWardstoneScreen;
@@ -92,6 +93,9 @@ public class ClientModEvents {
             // Session 27: fifth screen registration, same call - all five
             // energy blocks in the mod now have a GUI.
             MenuScreens.register(ModMenuTypes.PRISMIUM_WARDSTONE_MENU.get(), PrismiumWardstoneScreen::new);
+
+            // Session 67: sixth screen registration, same call.
+            MenuScreens.register(ModMenuTypes.PRISMIUM_PULVERIZER_MENU.get(), PrismiumPulverizerScreen::new);
 
             // Session 29: "pull"/"pulling" item-model property overrides
             // for Prismium Bow, mirroring vanilla's own registration for

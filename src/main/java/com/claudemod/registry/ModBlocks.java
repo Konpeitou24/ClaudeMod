@@ -11,6 +11,7 @@ import com.claudemod.block.PrismiumChronoflameBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
 import com.claudemod.block.PrismiumGeyserBlock;
 import com.claudemod.block.PrismiumPortalBlock;
+import com.claudemod.block.PrismiumPulverizerBlock;
 import com.claudemod.block.PrismiumPylonBlock;
 import com.claudemod.block.PrismiumRestorerBlock;
 import com.claudemod.block.PrismiumSnareBlock;
@@ -303,6 +304,22 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 10 : 0)));
+
+    // Prismium Pulverizer (session 67): the mod's sixth GUI'd energy
+    // block and first item-processing machine - see
+    // PrismiumPulverizerBlockEntity for why. Same casing
+    // strength/sound/mapColor family as every other machine block in
+    // this mod; light level matches Generator's active-glow treatment
+    // (8 while lit) rather than Wardstone/Pylon's steadier 10, since this
+    // block's LIT state toggles far more often (once per operation, not
+    // once per multi-second pulse) and a slightly dimmer glow reads
+    // better for something flickering on/off that quickly.
+    public static final RegistryObject<Block> PRISMIUM_PULVERIZER = BLOCKS.register("prismium_pulverizer",
+            () -> new PrismiumPulverizerBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 8 : 0)));
 
     // Chiseled Prismium Block (session 34): the mod's first purely
     // decorative masonry variant - no new mechanics, just a second look

@@ -3,6 +3,7 @@ package com.claudemod.registry;
 import com.claudemod.ClaudeMod;
 import com.claudemod.menu.PrismiumCellMenu;
 import com.claudemod.menu.PrismiumGeneratorMenu;
+import com.claudemod.menu.PrismiumPulverizerMenu;
 import com.claudemod.menu.PrismiumPylonMenu;
 import com.claudemod.menu.PrismiumRestorerMenu;
 import com.claudemod.menu.PrismiumWardstoneMenu;
@@ -87,6 +88,17 @@ public class ModMenuTypes {
             MENU_TYPES.register("prismium_wardstone", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
                 BlockPos pos = extraData.readBlockPos();
                 return new PrismiumWardstoneMenu(windowId, inv, pos);
+            }));
+
+    /** Session 67: the mod's sixth GUI, see {@link PrismiumPulverizerMenu}
+     * for why Pulverizer was picked next (first item-processing machine)
+     * and what's different from the other five menus (real item slots +
+     * a full player-inventory grid, none of which any earlier menu in
+     * this mod has). */
+    public static final RegistryObject<MenuType<PrismiumPulverizerMenu>> PRISMIUM_PULVERIZER_MENU =
+            MENU_TYPES.register("prismium_pulverizer", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
+                BlockPos pos = extraData.readBlockPos();
+                return new PrismiumPulverizerMenu(windowId, inv, pos);
             }));
 
     public static void register(IEventBus eventBus) {
