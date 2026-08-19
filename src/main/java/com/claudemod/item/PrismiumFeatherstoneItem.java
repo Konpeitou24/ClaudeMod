@@ -44,7 +44,6 @@ public class PrismiumFeatherstoneItem extends Item {
         // they do at all, which is a stronger version of #7's complaint
         // than the energy blocks already had. Same one-line gray hint
         // pattern, sourced from "<item translation key>.usage".
-        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
-                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        tooltip.add(TooltipUsageHelper.usageLine(this.getDescriptionId()));
     }
 }

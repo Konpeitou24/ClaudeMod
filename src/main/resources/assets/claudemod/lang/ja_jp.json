@@ -36,7 +36,7 @@
     "entity.claudemod.prismium_wraith": "プリズミウムレイス",
     "item.claudemod.prismium_wraith_spawn_egg": "プリズミウムレイスのスポーンエッグ",
     "item.claudemod.prismium_rift_shard": "プリズミウムのリフトシャード",
-    "item.claudemod.prismium_rift_shard.usage": "右クリックでプリズミウムディメンションへ転移する。ディメンション内で再度右クリックすると元の場所へ戻れる。プリズミウムの欠片x2 + エンダーパール + アメジストの欠片でクラフト可能。",
+    "item.claudemod.prismium_rift_shard.usage": "右クリックでプリズミウムディメンションへ転移する。ディメンション内で再度右クリックすると元の場所へ戻れる。",
     "message.claudemod.prismium_cell.status": "プリズミウムセル: %1$s / %2$s FE",
     "message.claudemod.prismium_cell.charged": "プリズミウムセルを充電した: %1$s / %2$s FE",
     "message.claudemod.prismium_cell.full": "プリズミウムセルは満タンです",
@@ -100,9 +100,9 @@
     "item.claudemod.prismium_sentinel_spawn_egg": "プリズミウム・センチネルのスポーンエッグ",
     "block.claudemod.prismium_stone": "プリズミウムストーン",
     "item.claudemod.prismium_rift_anchor": "プリズミウム・リフトアンカー",
-    "item.claudemod.prismium_rift_anchor.usage": "右クリックで現在地(どの次元でも可)にリスポーン地点を設定します。使用すると消費されます。プリズミウム・リフトシャード+エンダーアイ+プリズミウムの欠片2個で作成。",
+    "item.claudemod.prismium_rift_anchor.usage": "右クリックで現在地(どの次元でも可)にリスポーン地点を設定します。使用すると消費されます。",
     "block.claudemod.prismium_chronoflame": "プリズミウム・クロノフレイム",
-    "block.claudemod.prismium_chronoflame.usage": "時計を持って右クリックすると現在の次元の時刻を6時間進めます。時計を持ってしゃがみ+右クリックで6時間戻します。時計を持っていない状態でクリックしても何も起きません(誤操作防止)。クールダウン中は残り秒数が表示されます。破壊してもアイテムはドロップしません。時計+グロウストーンダスト2個+プリズミウムの欠片4個で作成。",
+    "block.claudemod.prismium_chronoflame.usage": "時計を持って右クリックすると現在の次元の時刻を6時間進めます。時計を持ってしゃがみ+右クリックで6時間戻します。時計を持っていない状態でクリックしても何も起きません(誤操作防止)。クールダウン中は残り秒数が表示されます。破壊してもアイテムはドロップしません。",
     "biome.claudemod.prism_realm": "プリズムレルム",
     "item.claudemod.prismium_pickaxe.usage": "プリズミウム鉱石を採掘すると25%の確率でプリズミウムの欠片を追加でドロップする。",
     "item.claudemod.prismium_axe.usage": "丸太を伐採すると20%の確率で同じ種類の丸太を追加でドロップする。",
@@ -124,5 +124,8 @@
     "gui.claudemod.generator_status_active": "発電中",
     "gui.claudemod.generator_status_full": "満タン(一時停止中)",
     "gui.claudemod.generator_status_no_fuel": "燃料切れ",
-    "message.claudemod.prismium_chronoflame.cooldown": "クロノフレイムはあと%1$s秒操作できません"
+    "message.claudemod.prismium_chronoflame.cooldown": "クロノフレイムはあと%1$s秒操作できません",
+    "key.categories.claudemod": "ClaudeMod",
+    "key.claudemod.show_details": "アイテム詳細を表示",
+    "tooltip.claudemod.hold_for_details": "%sを押しながら詳細を表示"
 }

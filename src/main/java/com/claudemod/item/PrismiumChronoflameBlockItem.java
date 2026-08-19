@@ -1,6 +1,5 @@
 package com.claudemod.item;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
@@ -33,7 +32,6 @@ public class PrismiumChronoflameBlockItem extends BlockItem {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
-        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
-                .withStyle(ChatFormatting.GRAY));
+        tooltip.add(TooltipUsageHelper.usageLine(this.getDescriptionId()));
     }
 }

@@ -1,6 +1,5 @@
 package com.claudemod.item;
 
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
@@ -72,8 +71,7 @@ public class PrismiumRiftAnchorItem extends Item {
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
-        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
-                .withStyle(ChatFormatting.GRAY));
+        tooltip.add(TooltipUsageHelper.usageLine(this.getDescriptionId()));
     }
 
     @Override

@@ -53,7 +53,6 @@ public class PrismiumGuardianCharmItem extends Item {
                                  java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
         // GitHub issue #7 (scheduled session): unlike the other three, this one requires being held in hand and is consumed on use - the hint text says so explicitly.
-        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
-                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        tooltip.add(TooltipUsageHelper.usageLine(this.getDescriptionId()));
     }
 }

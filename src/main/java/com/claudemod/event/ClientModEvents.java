@@ -1,6 +1,7 @@
 package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.client.ModKeyMappings;
 import com.claudemod.client.render.PrismRealmEffects;
 import com.claudemod.client.screen.PrismiumCellScreen;
 import com.claudemod.client.screen.PrismiumGeneratorScreen;
@@ -20,6 +21,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.RegisterDimensionSpecialEffectsEvent;
+import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
@@ -46,6 +48,18 @@ public class ClientModEvents {
         event.registerEntityRenderer(ModEntities.PRISMIUM_DEEP_WRAITH.get(), PrismiumDeepWraithRenderer::new);
         // Third mob (see PrismiumSentinelEntity's javadoc), same pattern.
         event.registerEntityRenderer(ModEntities.PRISMIUM_SENTINEL.get(), PrismiumSentinelRenderer::new);
+    }
+
+    @SubscribeEvent
+    public static void registerKeyMappings(RegisterKeyMappingsEvent event) {
+        // Session 60: this mod's first KeyMapping, see ModKeyMappings's
+        // javadoc for why (Issue #7 follow-up). API shape (this event
+        // fires on the mod bus, client logical side only, and simply
+        // wants event.register(mapping)) confirmed this session against
+        // Forge's own RegisterKeyMappingsEvent source (fetched via
+        // WebSearch/github.com), matching the registerRenderers/
+        // registerDimensionEffects pattern already used in this class.
+        event.register(ModKeyMappings.SHOW_ITEM_DETAILS);
     }
 
     @SubscribeEvent

@@ -71,8 +71,7 @@ public class EnergyStorageBlockItem extends BlockItem {
         // ja_jp.json) so every one of this class's six users (Cell,
         // Generator, Cable, Pylon, Restorer, Wardstone) gets a hint for
         // free without needing six separate Item subclasses.
-        tooltip.add(Component.translatable(this.getDescriptionId(stack) + ".usage")
-                .withStyle(ChatFormatting.GRAY));
+        tooltip.add(TooltipUsageHelper.usageLine(this.getDescriptionId(stack)));
         CompoundTag blockEntityTag = stack.getTagElement("BlockEntityTag");
         if (blockEntityTag == null || !blockEntityTag.contains("Energy")) {
             return;

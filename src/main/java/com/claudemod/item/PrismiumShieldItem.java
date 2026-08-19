@@ -122,7 +122,6 @@ public class PrismiumShieldItem extends Item {
         super.appendHoverText(stack, level, tooltip, flag);
         // GitHub issue #7 (scheduled session): same one-line gray hint
         // pattern as the other Prismium accessories/energy blocks.
-        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
-                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        tooltip.add(TooltipUsageHelper.usageLine(this.getDescriptionId()));
     }
 }

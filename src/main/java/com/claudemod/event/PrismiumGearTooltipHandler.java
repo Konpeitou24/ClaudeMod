@@ -2,9 +2,8 @@ package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.item.ModArmorMaterials;
+import com.claudemod.item.TooltipUsageHelper;
 import com.claudemod.registry.ModItems;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraftforge.event.entity.player.ItemTooltipEvent;
@@ -65,20 +64,19 @@ public class PrismiumGearTooltipHandler {
     @SubscribeEvent
     public static void onItemTooltip(ItemTooltipEvent event) {
         Item item = event.getItemStack().getItem();
-        String usageKey = null;
-
-        if (item == ModItems.PRISMIUM_PICKAXE.get()
+        boolean hasUsageHint = item == ModItems.PRISMIUM_PICKAXE.get()
                 || item == ModItems.PRISMIUM_AXE.get()
                 || item == ModItems.PRISMIUM_SHOVEL.get()
                 || item == ModItems.PRISMIUM_HOE.get()
-                || item == ModItems.PRISMIUM_SWORD.get()) {
-            usageKey = item.getDescriptionId(event.getItemStack()) + ".usage";
-        } else if (item instanceof ArmorItem armorItem && armorItem.getMaterial() == ModArmorMaterials.PRISMIUM) {
-            usageKey = item.getDescriptionId(event.getItemStack()) + ".usage";
-        }
+                || item == ModItems.PRISMIUM_SWORD.get()
+                || (item instanceof ArmorItem armorItem && armorItem.getMaterial() == ModArmorMaterials.PRISMIUM);
 
-        if (usageKey != null) {
-            event.getToolTip().add(Component.translatable(usageKey).withStyle(ChatFormatting.GRAY));
+        if (hasUsageHint) {
+            // Session 60: delegates to TooltipUsageHelper (which appends
+            // ".usage" itself) instead of building the translation key
+            // and ChatFormatting.GRAY styling inline - see that class's
+            // javadoc for why (Issue #7 "hold W for details" follow-up).
+            event.getToolTip().add(TooltipUsageHelper.usageLine(item.getDescriptionId(event.getItemStack())));
         }
     }
 }

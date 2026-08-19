@@ -33,7 +33,6 @@ public class PrismiumEmberguardItem extends Item {
                                  java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
         // GitHub issue #7 (scheduled session): same passive-accessory hint pattern as Featherstone.
-        tooltip.add(Component.translatable(this.getDescriptionId() + ".usage")
-                .withStyle(net.minecraft.ChatFormatting.GRAY));
+        tooltip.add(TooltipUsageHelper.usageLine(this.getDescriptionId()));
     }
 }

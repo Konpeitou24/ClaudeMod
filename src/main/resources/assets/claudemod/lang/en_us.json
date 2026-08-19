@@ -36,7 +36,7 @@
     "entity.claudemod.prismium_wraith": "Prismium Wraith",
     "item.claudemod.prismium_wraith_spawn_egg": "Prismium Wraith Spawn Egg",
     "item.claudemod.prismium_rift_shard": "Prismium Rift Shard",
-    "item.claudemod.prismium_rift_shard.usage": "Right-click to teleport to the Prism Realm; right-click again while there to return to where you left from. Crafted from 2 Prismium Shards + an Ender Pearl + an Amethyst Shard.",
+    "item.claudemod.prismium_rift_shard.usage": "Right-click to teleport to the Prism Realm; right-click again while there to return to where you left from.",
     "message.claudemod.prismium_cell.status": "Prismium Cell: %1$s / %2$s FE",
     "message.claudemod.prismium_cell.charged": "Charged Prismium Cell: %1$s / %2$s FE",
     "message.claudemod.prismium_cell.full": "Prismium Cell is already full",
@@ -100,9 +100,9 @@
     "item.claudemod.prismium_sentinel_spawn_egg": "Prismium Sentinel Spawn Egg",
     "block.claudemod.prismium_stone": "Prismium Stone",
     "item.claudemod.prismium_rift_anchor": "Prismium Rift Anchor",
-    "item.claudemod.prismium_rift_anchor.usage": "Right-click to set your respawn point at your current location, in any dimension. Consumed on use. Crafted from a Prismium Rift Shard + an Eye of Ender + 2 Prismium Shards.",
+    "item.claudemod.prismium_rift_anchor.usage": "Right-click to set your respawn point at your current location, in any dimension. Consumed on use.",
     "block.claudemod.prismium_chronoflame": "Prismium Chronoflame",
-    "block.claudemod.prismium_chronoflame.usage": "Hold a Clock and right-click to advance the current dimension's time by 6 hours; hold a Clock and sneak + right-click to rewind it by 6 hours. Clicking without a Clock in hand does nothing (prevents accidental triggers). Shows the remaining seconds while on cooldown. Does not drop itself when broken. Crafted from a Clock + 2 Glowstone Dust + 4 Prismium Shards.",
+    "block.claudemod.prismium_chronoflame.usage": "Hold a Clock and right-click to advance the current dimension's time by 6 hours; hold a Clock and sneak + right-click to rewind it by 6 hours. Clicking without a Clock in hand does nothing (prevents accidental triggers). Shows the remaining seconds while on cooldown. Does not drop itself when broken.",
     "biome.claudemod.prism_realm": "Prism Realm",
     "item.claudemod.prismium_pickaxe.usage": "Mining Prismium Ore has a 25% chance to drop an extra Prismium Shard.",
     "item.claudemod.prismium_axe.usage": "Chopping logs has a 20% chance to drop an extra log of the same kind.",
@@ -124,5 +124,8 @@
     "gui.claudemod.generator_status_active": "Generating",
     "gui.claudemod.generator_status_full": "Full (paused)",
     "gui.claudemod.generator_status_no_fuel": "Out of fuel",
-    "message.claudemod.prismium_chronoflame.cooldown": "Chronoflame can't be used again for %1$s more second(s)"
+    "message.claudemod.prismium_chronoflame.cooldown": "Chronoflame can't be used again for %1$s more second(s)",
+    "key.categories.claudemod": "ClaudeMod",
+    "key.claudemod.show_details": "Show Item Details",
+    "tooltip.claudemod.hold_for_details": "Hold %s for details"
 }
