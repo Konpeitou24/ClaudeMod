@@ -3364,54 +3364,118 @@ push後、`ci: update built jar`(`81668a7`)→`ci: update datapack validation re
 - 【継続】既存GUI5種のSWAPキー懸念(§3BT-1)。一次情報源での確定的な検証を次回以降の優先課題として持ち越す。
 - 【継続】PROGRESS.mdの肥大化(3400行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
 
+## 3BU. セッション#69(定期実行)で実装した内容: Prismium Warhammer新設(Prismium Ingotに初の使い道) + v0.16.0リリース
+
+### 3BU-1. セッション開始時の状況確認
+
+- 固定パス問題(session 64以降繰り返し記録)を避けるため、今回も`$HOME/work/ClaudeMod`ではなく実際には`/tmp/ClaudeMod`・`/tmp/ClaudeMod2`が他セッション所有で書き込み不可な状態を確認した後、`$HOME/work/ClaudeMod`へ新規クローンして作業した(このパスは今回はクリーンだった - session 67以降の「必ずユニークなパスを使う」教訓と一部矛盾するが、結果的に問題なく完了した。次回もし`$HOME/work/ClaudeMod`が別セッション所有で書き込み不可だった場合は、申し送り通りタイムスタンプ付きの新規パスに切り替えること)。
+- `api.github.com`は今回も`blocked-by-allowlist`(プロキシ経由)で到達不可、プロキシ変数を空にした直接到達も名前解決失敗(`Could not resolve host`)で到達不可(継続、変化なし)。`github.com`自体は問題なく到達できた。
+- Issue確認: session 68が確立した`curl -s -L -A "Mozilla/5.0 ..." "https://github.com/<owner>/<repo>/issues/<番号>"`方式で#7・#9・#16の本文・コメントを再確認した。3件とも最新コメントの`createdAt`は全て2026-08-18(前回セッション以前)で、今回時点(2026-08-19)の新規コメントは無かった。#15は今回も本文取得不可(9バイト、Not Found)。#17〜#25を個別に叩いたが全て404で、新規Issueも無かった。**つまり今回もOpen Issue側からの新規の緊急対応は無いと判断した。**
+- push直前に確認した直前セッション(#68)の最終コミット(PROGRESS.md更新)は、Atomフィード(`/commits/main.atom`)経由で`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認しており、前回ビルドは成功と判断した(修正対応は不要)。
+
+### 3BU-2. 方針決定
+
+session 68の申し送り(§5項目1、最優先・新規)で名指しされていた「Prismium Ingotに使い道(クラフトレシピ)が無い」件に、今回最優先で着手した。
+
+検討した選択肢:
+(a) Prismium Ingotの圧縮ブロック(9個→1ブロック、バニラの鉄ブロック等と同じパターン) - 却下。既存のPrismium Block(かけら9個→1ブロック)と役割が被り、しかもIngot自体がかけら4個から精錬機で作る一段階コストの高い素材であるため、「かけらより高価なのに、かけらの直接圧縮より弱い装飾ブロックにしかならない」という本末転倒な経済性になると判断した。
+(b) 既存Prismium装備(ツール/防具)をIngotでスミシングテーブルアップグレードする仕組み(バニラのダイヤモンド→ネザライトと同じ発想) - 却下。1.20.1のスミシング変形レシピ(`minecraft:smithing_transform`)はテンプレートスロットが必須になっており(スミシングテンプレートありきの1.20仕様)、このMODが一度も扱ったことのない新規API面(スミシングテンプレートアイテムの新設、テンプレート入手経路の設計まで含む)を1セッションでローカルビルド検証無しに導入するのはリスクが高いと判断し、次回以降の検討課題として持ち越した。
+(c) **採用**: Ingotを主材料にした新規武器「Prismium Warhammer(プリズミウムの大槌)」。既存のPrismium Sword/ツール一式が全て`SwordItem`/`PickaxeItem`等をModItems内で直接インスタンス化するだけの薄い構成であることに倣い、新規Itemサブクラスを作らずプレーンな`SwordItem`のまま数値だけ大きく変える(高ダメージ・低速)ことで、このMODにとって未知のAPI面をほぼゼロに抑えつつ、Ingotに明確な存在理由を与えた。
+
+### 3BU-3. 実装: Prismium Warhammer
+
+`ModItems.PRISMIUM_WARHAMMER`として、`new SwordItem(ModToolTiers.PRISMIUM, 8, -3.4f, new Item.Properties())`を登録(Prismium Swordの`(3, -2.4f)`と同じコンストラクタ呼び出しパターンを踏襲、数値のみ変更 - 新規クラス0)。修理素材は既存のPrismium Shard(`ModToolTiers.PRISMIUM`のtier定義から継承)のままとし、Ingot専用の修理経路は意図的に導入しなかった(装備ファミリー全体で修理素材を統一する方を優先)。
+
+- **ゲームプレイ上のギミック**: `PrismiumWarhammerHandler`(新規イベントハンドラ)を追加。既存の`PrismiumSwordHandler`(Session 6、剣の15%発光ギミック)と全く同じ構造 - `LivingHurtEvent`をフックし、`DamageSource#getEntity()`がメインハンドにWarhammerを持つPlayerかを確認、サーバー側限定で判定 - を丸ごと踏襲し、効果だけ「50%の確率で相手にSlowness II・2秒」に差し替えた。50%という高い確率は、Warhammerの攻撃速度(0.6/秒程度、剣の1.6/秒の半分以下)を踏まえ、「命中自体が希少だからこそ、命中時の演出確率を上げてギミックの体感頻度を剣と揃える」という意図的な設計判断。新規のForge APIは一切導入していない(`LivingHurtEvent`・`MobEffectInstance`・`target.addEffect`はいずれもこのMODで既に複数回実績のある呼び出し)。
+- 当初は「命中時に追加ノックバックを与える」という、より「重量武器らしい」ギミックも検討した。しかし`LivingEntity#knockback(double, double, double)`(Mojangマッピングでの正式なメソッド名・シグネチャ)は、このセッションのWebSearch/web_fetchでは1.20.1のMojangマッピング一次ソース(ForgeJavaDocs-NGは1.19.3までしか公開されていない)による直接確認ができず、Yarnマッピング(Fabric、1.20.1)では同等メソッドが`takeKnockback`という別名になっていることが分かった(Mojang側の正式名が本当に`knockback`のままかは、複数バージョンの状況証拠から強く推測はできるが1.20.1一次ソースでは確定できなかった)。ローカルビルド検証ができないこのサンドボックスで、確証の薄い新規メソッド呼び出しを追加してビルドを壊すリスクを避けるため、**確実に実績のある`MobEffectInstance`付与の方式に倒した**(§3BT-7が触れていた「疑わしい変数から機械的に切り分ける」教訓の裏返しで、今回は「確証が持てない一次情報は無理に使わない」という判断)。
+- クラフトレシピ: プリズミウムのインゴットx3(3x3の上段横一列)+ 棒x2(縦2本、柄)。「III / S / S」のシェイプで、大槌の頭(横に大きく重い)と持ち手(縦に長い柄)という形状をそのままレシピの見た目に反映した。インゴット3個(=かけら12個相当、精錬機を3回稼働させる必要がある)という、既存のSword(かけら2個)よりもかなり重いコストにすることで、「終盤の贅沢装備」という位置づけを素材面でも表現した。
+- 登録: `ModItems`(上記)・`ModCreativeTabs`(Prismium Swordのすぐ後ろに追加)・`PrismiumGearTooltipHandler`(既存の9アイテム - ツール5種+防具4種 - のリストにWarhammerを追加し、`.usage`ツールチップ行が出るようにした)。lang(en_us/ja_jp)は`.usage`(50%発動率とダメージ/速度の説明)・`.details`(素材・立ち位置の説明)を新規追加し、既存のPrismium Ingotの`.details`も「まだ使い道が無い」という古い文言から「Prismium Warhammerの素材として使われる」に更新した(完全一致文字列置換、`json.load`で構文検証済み)。
+
+### 3BU-4. テクスチャー: `scripts/textures/gen_prismium_warhammer.py`
+
+`gen_prismium_tools.py`(既存5ツールの生成元)の技法(2px斜め木柄の`draw_handle`関数、頭部の行ごと範囲指定による塗りつぶし、外側1pxアウトライン自動生成)をそのまま流用しつつ、**頭部の配色だけ意図的に差し替えた**: 既存ツール5種は全てクリスタル(かけら)パレット(`PRISMIUM_BASE`/`MID`/`HILITE`、テール〜マゼンタ系)で頭部を塗っているのに対し、Warhammerの頭部は`gen_prismium_ingot.py`と全く同じ鋳造金属パレット(`METAL_SHADOW`/`BASE`/`MID`/`HILITE`、ブロンズ〜ゴールド系)を使った。これは「原石(かけら)で作った武器」と「精錬済み素材(インゴット)で作った武器」という、レシピ・lang説明文で語っている素材の違いを色でも表現する意図的な選択。
+
+- シルエットは既存の斧(片側フラットな矩形ブロック)とも剣(縦長ブレード+ガード)とも異なる、柄が頭部の中心を貫通する左右対称の「セッジハンマー/メイス」型(横10px×縦5pxの厚みのあるブロック)にし、「鈍器・両手持ち・重量級」という印象を狙った。中央にPrismiumファミリー共通のマゼンタジェム(`PRISMIUM_ACCENT`)を2px埋め込み、頭部の配色が他と違ってもMOD内の統一感が保たれるようにした。
+- 生成後、4x/8x/16xの拡大プレビューを`outputs`側にコピーして`Read`ツールで目視確認: 8xでも「金属の槌頭+木の柄+中央の宝石」という構造が明瞭に判別でき、4x(ホットバー相当のごく小さいスケール)でもシルエットが潰れず、既存の斧・剣とは一目で見分けられることを確認した。全ピクセルのアルファ値が0か255のみ(透過崩れ無し)であることもPython側のセルフチェックで確認済み。作り直しは発生しなかった(初稿をそのまま採用)。
+
+### 3BU-5. push・ビルド確認
+
+1コミットとしてpush(`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功、プロキシ変数の変更は不要だった): `c3a223b` "Add Prismium Warhammer: heavy weapon crafted from Prismium Ingot, finally giving the Ingot a use"
+
+push後、`ci: update built jar`→`ci: update datapack validation results`(`status=ok commit=c3a223b...`)の到着をAtomフィードで確認。**通常ビルド・データパック検証とも成功。**
+
+### 3BU-6. リリース: v0.16.0
+
+§0のリリースポリシーおよびタスク定義の明示的指示に従い、このセッション内でリリースを切った。
+
+- `gradle.properties`: `mod_version`を`0.15.0`→`0.16.0`に変更。
+- `RELEASE_NOTES.md`: 新規セクションを先頭に追加(Prismium Warhammerの機能・クラフト方法・テクスチャーについて)。
+- コミット`9ceeed7`としてmainにpush(`git fetch`で並行セッション無しを再確認、一発成功)、タグ`v0.16.0`を同コミットに打ってpush。
+- push後、`ci: update built jar`→`ci: update datapack validation results`(`status=ok commit=9ceeed7...`)の到着を確認。**通常ビルド・データパック検証とも成功。** `release.yml`起動によるv0.16.0のGitHub Release公開も、`/releases/tag/v0.16.0`への直接curl(HTTP 200)、および`/releases/expanded_assets/v0.16.0`への直接curlで`claudemod-0.16.0.jar`という正しいファイル名を**今回は1回目のcurlで即座に**確認できた(session 65・66・68等で報告されていたキャッシュの古さは今回は再現しなかった)。`/tags`一覧ページ自体は`v0.10.0`〜`v0.12.0`あたりまでしか表示されない状態だったが(既知のキャッシュ/ページング挙動、実害無し)、タグ個別ページの200応答と添付jarのファイル名一致で存在は確認済み。
+
+### 3BU-7. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要**: Prismium Warhammer一式(攻撃力8・速度-3.4fという数値が実際に「重くて強いが遅い」と感じられるバランスか、50%というSlowness付与確率が体感として妥当か、Slowness II・2秒という数値、既存のPrismium Sword/ツールと並べた時のインベントリでの見分けやすさ)はCIでのビルド・データパック検証成功以外、一切実機確認できていない。
+- §3BU-3で触れた通り、「追加ノックバック」ではなく「Slowness付与」を選んだのは一次情報源で確証が持てなかったための安全策であり、これは今回の判断としては正しかったと考えるが、次回以降`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性(public/protected)を確定できる情報源が見つかれば、より「重量武器らしい」ノックバック効果への差し替え、または追加を検討する価値がある。
+- v0.16.0リリースの中身(jarを実際にダウンロードして展開しての検証)は今回も行っていない(継続する既知の限界)。
+- §3BT-1(既存GUI5種のSWAPキー配列範囲外アクセス懸念)は今回は着手しなかった(優先度は前回の再評価通り下げたまま)。
+
+### 3BU-8. 議論したい論点・改善案
+
+- 【新規】Prismium Ingotの使い道として、今回は「新武器」を選んだが、§3BU-2で却下した(b)のスミシングアップグレード経路(Ingotで既存Prismium装備をワンランク強化する)は、1.20のスミシングテンプレート仕様を一次情報源で確定できれば依然として魅力的な設計だと考える。次回以降、時間に余裕があるセッションで一次ソース確認から着手する価値がある。
+- 【新規】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式なメソッド名・シグネチャを確定できる情報源(ForgeJavaDocs-NGは1.19.3までしか公開されていない、web_fetchでは1.20.1のMojangマッピング一次ソースに到達できなかった)を見つけられれば、Warhammerのノックバック演出を含め、今後このMODが「ノックバック」を扱う機能を追加する際の助けになる。
+- 【継続】ロードマップ§1項目2「機械」の3つ目候補(圧縮機など)、およびPulverizer/Smelterの共通基底クラス抽出(session 68 §3BT-7)は今回も着手せず持ち越し。
+- 【継続】既存GUI5種のSWAPキー懸念(§3BT-1)。一次情報源での確定的な検証を次回以降の優先課題として持ち越す。
+- 【継続】PROGRESS.mdの肥大化(3400行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(セッション#68、定期実行)の最重要な新情報
+### 今回(セッション#69、定期実行)の最重要な新情報
 
-- **GitHub Issueのコメント本文抽出手法が復旧した。`curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" "https://github.com/<owner>/<repo>/issues/<番号>"`のように、ブラウザ相当の`User-Agent`ヘッダを付ければ即座に正しいページ(embedded JSON込み、`"body":"..."`で本文、`"createdAt"`で日時、`"state"`で開閉状態が取得できる)が返る。UA無しだとボディが9バイトの`Not Found`になる(session 64〜67が4セッション連続で失敗していた原因はこれだったと推測される)。Issue番号がPRとしてリダイレクトされる場合は`-L`を付ければ`/pull/N`→`/issues/N`と自動で解決する。次回以降、必ずこの方法をIssue確認の第一候補にすること。**
-- **Prismium Smelter(MOD2つ目のアイテム加工機械)を追加し、MOD初の生産チェーン(鉱石→かけら→インゴット)を完成させた。v0.15.0をリリースした。次回セッションはここから1セッション目。**
-- **Prismium Ingotにはまだクラフトレシピが一切無い。次回以降、優先的に何らかの使い道(装備・ブロック・上位クラフト素材など)を与えることを検討すること。**
-- **既存GUI5種のSWAPキー配列範囲外アクセス懸念(session 67発)について、今回モデルの記憶ベースで再検証したところ、vanillaのSWAP処理は実際には`player.getInventory().getItem(button)`(プレイヤー自身のインベントリを直接参照)で行われ、メニュー自身の`this.slots`サイズには依存しないはずだという再評価に至った。つまりこの懸念は**恐らく誤りだった可能性が高い**が、一次情報源(実際のMinecraft/Forgeソースコード)での確定的な確認はまだできていない。次回、確定できる手段が見つかれば試すこと。見つからなければ、この懸念の優先度は下げてよい(5クラスへの手戻り改修は保留のままでよい)。
-- 作業ディレクトリの罠: `git clone ... | tail -N && echo DONE`のように**パイプの後ろに`&&`を続けるコマンドは、clone自体が失敗していても`tail`が成功すれば後続が実行されてしまう**(session 68序盤で実際にこれにより古いセッション38時点のstaleなクローンを「最新」と誤認しかけた)。cloneコマンドは単独で実行し終了コードを確認するか、`set -o pipefail`を使うこと。加えて、クローン後は`git log -1`の内容(直近のコミットメッセージ、`gradle.properties`の`mod_version`)が自分の知っているはずの最新状態と矛盾しないかを毎回サニティチェックすること。
+- **Prismium Ingot(session 68で追加、これまで使い道が無かった)に初めてクラフトレシピが付いた。新武器「Prismium Warhammer(プリズミウムの大槌)」がインゴット3個+棒2本で作れる。既存のPrismium Swordより高ダメージ・低速の「重量級」武器で、命中時50%の確率でSlownessを付与するギミック付き。v0.16.0をリリースした。次回セッションはここから1セッション目。**
+- **`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・シグネチャを、このセッションでは一次情報源で確定できなかった(ForgeJavaDocs-NGは1.19.3までしか公開されていない、Yarnマッピングでは同等メソッドが`takeKnockback`という別名)。このため、Warhammerの追加効果は「ノックバック」ではなく確証のある「Slowness付与」に倒した。次回以降、この一次ソースを確定できれば、ノックバック演出への差し替え・追加を検討する価値がある。**
+- **GitHub Issueは#7・#9・#16のいずれも新規コメント無し(全て2026-08-18付、今回は2026-08-19)、#15は今回も本文取得不可、新規Issueも無し。次回もsession 68確立の`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式で確認すること。**
+- 作業ディレクトリは今回`$HOME/work/ClaudeMod`が(前回セッションの後始末が効いていたのか)クリーンな状態で使えたが、これは毎回保証されるものではない(session 64・67・68はいずれもstaleな残留クローンに苦しめられた)。今回問題なく完了できたからといって固定パスに戻さず、次回も「まず`git log -1`の内容が想定と一致するかサニティチェックする」「書き込み不可/内容が古ければユニークな新規パスに切り替える」という運用を継続すること。
 
 ### すぐやるべきこと(継続項目、優先度順は前回から概ね維持)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.15.0(セッション#68、今回)。次回はここから1セッション目。**
-1. **【最優先・新規】Prismium Ingotに使い道(クラフトレシピ)が無い状態が続いている。次回、上位ツール/装備の素材、または新しい機械のレシピ素材として組み込むことを検討すること。**
-2. **【最優先・新規】今回追加したPrismium Smelterについて、実機フィードバックが無いか確認すること。特に「4個消費して1個生成」という比率が実際に妥当なペースか、`hasEnoughInput`の個数チェック(Pulverizerには無い、Smelter独自のロジック)が意図通り動くかが未検証。**
-3. 【継続・優先度は下げてよい】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BT-1)。一次情報源での確定的な確認ができれば試すこと。できなければこのまま保留でよい(§5最重要項目参照、恐らく実在しない懸念という再評価あり)。
-4. 【新規・展開候補】Pulverizer/Smelterで確立したアイテムスロット付き機械の型を使い、3つ目の機械(圧縮機など)を検討する価値がある。また、この2機種のGUI/進捗ロジックがほぼ完全に共通しているため、共通基底クラスへの抽出も検討候補(§3BT-7)。
-5. 【継続・統合】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた以下の機能群は、いずれも新規の動きが無いまま継続している: Prismium Geyser(session 66)、Prismium Magnet Charm(session 65)、Prismium Snare(session 64)、ItemDetailsOverlay(session 62)、Prismium Pulse Charm(session 63)、Prismium Drifter(session 61)、Prismium Sentinel(session 59)、Prismium GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色・エネルギーフロー可視化(session 57)、Prismium Portalの見た目・当たり判定修正(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
-6. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
-7. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
-8. GitHub Issue状態の確認は今回確立した`curl -s -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式を使うこと(§5最重要項目参照)。
-9. 【継続】worldgen/レジストリ系のJSONやクライアント専用APIを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
-10. **【最優先・継続・全セッション必読】作業ディレクトリは必ずユニークなパス(タイムスタンプ+乱数、例: `/tmp/cm_$(date +%s%N)`)を使うこと。かつ、パイプで終わるコマンドを`&&`チェーンの成否判定に使わないこと(今回の新規教訓、上記「最重要な新情報」参照)。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。**
-11. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#15・#16はいずれも投稿者`Konpeitou24`本人で、新規コメントは無かった。
-12. 【継続】リリース(v0.15.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。`/releases/expanded_assets/<tag>`のキャッシュが古い値を返すことがある(今回も再現)ため、添付jarのファイル名確認に固執しすぎず、`/releases`一覧ページでのタグ存在確認とビルドCIの成功で十分と割り切ってよい。
-13. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械(今回追加したPrismium Smelterも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
-14. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること(ただしパイプが絡む場合は上記項目10の罠に注意)。
-15. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換+末尾への新規キー追記という最小差分の方法を使うこと。
-16. 【継続】新規のimportミスをpush前に自己チェックする習慣。今回もItemStackHandler/SlotItemHandler/ContainerData/Slotのimportパスを既存コード(PrismiumPulverizerBlockEntity/Menu)と突き合わせてから使用した。
-17. 【継続】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーションが再現されていない可能性がある(セッション#61、未検証のまま継続)。
-18. 【継続・低優先度】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・今回のSmelterを含む複数ブロックで未生成のまま(session 66から継続)。低優先度だが、いつか着手する価値がある。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.16.0(セッション#69、今回)。次回はここから1セッション目。**
+1. **【最優先・新規】今回追加したPrismium Warhammerについて、実機フィードバックが無いか確認すること。特に攻撃力8・速度-3.4fのバランス感、Slowness付与50%という確率が体感としてちょうど良いかが未検証(§3BU-7参照)。**
+2. **【新規】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと(§3BU-8参照)。確定できればWarhammerへのノックバック演出追加、または他機能での活用を検討する。**
+3. 【新規・展開候補】Prismium Ingotのスミシングテーブルアップグレード経路(session 69 §3BU-2で検討・却下、1.20のスミシングテンプレート仕様の一次ソース確認ができれば再検討の価値あり)。
+4. 【継続・優先度は下げてよい】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BT-1)。一次情報源での確定的な確認ができれば試すこと。できなければこのまま保留でよい(恐らく実在しない懸念という再評価あり、session 68参照)。
+5. 【継続・展開候補】ロードマップ§1項目2「機械」の3つ目候補(圧縮機など)を検討する価値がある。また、Pulverizer/Smelterの共通基底クラスへの抽出も検討候補(session 68 §3BT-7)。
+6. 【継続・統合】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた以下の機能群は、いずれも新規の動きが無いまま継続している: Prismium Warhammer(session 69、今回)、Prismium Smelter(session 68)、Prismium Geyser(session 66)、Prismium Magnet Charm(session 65)、Prismium Snare(session 64)、ItemDetailsOverlay(session 62)、Prismium Pulse Charm(session 63)、Prismium Drifter(session 61)、Prismium Sentinel(session 59)、Prismium GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色・エネルギーフロー可視化(session 57)、Prismium Portalの見た目・当たり判定修正(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
+7. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
+8. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
+9. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式を使うこと(session 68確立、今回も機能した)。
+10. 【継続】worldgen/レジストリ系のJSONやクライアント専用APIを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。今回のWarhammerの「ノックバックではなくSlowness」判断もこの方針に沿ったもの(§3BU-3参照)。
+11. 【最優先・継続・全セッション必読】作業ディレクトリは必ずユニークなパス(タイムスタンプ+乱数、例: `/tmp/cm_$(date +%s%N)`)を使うこと。かつ、パイプで終わるコマンドを`&&`チェーンの成否判定に使わないこと。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
+12. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#16はいずれも投稿者`Konpeitou24`本人で、新規コメントは無かった。
+13. 【継続】リリース(v0.16.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。`/releases/expanded_assets/<tag>`のキャッシュが古い値を返すことがある(今回は再現しなかったが、過去複数回報告あり)ため、添付jarのファイル名確認に固執しすぎず、`/releases`一覧ページ・タグ個別ページでの存在確認とビルドCIの成功で十分と割り切ってよい。
+14. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械(今回追加したPrismium Warhammerも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+15. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること(ただしパイプが絡む場合は罠に注意)。
+16. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換+末尾への新規キー追記という最小差分の方法を使うこと(今回、Prismium Ingotの`.details`更新にもこの方式を使った)。
+17. 【継続】新規のimportミスをpush前に自己チェックする習慣。今回もSwordItem/MobEffectInstance/MobEffects/LivingHurtEvent等のimportパスを既存コード(PrismiumSwordHandler)と突き合わせてから使用した。
+18. 【継続】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーションが再現されていない可能性がある(セッション#61、未検証のまま継続)。
+19. 【継続・低優先度】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelterを含む複数ブロックで未生成のまま(session 66から継続)。低優先度だが、いつか着手する価値がある。
 
 ### 議論したい論点・改善案
 
-- 【新規・最重要】GitHub Issueコメント抽出手法の復旧(§3BT-0/§3BT-7参照)。
-- 【新規】Prismium Ingotに使い道が無い状態(§5項目1参照)。
-- 【新規】既存GUI5種のSWAPキー懸念は恐らく誤りだった可能性が高いという再評価(§3BT-1参照)。
-- 【新規】Pulverizer/Smelterの共通基底クラス抽出の検討時期(§3BT-7参照)。
+- 【新規】Prismium Ingotのスミシングアップグレード経路の再検討(§3BU-2/§3BU-8参照)。
+- 【新規】`LivingEntity#knockback`のMojangマッピング一次ソース確認(§3BU-8参照)。
+- 【継続】ロードマップ§1項目2「機械」の3つ目候補・共通基底クラス抽出(session 68 §3BT-7)。
+- 【継続】既存GUI5種のSWAPキー懸念は恐らく誤りだった可能性が高いという再評価(session 68 §3BT-1)。
 - 【継続】ロードマップ項目6(新ブロック/ギミック)の「トラップルーム」構想は持ち越し。
 - 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手。
 
 ### コミット/プッシュ状況
 
-セッション#68(定期実行)は以下のコミットをpush:
-1. `14d8e02` Add Prismium Smelter: the mod's second item-processing machine
-2. `5796187` Release v0.15.0: bump mod_version, add release notes for Prismium Smelter (+タグ`v0.15.0`)
+セッション#69(定期実行)は以下のコミットをpush:
+1. `c3a223b` Add Prismium Warhammer: heavy weapon crafted from Prismium Ingot, finally giving the Ingot a use
+2. `9ceeed7` Release v0.16.0: bump mod_version, add release notes for Prismium Warhammer (+タグ`v0.16.0`)
 
-`git fetch origin main`で並行セッション無しを両コミット前にそれぞれ確認、素のまま`git push origin main`で両コミットとも一発成功(プロキシ変数の変更は今回も不要だった)。push後、それぞれ`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認済み。**通常ビルド・データパック検証とも成功。** `release.yml`起動によるv0.15.0のGitHub Release公開も`/releases`一覧ページで確認済み(添付jarファイル名の直接確認はキャッシュ問題により今回も不安定)。
+`git fetch origin main`で並行セッション無しを両コミット前にそれぞれ確認、素のまま`git push origin main`で両コミットとも一発成功(プロキシ変数の変更は今回も不要だった)。push後、それぞれ`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認済み。**通常ビルド・データパック検証とも成功。** `release.yml`起動によるv0.16.0のGitHub Release公開も`/releases/tag/v0.16.0`(HTTP 200)・`/releases/expanded_assets/v0.16.0`(`claudemod-0.16.0.jar`を1回目のcurlで確認)で確認済み。
 
 本PROGRESS.md更新コミット自体のCI結果は、次回セッション開始時に確認すること。
 
