@@ -69,6 +69,7 @@ public class PrismiumGearTooltipHandler {
                 || item == ModItems.PRISMIUM_SHOVEL.get()
                 || item == ModItems.PRISMIUM_HOE.get()
                 || item == ModItems.PRISMIUM_SWORD.get()
+                || item == ModItems.PRISMIUM_WARHAMMER.get() // session 69
                 || (item instanceof ArmorItem armorItem && armorItem.getMaterial() == ModArmorMaterials.PRISMIUM);
 
         if (hasUsageHint) {

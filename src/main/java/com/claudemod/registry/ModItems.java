@@ -160,6 +160,22 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_SWORD = ITEMS.register("prismium_sword",
             () -> new SwordItem(ModToolTiers.PRISMIUM, 3, -2.4f, new Item.Properties()));
 
+    // Prismium Warhammer (session 69, scheduled): the mod's first item
+    // crafted from Prismium Ingot (see PRISMIUM_INGOT above - added
+    // session 68 with no recipe using it until now). A plain SwordItem
+    // like PRISMIUM_SWORD (no dedicated Item subclass), just with much
+    // higher damage / much slower speed to read as a heavy two-handed
+    // hammer rather than a reskinned sword. Its on-hit stagger gimmick
+    // lives entirely in PrismiumWarhammerHandler, mirroring how
+    // PRISMIUM_SWORD's Glowing gimmick lives in PrismiumSwordHandler.
+    // Repaired with Prismium Shard (inherited from ModToolTiers.PRISMIUM,
+    // same as every other Prismium tool) even though it is crafted from
+    // Ingot - keeps repair consistent across the whole tool family rather
+    // than introducing a second, Ingot-based repair path for just one
+    // item.
+    public static final RegistryObject<Item> PRISMIUM_WARHAMMER = ITEMS.register("prismium_warhammer",
+            () -> new SwordItem(ModToolTiers.PRISMIUM, 8, -3.4f, new Item.Properties()));
+
     // Prismium armor set (session 3): defense sits at diamond/netherite
     // parity by design (no flat armor-value power creep), but with higher
     // durability, toughness, knockback resistance and enchantability. See
