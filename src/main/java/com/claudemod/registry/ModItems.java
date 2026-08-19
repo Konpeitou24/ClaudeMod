@@ -231,6 +231,13 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_DEEP_WRAITH_SPAWN_EGG = ITEMS.register("prismium_deep_wraith_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_DEEP_WRAITH, 0x1c3548, 0x7cffb8, new Item.Properties()));
 
+    // Third mob (see PrismiumSentinelEntity's javadoc): ivory/gold egg
+    // colors matching scripts/textures/gen_prismium_sentinel.py's new
+    // FRAME_BASE/PRISMIUM_ACCENT palette, so this egg reads as visibly
+    // distinct from the Wraith pair's in the creative inventory.
+    public static final RegistryObject<Item> PRISMIUM_SENTINEL_SPAWN_EGG = ITEMS.register("prismium_sentinel_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_SENTINEL, 0xb8ac94, 0xffd37c, new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));
 

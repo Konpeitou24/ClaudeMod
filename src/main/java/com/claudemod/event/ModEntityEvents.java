@@ -49,11 +49,24 @@ public class ModEntityEvents {
         // egg), and attempting to tick a living entity with no registered
         // AttributeSupplier throws/crashes.
         event.put(ModEntities.PRISMIUM_DEEP_WRAITH.get(), com.claudemod.entity.PrismiumDeepWraithEntity.createAttributes().build());
+        // Third mob (see PrismiumSentinelEntity's javadoc) - same
+        // requirement, a registered AttributeSupplier is needed before
+        // this LivingEntity subtype can even be constructed.
+        event.put(ModEntities.PRISMIUM_SENTINEL.get(), com.claudemod.entity.PrismiumSentinelEntity.createAttributes().build());
     }
 
     @SubscribeEvent
     public static void registerSpawnPlacement(SpawnPlacementRegisterEvent event) {
         event.register(ModEntities.PRISMIUM_WRAITH.get(), SpawnPlacements.Type.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules,
+                SpawnPlacementRegisterEvent.Operation.REPLACE);
+        // Third mob: same standard monster spawn-rule predicate (dark
+        // enough, valid mob-spawn light level) as Wraith - actually
+        // placing it in the world is handled separately, data-driven, via
+        // data/claudemod/forge/biome_modifier/add_prismium_sentinel_spawn_realm.json
+        // (Prism Realm only, unlike Wraith which also spawns in the
+        // overworld - see that file for why).
+        event.register(ModEntities.PRISMIUM_SENTINEL.get(), SpawnPlacements.Type.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules,
                 SpawnPlacementRegisterEvent.Operation.REPLACE);
     }

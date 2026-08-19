@@ -2,6 +2,7 @@ package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.entity.PrismiumDeepWraithEntity;
+import com.claudemod.entity.PrismiumSentinelEntity;
 import com.claudemod.entity.PrismiumWraithEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -43,6 +44,17 @@ public class ModEntities {
                             .sized(0.6F, 1.95F)
                             .clientTrackingRange(8)
                             .build("prismium_deep_wraith"));
+
+    // Third mob, first ranged attacker (see PrismiumSentinelEntity's
+    // javadoc): same size class as Skeleton (0.6x1.99) rather than the
+    // Wraith pair's Zombie-derived 0.6x1.95, matching what it actually
+    // extends.
+    public static final RegistryObject<EntityType<PrismiumSentinelEntity>> PRISMIUM_SENTINEL =
+            ENTITY_TYPES.register("prismium_sentinel",
+                    () -> EntityType.Builder.of(PrismiumSentinelEntity::new, MobCategory.MONSTER)
+                            .sized(0.6F, 1.99F)
+                            .clientTrackingRange(8)
+                            .build("prismium_sentinel"));
 
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
