@@ -238,6 +238,15 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_SENTINEL_SPAWN_EGG = ITEMS.register("prismium_sentinel_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_SENTINEL, 0xb8ac94, 0xffd37c, new Item.Properties()));
 
+    // Fourth mob (see PrismiumDrifterEntity's javadoc): dark violet base
+    // (same family as the Wraith egg's 0x2b1033) with the mod's
+    // established cyan PRISMIUM_ACCENT (0x39e6d6) as the spot color, so
+    // it reads as part of the Prismium family while still being a
+    // visibly distinct egg (spots, not base, carry the "family" color
+    // this time) next to the other three in creative.
+    public static final RegistryObject<Item> PRISMIUM_DRIFTER_SPAWN_EGG = ITEMS.register("prismium_drifter_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_DRIFTER, 0x2b1033, 0x39e6d6, new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));
 

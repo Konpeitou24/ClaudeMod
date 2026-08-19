@@ -3,6 +3,7 @@ package com.claudemod.event;
 import com.claudemod.ClaudeMod;
 import com.claudemod.entity.PrismiumWraithEntity;
 import com.claudemod.registry.ModEntities;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.entity.SpawnPlacements;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.level.levelgen.Heightmap;
@@ -53,6 +54,10 @@ public class ModEntityEvents {
         // requirement, a registered AttributeSupplier is needed before
         // this LivingEntity subtype can even be constructed.
         event.put(ModEntities.PRISMIUM_SENTINEL.get(), com.claudemod.entity.PrismiumSentinelEntity.createAttributes().build());
+        // Fourth mob (see PrismiumDrifterEntity's javadoc) - same
+        // requirement as every prior mob, a registered AttributeSupplier
+        // is needed before this LivingEntity subtype can be constructed.
+        event.put(ModEntities.PRISMIUM_DRIFTER.get(), com.claudemod.entity.PrismiumDrifterEntity.createAttributes().build());
     }
 
     @SubscribeEvent
@@ -68,6 +73,21 @@ public class ModEntityEvents {
         // overworld - see that file for why).
         event.register(ModEntities.PRISMIUM_SENTINEL.get(), SpawnPlacements.Type.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES, Monster::checkMonsterSpawnRules,
+                SpawnPlacementRegisterEvent.Operation.REPLACE);
+        // Fourth mob (see PrismiumDrifterEntity's javadoc): first
+        // IN_WATER spawn placement this mod has ever registered. Rather
+        // than guess at vanilla Squid's own internal spawn-rule helper
+        // method name/signature (unverifiable from this sandbox, see
+        // PROGRESS.md's recurring "confirm API shape before using it"
+        // rule), this uses a small inline predicate that only checks the
+        // fluid at the candidate position (and the block above it) is
+        // water - deliberately simple and self-contained rather than
+        // depending on an assumed vanilla helper.
+        event.register(ModEntities.PRISMIUM_DRIFTER.get(), SpawnPlacements.Type.IN_WATER,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (type, level, spawnType, pos, random) ->
+                        level.getFluidState(pos).is(FluidTags.WATER)
+                                && level.getFluidState(pos.above()).is(FluidTags.WATER),
                 SpawnPlacementRegisterEvent.Operation.REPLACE);
     }
 }

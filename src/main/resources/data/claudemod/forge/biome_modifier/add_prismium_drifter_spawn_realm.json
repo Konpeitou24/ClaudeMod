@@ -1,0 +1,12 @@
+{
+    "type": "forge:add_spawns",
+    "biomes": [
+        "claudemod:prism_realm"
+    ],
+    "spawners": {
+        "type": "claudemod:prismium_drifter",
+        "weight": 12,
+        "minCount": 1,
+        "maxCount": 3
+    }
+}

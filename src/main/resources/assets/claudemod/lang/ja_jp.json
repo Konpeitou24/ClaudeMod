@@ -98,6 +98,8 @@
     "item.claudemod.prismium_deep_wraith_spawn_egg": "プリズミウム・ディープレイスのスポーンエッグ",
     "entity.claudemod.prismium_sentinel": "プリズミウム・センチネル",
     "item.claudemod.prismium_sentinel_spawn_egg": "プリズミウム・センチネルのスポーンエッグ",
+    "entity.claudemod.prismium_drifter": "プリズミウム・ドリフター",
+    "item.claudemod.prismium_drifter_spawn_egg": "プリズミウム・ドリフターのスポーンエッグ",
     "block.claudemod.prismium_stone": "プリズミウムストーン",
     "item.claudemod.prismium_rift_anchor": "プリズミウム・リフトアンカー",
     "item.claudemod.prismium_rift_anchor.usage": "右クリックで現在地(どの次元でも可)にリスポーン地点を設定します。使用すると消費されます。",

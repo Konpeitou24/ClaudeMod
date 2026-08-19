@@ -2,6 +2,7 @@ package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.entity.PrismiumDeepWraithEntity;
+import com.claudemod.entity.PrismiumDrifterEntity;
 import com.claudemod.entity.PrismiumSentinelEntity;
 import com.claudemod.entity.PrismiumWraithEntity;
 import net.minecraft.world.entity.EntityType;
@@ -55,6 +56,18 @@ public class ModEntities {
                             .sized(0.6F, 1.99F)
                             .clientTrackingRange(8)
                             .build("prismium_sentinel"));
+
+    // Fourth mob, first non-combat/environmental entity (see
+    // PrismiumDrifterEntity's javadoc). MobCategory.WATER_CREATURE and the
+    // 0.8x0.8 size both match vanilla Squid's own registration (confirmed
+    // against the Minecraft Wiki's Squid page this session, since this mod
+    // has never registered a water-category entity before).
+    public static final RegistryObject<EntityType<PrismiumDrifterEntity>> PRISMIUM_DRIFTER =
+            ENTITY_TYPES.register("prismium_drifter",
+                    () -> EntityType.Builder.of(PrismiumDrifterEntity::new, MobCategory.WATER_CREATURE)
+                            .sized(0.8F, 0.8F)
+                            .clientTrackingRange(8)
+                            .build("prismium_drifter"));
 
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
