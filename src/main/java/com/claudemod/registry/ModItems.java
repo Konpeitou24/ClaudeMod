@@ -17,6 +17,7 @@ import com.claudemod.item.PrismiumFeatherstoneItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumGuardianCharmItem;
 import com.claudemod.item.PrismiumLocatorItem;
+import com.claudemod.item.PrismiumMagnetCharmItem;
 import com.claudemod.item.PrismiumPulseCharmItem;
 import com.claudemod.item.PrismiumRiftAnchorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
@@ -346,6 +347,13 @@ public class ModItems {
     // class doc for the mod's first gimmick/trap block.
     public static final RegistryObject<Item> PRISMIUM_SNARE_ITEM = ITEMS.register("prismium_snare",
             () -> new BlockItem(ModBlocks.PRISMIUM_SNARE.get(), new Item.Properties()));
+
+    // Prismium Magnet Charm (session 65): the mod's fourth purely
+    // passive accessory - see PrismiumMagnetCharmItem /
+    // PrismiumMagnetCharmHandler. Same "stacks normally, presence-only"
+    // treatment as Featherstone/Emberguard/Vitastone.
+    public static final RegistryObject<Item> PRISMIUM_MAGNET_CHARM = ITEMS.register("prismium_magnet_charm",
+            () -> new PrismiumMagnetCharmItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

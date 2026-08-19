@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "N": { "item": "minecraft:iron_nugget" },
+        "R": { "item": "minecraft:redstone" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        "NRN",
+        "RSR",
+        "NRN"
+    ],
+    "result": {
+        "item": "claudemod:prismium_magnet_charm",
+        "count": 1
+    }
+}
