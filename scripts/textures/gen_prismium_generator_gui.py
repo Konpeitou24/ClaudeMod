@@ -26,6 +26,10 @@ frame, not here - same split responsibility as Cell's energy bar):
   BAR_HEIGHT there), positioned lower than Cell's own bar to leave room
   for the flame gauge above it.
 
+Session 58 addition: a recessed 18x18 fuel-slot socket at (152, 8),
+the panel's first-ever item slot (see PrismiumGeneratorMenu's matching
+SlotItemHandler position and PrismiumGeneratorBlockEntity.fuelInventory).
+
 Deterministic, no randomness. Run from repo root:
 python3 scripts/textures/gen_prismium_generator_gui.py
 """
@@ -90,6 +94,33 @@ def build_panel():
     # Separator line between the two gauge zones and the bottom FE-text
     # zone, echoing Cell's panel structure.
     draw.line([(x0 + 6, bar_y + bar_h + 8), (x1 - 6, bar_y + bar_h + 8)], fill=hexrgb(CASING_DARK) + (255,))
+
+    # Fuel slot (session 58, GitHub issue #15 comment - see
+    # PrismiumGeneratorMenu's Slot at the same (152, 8) coordinates and
+    # PrismiumGeneratorBlockEntity.fuelInventory's doc). Standard 18x18
+    # vanilla slot footprint so vanilla's own item-icon rendering (drawn
+    # by AbstractContainerScreen, not this script) lines up exactly.
+    # Recessed look built from this panel's own palette rather than
+    # vanilla's gray, so it reads as part of this GUI rather than a
+    # pasted-in vanilla widget: medium CASING_DARK fill (kept lighter than
+    # the near-black gauge tracks above so item icons stay readable
+    # against it, unlike TRACK_DARK/EMBER_TRACK_DARK which are deliberately
+    # near-black to contrast against their *bright* progress fills), a
+    # 1px TRACK_DARK shadow on the top+left edge and a 1px CASING_HILITE
+    # highlight on the bottom+right edge - the same "light from the
+    # top-left, recessed pocket" language the panel's own outer bevel
+    # already establishes (see the two draw.line calls right after the
+    # outline loop above), just inverted since a *recessed* slot is dark
+    # on the side facing the light and bright on the side away from it.
+    slot_x, slot_y, slot_size = 152, 8, 18
+    draw.rectangle([slot_x, slot_y, slot_x + slot_size - 1, slot_y + slot_size - 1],
+                    fill=hexrgb(CASING_DARK) + (255,))
+    draw.line([(slot_x, slot_y), (slot_x + slot_size - 1, slot_y)], fill=hexrgb(TRACK_DARK) + (255,))
+    draw.line([(slot_x, slot_y), (slot_x, slot_y + slot_size - 1)], fill=hexrgb(TRACK_DARK) + (255,))
+    draw.line([(slot_x + slot_size - 1, slot_y), (slot_x + slot_size - 1, slot_y + slot_size - 1)],
+               fill=hexrgb(CASING_HILITE) + (255,))
+    draw.line([(slot_x, slot_y + slot_size - 1), (slot_x + slot_size - 1, slot_y + slot_size - 1)],
+               fill=hexrgb(CASING_HILITE) + (255,))
 
     return img
 

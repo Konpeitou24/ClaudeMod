@@ -37,13 +37,18 @@ import javax.annotation.Nullable;
  * texture and a glowing active one, and the player-facing fuel/status
  * interaction.
  *
- * <p>Right-click with an empty hand: report remaining fuel (seconds) and
- * current/max buffered FE via an action-bar message - the only way to
- * observe this block entity's state in-game, no GUI exists yet (same
- * situation as Prismium Cell).
+ * <p>Right-click with an empty hand: opens this block entity's GUI (see
+ * {@link com.claudemod.client.screen.PrismiumGeneratorScreen}), which as
+ * of session 58 includes a real fuel-input slot in addition to its
+ * existing status gauges - see
+ * {@link PrismiumGeneratorBlockEntity#getFuelInventory()}'s doc.
  * Right-click holding a Prismium Shard: consume one shard and add
  * {@link PrismiumGeneratorBlockEntity#BURN_TIME_PER_SHARD} ticks of burn
- * time (stacks with any burn time already remaining, like furnace fuel).
+ * time immediately (stacks with any burn time already remaining, like
+ * furnace fuel). Unchanged since session 9 and still the fastest way to
+ * top off a generator by hand; the GUI's fuel slot (session 58) is a
+ * second, additive way to queue several shards at once for unattended
+ * auto-feeding instead.
  */
 public class PrismiumGeneratorBlock extends BaseEntityBlock {
 

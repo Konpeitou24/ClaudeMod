@@ -18,7 +18,7 @@
     "block.claudemod.prismium_cell": "プリズミウムセル",
     "block.claudemod.prismium_cell.usage": "空手で右クリックするとGUIが開く。プリズミウムの欠片を持って右クリックすると直接充電できる。プリズミウム発電機やケーブルの隣に置くと自動で充電される。",
     "block.claudemod.prismium_generator": "プリズミウム発電機",
-    "block.claudemod.prismium_generator.usage": "プリズミウムの欠片を持って右クリックすると燃料を投入できる。燃焼中はゆっくりFEを発電し、隣接するエネルギーブロックへ自動送電する。",
+    "block.claudemod.prismium_generator.usage": "プリズミウムの欠片を持って右クリックすると即座に燃料を投入できる。GUIの燃料スロットに欠片を入れておけば1個ずつ自動で投入される。燃焼中はゆっくりFEを発電し、隣接するエネルギーブロックへ自動送電する。",
     "block.claudemod.prismium_cable": "プリズミウムケーブル",
     "block.claudemod.prismium_cable.usage": "エネルギーブロック同士の間に設置すると、FEを自動で中継する。",
     "item.claudemod.prismium_shard": "プリズミウムの欠片",

@@ -11,15 +11,24 @@ import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.item.ItemStack;
+import net.minecraftforge.items.ItemStackHandler;
+import net.minecraftforge.items.SlotItemHandler;
 
 /**
  * Menu for Prismium Generator's GUI (session 24), the mod's second block
  * to get one after Prismium Cell (session 23, see
  * {@link com.claudemod.menu.PrismiumCellMenu} for the pattern this class
- * follows almost verbatim: zero {@link net.minecraft.world.inventory.Slot}s,
- * a pure status display, fuel is still added by right-clicking the block
- * with a Prismium Shard exactly as before - see
- * {@link com.claudemod.block.PrismiumGeneratorBlock#use}).
+ * originally followed almost verbatim: zero {@link net.minecraft.world.inventory.Slot}s,
+ * a pure status display, fuel added only by right-clicking the block with
+ * a Prismium Shard - see {@link com.claudemod.block.PrismiumGeneratorBlock#use}).
+ * <b>Session 58 update:</b> a single real {@code Slot} (backed by
+ * {@code SlotItemHandler}) was added for a fuel-input item, the mod's
+ * first Slot-bearing menu - see the fuel-slot constructor below and
+ * {@code PrismiumGeneratorBlockEntity#fuelInventory}'s doc for why. The
+ * right-click-to-fuel path described above still works unchanged; the
+ * slot is a second, additive way to fuel the same block. Every *other*
+ * GUI in the mod (Cell, Wardstone, Pylon) is still a zero-Slot pure
+ * status display as originally described.
  *
  * The interesting difference from Cell, and the reason Generator was
  * picked as the second GUI target (see PROGRESS.md session 23 handoff,
@@ -48,17 +57,43 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
     /** Client-side constructor, used by
      * {@link ModMenuTypes#PRISMIUM_GENERATOR_MENU}'s factory. */
     public PrismiumGeneratorMenu(int windowId, Inventory inv, BlockPos pos) {
-        this(windowId, inv, resolveData(inv, pos), ContainerLevelAccess.create(inv.player.level(), pos));
+        this(windowId, inv, resolveData(inv, pos), ContainerLevelAccess.create(inv.player.level(), pos),
+                resolveFuelInventory(inv, pos));
     }
 
     /** Server-side constructor, used directly by
      * {@link PrismiumGeneratorBlockEntity#createMenu}. */
     public PrismiumGeneratorMenu(int windowId, Inventory inv, ContainerData data, ContainerLevelAccess access) {
+        this(windowId, inv, data, access, new ItemStackHandler(1));
+    }
+
+    /** Full server-side constructor including the real fuel-slot handler
+     * (session 58, see {@code PrismiumGeneratorBlockEntity#fuelInventory}'s
+     * doc). {@link PrismiumGeneratorBlockEntity#createMenu} calls this
+     * overload directly with its actual handler; the shorter overload
+     * above exists only so callers that don't care about the fuel slot
+     * (there are none left in this codebase, but keeping the narrower
+     * signature avoids a needless call-site update) still compile against
+     * a harmless throwaway handler. */
+    public PrismiumGeneratorMenu(int windowId, Inventory inv, ContainerData data, ContainerLevelAccess access,
+                                  ItemStackHandler fuelInventory) {
         super(ModMenuTypes.PRISMIUM_GENERATOR_MENU.get(), windowId);
         checkContainerDataCount(data, 3);
         this.data = data;
         this.access = access;
         addDataSlots(data);
+        // Session 58: top-right corner of the 176x110 panel (see
+        // PrismiumGeneratorScreen - clear of the flame gauge, energy bar,
+        // and status/burn-time labels, matching the recessed slot artwork
+        // baked into gen_prismium_generator_gui.py at the same
+        // coordinates). This is the mod's first ever Slot-bearing menu -
+        // every earlier GUI (Cell, Wardstone, Pylon, this one until now)
+        // was a pure ContainerData status display with zero Slots, see
+        // this class's own doc above (now partially stale - left in place
+        // rather than rewritten, since the "zero slots, pure status
+        // display" framing is still accurate for every *other* GUI in the
+        // mod and is useful context for why this is a notable first).
+        this.addSlot(new SlotItemHandler(fuelInventory, 0, 152, 8));
     }
 
     private static ContainerData resolveData(Inventory inv, BlockPos pos) {
@@ -66,6 +101,18 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
             return generator.getContainerData();
         }
         return new SimpleContainerData(3);
+    }
+
+    /** Client-side resolution of the block entity's real fuel-inventory
+     * handler, mirroring {@link #resolveData}'s pattern exactly (including
+     * the same harmless-dummy fallback for the split-tick window where the
+     * client menu factory can run before the server's block entity data
+     * has arrived - see that method). */
+    private static ItemStackHandler resolveFuelInventory(Inventory inv, BlockPos pos) {
+        if (inv.player.level().getBlockEntity(pos) instanceof PrismiumGeneratorBlockEntity generator) {
+            return generator.getFuelInventory();
+        }
+        return new ItemStackHandler(1);
     }
 
     public int getEnergy() {

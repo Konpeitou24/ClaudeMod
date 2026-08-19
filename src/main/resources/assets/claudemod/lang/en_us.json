@@ -18,7 +18,7 @@
     "block.claudemod.prismium_cell": "Prismium Cell",
     "block.claudemod.prismium_cell.usage": "Right-click empty-handed to open its GUI; right-click with a Prismium Shard to charge it directly, or place it next to a Prismium Generator/Cable for automatic charging.",
     "block.claudemod.prismium_generator": "Prismium Generator",
-    "block.claudemod.prismium_generator.usage": "Right-click with a Prismium Shard to add fuel; it slowly generates FE while burning and auto-pushes it to adjacent energy blocks.",
+    "block.claudemod.prismium_generator.usage": "Right-click with a Prismium Shard to add fuel instantly, or drop shards into its GUI fuel slot to auto-feed one at a time; it slowly generates FE while burning and auto-pushes it to adjacent energy blocks.",
     "block.claudemod.prismium_cable": "Prismium Cable",
     "block.claudemod.prismium_cable.usage": "Place between two energy blocks to relay FE between them automatically.",
     "item.claudemod.prismium_shard": "Prismium Shard",

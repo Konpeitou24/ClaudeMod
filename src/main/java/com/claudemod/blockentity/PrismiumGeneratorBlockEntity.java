@@ -18,10 +18,14 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
+import net.minecraft.world.item.ItemStack;
+import com.claudemod.registry.ModItems;
 import net.minecraftforge.common.capabilities.Capability;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
 import net.minecraftforge.common.util.LazyOptional;
 import net.minecraftforge.energy.IEnergyStorage;
+import net.minecraftforge.items.IItemHandler;
+import net.minecraftforge.items.ItemStackHandler;
 
 import javax.annotation.Nullable;
 
@@ -144,6 +148,40 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
     private final PrismiumEnergyStorage energyStorage = new PrismiumEnergyStorage(CAPACITY, 0, MAX_EXTRACT);
     private final LazyOptional<IEnergyStorage> energyOptional = LazyOptional.of(() -> energyStorage);
 
+    /** GitHub issue #15 comment (session 58): "発電機がインベントリを
+     * 持たない" - read as a request for a real fuel slot instead of the
+     * shard-right-click-only interaction {@link com.claudemod.block.PrismiumGeneratorBlock#use}
+     * has had since session 9. Single-slot handler restricted to
+     * Prismium Shards via {@link ItemStackHandler#isItemValid}, exposed
+     * through {@code ForgeCapabilities.ITEM_HANDLER} below (side is
+     * ignored, same choice already made for {@link #energyOptional} -
+     * this is a one-slot internal buffer, not a multi-face automation
+     * target with per-side rules) so hoppers/other automation can also
+     * feed it, not just direct player right-click. Deliberately additive:
+     * {@link com.claudemod.block.PrismiumGeneratorBlock#use}'s existing
+     * "right-click with a shard in hand" instant-fuel path is left
+     * completely unchanged (still calls {@link #addFuel()} directly) so
+     * this new slot cannot regress that already-working interaction; the
+     * two paths simply both feed the same {@link #burnTime} counter.
+     * Auto-consumption from this slot happens in {@link #serverTick} and
+     * mirrors vanilla furnace's "pull one fuel item only once burnTime
+     * hits zero" pacing, not "drain the whole stack instantly" - see that
+     * method for why. **Untested in-game (this session has no way to
+     * launch the client), see PROGRESS.md.**
+     */
+    private final ItemStackHandler fuelInventory = new ItemStackHandler(1) {
+        @Override
+        protected void onContentsChanged(int slot) {
+            setChanged();
+        }
+
+        @Override
+        public boolean isItemValid(int slot, ItemStack stack) {
+            return stack.is(ModItems.PRISMIUM_SHARD.get());
+        }
+    };
+    private final LazyOptional<IItemHandler> itemOptional = LazyOptional.of(() -> fuelInventory);
+
     private int burnTime = 0;
 
     /** Backs this block entity's GUI (session 24, following the pattern
@@ -189,6 +227,13 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
         return energyStorage;
     }
 
+    /** Exposed for {@link com.claudemod.menu.PrismiumGeneratorMenu} to
+     * build a {@code SlotItemHandler} against - see {@link #fuelInventory}'s
+     * doc. */
+    public ItemStackHandler getFuelInventory() {
+        return fuelInventory;
+    }
+
     /** Adds one shard's worth of burn time. Cumulative - feeding multiple
      * shards stacks up burn time like vanilla furnace fuel. */
     public void addFuel() {
@@ -210,6 +255,28 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
      */
     public static void serverTick(Level level, BlockPos pos, BlockState state, PrismiumGeneratorBlockEntity generator) {
         boolean changed = false;
+
+        // Session 58 (GitHub issue #15 comment, see fuelInventory's doc):
+        // auto-consume one shard from the fuel slot only once burnTime
+        // has fully run out, exactly like a vanilla furnace pulling its
+        // next fuel item only when the current one is spent - not
+        // "top off burnTime the instant the slot has room", which would
+        // let a single shard placed early get consumed the moment
+        // burnTime dipped even slightly, long before it was actually
+        // needed. Reuses addFuel() so this stacks with burn time added
+        // by the existing direct-right-click path identically to how two
+        // right-clicks would stack.
+        if (generator.burnTime <= 0 && !generator.fuelInventory.getStackInSlot(0).isEmpty()) {
+            // extractItem (not a direct shrink() on the returned stack)
+            // so ItemStackHandler's own onContentsChanged/validity plumbing
+            // stays in charge of the slot's internal state, same as any
+            // other caller of this capability (e.g. a hopper) would go
+            // through - this block entity gets no special direct-mutation
+            // shortcut just because it also owns the handler.
+            generator.fuelInventory.extractItem(0, 1, false);
+            generator.addFuel();
+            changed = true;
+        }
 
         if (generator.burnTime > 0
                 && generator.energyStorage.getEnergyStored() < generator.energyStorage.getMaxEnergyStored()) {
@@ -279,6 +346,7 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
         super.saveAdditional(tag);
         tag.putInt("Energy", energyStorage.getEnergyStored());
         tag.putInt("BurnTime", burnTime);
+        tag.put("FuelInventory", fuelInventory.serializeNBT());
     }
 
     @Override
@@ -286,12 +354,18 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
         super.load(tag);
         energyStorage.setEnergy(tag.getInt("Energy"));
         burnTime = tag.getInt("BurnTime");
+        if (tag.contains("FuelInventory")) {
+            fuelInventory.deserializeNBT(tag.getCompound("FuelInventory"));
+        }
     }
 
     @Override
     public <T> LazyOptional<T> getCapability(Capability<T> cap, @Nullable Direction side) {
         if (cap == ForgeCapabilities.ENERGY) {
             return energyOptional.cast();
+        }
+        if (cap == ForgeCapabilities.ITEM_HANDLER) {
+            return itemOptional.cast();
         }
         return super.getCapability(cap, side);
     }
@@ -300,6 +374,7 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
     public void invalidateCaps() {
         super.invalidateCaps();
         energyOptional.invalidate();
+        itemOptional.invalidate();
     }
 
     @Override
@@ -311,6 +386,6 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
     @Override
     public AbstractContainerMenu createMenu(int windowId, Inventory inventory, Player player) {
         return new PrismiumGeneratorMenu(windowId, inventory, containerData,
-                ContainerLevelAccess.create(level, worldPosition));
+                ContainerLevelAccess.create(level, worldPosition), fuelInventory);
     }
 }
