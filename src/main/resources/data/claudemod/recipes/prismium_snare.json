@@ -1,0 +1,14 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "claudemod:prism_bramble" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "minecraft:string" },
+        { "item": "minecraft:string" }
+    ],
+    "result": {
+        "item": "claudemod:prismium_snare",
+        "count": 1
+    }
+}

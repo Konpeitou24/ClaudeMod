@@ -77,6 +77,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_VITASTONE.get());
                         output.accept(ModItems.PRISMIUM_RIFT_ANCHOR.get()); // session 48
                         output.accept(ModItems.PRISMIUM_CHRONOFLAME_ITEM.get()); // session 49
+                        output.accept(ModItems.PRISMIUM_SNARE_ITEM.get()); // session 64
                     })
                     .build());
 

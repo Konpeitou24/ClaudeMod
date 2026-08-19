@@ -1,0 +1,16 @@
+{
+    "type": "minecraft:simple_block",
+    "config": {
+        "to_place": {
+            "type": "minecraft:simple_state_provider",
+            "state": {
+                "Name": "claudemod:prismium_snare",
+                "Properties": {
+                    "triggered": "false",
+                    "waterlogged": "true"
+                }
+            }
+        },
+        "schedule_tick": false
+    }
+}

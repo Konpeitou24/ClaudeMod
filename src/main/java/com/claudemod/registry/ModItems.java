@@ -341,6 +341,12 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_CHRONOFLAME_ITEM = ITEMS.register("prismium_chronoflame",
             () -> new PrismiumChronoflameBlockItem(ModBlocks.PRISMIUM_CHRONOFLAME.get(), new Item.Properties()));
 
+    // Prismium Snare (session 64): BlockItem for ModBlocks.PRISMIUM_SNARE
+    // - see that block's registration comment / PrismiumSnareBlock's
+    // class doc for the mod's first gimmick/trap block.
+    public static final RegistryObject<Item> PRISMIUM_SNARE_ITEM = ITEMS.register("prismium_snare",
+            () -> new BlockItem(ModBlocks.PRISMIUM_SNARE.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

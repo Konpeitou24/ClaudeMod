@@ -12,6 +12,7 @@ import com.claudemod.block.PrismiumGeneratorBlock;
 import com.claudemod.block.PrismiumPortalBlock;
 import com.claudemod.block.PrismiumPylonBlock;
 import com.claudemod.block.PrismiumRestorerBlock;
+import com.claudemod.block.PrismiumSnareBlock;
 import com.claudemod.block.PrismiumSpikeBlock;
 import com.claudemod.block.PrismiumWardstoneBlock;
 import net.minecraft.world.level.block.Block;
@@ -493,6 +494,23 @@ public class ModBlocks {
                     .sound(SoundType.GLASS)
                     .lightLevel(state -> 11)
                     .noLootTable()));
+
+    // Prismium Snare (session 64): the mod's first genuine gimmick/trap
+    // block (see PrismiumSnareBlock's class doc for full design). Same
+    // "family" properties as the other Prism Realm-exclusive flora
+    // (Bramble/Lily/Vine) so it visually blends in with them at a
+    // glance - noCollission()/instabreak()/AMETHYST_CLUSTER sound - the
+    // camouflage is the point. lightLevel omitted (unlike Bramble/Lily/
+    // Vine, which glow faintly) so it doesn't visually stand out as
+    // "the one plant that's slightly brighter," which would defeat the
+    // whole "blend in" premise.
+    public static final RegistryObject<Block> PRISMIUM_SNARE = BLOCKS.register("prismium_snare",
+            () -> new PrismiumSnareBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_PURPLE)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .noOcclusion()));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

@@ -1,0 +1,8 @@
+{
+    "variants": {
+        "triggered=false,waterlogged=false": { "model": "claudemod:block/prismium_snare" },
+        "triggered=false,waterlogged=true": { "model": "claudemod:block/prismium_snare" },
+        "triggered=true,waterlogged=false": { "model": "claudemod:block/prismium_snare_triggered" },
+        "triggered=true,waterlogged=true": { "model": "claudemod:block/prismium_snare_triggered" }
+    }
+}
