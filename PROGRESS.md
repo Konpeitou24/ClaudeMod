@@ -3428,54 +3428,131 @@ push後、`ci: update built jar`→`ci: update datapack validation results`(`sta
 - 【継続】既存GUI5種のSWAPキー懸念(§3BT-1)。一次情報源での確定的な検証を次回以降の優先課題として持ち越す。
 - 【継続】PROGRESS.mdの肥大化(3400行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
 
+## 3BV. セッション#70(定期実行)で実装した内容: Prismium Compressor新設(MOD3つ目のアイテム加工機械) + Prismium Alloy Ingot/Block追加 + v0.17.0リリース
+
+### 3BV-1. セッション開始時の状況確認
+
+- 今回はCowork環境上での実行で、これまでのセッション記録にある「`api.github.com`がプロキシのallowlistでブロックされる」という制約が**再現しなかった**: `mcp__workspace__web_fetch`経由での`api.github.com/repos/.../actions/runs?per_page=1`呼び出しが成功し(`conclusion: success`の実行結果を確認)、加えて素の`curl`から`https://github.com/...commits/main.atom`への到達も問題なく行えた(`github.com`ホストへは従来通り到達可能)。一方、bashサンドボックス内から素の`curl`で直接`api.github.com`を叩いた場合は従来通り`blocked-by-allowlist`(プロキシ経由)で拒否された - つまり今回は「`web_fetch`ツール経由の`api.github.com`アクセスだけは通る」という、過去のセッション記録には無かった新しい観測。今回はこれを使い、Atomフィード方式(`github.com/.../commits/main.atom`、素のcurlで到達可能)と併用してビルド状況を確認した。
+- 作業ディレクトリ: 過去セッションが繰り返し報告していた「固定パスが前セッションの残留物で書き込み不可」という問題が今回も再現した(`/tmp/work/ClaudeMod`が`nobody`所有で`rm`不可)。申し送り項目11の指示通り、ユニークな新規パス(`/tmp/cmwork2/ClaudeMod`)へ切り替えて解決した。次回以降も同じ問題が起きうる前提で、固定パスに戻さないこと。
+- `git log`とビルド副産物(`builds/last_datapack_validation_summary.txt`)を確認した結果、直前セッション(#69)がpushした最終コミット(`45a3e77`、PROGRESS.md更新)に対応するビルドは`status=ok`で成功していることを確認した(修正対応の必要無し)。
+- `git tag --list --sort=-creatordate`で直近リリースが`v0.16.0`(セッション#69)であることを確認。今回はここから1セッション目。
+- GitHub Issue確認: #7・#9・#16の3件がOpenのまま存在することをHTMLの`<title>`/`og:description`メタタグ経由で確認した。**しかしコードを実際に読んだところ、3件とも既に過去セッションでコードレベルの対応が完了していることが分かった**: #7(アイテム説明不足)は`TooltipUsageHelper`/`PrismiumGearTooltipHandler`/`EnergyStorageBlockItem`/`ItemDetailsOverlay`一式(session 38・45・60・62)でエネルギー系ブロックを含む~13箇所に説明が付いている。#16(クロノフレイムの誤操作・クールダウン分かりづらさ)は`PrismiumChronoflameBlock`(session 50・56)で「時計所持が必須」「クールダウン残り秒数をアクションバー表示」という形で両論点とも対応済み。#9(ディメンションへの行き手段)もクラスdocのコメントから過去セッションでポータル対応が行われた形跡があった。3件とも投稿者本人(`Konpeitou24`)による新規コメントは確認できなかった。**Issue側からの新規の緊急対応は無いと判断**し、Issueのクローズ操作(書き込み操作)はタスク定義に明示的な指示が無いため今回は行わず、事実として「コード上は対応済みだがIssueは開いたまま」という状態のみここに記録する。
+
+### 3BV-2. 方針決定
+
+前回セッション(#69)の申し送り(§5)に挙がっていた項目のうち、以下を検討した:
+- 項目2「`LivingEntity#knockback`のMojangマッピング一次ソース確認」: 今回もWebSearch/web_fetchでの確定的な一次ソース到達を試みる価値は認めつつ、当セッションの主眼はコンテンツ追加に置き、後述の理由で後回しにした。
+- 項目3「Prismium Ingotのスミシングアップグレード経路」: 1.20.1の`smithing_transform`がテンプレートスロット必須という前回セッションの調査結果を踏まえると、テンプレートアイテムの新設まで一度に手を広げるのはローカルビルド検証ができない環境でのリスクが大きいと判断し、今回も見送った。
+- 項目5「ロードマップ§1項目2『機械』の3つ目候補(圧縮機など)」: **これを採用した。** Prismium Pulverizer(session 67)→Prismium Smelter(session 68)と2つの機械が既に確立されたパターン(2スロット`ItemStackHandler`、many-to-oneレシピテーブル、FEシンクのみのエネルギー貯蔵、"pause don't waste"処理ループ)を持っており、3つ目の機械はそのパターンをそのまま複製するだけで実装できる、このセッションで最もリスクが低い拡張だと判断した。
+
+共通基底クラスへの抽出(session 68 §3BT-7が「3つ目の機械が出た時点が抽出の好機」と示唆していた論点)は、**今回は見送った**。理由: ローカルビルド検証ができないこのサンドボックスで、既に動作確認済み(CI成功)の2つの機械のコードに同時に手を入れるリファクタリングは、新規に3つ目の機械を追加すること自体よりもリスクが高いと判断したため。3つ目の機械はSmelterの実装をほぼ丸ごと複製する形(§3BV-3参照)で実装し、抽出自体は「まだ着手していない、次回以降の明確な候補」として申し送りに残す。
+
+### 3BV-3. 実装: Prismium Compressor
+
+`PrismiumCompressorBlock`/`PrismiumCompressorBlockEntity`/`PrismiumCompressorMenu`/`PrismiumCompressorScreen`の4クラスを、`PrismiumSmelterBlock`/`PrismiumSmelterBlockEntity`/`PrismiumSmelterMenu`/`PrismiumSmelterScreen`の構造をそのまま複製する形で新規実装した(クラス名・レシピ・アイテム参照のみ差し替え、ロジックは意図的に一字一句同じ)。
+
+- **レシピ**: プリズミウムのインゴット4個 -> プリズミウム合金インゴット1個(`INGOTS_PER_ALLOY_INGOT = 4`)。Smelterの「かけら4個->インゴット1個」と全く同じ4:1の many-to-one 比率にし、「4つの生素材から1つの高密度素材」という発想がチェーン内の3機械で共通して読めるようにした。
+- **エネルギー仕様**: 容量20,000 / 受電上限2,000 / 処理時間100tick / 消費20FE/tick / 手動充電2,000FE、いずれもPulverizer・Smelterと完全に同じ数値。裏付けの薄い新しい数値を独自に設定するより、既にレビュー済みの数値を踏襲する方針を継続した。
+- 手動充電アイテムは他の全エネルギーブロックと同じ「プリズミウムのかけら」(処理対象の「インゴット」とは意図的に別アイテム - Smelterでは充電アイテムと処理アイテムがたまたま同じ「かけら」だったが、これは偶然の一致でありMOD全体の設計原則ではない、という点をクラスdocに明記した)。
+- 登録: `ModBlocks.PRISMIUM_COMPRESSOR`(mapColor/strength/sound/lightLevelはPulverizer・Smelterと同一)、`ModBlockEntities.PRISMIUM_COMPRESSOR`、`ModMenuTypes.PRISMIUM_COMPRESSOR_MENU`(MOD8つ目のGUI)、`ModItems.PRISMIUM_COMPRESSOR_ITEM`(`EnergyStorageBlockItem`)、`ModCreativeTabs`・`ClientModEvents`(スクリーン登録)・`pickaxe.json`タグへの追加。クラフトレシピは鉄インゴット4+プリズミウムインゴット4+ピストン1(`IPI/PSP/IPI`、Smelterのかまど芯・Pulverizerの丸石芯とはピストンで差別化)。
+
+### 3BV-4. 実装: Prismium Alloy Ingot / Prismium Alloy Block
+
+- `ModItems.PRISMIUM_ALLOY_INGOT`: Prismium Ingotと同じ「プレーンな`Item`」。**今回、投入と同じセッション内で最低限のクラフト用途(下記Alloy Block)を用意した** - Prismium Ingot自身がsession 68〜69の間、一時的に「使い道の無い素材」だった反省(session 68・69のPROGRESS.mdが繰り返し明記していた既知の課題)を踏まえた判断。
+- `ModBlocks.PRISMIUM_ALLOY_BLOCK`: Prismium Blockと全く同じ役割(圧縮保管ブロック)を合金インゴットに対して持たせた。レシピは`prismium_alloy_block.json`(合金インゴット9個->ブロック1個、Prismium Blockの`prismium_block.json`と同型)と、逆変換`prismium_alloy_ingot_from_block.json`(`prismium_shard_from_block.json`と同型)の2本。
+- 合金インゴットの装備面での本格的な使い道(session 69がWarhammerで果たした役割に相当するもの)はまだ無く、次回以降への明示的な申し送り事項とした(§5参照)。
+
+### 3BV-5. テクスチャー(すべて自作、`scripts/textures/gen_prismium_{compressor,compressor_gui,alloy_ingot,alloy_block}.py`)
+
+- **Compressor本体(idle/lit)**: 既存機械と同じ「金属ケーシング+中央8x8ソケット」の骨格(`gen_prismium_smelter.py`と共通のCASING_DARK/MID・PRISMIUM_OUTLINE)を踏襲しつつ、ソケット内部は新規デザインの「プレスの上下顎」モチーフ(上下2つの金属ジョー+中央の細い隙間)にした。待機時は隙間が真っ暗(何も圧縮していない)、稼働時は隙間がシアン〜白の明るい発光(`GAP_LIT_BASE`/`GAP_LIT_HILITE`)になる - Generatorの赤、Pulverizerのマゼンタ、Smelterの琥珀とはいずれも異なる寒色系を意図的に選び、4種の稼働中発光が色だけで見分けられるようにした。
+- **Prismium Alloy Ingot(アイテムアイコン)**: `gen_prismium_ingot.py`と全く同じ台形バーのROWS形状を再利用しつつ、パレットのみブロンズ/ゴールド系からスチールブルー/プラチナ系(`METAL_SHADOW/BASE/MID/HILITE`)に差し替えた。さらにWarhammerのテクスチャーが確立した「異なるパレットのベースに、ファミリー共通のマゼンタアクセントを埋め込む」手法を踏襲し、バー中央に2pxのマゼンタチップを追加、Prismiumファミリーとしての一体感を保ちつつ「より精製が進んだ、冷たく鋳造された素材」という差別化を狙った。
+- **Prismium Alloy Block(ブロックテクスチャー)**: 手描き採用済みの`block/prismium_block.png`(斜め方向の明暗バンディング+四隅の小さなマゼンタアクセントチップ+外周の濃い青緑アウトライン)を実際に`Read`ツールで目視した上で、同じ構図(斜めバンディング+四隅アクセント+外周アウトライン)を新規スクリプトで再現し、本体パレットのみAlloy Ingotと同じスチールブルー/プラチナ系に差し替えた。
+- **Compressor GUIパネル**: `gen_prismium_smelter_gui.py`と全く同じ256x256キャンバス・176x148パネル・2つの18x18スロットソケット・進捗トラック・エネルギートラックのレイアウトを再利用し、進捗トラックの影色のみスチールブルー系の暗色に差し替えた(`PrismiumCompressorScreen`の進捗バー描画色もAlloy Ingotのパレットに合わせて実装)。
+- 4枚すべて生成後、4x/16xの拡大プレビューを`outputs`マウント側にコピーし`Read`ツールで目視確認した: Compressor本体はidle/litとも小スケールでプレス顎のシルエットが明瞭に判別でき、idle/litのコントラストも明確。Alloy Ingotは4xの「ホットバー相当」スケールでもバーのシルエットと中央のマゼンタアクセントが視認でき、既存のPrismium Ingot(ブロンズ系)と一目で区別できることを確認した。Alloy Blockは斜めバンディングと四隅アクセントが小スケールでもノイズにならず読み取れることを確認した。GUIパネルも3x切り出しでスロット・進捗トラック・エネルギートラックの配置崩れが無いことを確認した。全ピクセルのアルファ値が0か255のみであることもスクリプト内のセルフチェックで確認済み。4枚とも作り直しは発生しなかった(初稿をそのまま採用)。
+
+### 3BV-6. 副次対応: Smelterの古びたlang文言の修正
+
+`block.claudemod.prismium_smelter.details`(en/ja両方)が「プリズミウムのインゴットはまだ使い道が無い」という、session 69(Warhammer)・今回(Compressor)によって既に事実と異なる文言のままだったのを、両方の用途(大槌の素材、圧縮機でさらに精製可能)に言及する形に更新した。過去のPROGRESS.mdが繰り返し強調してきた「古い前提を放置しない」姿勢に沿った、小さいが正直な修正。
+
+### 3BV-7. push・ビルド確認・リリース: v0.17.0
+
+1コミットとしてpush(`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功、プロキシ変数の変更は不要だった): `ec5114c` "Add Prismium Compressor: the mod's third item-processing machine, plus Prismium Alloy Ingot/Block"
+
+push後、`653ef1c`(ci: update built jar)→`c62d2d4`(ci: update datapack validation results、`status=ok commit=ec5114c...`)の到着をAtomフィードで確認。**通常ビルド・データパック検証とも成功。**
+
+続けて§0のリリースポリシーに従いリリースを実施: `gradle.properties`を`0.16.0`->`0.17.0`に変更、`RELEASE_NOTES.md`に新規セクションを追加、コミット`561fb30`としてpush(push前に`git fetch`で並行セッション無しを再確認、一発成功)、タグ`v0.17.0`を同コミットに打ってpush。push後、`731eb3b`(ci: update datapack validation results、`status=ok commit=561fb30...`)の到着を確認、`/releases/tag/v0.17.0`への直接curlでHTTP 200を確認した。**リリースv0.17.0も含め、今回のビルド・データパック検証は全てCI上で成功した。**
+
+### 3BV-8. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要**: Prismium Compressor一式(4個消費という比率のバランス感、GUIの実際の表示、既存2機械と横並びで動作させた際の生産チェーン全体のペース感)は、CIでのビルド・データパック検証成功以外、一切実機確認できていない。SmelterのロジックをほぼそのままコピーしたためSmelter自身の既知の限界(未実機検証)をそのまま引き継いでいる。
+- Prismium Alloy Ingotの装備面での本格的な使い道はまだ無い(圧縮保管ブロックへの変換のみ)。次回以降の最優先候補として申し送る(§5参照)。
+- Pulverizer/Smelter/Compressorの3機械が出揃った今、共通基底クラスへの抽出は依然として未着手(§3BV-2で今回は意図的に見送った判断の理由を記載済み)。
+- v0.17.0リリースの中身(jarを実際にダウンロードして展開しての検証)は今回も行っていない(継続する既知の限界)。
+- 今回「`api.github.com`が`web_fetch`経由でのみ到達可能」という新しい観測をしたが、これが今回の環境固有の一時的な現象か、今後も再現するものかは1回の観測だけでは判断できない。次回セッションで同じ手法を試し、再現するかどうかを確認する価値がある。
+
+### 3BV-9. 議論したい論点・改善案
+
+- 【新規】3機械が出揃ったことで、`AbstractProcessingMachineBlockEntity`的な共通基底クラスへの抽出は、ロジック面での価値(重複削減)は明確に高まった。一方でローカルビルド検証ができない制約下では「動いているコードに同時に触る」リスクが常に伴うため、次回以降に着手する場合は、まず1機械分(例えばCompressor)だけを新基底クラスに移行し、CI成功を確認してから残り2機械に展開する、という段階的なアプローチを推奨する。
+- 【新規】`api.github.com`への到達性が`web_fetch`ツール経由でのみ通る(素のcurlでは相変わらずブロックされる)という今回の観測は、Cowork環境固有のプロキシ設定によるものと推測される。次回以降のセッションでも同じ手法(`mcp__workspace__web_fetch`でのAPI呼び出し)を試し、再現するか確認する価値がある。
+- 【継続】Prismium Ingotのスミシングアップグレード経路の再検討(session 69 §3BU-2/§3BU-8)。今回のAlloy Ingot新設により、「Ingotで通常装備をアップグレード」「Alloy Ingotでさらにもう一段階アップグレード」という二段階のスミシング経路も設計上あり得る。
+- 【継続】`LivingEntity#knockback`のMojangマッピング一次ソース確認(session 69 §3BU-8)。
+- 【継続】既存GUI5種のSWAPキー懸念(§3BT-1、恐らく誤りだった可能性が高いという再評価が session 68 で出ている)。
+- 【継続】PROGRESS.mdの肥大化(3500行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(セッション#69、定期実行)の最重要な新情報
+### 今回(セッション#70、定期実行)の最重要な新情報
 
-- **Prismium Ingot(session 68で追加、これまで使い道が無かった)に初めてクラフトレシピが付いた。新武器「Prismium Warhammer(プリズミウムの大槌)」がインゴット3個+棒2本で作れる。既存のPrismium Swordより高ダメージ・低速の「重量級」武器で、命中時50%の確率でSlownessを付与するギミック付き。v0.16.0をリリースした。次回セッションはここから1セッション目。**
-- **`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・シグネチャを、このセッションでは一次情報源で確定できなかった(ForgeJavaDocs-NGは1.19.3までしか公開されていない、Yarnマッピングでは同等メソッドが`takeKnockback`という別名)。このため、Warhammerの追加効果は「ノックバック」ではなく確証のある「Slowness付与」に倒した。次回以降、この一次ソースを確定できれば、ノックバック演出への差し替え・追加を検討する価値がある。**
-- **GitHub Issueは#7・#9・#16のいずれも新規コメント無し(全て2026-08-18付、今回は2026-08-19)、#15は今回も本文取得不可、新規Issueも無し。次回もsession 68確立の`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式で確認すること。**
-- 作業ディレクトリは今回`$HOME/work/ClaudeMod`が(前回セッションの後始末が効いていたのか)クリーンな状態で使えたが、これは毎回保証されるものではない(session 64・67・68はいずれもstaleな残留クローンに苦しめられた)。今回問題なく完了できたからといって固定パスに戻さず、次回も「まず`git log -1`の内容が想定と一致するかサニティチェックする」「書き込み不可/内容が古ければユニークな新規パスに切り替える」という運用を継続すること。
+- **ロードマップ§1項目2「新エネルギーシステム」の一部として、MOD3つ目のアイテム加工機械「Prismium Compressor(プリズミウム圧縮機)」を追加した。プリズミウムのインゴット4個をFE消費しながら圧縮し、新素材「Prismium Alloy Ingot(プリズミウム合金インゴット)」1個を生産する。生産チェーンは 鉱石 -> かけら(粉砕機)-> インゴット(精錬機)-> 合金インゴット(圧縮機) の3段階になった。**
+- **合金インゴットには「Prismium Alloy Block」への圧縮保管クラフト(9個<->1ブロック)という最低限の使い道を今回のうちに用意した。ただし装備面での本格的な使い道(session 69がWarhammerでインゴットに与えた役割に相当するもの)はまだ無い。次回セッションの最優先候補としてここに明記する。**
+- **GitHub Issue #7・#9・#16はすべてOpenのままだが、コードを実際に確認したところ3件とも過去セッションでコードレベルの対応が既に完了していることが分かった(§3BV-1参照)。投稿者本人からの新規コメントも無い。Issueを閉じる操作はタスク定義に明示的な指示が無いため今回は行っていない - 次回以降、Issueクローズを行うかどうかの方針を検討する価値がある(ユーザー自身の確認待ちという可能性もある)。**
+- **今回、`api.github.com`が`mcp__workspace__web_fetch`ツール経由でのみ到達可能(素のbash curlでは引き続きブロック)という新しい観測をした。次回セッションで再現するか確認すること。**
+- 作業ディレクトリは今回も固定パス(`/tmp/work/ClaudeMod`相当)が前セッションの残留物で書き込み不可だったため、ユニークな新規パス(`/tmp/cmwork2/ClaudeMod`)に切り替えて解決した。次回も同様の問題が起きる前提で、固定パスに戻さないこと。
 
-### すぐやるべきこと(継続項目、優先度順は前回から概ね維持)
+### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.16.0(セッション#69、今回)。次回はここから1セッション目。**
-1. **【最優先・新規】今回追加したPrismium Warhammerについて、実機フィードバックが無いか確認すること。特に攻撃力8・速度-3.4fのバランス感、Slowness付与50%という確率が体感としてちょうど良いかが未検証(§3BU-7参照)。**
-2. **【新規】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと(§3BU-8参照)。確定できればWarhammerへのノックバック演出追加、または他機能での活用を検討する。**
-3. 【新規・展開候補】Prismium Ingotのスミシングテーブルアップグレード経路(session 69 §3BU-2で検討・却下、1.20のスミシングテンプレート仕様の一次ソース確認ができれば再検討の価値あり)。
-4. 【継続・優先度は下げてよい】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BT-1)。一次情報源での確定的な確認ができれば試すこと。できなければこのまま保留でよい(恐らく実在しない懸念という再評価あり、session 68参照)。
-5. 【継続・展開候補】ロードマップ§1項目2「機械」の3つ目候補(圧縮機など)を検討する価値がある。また、Pulverizer/Smelterの共通基底クラスへの抽出も検討候補(session 68 §3BT-7)。
-6. 【継続・統合】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた以下の機能群は、いずれも新規の動きが無いまま継続している: Prismium Warhammer(session 69、今回)、Prismium Smelter(session 68)、Prismium Geyser(session 66)、Prismium Magnet Charm(session 65)、Prismium Snare(session 64)、ItemDetailsOverlay(session 62)、Prismium Pulse Charm(session 63)、Prismium Drifter(session 61)、Prismium Sentinel(session 59)、Prismium GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色・エネルギーフロー可視化(session 57)、Prismium Portalの見た目・当たり判定修正(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
-7. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
-8. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
-9. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式を使うこと(session 68確立、今回も機能した)。
-10. 【継続】worldgen/レジストリ系のJSONやクライアント専用APIを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。今回のWarhammerの「ノックバックではなくSlowness」判断もこの方針に沿ったもの(§3BU-3参照)。
-11. 【最優先・継続・全セッション必読】作業ディレクトリは必ずユニークなパス(タイムスタンプ+乱数、例: `/tmp/cm_$(date +%s%N)`)を使うこと。かつ、パイプで終わるコマンドを`&&`チェーンの成否判定に使わないこと。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
-12. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#16はいずれも投稿者`Konpeitou24`本人で、新規コメントは無かった。
-13. 【継続】リリース(v0.16.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。`/releases/expanded_assets/<tag>`のキャッシュが古い値を返すことがある(今回は再現しなかったが、過去複数回報告あり)ため、添付jarのファイル名確認に固執しすぎず、`/releases`一覧ページ・タグ個別ページでの存在確認とビルドCIの成功で十分と割り切ってよい。
-14. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械(今回追加したPrismium Warhammerも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
-15. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること(ただしパイプが絡む場合は罠に注意)。
-16. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換+末尾への新規キー追記という最小差分の方法を使うこと(今回、Prismium Ingotの`.details`更新にもこの方式を使った)。
-17. 【継続】新規のimportミスをpush前に自己チェックする習慣。今回もSwordItem/MobEffectInstance/MobEffects/LivingHurtEvent等のimportパスを既存コード(PrismiumSwordHandler)と突き合わせてから使用した。
-18. 【継続】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーションが再現されていない可能性がある(セッション#61、未検証のまま継続)。
-19. 【継続・低優先度】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelterを含む複数ブロックで未生成のまま(session 66から継続)。低優先度だが、いつか着手する価値がある。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.17.0(セッション#70、今回)。次回はここから1セッション目。**
+1. **【最優先・新規】Prismium Alloy Ingotに装備面での本格的な使い道を与えること。候補: (a) 新規装備(session 69のWarhammerと同じ発想で、既存Item/ArmorItemクラスを流用した低リスクな新武器・防具)、(b) session 69で却下されたスミシングアップグレード経路(Ingotで既存装備を強化 -> Alloy Ingotでさらに強化、という二段階構想。1.20のスミシングテンプレート仕様の一次ソース確認が前提)。**
+2. **【新規】今回追加したPrismium Compressorについて、実機フィードバックが無いか確認すること。特に4個消費という比率のバランス感、GUIの実際の表示が未検証(§3BV-8参照)。**
+3. **【新規】3機械(Pulverizer/Smelter/Compressor)が出揃ったので、共通基底クラスへの抽出を段階的アプローチ(§3BV-9参照: まず1機械だけ移行してCI成功を確認してから展開)で検討する価値がある。**
+4. **【新規】`api.github.com`への`web_fetch`経由アクセスが再現するか確認すること(§3BV-8/9参照)。再現すればAtomフィード方式より確実なビルド状況確認手段になる。**
+5. 【継続】GitHub Issue #7・#9・#16は、コード上は対応済みと判断されるが、Issueとしては開いたまま。次回以降、クローズすべきかどうかの方針を検討すること(投稿者本人の確認を待つべきか、コード対応をコメントで報告すべきか等)。
+6. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと(session 69 §3BU-8参照)。
+7. 【継続・優先度は下げてよい】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BT-1)。一次情報源での確定的な確認ができれば試すこと。できなければこのまま保留でよい(恐らく実在しない懸念という再評価あり、session 68参照)。
+8. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群は、今回のPrismium Compressor / Prismium Alloy Ingot・Blockも加わり、さらに積み上がっている: Compressor(session 70、今回)、Warhammer(session 69)、Smelter(session 68)、Geyser(session 66)、Magnet Charm(session 65)、Snare(session 64)、ItemDetailsOverlay(session 62)、Pulse Charm(session 63)、Drifter(session 61)、Sentinel(session 59)、GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色(session 57)、Portalの見た目・当たり判定(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
+9. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
+10. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
+11. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式(HTMLの`<title>`/`og:description`メタタグから内容を読む)を使うこと。加えて今回`mcp__workspace__web_fetch`での`api.github.com`直接アクセスも試す価値がある(§3BV-8/9)。
+12. 【継続】worldgen/レジストリ系のJSONやクライアント専用APIを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
+13. 【最優先・継続・全セッション必読】作業ディレクトリは必ずユニークなパス(タイムスタンプ+乱数、例: `/tmp/cm_$(date +%s%N)`)を使うこと。かつ、パイプで終わるコマンドを`&&`チェーンの成否判定に使わないこと。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
+14. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#16はいずれも投稿者`Konpeitou24`本人で、新規コメントは無かった。
+15. 【継続】リリース(v0.17.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。`/releases/expanded_assets/<tag>`のキャッシュが古い値を返すことがある(過去複数回報告あり)ため、添付jarのファイル名確認に固執しすぎず、`/releases`一覧ページ・タグ個別ページでの存在確認とビルドCIの成功で十分と割り切ってよい。
+16. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械(今回追加したPrismium Compressor/Alloy Ingot/Alloy Blockも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+17. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること(ただしパイプが絡む場合は罠に注意)。
+18. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換+末尾への新規キー追記という最小差分の方法を使うこと(今回、Smelterの古い文言修正・新規キー追加の両方にこの方式を使った)。
+19. 【継続】新規のimportミスをpush前に自己チェックする習慣。今回もItemStackHandler/PrismiumEnergyStorage/BlockStateProperties等のimportパスを既存コード(PrismiumSmelterBlockEntity/Block)と突き合わせてから使用した。
+20. 【継続】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーションが再現されていない可能性がある(セッション#61、未検証のまま継続)。
+21. 【継続・低優先度】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressor(今回追加分も含む)を含む複数ブロックで未生成のまま(session 66から継続)。低優先度だが、いつか着手する価値がある。
 
 ### 議論したい論点・改善案
 
-- 【新規】Prismium Ingotのスミシングアップグレード経路の再検討(§3BU-2/§3BU-8参照)。
-- 【新規】`LivingEntity#knockback`のMojangマッピング一次ソース確認(§3BU-8参照)。
-- 【継続】ロードマップ§1項目2「機械」の3つ目候補・共通基底クラス抽出(session 68 §3BT-7)。
+- 【新規・最重要】Prismium Alloy Ingotの装備面での使い道(§5項目1参照)。
+- 【新規】3機械の共通基底クラス抽出、段階的アプローチの提案(§3BV-9参照)。
+- 【新規】`api.github.com`への`web_fetch`経由到達性の再現性確認(§3BV-8/9参照)。
+- 【新規】GitHub Issueクローズ方針(コード対応済みのIssueをどう扱うか、§3BV-1/§5項目5参照)。
+- 【継続】Prismium Ingotのスミシングアップグレード経路の再検討(session 69 §3BU-2/§3BU-8、今回のAlloy Ingot新設で二段階構想に発展可能)。
+- 【継続】`LivingEntity#knockback`のMojangマッピング一次ソース確認(session 69 §3BU-8参照)。
 - 【継続】既存GUI5種のSWAPキー懸念は恐らく誤りだった可能性が高いという再評価(session 68 §3BT-1)。
 - 【継続】ロードマップ項目6(新ブロック/ギミック)の「トラップルーム」構想は持ち越し。
 - 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手。
 
 ### コミット/プッシュ状況
 
-セッション#69(定期実行)は以下のコミットをpush:
-1. `c3a223b` Add Prismium Warhammer: heavy weapon crafted from Prismium Ingot, finally giving the Ingot a use
-2. `9ceeed7` Release v0.16.0: bump mod_version, add release notes for Prismium Warhammer (+タグ`v0.16.0`)
+セッション#70(定期実行)は以下のコミットをpush:
+1. `ec5114c` Add Prismium Compressor: the mod's third item-processing machine, plus Prismium Alloy Ingot/Block
+2. `561fb30` Release v0.17.0: bump mod_version, add release notes for Prismium Compressor (+タグ`v0.17.0`)
 
-`git fetch origin main`で並行セッション無しを両コミット前にそれぞれ確認、素のまま`git push origin main`で両コミットとも一発成功(プロキシ変数の変更は今回も不要だった)。push後、それぞれ`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認済み。**通常ビルド・データパック検証とも成功。** `release.yml`起動によるv0.16.0のGitHub Release公開も`/releases/tag/v0.16.0`(HTTP 200)・`/releases/expanded_assets/v0.16.0`(`claudemod-0.16.0.jar`を1回目のcurlで確認)で確認済み。
+`git fetch origin main`で並行セッション無しを両コミット前にそれぞれ確認、素のまま`git push origin main`で両コミットとも一発成功(プロキシ変数の変更は今回も不要だった)。push後、それぞれ`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認済み。**通常ビルド・データパック検証とも成功。** `release.yml`起動によるv0.17.0のGitHub Release公開も`/releases/tag/v0.17.0`(HTTP 200)で確認済み。
 
 本PROGRESS.md更新コミット自体のCI結果は、次回セッション開始時に確認すること。
 
