@@ -195,6 +195,24 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_WARHAMMER = ITEMS.register("prismium_warhammer",
             () -> new SwordItem(ModToolTiers.PRISMIUM, 8, -3.4f, new Item.Properties()));
 
+    // Prismium Alloy Rapier (session 71, scheduled): the mod's first item
+    // crafted from Prismium Alloy Ingot (see PRISMIUM_ALLOY_INGOT above -
+    // added session 70 alongside the Compressor, with no equipment use
+    // until now - PROGRESS.md session 70 handoff item 1). A plain
+    // SwordItem like PRISMIUM_SWORD/PRISMIUM_WARHAMMER (no dedicated Item
+    // subclass), with very low damage / very fast speed - the opposite
+    // end of the spectrum from the Warhammer's "high damage, very slow"
+    // profile. Its on-hit Weakness gimmick lives entirely in
+    // PrismiumAlloyRapierHandler, mirroring how PRISMIUM_SWORD's Glowing
+    // gimmick lives in PrismiumSwordHandler and PRISMIUM_WARHAMMER's
+    // stagger lives in PrismiumWarhammerHandler. Repaired with Prismium
+    // Shard (inherited from ModToolTiers.PRISMIUM, same as every other
+    // Prismium tool) even though it is crafted from Alloy Ingot - keeps
+    // repair consistent across the whole tool family, same reasoning
+    // PRISMIUM_WARHAMMER already established for Prismium Ingot.
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_RAPIER = ITEMS.register("prismium_alloy_rapier",
+            () -> new SwordItem(ModToolTiers.PRISMIUM, 1, -1.0f, new Item.Properties()));
+
     // Prismium armor set (session 3): defense sits at diamond/netherite
     // parity by design (no flat armor-value power creep), but with higher
     // durability, toughness, knockback resistance and enchantability. See

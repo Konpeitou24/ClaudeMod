@@ -1,0 +1,17 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "pattern": [
+        " I",
+        "S ",
+        "S "
+    ],
+    "key": {
+        "I": { "item": "claudemod:prismium_alloy_ingot" },
+        "S": { "item": "minecraft:stick" }
+    },
+    "result": {
+        "item": "claudemod:prismium_alloy_rapier",
+        "count": 1
+    }
+}

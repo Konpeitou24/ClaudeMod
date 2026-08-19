@@ -57,6 +57,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_WARDSTONE_ITEM.get());
                         output.accept(ModItems.PRISMIUM_SWORD.get());
                         output.accept(ModItems.PRISMIUM_WARHAMMER.get()); // session 69
+                        output.accept(ModItems.PRISMIUM_ALLOY_RAPIER.get()); // session 71
                         output.accept(ModItems.PRISMIUM_PICKAXE.get());
                         output.accept(ModItems.PRISMIUM_AXE.get());
                         output.accept(ModItems.PRISMIUM_SHOVEL.get());

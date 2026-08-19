@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:item/handheld",
+    "textures": {
+        "layer0": "claudemod:item/prismium_alloy_rapier"
+    }
+}

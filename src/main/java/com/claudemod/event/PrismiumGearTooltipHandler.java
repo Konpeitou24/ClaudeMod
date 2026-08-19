@@ -70,6 +70,7 @@ public class PrismiumGearTooltipHandler {
                 || item == ModItems.PRISMIUM_HOE.get()
                 || item == ModItems.PRISMIUM_SWORD.get()
                 || item == ModItems.PRISMIUM_WARHAMMER.get() // session 69
+                || item == ModItems.PRISMIUM_ALLOY_RAPIER.get() // session 71
                 || (item instanceof ArmorItem armorItem && armorItem.getMaterial() == ModArmorMaterials.PRISMIUM);
 
         if (hasUsageHint) {
