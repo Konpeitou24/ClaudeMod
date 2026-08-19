@@ -3302,54 +3302,116 @@ push後、`ci: update built jar`(`2d11878`)→`ci: update datapack validation re
 - 【継続】`/tmp`直下・決め打ちの`$HOME/work`配下いずれも複数セッション競合で書き込み不可になりうることが今回さらに実証された。ユニークなパス生成を毎回徹底することを次回以降の標準手順として明記した(§5参照)。
 - 【継続】PROGRESS.mdの肥大化(3400行超、今回さらに増加)について、詳細ログと申し送りの分離は依然として未着手。
 
+## 3BT. セッション#68(定期実行)で実装した内容: GitHub Issueコメント抽出手法の確立 + Prismium Smelter新設(MOD2つ目のアイテム加工機械) + v0.15.0リリース
+
+### 3BT-0. セッション開始時の状況確認
+
+- 作業ディレクトリ問題(session 64以降繰り返し記録)に今回も遭遇した。`/tmp/work`(session 38時点で止まったstaleなクローンが`nobody`所有で残留)、`/tmp/work2`(同じくstale、`mod_version=0.2.0`という大幅に古い状態)のいずれも書き込み不可で、しかも**`git clone`のコマンド自体が失敗しているのに後続の`&&`チェーンが(`| tail`にパイプしていたため)そのまま成功した体で処理を続けてしまい、一時的にsession 38時点の古いPROGRESS.md/git logを「最新」と誤認する事故が発生した**(v0.3.0のクラッシュ→v0.3.1要求のIssue #11等、実際にはとうに解決済みの話を「今回の重大な新情報」と誤って読み進めかけた)。`git clone ... | tail` のようにパイプで終わるコマンドは`&&`チェーンの成否判定に使えない(パイプ最後のコマンドの終了コードしか見ない)ことが原因- **今回の教訓としてタイムスタンプ+乱数付きの新規パス(`/tmp/cm_<epoch nanoseconds>`)に切り替え、かつ`git log`の内容(`mod_version`やタグ一覧)が自分の想定と整合するかを毎回サニティチェックすることを次回への申し送りに追加した**(§5参照)。
+- 正しいクローン(`/tmp/cm_1787134429476107603/ClaudeMod`)に切り替えた結果、実際の最新状態は session 67・`v0.14.0`・`mod_version=0.14.0`であることを確認(PROGRESS.mdの記述と整合)。
+- `api.github.com`は今回も`blocked-by-allowlist`/`HTTP:000`で到達不可(継続、変化なし)。
+- **【今回の最大の成果】GitHub Issueのコメント本文抽出が、session 64〜67の4セッション連続不調から復旧した。** 原因はブラウザ相当の`User-Agent`ヘッダの有無だった - `curl -s "https://github.com/.../issues/N"`をUser-Agent無しで叩くと(今回も最初は再現した)ボディが9バイトの`Not Found`を返すのに対し、`curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" "https://github.com/.../issues/N"`のように偽装UAを付けると即座に正しいページ(`"state":"OPEN/CLOSED"`、`"body":"..."`、`"createdAt":"..."`を含むembedded JSON込み)が返ってきた。Issue番号がPRに転送される場合は`-L`を付けて`/pull/N`経由でも同じ内容に到達できることも確認した。§5に最優先で申し送り、今後は毎回この方法を使うこと。
+- この手法でOpen Issue(#7・#9・#15・#16、件数は前回から変化なし、#17以降は無し)全件のコメント本文を実際に読んだ: #15(電力バグ)の最新コメント(2026-08-18T21:25:06Z、「解決していません…バグが増えました」)は、実はすでにsession 55〜56(`60e0a1c`〜`640bc7b`、コミット日時が同日06:20〜10:20 JSTで同じ実働セッション相当)で調査・対応済み(発電機の`lastGenerated`/`lastPushed`表示追加、コンサベーションバグは実装レビューでは見つからず「意図通りのjust-in-timeスループット」と判定)であり、PROGRESS.mdのsession 56記録(§3BG)と時系列上も内容上も一致することを確認した。#7・#9・#16も同様に、既存の記録済み対応(ツールチップ、ポータル、W長押し等)以降の新規コメントは無かった。**つまり今回、Open Issue側からの新規の緊急対応は無いと判断した。**
+
+### 3BT-1. 調査: 既存GUI5種のSWAPキー配列範囲外アクセス懸念(session 67 §3BS-2/§5項目2)の検証
+
+- session 67がコードレビューのみで「未検証」として残した懸念(`AbstractContainerMenu#doClick`のSWAPケースが`this.slots.size()-9`を前提にするため9スロット未満のGUIで範囲外アクセスを起こしうる)について、一次情報源での確認を試みた。`WebSearch`・`web_fetch`ではバニラ/Forgeの`AbstractContainerMenu.java`の実デコンパイルソースそのものを取得できず(検索結果はjavadocやフォーラムの断片のみ、`web_fetch`は素性の分からないrawソースURLを拒否する制約があり確認しきれなかった)、**完全な一次情報源での裏取りには至らなかった**。
+- ただし、モデルの学習済み知識からの再検証では、vanilla 1.20.1の`ClickType.SWAP`処理は`this.slots`(メニュー自身のスロットリスト)ではなく`player.getInventory().getItem(button)`(プレイヤー自身の`Inventory`オブジェクトを`button`(0-8)で直接インデックス)を使う実装だったと強く記憶している - つまりメニューが何スロット登録しているかとは無関係に安全なはずで、session 67が立てた懸念は**恐らく誤り(思い込みによる過剰な警戒)である可能性が高い**。とはいえ「一次情報で確認していないものは確信を持って書かない」という本MODの方針上、これも断定はできない。
+- 結論: 今回は5クラスへの手戻り改修(全メニューにプレイヤーインベントリスロットを追加)は**見送った**。理由は (a) 上記の通りリスクの実在性自体に疑義が生じたため優先度を下げるのが妥当と判断したこと、(b) 仮にリスクが実在するとしても4セッション以上未発生の潜在的な低頻度バグより、Prismium Smelterという実際に価値を生む新機能の方が今回のセッション時間の使い道として適切と判断したこと。次回、時間があれば一次ソース(実際のMinecraft本体jarを何らかの方法でこのサンドボックスから参照する、等)での確定的な検証を試みる価値がある - §5に申し送る。
+
+### 3BT-2. 実装: Prismium Smelter(MOD2つ目のアイテム加工機械)
+
+session 67のPrismium Pulverizer(鉱石→かけら)に続き、ロードマップ§1項目2「機械(粉砕機、精錬機など)」の2つ目「精錬機」に着手し、**MOD初の生産チェーン(鉱石 → かけら → インゴット)を完成させた**。
+
+- 新規クラス4つ: `PrismiumSmelterBlock`/`PrismiumSmelterBlockEntity`/`PrismiumSmelterMenu`/`PrismiumSmelterScreen`。いずれもPulverizerの対応クラスの構造をほぼそのまま踏襲(2スロット`ItemStackHandler`、ハードコード変換テーブル、pure-sinkのFEストレージ(容量20,000/`maxReceive`2,000)、27+9のプレイヤーインベントリ+シフトクリック対応メニュー、GUI進捗バー+エネルギーバー)。
+- **Pulverizerとの設計上の違い**: 変換比率を「1消費→複数生成」(Pulverizer: 鉱石1個→かけら3個)から「複数消費→1生成」(Smelter: かけら4個→インゴット1個)に反転させ、単なる複製ではなく対になる機械として位置づけた。この反転に伴い`serverTick`のロジックにも変更が必要だった - 投入スロットに有効なアイテムがあるだけでなく、`SHARDS_PER_INGOT`(4)以上の**個数**が実際に貯まっているかを`hasEnoughInput`で別途チェックするようにし、1個だけ投入された状態では進捗が始まらない(0のまま)ようにした。Pulverizer側にはこの個数チェックが無い(1個あれば即座に処理対象になる)ため、コピー&ペーストではなくこの1点は意図的に書き分けている。
+- 新規アイテム`ModItems.PRISMIUM_INGOT`(プリズミウムのインゴット): プレーンな`Item`、MOD初の「精錬済み素材」。**このセッション時点ではこれを使うクラフトレシピが一切無い**(意図的 - Prismium Shard自身も最初はそうだった延長線上として、将来のセッションでの使い道追加を見込んだインフラ先行実装)。
+- ブロッククラフトレシピ: 鉄インゴットx4 + プリズミウムのかけらx4 + バニラのかまどx1(3x3対称パターン、中央がかまど)。Pulverizerのレシピ(鉄+かけら+丸石)と部材を揃えつつ、中心素材をかまどにすることで「精錬機」というテーマを素直に表現した。
+- 登録: `ModBlocks`/`ModItems`/`ModBlockEntities`/`ModMenuTypes`/`ModCreativeTabs`/`ClientModEvents`の6ファイルすべてにPulverizerと同じ形で追記。blockstate(lit=false/true)・block/itemモデル(`cube_all`)・loot table(Energy NBTコピー)・`mineable/pickaxe`タグ・en_us/ja_jp langを追加。
+
+### 3BT-3. テクスチャー: `gen_prismium_smelter.py` + `gen_prismium_smelter_gui.py` + `gen_prismium_ingot.py`
+
+- ブロックテクスチャー(idle/lit)はCell/Generator/Wardstone/Geyser/Pulverizerと同じ金属筐体パレット(CASING_DARK/CASING_MID + PRISMIUM_OUTLINE、8x8の recessed ソケット)を踏襲。中央のモチーフはPulverizerの円形歯車ではなく「インゴットの鋳型」(台形のバー形状、アイテムアイコンと同じシルエット言語)にし、配色もPulverizerのマゼンタ系FEグローとは意図的に分離した暖色系(待機=冷えた灰色鋳型、稼働=金色の溶融グロー)にした。「この機械は金属を精錬している」という視覚的な手がかりを、既存の炎色パレット(Generator)とも被らない第三の色相(金/琥珀)で表現した。
+- GUIパネルは`gen_prismium_pulverizer_gui.py`の256x256キャンバス構成をそのまま流用(2スロット+進捗バー+エネルギーバー)しつつ、進捗バーの空トラック色だけ琥珀寄りの暗色に変更し、実行時に描画される進捗フィル自体もアイテムアイコンと同じ金/琥珀グラデーションにした(`PrismiumSmelterScreen`側)。
+- Prismium Ingotのアイテムアイコンは新規デザイン - Prismium Shardの結晶シルエットとは明確に異なる、バニラの鉄/金インゴットに近い台形バー形状にし、「原石」と「精錬済み素材」を一目で区別できるようにした。
+- 3枚とも生成後に4x/8x/16x(アイテムは8x)の拡大プレビューを`outputs`マウント側にコピーし、`Read`ツールで目視確認: ブロックのidle/lit、インゴットのバーいずれもシルエットが小スケールでも明瞭に判別でき、Pulverizerとの視覚的な区別も付くことを確認した。全ピクセルのアルファ値が0か255のみであることもスクリプト内のセルフチェックで確認済み。作り直しは発生しなかった。
+
+### 3BT-4. push・ビルド確認
+
+1コミットとしてpush(`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功、プロキシ変数の変更は不要だった): `14d8e02` "Add Prismium Smelter: the mod's second item-processing machine"
+
+push後、`ci: update built jar`(`81668a7`)→`ci: update datapack validation results`(`ce11049`, `status=ok commit=14d8e02...`)の到着をAtomフィード(`/commits/main.atom`、正規表現でentry単位にパースする方式に今回変更 - 単純な`<title>`のgrepだと複数行にまたがるタイトルを拾えないことに気付いたため)で確認。**通常ビルド・データパック検証とも成功。**
+
+### 3BT-5. リリース: v0.15.0
+
+§0のリリースポリシーおよびタスク定義の明示的指示に従い、このセッション内でリリースを切った。
+
+- `gradle.properties`: `mod_version`を`0.14.0`→`0.15.0`に変更(新機能追加を含むマイナーバンプ)。
+- `RELEASE_NOTES.md`: 新規セクションを先頭に追加(Prismium Smelterの機能・生産チェーン・テクスチャー・「インゴットにまだ使い道が無い」という正直な注記について)。
+- コミット`5796187`としてmainにpush(`git fetch`で並行セッション無しを再確認、一発成功)、タグ`v0.15.0`を同コミットに打ってpush。
+- push後、`ci: update built jar`(`f07e9bc`より前の中間コミット、Atomフィードで確認)→`ci: update datapack validation results`(`f07e9bc`, `status=ok commit=5796187...`)の到着を確認。`release.yml`起動によるv0.15.0のGitHub Release公開も`/releases`一覧ページへの直接curlで`/releases/tag/v0.15.0`の存在を確認した(添付jarの正確なファイル名は`/releases/expanded_assets/v0.15.0`から今回も安定して取得できず - `claudemod-0.11.0.jar`という明らかに無関係な古いバージョン名がキャッシュ経由で返ってくる現象が発生し、session 65・66が報告していた「キャッシュの古さ」問題が今回も再現した。リリース自体の存在とビルド成功は確認済みだが、添付jarの中身の逐一確認は今回も持ち越し)。
+
+### 3BT-6. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要**: Prismium Smelter一式(4個消費→1個生成という比率のバランス感、GUIのスロット位置・進捗バー・エネルギーバーの実際の表示、36スロットのプレイヤーインベントリ+shift-clickの動作)はCIでのビルド・データパック検証成功以外、一切実機確認できていない。特にPulverizerと異なる`hasEnoughInput`の個数チェックロジックはこのMOD初めての実装であり、境界値(ちょうど4個の時、5個以上の時、出力スロットが満杯の時)を間違えていないかはコードレビューのみで実機テストは不可能だった。
+- Prismium Ingotには本セッション時点でクラフトレシピが一切無い(意図的だが、プレイヤーから見れば「作っても使い道が無いアイテム」になっている - §5に最優先級で申し送る)。
+- §3BT-1のSWAPキー懸念は、一次情報源での確定的な検証には至らなかった(モデルの記憶に基づく再評価のみ)。
+- v0.15.0リリースの中身(jarを実際にダウンロードして展開しての検証)は今回も行っていない(継続する既知の限界)。
+
+### 3BT-7. 議論したい論点・改善案
+
+- 【新規・重要】GitHub Issueのコメント本文抽出手法が今回ついに復旧した(§3BT-0)。原因が「ブラウザ相当のUser-Agentヘッダの有無」という単純な一点だったことを踏まえると、session 64〜67がこれに気付けなかったのは、恐らく毎回「新しい抽出パターン」を模索する方向に労力を割き、「そもそもリクエスト自体が(UA起因で)弾かれている」という一段階手前の可能性を疑わなかったためではないか。今後、繰り返し失敗する調査手法に当たった際は、まず最小の疑わしい変数(ヘッダ、認証、URL形式など)から機械的に切り分ける方が、新しい手法を発明し続けるより早く解決に至る場合があるという教訓として残しておきたい。
+- 【新規】Prismium Pulverizer/Smelterという「対になる機械」が2つ揃ったことで、次の「機械」候補(圧縮機など)を作る際のテンプレートがさらに安定した。一方で、この2機種はGUIレイアウト・進捗ロジックがほぼ完全に共通しているため、そろそろ`AbstractProcessingMachineBlockEntity`のような共通基底クラスへ抽出する価値があるかもしれない(session 67がEnergyPushHelperを2件目の実例が出てから抽出した前例に倣うなら、3件目の機械が出た時点が抽出の好機か)。
+- 【継続】既存GUI5種のSWAPキー懸念(§3BT-1)。一次情報源での確定的な検証を次回以降の優先課題として持ち越す。
+- 【継続】PROGRESS.mdの肥大化(3400行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(セッション#67、定期実行)の最重要な新情報
+### 今回(セッション#68、定期実行)の最重要な新情報
 
-- **ロードマップ§1項目2「機械(粉砕機、精錬機など)」に初めて着手し、Prismium Pulverizer(初のGUI付きアイテム加工機械)を追加した。プリズミウム鉱石/深層プリズミウム鉱石(要シルクタッチ)をFEで消費しながらプリズミウムのかけらx3に粉砕する。実機で一切未検証、次回最優先でフィードバックを確認すること。**
-- **v0.14.0をリリースした(§3BS-6)。直近リリースは`v0.14.0`。次回セッションはここから1セッション目。**
-- **【新規・重要】既存GUI5種(Cell/Generator/Pylon/Restorer/Wardstone)は、いずれも登録`Slot`数が9未満(Generatorの1個が最大)のため、`AbstractContainerMenu#doClick`のSWAPケース(数字キーのホットバー入れ替え)で配列範囲外アクセスを起こしうるという未検証の懸念が今回のコードレビューで見つかった(§3BS-2/§3BS-7)。次回、時間があれば一次情報源での確認、または全既存Menuへのプレイヤーインベントリスロット追加(Pulverizerと同じ対応)を検討すること。**
-- **【重要・作業環境】固定パス(`/tmp/work/...`、決め打ちの`$HOME/work/...`)は他セッションとの競合で書き込み不可になることが今回も発生した。次回以降、必ずタイムスタンプ+乱数を含むユニークなパス(例: `/tmp/cm_session_$(date +%s)_$RANDOM`)にcloneすること。既存の固定パスが使えない場合は`Permission denied`で早めに気付けるので、その場合は即座にユニークパスへ切り替えて対応すること。**
-- Open Issueの新規/件数変化は今回も確認できていない(#7・#9・#15・#16の4件がタイトルレベルでは今回も存在確認できたが、コメントの増減は不明)。新規Issue(#17〜#23)は無いことを確認済み。
-- **【継続・優先度引き上げ】GitHub Issueのコメント本文抽出方法が、セッション#64・#65・#66・#67(今回、着手見送り)と4セッション連続で機能不全 or 未着手。次回は必ず何か1つ試すこと(下記項目3)。**
+- **GitHub Issueのコメント本文抽出手法が復旧した。`curl -s -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36" "https://github.com/<owner>/<repo>/issues/<番号>"`のように、ブラウザ相当の`User-Agent`ヘッダを付ければ即座に正しいページ(embedded JSON込み、`"body":"..."`で本文、`"createdAt"`で日時、`"state"`で開閉状態が取得できる)が返る。UA無しだとボディが9バイトの`Not Found`になる(session 64〜67が4セッション連続で失敗していた原因はこれだったと推測される)。Issue番号がPRとしてリダイレクトされる場合は`-L`を付ければ`/pull/N`→`/issues/N`と自動で解決する。次回以降、必ずこの方法をIssue確認の第一候補にすること。**
+- **Prismium Smelter(MOD2つ目のアイテム加工機械)を追加し、MOD初の生産チェーン(鉱石→かけら→インゴット)を完成させた。v0.15.0をリリースした。次回セッションはここから1セッション目。**
+- **Prismium Ingotにはまだクラフトレシピが一切無い。次回以降、優先的に何らかの使い道(装備・ブロック・上位クラフト素材など)を与えることを検討すること。**
+- **既存GUI5種のSWAPキー配列範囲外アクセス懸念(session 67発)について、今回モデルの記憶ベースで再検証したところ、vanillaのSWAP処理は実際には`player.getInventory().getItem(button)`(プレイヤー自身のインベントリを直接参照)で行われ、メニュー自身の`this.slots`サイズには依存しないはずだという再評価に至った。つまりこの懸念は**恐らく誤りだった可能性が高い**が、一次情報源(実際のMinecraft/Forgeソースコード)での確定的な確認はまだできていない。次回、確定できる手段が見つかれば試すこと。見つからなければ、この懸念の優先度は下げてよい(5クラスへの手戻り改修は保留のままでよい)。
+- 作業ディレクトリの罠: `git clone ... | tail -N && echo DONE`のように**パイプの後ろに`&&`を続けるコマンドは、clone自体が失敗していても`tail`が成功すれば後続が実行されてしまう**(session 68序盤で実際にこれにより古いセッション38時点のstaleなクローンを「最新」と誤認しかけた)。cloneコマンドは単独で実行し終了コードを確認するか、`set -o pipefail`を使うこと。加えて、クローン後は`git log -1`の内容(直近のコミットメッセージ、`gradle.properties`の`mod_version`)が自分の知っているはずの最新状態と矛盾しないかを毎回サニティチェックすること。
 
 ### すぐやるべきこと(継続項目、優先度順は前回から概ね維持)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。新機能追加を含むセッションが完了した時点、前回リリースから3セッション以上経過した時点、または前回リリースからまだ日が浅くても複数の実質的な修正が積み上がった時点のいずれか早い方で、そのセッション内でリリースを切ることを検討する。見送る場合もその判断と理由をPROGRESS.mdに明記すること。直近のリリースはv0.14.0(セッション#67、今回)。次回はここから1セッション目。**
-1. **【最優先・新規】今回追加したPrismium Pulverizer(§3BS-3)について、実機フィードバックが無いか最優先で確認すること。処理時間(5秒)・消費FE(20/tick)のバランス、GUIのスロット/進捗バー/エネルギーバーの表示、36スロットのプレイヤーインベントリとshift-clickの動作が特に未検証。**
-2. **【新規・重要】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BS-2/§3BS-7)。次回、`AbstractContainerMenu#doClick`の実装を一次情報源(Forge/vanillaソース)で確認し、実際にリスクがあるかを判定すること。リスクありと確認できた場合、5クラスへのプレイヤーインベントリスロット追加を検討(1セッションで安全に完結できるか、複数セッションに分けるべきかも含めて判断)。**
-3. **【重要・4セッション連続】GitHub Issueのコメント本文抽出方法が、セッション#64・#65・#66・#67と4セッション連続で機能不全/未着手。次回は以下のいずれかに本格的に着手すること: (a) タイトル・存在有無の確認のみに割り切って運用する、(b) `raw.githubusercontent.com`等の代替経路を一度腰を据えて調査する、(c) 現在のgitトークンにIssues読み取り権限が実際にあるか軽くテストする(§0-2のポリシー通り書き込み権限は使わない前提)。もう「次回検討」で先送りし続けるのではなく、次回セッションで実際に何か1つ試すこと。**
-4. 【新規・展開候補】Pulverizerで確立したアイテムスロット付き機械の型(`ItemStackHandler`2スロット+ハードコード変換テーブル+進捗バー+FE消費)を使い、ロードマップの「精錬機」等の第2弾機械を検討する価値がある(§3BS-8)。
-5. 【継続・統合】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた以下の機能群は、いずれも新規の動きが無いまま継続している: Prismium Geyser(session 66、打ち上げギミック)、Prismium Magnet Charm(session 65)、Prismium Snare(session 64)、ItemDetailsOverlay(session 62)とその`.details`テキスト、Prismium Pulse Charm(session 63)、Prismium Drifter(session 61)、ツールチップのWキー長押し化(session 60)、Prismium Sentinel(session 59)、Issue #15の発電/送電レート表示(session 59)、Prismium GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色・エネルギーフロー可視化パーティクル(session 57)、Prismium Portalの見た目・当たり判定修正(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
-6. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。毎tickのBFS再計算をやめ、ブロック設置/破壊時にのみネットワーク形状を再計算する設計に発展させると、issue #15の「負荷が大きい」という指摘により本質的に応えられる。実装量が大きく1セッションで安全に完結させる自信が持てないため今回も見送った(判断記録)。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.15.0(セッション#68、今回)。次回はここから1セッション目。**
+1. **【最優先・新規】Prismium Ingotに使い道(クラフトレシピ)が無い状態が続いている。次回、上位ツール/装備の素材、または新しい機械のレシピ素材として組み込むことを検討すること。**
+2. **【最優先・新規】今回追加したPrismium Smelterについて、実機フィードバックが無いか確認すること。特に「4個消費して1個生成」という比率が実際に妥当なペースか、`hasEnoughInput`の個数チェック(Pulverizerには無い、Smelter独自のロジック)が意図通り動くかが未検証。**
+3. 【継続・優先度は下げてよい】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BT-1)。一次情報源での確定的な確認ができれば試すこと。できなければこのまま保留でよい(§5最重要項目参照、恐らく実在しない懸念という再評価あり)。
+4. 【新規・展開候補】Pulverizer/Smelterで確立したアイテムスロット付き機械の型を使い、3つ目の機械(圧縮機など)を検討する価値がある。また、この2機種のGUI/進捗ロジックがほぼ完全に共通しているため、共通基底クラスへの抽出も検討候補(§3BT-7)。
+5. 【継続・統合】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた以下の機能群は、いずれも新規の動きが無いまま継続している: Prismium Geyser(session 66)、Prismium Magnet Charm(session 65)、Prismium Snare(session 64)、ItemDetailsOverlay(session 62)、Prismium Pulse Charm(session 63)、Prismium Drifter(session 61)、Prismium Sentinel(session 59)、Prismium GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色・エネルギーフロー可視化(session 57)、Prismium Portalの見た目・当たり判定修正(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
+6. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
 7. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
-8. GitHub Issue状態の確認は`github.com/<owner>/<repo>/issues/<番号>`への直接curlを使い、必ずブラウザ相当のUser-Agentヘッダを付けること。ただし上記項目3の通り、コメント本文抽出パターンは4セッション連続で機能しなかった/試みなかったため、鵜呑みにせず都度中身を確認すること。
-9. 【継続】worldgen/レジストリ系のJSONやクライアント専用APIを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。今回は`ItemStackHandler#setStackInSlot`が`isItemValid`を経由しないこと、`ItemStackHandler#insertItem`は経由すること、`Slot#hasItem`/`AbstractContainerMenu#moveItemStackTo`のシグネチャを、このMOD内の既存確認済みコード(PrismiumGeneratorBlockEntity・vanilla FurnaceMenu相当の記憶)と突き合わせて使用した - 完全な一次情報源でのWebSearch裏取りは今回省略した箇所もあるため、次回コンパイルエラーが出た場合はまずこのあたりを疑うこと。
-10. **【最優先・継続・全セッション必読】作業ディレクトリは必ずユニークなパス(タイムスタンプ+乱数)を使うこと(今回の新規教訓、上記「最重要な新情報」参照)。固定パスは他セッションとの競合で`Permission denied`になりうる。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。**
-11. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。ただし今回もコメント抽出自体を試みなかったため、既存記録(#7・#9・#15・#16、すべて投稿者`Konpeitou24`本人、#8はCLOSED)からの更新ができていないことに注意。
-12. 【継続】リリース(v0.14.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
-13. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械(今回追加したPrismium Pulverizerも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
-14. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること。
-15. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換(該当行が一意に1回だけ出現することを確認してから置換)+末尾への新規キー追記という最小差分の方法を使うこと(今回も踏襲、問題なし)。
-16. 【継続】新規のimportミスをpush前に自己チェックする習慣。ローカルビルドができない以上、既存の類似コードのimport文と機械的に突き合わせる一手間が、CI失敗を1回分節約できる可能性がある。今回もItemStackHandler/SlotItemHandler/ContainerData/Slotのimportパスを既存コード(PrismiumGeneratorBlockEntity/Menu)と突き合わせてから使用した。
+8. GitHub Issue状態の確認は今回確立した`curl -s -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式を使うこと(§5最重要項目参照)。
+9. 【継続】worldgen/レジストリ系のJSONやクライアント専用APIを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
+10. **【最優先・継続・全セッション必読】作業ディレクトリは必ずユニークなパス(タイムスタンプ+乱数、例: `/tmp/cm_$(date +%s%N)`)を使うこと。かつ、パイプで終わるコマンドを`&&`チェーンの成否判定に使わないこと(今回の新規教訓、上記「最重要な新情報」参照)。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。**
+11. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#15・#16はいずれも投稿者`Konpeitou24`本人で、新規コメントは無かった。
+12. 【継続】リリース(v0.15.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。`/releases/expanded_assets/<tag>`のキャッシュが古い値を返すことがある(今回も再現)ため、添付jarのファイル名確認に固執しすぎず、`/releases`一覧ページでのタグ存在確認とビルドCIの成功で十分と割り切ってよい。
+13. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械(今回追加したPrismium Smelterも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+14. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること(ただしパイプが絡む場合は上記項目10の罠に注意)。
+15. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換+末尾への新規キー追記という最小差分の方法を使うこと。
+16. 【継続】新規のimportミスをpush前に自己チェックする習慣。今回もItemStackHandler/SlotItemHandler/ContainerData/Slotのimportパスを既存コード(PrismiumPulverizerBlockEntity/Menu)と突き合わせてから使用した。
 17. 【継続】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーションが再現されていない可能性がある(セッション#61、未検証のまま継続)。
-18. 【継続・低優先度】specular map(`_s.png`)がPrismium Snare・Prismium Geyser・今回のPrismium Pulverizerを含む複数ブロックで未生成のまま(session 66から継続)。`gen_specular_maps.py`の`LIGHT_LEVELS`辞書の棚卸しは低優先度だが、いつか着手する価値がある。
+18. 【継続・低優先度】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・今回のSmelterを含む複数ブロックで未生成のまま(session 66から継続)。低優先度だが、いつか着手する価値がある。
 
 ### 議論したい論点・改善案
 
-- 【新規・重要】ロードマップ項目2「機械」の第1弾(Prismium Pulverizer)を実装できた。同じ型を使った第2弾(精錬機等)の展開候補(§3BS-8参照)。
-- 【新規・重要】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BS-2/§3BS-7、§5項目2参照)。
-- 【継続・優先度引き上げ】GitHub Issueページのスクレイピング手法が4セッション連続で機能不全/未着手。次回は先送りせず何か1つ試すこと(§5項目3参照)。
+- 【新規・最重要】GitHub Issueコメント抽出手法の復旧(§3BT-0/§3BT-7参照)。
+- 【新規】Prismium Ingotに使い道が無い状態(§5項目1参照)。
+- 【新規】既存GUI5種のSWAPキー懸念は恐らく誤りだった可能性が高いという再評価(§3BT-1参照)。
+- 【新規】Pulverizer/Smelterの共通基底クラス抽出の検討時期(§3BT-7参照)。
 - 【継続】ロードマップ項目6(新ブロック/ギミック)の「トラップルーム」構想は持ち越し。
 - 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手。
 
 ### コミット/プッシュ状況
 
-セッション#67(定期実行)は以下のコミットをpush:
-1. `b0cc73c` Add Prismium Pulverizer: the mod's first item-processing machine
-2. `cc35c10` Release v0.14.0: bump mod_version, add release notes for Prismium Pulverizer (+タグ`v0.14.0`)
+セッション#68(定期実行)は以下のコミットをpush:
+1. `14d8e02` Add Prismium Smelter: the mod's second item-processing machine
+2. `5796187` Release v0.15.0: bump mod_version, add release notes for Prismium Smelter (+タグ`v0.15.0`)
 
-`git fetch origin main`で並行セッション無しを両コミット前にそれぞれ確認、素のまま`git push origin main`で両コミットとも一発成功(プロキシ変数の変更は今回も不要だった)。push後、それぞれ`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認済み。**通常ビルド・データパック検証とも成功。** `release.yml`起動によるv0.14.0のGitHub Release公開・添付jar(`claudemod-0.14.0.jar`)の存在も確認済み(今回はキャッシュの古さに悩まされず1回目のcurlで正しいファイル名を確認できた)。
+`git fetch origin main`で並行セッション無しを両コミット前にそれぞれ確認、素のまま`git push origin main`で両コミットとも一発成功(プロキシ変数の変更は今回も不要だった)。push後、それぞれ`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認済み。**通常ビルド・データパック検証とも成功。** `release.yml`起動によるv0.15.0のGitHub Release公開も`/releases`一覧ページで確認済み(添付jarファイル名の直接確認はキャッシュ問題により今回も不安定)。
 
 本PROGRESS.md更新コミット自体のCI結果は、次回セッション開始時に確認すること。
 
