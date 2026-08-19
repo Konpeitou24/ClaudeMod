@@ -2862,58 +2862,110 @@ push後`git fetch`のポーリングで`ci: update built jar`(`d3062f9`)→`ci: 
 - Issue #7の本体である「本格的なアニメーション説明UI」(コメント3の要求)は、今回もキーバインド+簡易ツールチップ切り替えという小さな一歩に留めており、専用Screenでの説明画面遷移そのものは依然未着手(次回以降の設計方針は§5冒頭を参照)。
 - 新規ブロック・アイテム・MOB等の新規コンテンツ追加は今回も無し(質寄りのセッションとして選択、セッション#57・#59の「質と量を交互に」というバランス感覚を踏まえた判断)。
 
+## 3BM. セッション#61(定期実行)で実装した内容: Prismium Drifter追加(モッド初の非戦闘MOB) + v0.9.0リリース
+
+### 3BM-1. 状況確認
+
+`$HOME`配下(`~/work/ClaudeMod`)にclone、`/tmp`系の権限問題は今回このパスを使ったことで発生しなかった(継続する回避策として有効)。`api.github.com`は今回もHTTP応答なし(`curl`が`HTTP:000`、名前解決自体はできるがおそらく許可リスト外)で到達不可、継続する既知の制約。`builds/last_datapack_validation_summary.txt`は`status=ok commit=48b211f...`(セッション#60のPROGRESS.md更新コミット)を記録しており、前回セッション終了時点のビルドは成功していたことを確認した。
+
+GitHub Issue確認: `github.com/<owner>/<repo>/issues/<番号>`への直接curl(`?_cb=<timestamp>`付き、プロキシは弄らない素の状態)で#7・#9・#15・#16すべて取得成功。BeautifulSoup等での本文抽出が難しいReactページのため、今回は埋め込みJSONの`"createdAt":"..."`パターンを正規表現で機械的に全件抽出し、直前セッション(#60)がPROGRESS.mdに記録済みの`createdAt`一覧と突き合わせる方式(申し送り項目14で指示されている手順)を徹底した。結果、Issue #7には新規コメント無し(既知の2件のみ、`ReferencedEvent`のタイムラインエントリのみ増えていたが、これはコミット参照であってコメントではない)。Issue #15はコメント2件(`5334178264`・`5334677579`)で既存記録と一致、新規なし。Issue #9・#16はコメント0件で変化なし。**新規のIssueコメントは無し**。`PENDING_ISSUES.json`・`ISSUES_TO_CLOSE.json`・`RELEASES_TO_DELETE.json`はすべて空(`[]`)。`github.com/<owner>/<repo>/issues`一覧ページを同様の手法で確認し、Issue番号は#5〜#16の範囲で新規は無いことも確認した。
+
+`git tag --list --sort=-creatordate`で直近リリースが`v0.8.0`(セッション#59)、セッション#60は見送り、と確認(§5参照、release policyのitem 0)。
+
+### 3BM-2. 方針決定
+
+新規のIssueコメントが無かったため、Issue対応よりも新規コンテンツ追加を優先することにした。セッション#60が「質(UX/フィードバック対応)寄り」だったこと、および複数セッションにわたって申し送り項目11(h)に記録され続けていた「非戦闘・環境系の新MOBを検討」という積み残しを踏まえ、今回は**モッド初の非戦闘MOB「Prismium Drifter」**を実装した。近接2体(Wraith/Deep Wraith)+遠距離1体(Sentinel)に続く4体目で、初めて「戦わない」MOBとなる。
+
+### 3BM-3. 実装: Prismium Drifter(モッド4体目のMOB、初の非戦闘・環境系エンティティ)
+
+Wraith/Sentinelが確立した「バニラMOBを直接継承し、AI・モデル・レンダラーはバニラのものをそのまま流用、テクスチャーだけ差し替える」低リスクパターンを踏襲しつつ、今回はモッド初めて`Monster`系ではなく`Squid`(`net.minecraft.world.entity.animal.Squid`、`WaterAnimal`のサブクラス)を直接継承した。Prism Realmが「現状フラットな水世界のみ」(申し送り項目11-bで継続言及)という設定と、無害なAnimal系のためequipment-slot/attack-AIのオーバーライドが一切不要という低リスクさの両方から選定した。
+
+- **API検証**: このモッドが`Monster`系以外のMOBを実装するのは初めてで、`ModelLayers.SQUID`・`SquidModel`のジェネリクス形状・`Squid.createAttributes()`の存在・`MobCategory.WATER_CREATURE`・当たり判定0.8x0.8などをすべて事前に一次情報で裏取りした。具体的には: Yarn mappingsのjavadoc(`SquidEntityModel<T extends Entity>`がジェネリックな単一`ModelPart`コンストラクタを持つことを確認)、Forge公式マッピングベースのjavadocミラー(nekoyue.github.io/ForgeJavaDocs-NG、`Squid.createAttributes()`と`ModelLayers.SQUID`の実在を確認)、Minecraft Wikiの Squidページ(当たり判定0.8x0.8・Water creatureカテゴリを確認)。特に`Squid.createAttributes()`はYarn側の命名(`createSquidAttributes`)とForge公式マッピング側の命名(`createAttributes`)が食い違うことが判明し、Forge公式マッピング側のjavadocミラーで直接確認する必要があった一件(Yarn命名を鵜呑みにしなかったことで防げた誤り、申し送りに追記)。
+- **レンダラー**: `PrismiumWraithRenderer`が`ZombieRenderer`ではなく汎用の`HumanoidMobRenderer`を直接継承したのと同じ理由(バニラ専用レンダラーのクラス形状が確認できないリスクを避ける)で、`PrismiumDrifterRenderer`もバニラの`SquidRenderer`ではなく汎用`MobRenderer<T, M>`を直接継承した。トレードオフとして、バニラSquidの遊泳時の回転アニメーション(`SquidRenderer#setupRotations`)は再現されない(通常の直立姿勢のまま移動する見た目になる可能性がある) - 次回以降の改善候補として申し送りに記載。
+- **スポーン配置**: `Monster::checkMonsterSpawnRules`のような都合の良い既存predicateが無く、かつバニラSquid専用のスポーンルールヘルパーメソッド名を確認できなかったため、`FluidTags.WATER`を使った自前の簡潔なラムダ(`(type, level, spawnType, pos, random) -> level.getFluidState(pos).is(FluidTags.WATER) && level.getFluidState(pos.above()).is(FluidTags.WATER)`)を新規に書いた。未検証のバニラヘルパー名に依存するより、意図が明確で検証可能な自前ロジックを選んだ。
+- **サウンド**: `GLOW_SQUID_AMBIENT`/`HURT`/`DEATH`/`SQUIRT`(すべてバニラ既存アセット、1.17で追加されたグロウスクイド用)を採用。プリズミウムの発光する見た目に、通常のイカよりグロウスクイドの音の方が合うと判断。新規アセット追加は不要。
+- **ステータス**: HP12(バニラSquidの10からやや増量、Prism Realmの他の敵性MOBから多少長く逃げられるように)、それ以外は`Squid.createAttributes()`の既定値のまま。
+- 登録一式: `ModEntities`(`MobCategory.WATER_CREATURE`、0.8x0.8)、`ModEntityEvents`(AttributeSupplier登録・上記の自前spawn placement predicate登録、`SpawnPlacements.Type.IN_WATER`はモッド初)、`ClientModEvents`(レンダラー登録)、`ModItems`(スポーンエッグ、`ForgeSpawnEggItem`、色はWraithのベース色0x2b1033+モッド標準アクセント0x39e6d6)、`ModCreativeTabs`(クリエイティブタブへの追加)。データファイル: ドロップテーブル(墨袋1-2、10%でプリズミウムの欠片)、`forge:add_spawns`によるPrism Realm限定の自然スポーン(重み12、1-3体グループ)、スポーンエッグのアイテムモデル、lang(en_us/ja_jp)。
+
+テクスチャー(`scripts/textures/gen_prismium_drifter.py`): 64x32(バニラSquidの想定テクスチャーサイズという、コミュニティで広く言及されている一般的な旧世代MOBテクスチャーサイズに基づく想定 - 実機のsquid.pngの実ピクセルサイズはこのサンドボックスからは確認不能、**未検証**)。SquidModelの正確なUV領域が分からないため、これまでの「belt-and-braces」よりさらに踏み込んで、キャンバス全体を単一の連続したグラデーション(上=闇紫、下=プリズミウムティール、Wraithスポーンエッグのベース色0x2b1033を再利用)で塗り、UVの切り出し境界が想定と違っていても「同じ生物の別の切り取り」に見えるようにした。加えて発光する斑点クラスターをキャンバス全体にランダム分散配置。生成後、`Read`でプレビュー画像(1倍・4倍・8倍)を確認: グラデーションが滑らかで継ぎ目が無く、斑点も自然な発光として視認でき、意図しないノイズや透過崩れは見当たらなかった。全ピクセルのアルファ値が255のみ(不透明、透過なし)であることも機械的に確認済み。
+
+### 3BM-4. push・ビルド確認
+
+1コミットとしてpush(`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功): `34b767d` "Add Prismium Drifter: the mod's fourth mob, first non-combat/environmental entity"
+
+push後、`ci: update built jar`(`76829c1`)→`ci: update datapack validation results`(`89bebee`、`status=ok commit=34b767d...`)の到着を確認。**通常ビルド・データパック検証とも成功**。エラーログ(`last_datapack_validation_errors.log`)を確認しても`drifter`関連のヒットはなく、既知の無害なノイズ(`server.properties`未検出、`setAccessible`関連等)以外の新規エラーは見当たらなかった。これはモッド初の`Squid`ベースMOB・`WATER_CREATURE`カテゴリ・`IN_WATER`スポーン配置・非`Monster`系MobがCoreMod/データパック検証レベルでは問題ないことを裏付けている(実行時の挙動、特に自前のスポーンpredicateが実際に機能するかは別問題、§3BM-6参照)。
+
+### 3BM-5. リリース: v0.9.0
+
+`git tag --list --sort=-creatordate`の最新はv0.8.0(セッション#59)。v0.8.0からセッション#60(1機能・ツールチップ改善)・セッション#61(今回・新規MOB)の2セッションが経過し、実質的な変更が2件積み上がっていたため、§0のルール(前回リリースから複数セッション経過、かつ複数の実質的変更の積み上がり)に照らしてこのセッション内でリリースを切ることとした。
+
+- `gradle.properties`: `mod_version`を`0.8.0`→`0.9.0`に変更(新規MOB追加を含むマイナーバンプ、v0.7.0→v0.8.0と同じ判断基準)。
+- `RELEASE_NOTES.md`: 新規セクションを先頭に追加(Prismium Drifter追加、Issue #7フォローアップのツールチップWキー長押し化の2点、v0.8.0以降の2セッション分をまとめて記載)。
+- コミット`62ed2e8`としてmainにpush(一発成功)、タグ`v0.9.0`を同コミットに打ってpush。
+- push後、`ci: update built jar`(`0190bfb`)→`ci: update datapack validation results`(`3a78ddd`、`status=ok commit=62ed2e8...`)の到着を確認。`release.yml`が起動し、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.9.0`(HTTP 200)と`releases/expanded_assets/v0.9.0`(添付ファイル`claudemod-0.9.0.jar`の存在)への直接curlで、ビルド成功・GitHub Release公開を確認済み。
+
+### 3BM-6. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要**: Prismium Drifter一式(スポーン、Squid継承AIの実際の挙動、レンダラーの見た目、自前spawn placement predicateが実際にPrism Realmの水中でスポーンをトリガーするか、テクスチャーの実機での見た目、サウンド、ドロップ)はCIでのビルド・データパック検証成功以外、一切実機確認できていない。モッド初の非`Monster`系・`Squid`ベースMOBという前例の無い変更のため、他の3体より慎重にフィードバックを待つべきだと考えている。
+- `PrismiumDrifterRenderer`がバニラ`SquidRenderer`ではなく汎用`MobRenderer`を継承したことで、遊泳時の回転アニメーションが再現されない可能性がある(§3BM-3)。実機で「棒立ちのまま漂う」ように見えた場合、次回`SquidRenderer`の実際のクラス形状を確認した上で継承先を切り替える価値がある。
+- テクスチャーの64x32という寸法は一般的な旧世代MODテクスチャーサイズという推測に基づくもので、実際のバニラsquid.pngのピクセルサイズをこのサンドボックスから確認できていない(§3BM-3)。サイズが違っていても伸縮表示されるだけでクラッシュはしない設計(全面グラデーション)にしてあるが、間延び・圧縮した見た目になっている可能性がある。
+- 自前で書いたspawn placement predicate(`FluidTags.WATER`チェック)がバニラのSquidスポーンルールと同等に機能するかは未検証。もし実機でPrism Realmの水中にDrifterが全く自然出現しない場合、まずここを疑うこと。
+- Issue関連の新規動きは無かった(§3BM-1)。
+
+### 3BM-7. 議論したい論点・改善案
+
+- 【新規】今回、Yarn命名とForge公式(Mojang)マッピング命名が食い違うケース(`createSquidAttributes` vs `createAttributes`)に遭遇した。今後、Yarn javadocは「そのメソッドが存在すること」の傍証としては有用だが、**正確なメソッド名はForge公式マッピングベースの情報源(nekoyue.github.io/ForgeJavaDocs-NG等)で再確認すること**を徹底した方が良い、という教訓を得た(申し送り項目12に反映)。
+- 【新規】モッド初の非`Monster`系MOBが問題なくビルドを通ったことで、今後さらに毛色の違うMOB基底クラス(例えば飛行するAmbient系、Villager系等)を試す際の心理的ハードルは下がったと感じる。ただし実機未検証の積み残しも同時に増え続けている(申し送り項目16、継続で最重要度維持)ことも忘れないこと。
+- 【継続】session 57から: 質(視認性・UX・フィードバック対応)と量(新規ブロック/アイテム/MOB)を交互に意識するバランス感覚について。セッション#60が質、セッション#61(今回)が量、で交互のバランスは維持できている。次回はどちらでも良いが、実機フィードバックが届いていればそれを最優先すること。
+- PROGRESS.mdの肥大化(2900行超、今回さらに増加)について、詳細ログと申し送りの分離を検討する余地がある(複数セッションで繰り返し「見送った」と記録されている項目、今回も着手せず)。
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(セッション#60、定期実行)の最重要な新情報
+### 今回(セッション#61、定期実行)の最重要な新情報
 
-- **Issue #7のツールチップを「Wキー長押しで詳細表示」に変更し、レシピ記述を3箇所から削除した(§3BL-3)。モッド初のKeyMapping導入。実機で一切未検証、次回最優先でフィードバックを確認すること。特にKeyConflictContext.UNIVERSAL+デフォルトWがインベントリ画面でのプレイヤー移動と干渉しないか要確認。**
-- **セッション#59がIssue #7の1コメント(ツールチップの大きさ・Wキー案・レシピ懸念・個別アイテムの欠落指摘)を見落としていたことが判明した(§3BL-2)。今回はこれを発見し対応したが、Issueのコメントは要約だけで満足せず`createdAt`で全件突き合わせる習慣を徹底すること(申し送り項目14に反映)。**
-- **Issue #15の取得異常(セッション#58で最初に報告)が今回も再発したが、原因を特定できた: クエリパラメータ無しのURLがプロキシ/CDN側で404をキャッシュしていた可能性が高く、`?_cb=<timestamp>`のようなキャッシュバスティングパラメータを付けるとすぐに解消した(§3BL-1)。次回以降、Issue取得が404で失敗する場合はまずこれを試すこと。**
-- リリースは見送った(§3BL-5)。直近のリリースは引き続き**v0.8.0**(セッション#59)。
+- **Prismium Drifter(モッド4体目のMOB、初の非戦闘・環境系エンティティ)を追加した(§3BM-3)。モッド初のSquidベース・WATER_CREATUREカテゴリ・IN_WATERスポーン配置。実機で一切未検証、次回最優先でフィードバックを確認すること。特に「Prism Realmの水中に実際に自然出現するか」(自前spawn placement predicateの検証)と「遊泳時の見た目が不自然でないか」(SquidRendererではなく汎用MobRendererを継承した影響)の2点。**
+- **v0.9.0をリリースした(§3BM-5)。Prismium Drifter追加とセッション#60のツールチップWキー長押し化の両方を含む。直近のリリースは**v0.9.0**(セッション#61)。**
+- 新規のIssueコメントは無かった(§3BM-1)。Open Issueは引き続き#7・#9・#15・#16の4件、すべて投稿者`Konpeitou24`本人。
+- **Yarn mappingsとForge公式(Mojang)マッピングでメソッド名が食い違うケースに遭遇した(`Squid.createSquidAttributes`(Yarn) vs `Squid.createAttributes`(Forge公式) - 実際に使われるのは後者)。新しいバニラAPIを調べる際はForge公式マッピングベースの情報源(nekoyue.github.io/ForgeJavaDocs-NG等)で最終確認すること(§3BM-7、申し送り項目12に反映)。**
 
 ### すぐやるべきこと(継続項目、優先度順は前回から概ね維持)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。新機能追加を含むセッションが完了した時点、前回リリースから3セッション以上経過した時点、または前回リリースからまだ日が浅くても複数の実質的な修正が積み上がった時点のいずれか早い方で、そのセッション内でリリースを切ることを検討する。見送る場合もその判断と理由をPROGRESS.mdに明記すること。直近のリリースはv0.8.0(セッション#59)。今回(セッション#60)はv0.8.0から1セッション目・変更1件のため見送った(§3BL-5)。**
-1. **【新規・最優先】今回追加したツールチップのWキー長押し化(§3BL-3)について、実機フィードバックが無いか最優先で確認すること。特にモッド初のKeyMappingのため、キーが実際に機能するか、インベントリ画面での移動と干渉しないかが未検証。**
-2. **【新規】Issue #7の残る要求(本格的なアニメーション説明UI、専用Screenでのアイテム説明表示)への対応を検討すること。設計方針(セッション#59・#60時点の合意事項): (a) 新しい`KeyMapping`は既に`ModKeyMappings.SHOW_ITEM_DETAILS`として存在するので流用できる、(b) 押している間だけツールチップの代わりに簡易な説明Screenを開く、(c) 最初のバージョンは文字列(該当アイテム/ブロックの説明文、既存の`.usage`lang文言を流用できる)だけでよく、専用レイアウト・アニメーションは後回しでよい、(d) 実機でのキー入力・Screen遷移検証ができないサンドボックスなので、既存のキーバインドAPIパターンから極力逸脱しない実装にすること。**
-3. Prismium Sentinel(session 59)について、実機フィードバックが無いか引き続き確認すること(前回から持ち越し、まだ反応なし)。
-4. Issue #15への対応(発生/送電レート表示、session 59)について本人の反応を確認すること。もし依然として「壊れている」ように見える、あるいは実際に算術的不一致が確認された場合は、pushレート自体を絞る、複数tickでスムージングするなど、より踏み込んだ対応を検討する。
-5. Prismium GeneratorのGUI燃料スロット(session 58)について、実機フィードバックが無いか引き続き確認すること。
-6. Chronoflameの新しい針の配色・隙間(session 57)、エネルギーフロー可視化のパーティクル(session 57)について、ユーザーからの実機フィードバックが無いか引き続き確認すること。
-7. Prismium Portalの見た目(薄い板状+アニメーション)・新レシピ、枠破壊バグ・当たり判定バグ修正(session 56)について、ユーザーからの実機フィードバックが無いか引き続き確認すること。
-8. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。毎tickのBFS再計算をやめ、ブロック設置/破壊時にのみネットワーク形状を再計算する設計に発展させると、issue #15の「負荷が大きい」という指摘により本質的に応えられる。
-9. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
-10. GitHub Actionsの`actions/runs` API(`api.github.com`)は今回も試みていない(継続、到達不可)。Issue状態の確認は`github.com/<owner>/<repo>/issues/<番号>`への直接curl(プロキシは弄らない素の状態)を使うこと。**【今回の新知見】もし特定のIssue番号だけが繰り返し404(9バイトの"Not Found")を返す場合、素のリトライを数回試してもダメなら`?_cb=<date +%s等>`のようなキャッシュバスティングのクエリパラメータを付けて再試行すること(§3BL-1、今回はこれで即座に解消した)。**
-11. 【継続、次の展開候補、優先度は目安】
-    - (a) Prism Realmの草花(Lily/Bramble/Vine)の生成確認(密度・見た目とも、まだ一度も実機確認できていない)。
-    - (b) Prism Realmへの陸地・複数バイオーム追加(継続する大型テーマ、現状フラットな水世界のみ)。
-    - (c) Prismium Deep Wraithの本格的な遊泳AI。
-    - (d) Prismium Arrow: vanilla `ArrowRenderer`が使う正確なUV座標が特定できず継続見送り。
-    - (e) GUIスロット化のさらなる展開、Prismium Cableの接続見た目のさらなる磨き込み。
-    - (f) Generatorの発電速度・バッファサイズの見直し(本人の反応次第では優先度を上げる価値がある)。
-    - (g) セルへの直接充電の是非(Issue #15の過去コメントより、継続)。
-    - (h) 非戦闘・環境系の新MOB(近接2体+遠距離1体の次のカテゴリ)。
-12. 【継続】worldgen/レジストリ系のJSONを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。新しいAPI(今回のKeyMapping/RegisterKeyMappingsEventのように)を使う際も同様に、実在するForge 1.20.1 MODのソースをgithub.com経由で直接確認してから実装すること(今回有効だった手法)。
-13. 【継続・重要・更新】`/tmp`直下・`/tmp/work`等の固定名ディレクトリは、他セッション(過去または並行、所有者`nobody`)所有で削除・書き込み不可なことが多い。**`mkdir -p`は既存ディレクトリに対してサイレントに成功したように見えるだけで、中身は他人所有のままなことがある(今回新たに確認、§3BL-1)ので、固定名ディレクトリへの`mkdir -p`だけで安心しないこと。** 一意なパス(`date +%s%N`と`$$`を組み合わせる等)で新規ディレクトリ・ファイルを作ることを徹底する。これはgitクローンだけでなく、あらゆる一時ファイル作成(PROGRESS.mdの分割編集用一時ファイル等)にも当てはまる(今回、固定名`/tmp/progress_head.md`への書き込みが`Permission denied`で失敗したことで気づいた)。`$HOME`配下も引き続き代替手段として有効。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
-14. 【最優先・継続・全セッション必読・更新】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。**Issueのコメントを読む際は、要約や「前回から変化なし」という印象だけで済ませず、必ず全コメントの`createdAt`を機械的に抽出してPROGRESS.mdの既存記録と突き合わせること(今回、この手順を踏んだことでセッション#59が見落としていたコメントを発見できた、§3BL-2)。** 今回確認できた時点でOpenなのは #7・#9・#15・#16の4件、すべて投稿者`Konpeitou24`本人。#8は引き続きCLOSED。新規Issueは無し。
-15. 【継続】リリース(v0.8.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
-16. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素(今回追加したKeyMapping/ツールチップ変更も含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。新機能追加を含むセッションが完了した時点、前回リリースから3セッション以上経過した時点、または前回リリースからまだ日が浅くても複数の実質的な修正が積み上がった時点のいずれか早い方で、そのセッション内でリリースを切ることを検討する。見送る場合もその判断と理由をPROGRESS.mdに明記すること。直近のリリースはv0.9.0(セッション#61、今回)。**
+1. **【新規・最優先】今回追加したPrismium Drifter(§3BM-3)について、実機フィードバックが無いか最優先で確認すること。Prism Realmの水中に実際にスポーンするか、見た目(遊泳アニメーション含む)に違和感が無いかが特に未検証。**
+2. 【継続】ツールチップのWキー長押し化(session 60)について、実機フィードバックが無いか引き続き確認すること。特にモッド初のKeyMappingのため、キーが実際に機能するか、インベントリ画面での移動と干渉しないかが未検証。
+3. Issue #7の残る要求(本格的なアニメーション説明UI、専用Screenでのアイテム説明表示)への対応を検討すること。設計方針(セッション#59・#60時点の合意事項、継続): (a) 新しい`KeyMapping`は既に`ModKeyMappings.SHOW_ITEM_DETAILS`として存在するので流用できる、(b) 押している間だけツールチップの代わりに簡易な説明Screenを開く、(c) 最初のバージョンは文字列だけでよく、専用レイアウト・アニメーションは後回しでよい、(d) 実機でのキー入力・Screen遷移検証ができないサンドボックスなので、既存のキーバインドAPIパターンから極力逸脱しない実装にすること。
+4. Prismium Sentinel(session 59)について、実機フィードバックが無いか引き続き確認すること(継続、まだ反応なし)。
+5. Issue #15への対応(発生/送電レート表示、session 59)について本人の反応を確認すること。もし依然として「壊れている」ように見える、あるいは実際に算術的不一致が確認された場合は、pushレート自体を絞る、複数tickでスムージングするなど、より踏み込んだ対応を検討する。
+6. Prismium GeneratorのGUI燃料スロット(session 58)について、実機フィードバックが無いか引き続き確認すること。
+7. Chronoflameの新しい針の配色・隙間(session 57)、エネルギーフロー可視化のパーティクル(session 57)について、ユーザーからの実機フィードバックが無いか引き続き確認すること。
+8. Prismium Portalの見た目(薄い板状+アニメーション)・新レシピ、枠破壊バグ・当たり判定バグ修正(session 56)について、ユーザーからの実機フィードバックが無いか引き続き確認すること。
+9. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。毎tickのBFS再計算をやめ、ブロック設置/破壊時にのみネットワーク形状を再計算する設計に発展させると、issue #15の「負荷が大きい」という指摘により本質的に応えられる。
+10. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
+11. GitHub Actionsの`actions/runs` API(`api.github.com`)は今回も試みたが到達不可(継続)。Issue状態の確認は`github.com/<owner>/<repo>/issues/<番号>`への直接curl(プロキシは弄らない素の状態、`?_cb=<timestamp>`付き)を使うこと。埋め込みJSON中の`"createdAt":"..."`を正規表現で機械的に全件抽出し、PROGRESS.mdの既存記録と突き合わせる方式が有効(今回も踏襲、§3BM-1)。
+12. 【継続・更新】worldgen/レジストリ系のJSONを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。新しいバニラAPI(今回のSquid関連クラスのように)を使う際も同様に、実在するForge 1.20.1 MODのソースや公式マッピングベースのjavadocミラー(nekoyue.github.io/ForgeJavaDocs-NG等)を直接確認してから実装すること。**【今回の新知見】Yarn mappingsのjavadocは「そのメソッド/クラスが存在すること」の傍証として有用だが、Yarnは独自の可読性重視の命名を採用しており、Forge公式(Mojang)マッピングでのメソッド名と食い違うことがある(今回`Squid.createAttributes`で発生)。正確な名前は必ずForge公式マッピングベースの情報源で最終確認すること。**
+13. 【継続】`/tmp`直下等の固定名ディレクトリは他セッション所有で書き込み不可なことが多い。`$HOME`配下(例: `~/work/<一意な名前>`)に新規ディレクトリを掘るのが引き続き有効(今回`~/work/ClaudeMod`で問題なし)。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
+14. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。Issueのコメントを読む際は、要約や「前回から変化なし」という印象だけで済ませず、必ず全コメントの`createdAt`を機械的に抽出してPROGRESS.mdの既存記録と突き合わせること。今回確認できた時点でOpenなのは#7・#9・#15・#16の4件、すべて投稿者`Konpeitou24`本人。#8は引き続きCLOSED。新規Issueは無し。
+15. 【継続】リリース(v0.9.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
+16. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素(今回追加したPrismium Drifterも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
 17. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること。
-18. 【新規】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと(今回、インデント幅の違いから255行規模の無意味な差分を作ってしまいかけた、§3BL-3)。既存のテキストに対する文字列の完全一致置換(該当行が一意に1回だけ出現することを確認してから置換)+末尾への新規キー追記(直前のキーに末尾カンマを補う)という最小差分の方法を使うこと。
+18. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換(該当行が一意に1回だけ出現することを確認してから置換)+末尾への新規キー追記という最小差分の方法を使うこと(今回も踏襲、問題なし)。
+19. 【新規】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーション(`SquidRenderer#setupRotations`)が再現されていない可能性がある(§3BM-6)。実機で見た目に違和感があれば、`SquidRenderer`の実際のクラス形状(ジェネリックかどうか)を確認した上で継承先の切り替えを検討すること。
+20. 【新規】Prismium Drifterのテクスチャーサイズ(64x32)は一般的な旧世代MODテクスチャーサイズという推測に基づいており、実際のバニラsquid.pngの寸法をこのサンドボックスから確認できていない(§3BM-6)。実機で間延び・圧縮した見た目になっていないか確認すること。
 
 ### 議論したい論点・改善案
 
-- 【新規】キーバインドの導入(今回のModKeyMappings)がビルドを壊さなかったことで、Issue #7が求める「専用アニメーションUI」への技術的な障壁は思ったより低いかもしれない、という感触を得た。次回以降、簡易な説明Screen(文字列のみ)の実装に踏み出す価値がある(§5項目2の設計方針参照)。
-- 【新規】今回、セッション#59のIssueコメント見落としに気づけたのは偶然に近く、体系的な確認手順が無ければ今後も同様の見落としが起こりうる。Issueごとにコメント一覧のcreatedAtとPROGRESS.mdの既存記録を突き合わせるチェックリスト的な手順を、毎回明示的に踏むことを標準の作業フローに組み込む価値があるかもしれない。
-- 【継続】session 57から: 質(視認性・UX・フィードバック対応)と量(新規ブロック/アイテム/MOB)を交互に意識するバランス感覚について。セッション#60は完全に質寄りだったため、次回は量(新規コンテンツ)を検討する価値がある。
-- PROGRESS.mdの肥大化(2900行超、今回さらに増加)について、詳細ログと申し送りの分離を検討する余地がある(複数セッションで繰り返し「見送った」と記録されている項目。次回以降のどこかで本当に着手するかどうかも含めて検討する価値がある)。
+- 【新規】Yarn/Forge公式マッピングの命名差異について(§3BM-7、申し送り項目12に反映済み)。
+- 【新規】モッド初の非Monster系MOBが問題なくビルドを通ったことで、今後さらに毛色の違うMOB基底クラスを試す際の心理的ハードルは下がったと感じる。ただし実機未検証の積み残しも同時に増え続けていることを忘れないこと。
+- 【継続】session 57から: 質(視認性・UX・フィードバック対応)と量(新規ブロック/アイテム/MOB)を交互に意識するバランス感覚について。セッション#60が質、セッション#61(今回)が量、で交互のバランスは維持できている。
+- PROGRESS.mdの肥大化(2900行超、今回さらに増加)について、詳細ログと申し送りの分離を検討する余地がある(複数セッションで繰り返し「見送った」と記録されている項目、今回も着手せず)。
 
 ### コミット/プッシュ状況
 
-セッション#60(定期実行)は以下のコミットをpush:
-1. `d10b726` Issue #7: gate usage tooltip text behind holding W, drop recipe text
+セッション#61(定期実行)は以下のコミットをpush:
+1. `34b767d` Add Prismium Drifter: the mod's fourth mob, first non-combat/environmental entity
+2. `62ed2e8` Release v0.9.0: bump mod_version, add release notes(+タグ`v0.9.0`)
 
-push前に`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功。push後、`ci: update built jar`(`d3062f9`)→`ci: update datapack validation results`(`5fcf002`、`status=ok  commit=d10b726...`)の到着を確認済み。**通常ビルド・データパック検証とも成功。**
+いずれも`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功。push後、それぞれ`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認済み。**通常ビルド・データパック検証とも成功。** v0.9.0のGitHub Release公開(jar添付含む)も直接curlで確認済み(§3BM-5)。
 
 本PROGRESS.md更新コミット自体のCI結果は、次回セッション開始時に確認すること。
 
