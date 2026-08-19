@@ -1,0 +1,6 @@
+{
+    "variants": {
+        "lit=false": { "model": "claudemod:block/prismium_compressor" },
+        "lit=true": { "model": "claudemod:block/prismium_compressor_lit" }
+    }
+}

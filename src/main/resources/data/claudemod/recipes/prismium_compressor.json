@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "I": { "item": "minecraft:iron_ingot" },
+        "P": { "item": "claudemod:prismium_ingot" },
+        "S": { "item": "minecraft:piston" }
+    },
+    "pattern": [
+        "IPI",
+        "PSP",
+        "IPI"
+    ],
+    "result": {
+        "item": "claudemod:prismium_compressor",
+        "count": 1
+    }
+}

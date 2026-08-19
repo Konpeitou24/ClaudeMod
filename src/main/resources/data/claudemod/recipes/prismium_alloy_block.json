@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        "###",
+        "###",
+        "###"
+    ],
+    "key": {
+        "#": {
+            "item": "claudemod:prismium_alloy_ingot"
+        }
+    },
+    "result": {
+        "item": "claudemod:prismium_alloy_block",
+        "count": 1
+    }
+}

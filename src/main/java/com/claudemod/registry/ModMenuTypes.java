@@ -2,6 +2,7 @@ package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.menu.PrismiumCellMenu;
+import com.claudemod.menu.PrismiumCompressorMenu;
 import com.claudemod.menu.PrismiumGeneratorMenu;
 import com.claudemod.menu.PrismiumPulverizerMenu;
 import com.claudemod.menu.PrismiumSmelterMenu;
@@ -109,6 +110,16 @@ public class ModMenuTypes {
             MENU_TYPES.register("prismium_smelter", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
                 BlockPos pos = extraData.readBlockPos();
                 return new PrismiumSmelterMenu(windowId, inv, pos);
+            }));
+
+    /** Session 70 (scheduled): the mod's eighth GUI, see {@link
+     * PrismiumCompressorMenu} for why Compressor reuses Smelter's exact
+     * menu shape (third item-processing machine in the same production
+     * chain). */
+    public static final RegistryObject<MenuType<PrismiumCompressorMenu>> PRISMIUM_COMPRESSOR_MENU =
+            MENU_TYPES.register("prismium_compressor", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
+                BlockPos pos = extraData.readBlockPos();
+                return new PrismiumCompressorMenu(windowId, inv, pos);
             }));
 
     public static void register(IEventBus eventBus) {

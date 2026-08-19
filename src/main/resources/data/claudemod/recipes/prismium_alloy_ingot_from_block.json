@@ -1,0 +1,13 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        {
+            "item": "claudemod:prismium_alloy_block"
+        }
+    ],
+    "result": {
+        "item": "claudemod:prismium_alloy_ingot",
+        "count": 9
+    }
+}

@@ -3,6 +3,7 @@ package com.claudemod.registry;
 import com.claudemod.ClaudeMod;
 import com.claudemod.blockentity.PrismiumCableBlockEntity;
 import com.claudemod.blockentity.PrismiumCellBlockEntity;
+import com.claudemod.blockentity.PrismiumCompressorBlockEntity;
 import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
 import com.claudemod.blockentity.PrismiumPulverizerBlockEntity;
 import com.claudemod.blockentity.PrismiumSmelterBlockEntity;
@@ -66,6 +67,11 @@ public class ModBlockEntities {
             BLOCK_ENTITIES.register("prismium_smelter",
                     () -> BlockEntityType.Builder.of(PrismiumSmelterBlockEntity::new,
                             ModBlocks.PRISMIUM_SMELTER.get()).build(null));
+
+    public static final RegistryObject<BlockEntityType<PrismiumCompressorBlockEntity>> PRISMIUM_COMPRESSOR =
+            BLOCK_ENTITIES.register("prismium_compressor",
+                    () -> BlockEntityType.Builder.of(PrismiumCompressorBlockEntity::new,
+                            ModBlocks.PRISMIUM_COMPRESSOR.get()).build(null));
 
     public static void register(IEventBus eventBus) {
         BLOCK_ENTITIES.register(eventBus);

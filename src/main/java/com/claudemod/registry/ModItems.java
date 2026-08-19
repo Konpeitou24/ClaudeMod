@@ -2,6 +2,7 @@ package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.blockentity.PrismiumCableBlockEntity;
+import com.claudemod.blockentity.PrismiumCompressorBlockEntity;
 import com.claudemod.blockentity.PrismiumCellBlockEntity;
 import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
 import com.claudemod.blockentity.PrismiumPylonBlockEntity;
@@ -62,6 +63,19 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_INGOT = ITEMS.register("prismium_ingot",
             () -> new Item(new Item.Properties()));
 
+    // Prismium Alloy Ingot (session 70, scheduled): the mod's second
+    // refined-material item, produced by Prismium Compressor from
+    // Prismium Ingots - see PrismiumCompressorBlockEntity. Plain Item
+    // like PRISMIUM_INGOT. Has one immediate crafting use this same
+    // session (Prismium Alloy Block, 9 alloy ingots -> 1 block, see
+    // recipes/prismium_alloy_block.json) - deliberately not left
+    // completely useless the way Prismium Ingot itself briefly was
+    // between session 68 and session 69 - but is still primarily a
+    // forward-looking material for a future equipment-tier use (see
+    // PROGRESS.md handoff for the smithing-upgrade idea).
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_INGOT = ITEMS.register("prismium_alloy_ingot",
+            () -> new Item(new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_ORE_ITEM = ITEMS.register("prismium_ore",
             () -> new BlockItem(ModBlocks.PRISMIUM_ORE.get(), new Item.Properties()));
 
@@ -74,6 +88,11 @@ public class ModItems {
 
     public static final RegistryObject<Item> PRISMIUM_BLOCK_ITEM = ITEMS.register("prismium_block",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK.get(), new Item.Properties()));
+
+    // BlockItem for Prismium Alloy Block (session 70, scheduled). See
+    // ModBlocks.PRISMIUM_ALLOY_BLOCK.
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_ITEM = ITEMS.register("prismium_alloy_block",
+            () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK.get(), new Item.Properties()));
 
     public static final RegistryObject<Item> PRISMIUM_CORE_ITEM = ITEMS.register("prismium_core",
             () -> new BlockItem(ModBlocks.PRISMIUM_CORE.get(), new Item.Properties()));
@@ -355,6 +374,17 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_SMELTER_ITEM = ITEMS.register("prismium_smelter",
             () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_SMELTER.get(), new Item.Properties(),
                     PrismiumSmelterBlockEntity.CAPACITY));
+
+    // Prismium Compressor (session 70, scheduled): BlockItem for the
+    // mod's eighth FE consumer / third item-processing machine. See
+    // ModBlocks.PRISMIUM_COMPRESSOR. Same EnergyStorageBlockItem
+    // persistence/tooltip treatment as every other Prismium Energy
+    // block - same known limitation as Pulverizer/Smelter: only the
+    // "Energy" NBT key persists across break/place, not the
+    // input/output slots.
+    public static final RegistryObject<Item> PRISMIUM_COMPRESSOR_ITEM = ITEMS.register("prismium_compressor",
+            () -> new EnergyStorageBlockItem(ModBlocks.PRISMIUM_COMPRESSOR.get(), new Item.Properties(),
+                    PrismiumCompressorBlockEntity.CAPACITY));
 
     // Prismium Featherstone (session 31): the mod's first purely passive
     // accessory - see PrismiumFeatherstoneItem / PrismiumFeatherstoneHandler.

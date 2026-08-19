@@ -7,6 +7,7 @@ import com.claudemod.block.PrismLilyBlock;
 import com.claudemod.block.PrismiumBloomBlock;
 import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
+import com.claudemod.block.PrismiumCompressorBlock;
 import com.claudemod.block.PrismiumChronoflameBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
 import com.claudemod.block.PrismiumGeyserBlock;
@@ -335,6 +336,38 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 8 : 0)));
+
+    // Prismium Compressor (session 70, scheduled): the mod's eighth
+    // GUI'd energy block and third item-processing machine - see
+    // PrismiumCompressorBlockEntity for why (Ingot -> Alloy Ingot, one
+    // step past Smelter in the same chain). Same casing/strength/sound
+    // family as every other machine block; light level matches
+    // Pulverizer/Smelter's active-glow treatment (8 while lit) since
+    // this block's LIT state toggles on the same per-operation cadence.
+    public static final RegistryObject<Block> PRISMIUM_COMPRESSOR = BLOCKS.register("prismium_compressor",
+            () -> new PrismiumCompressorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> state.getValue(BlockStateProperties.LIT) ? 8 : 0)));
+
+    // Prismium Alloy Block (session 70, scheduled): a compact-storage
+    // block for Prismium Alloy Ingot (see ModItems.PRISMIUM_ALLOY_INGOT),
+    // the mod's second refined-material item and Compressor's product.
+    // Same shape/role as PRISMIUM_BLOCK is to Prismium Shard (9 ingots
+    // <-> 1 block, see recipes/prismium_alloy_block.json and
+    // recipes/prismium_alloy_ingot_from_block.json) - gives Alloy Ingot
+    // an immediate crafting-table use this same session, deliberately
+    // avoiding the "refined material with no use yet" gap Prismium
+    // Ingot itself had for one session (session 68) before Warhammer
+    // (session 69) filled it. Same stats as PRISMIUM_BLOCK.
+    public static final RegistryObject<Block> PRISMIUM_ALLOY_BLOCK = BLOCKS.register("prismium_alloy_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 6)));
 
     // Chiseled Prismium Block (session 34): the mod's first purely
     // decorative masonry variant - no new mechanics, just a second look

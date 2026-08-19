@@ -4,6 +4,7 @@ import com.claudemod.ClaudeMod;
 import com.claudemod.client.ModKeyMappings;
 import com.claudemod.client.render.PrismRealmEffects;
 import com.claudemod.client.screen.PrismiumCellScreen;
+import com.claudemod.client.screen.PrismiumCompressorScreen;
 import com.claudemod.client.screen.PrismiumGeneratorScreen;
 import com.claudemod.client.screen.PrismiumPulverizerScreen;
 import com.claudemod.client.screen.PrismiumSmelterScreen;
@@ -100,6 +101,10 @@ public class ClientModEvents {
 
             // Session 68: seventh screen registration, same call.
             MenuScreens.register(ModMenuTypes.PRISMIUM_SMELTER_MENU.get(), PrismiumSmelterScreen::new);
+
+            // Session 70 (scheduled): eighth screen registration, same
+            // call - all three item-processing machines now have a GUI.
+            MenuScreens.register(ModMenuTypes.PRISMIUM_COMPRESSOR_MENU.get(), PrismiumCompressorScreen::new);
 
             // Session 29: "pull"/"pulling" item-model property overrides
             // for Prismium Bow, mirroring vanilla's own registration for

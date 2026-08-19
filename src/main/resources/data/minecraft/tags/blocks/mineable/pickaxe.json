@@ -24,6 +24,8 @@
         "claudemod:prismium_chronoflame",
         "claudemod:prismium_geyser",
         "claudemod:prismium_pulverizer",
-        "claudemod:prismium_smelter"
+        "claudemod:prismium_smelter",
+        "claudemod:prismium_compressor",
+        "claudemod:prismium_alloy_block"
     ]
 }
