@@ -2919,53 +2919,107 @@ push後、`ci: update built jar`(`76829c1`)→`ci: update datapack validation re
 - 【継続】session 57から: 質(視認性・UX・フィードバック対応)と量(新規ブロック/アイテム/MOB)を交互に意識するバランス感覚について。セッション#60が質、セッション#61(今回)が量、で交互のバランスは維持できている。次回はどちらでも良いが、実機フィードバックが届いていればそれを最優先すること。
 - PROGRESS.mdの肥大化(2900行超、今回さらに増加)について、詳細ログと申し送りの分離を検討する余地がある(複数セッションで繰り返し「見送った」と記録されている項目、今回も着手せず)。
 
+## 3BN. セッション#62(定期実行)で実装した内容: Issue #7フォローアップ「アイテム説明の専用アニメーションUI」第一版
+
+### 3BN-1. セッション開始時の状況確認
+
+`$HOME/work/ClaudeMod`にclone(セッション#61の申し送り項目13の回避策を踏襲、`/tmp`系の権限問題は今回も発生せず)。`git config user.name`/`user.email`も設定。`git tag --list --sort=-creatordate`の最新は`v0.9.0`(セッション#61、前回・直前セッション)。`builds/last_datapack_validation_summary.txt`は`status=ok commit=fdc047d...`(セッション#61のPROGRESS.md更新コミット)を記録しており、前回セッション終了時点のビルドは成功していたことを確認した。`api.github.com`は今回もHTTP応答なし(`curl`が`HTTP:000`)で到達不可、継続する既知の制約。
+
+GitHub Issue確認は申し送り項目11の手順(`github.com/<owner>/<repo>/issues/<番号>`への直接curl、`?_cb=<timestamp>`付き)を踏襲しつつ、今回は抽出方法を精緻化した: 埋め込みJSON中の`"createdAt":"..."`を機械的に全件抽出する従来方式は、コメント以外のタイムラインイベント(コミット参照等)の`createdAt`まで拾ってノイズが多かったため、今回からは`"__typename":"IssueComment"`に紐づく`"databaseId":<数値>`だけを抽出する方式に切り替えた(セッション#61の記録にたまたま実際のコメントIDが残っていたため、今回の抽出結果と直接突き合わせられた)。結果: Issue #7(databaseId `5333795193`・`5334106089`)・#15(`5334178264`・`5334677579`)は前回記録と完全一致、#9・#16はコメントの`databaseId`が1件も無く(0件)変化なし。**新規コメント・新規Issueとも無し**(`issues`一覧ページも同様にcurlで確認、Issue番号は#5〜#16の範囲で変化なし)。Open Issueは引き続き#7・#9・#15・#16の4件、すべて投稿者`Konpeitou24`本人、全てOPENのまま。
+
+### 3BN-2. 方針決定
+
+新規のIssueコメントが無かったため、セッション#57から続く「質と量を交互に意識する」方針に従って判断した: セッション#61が「量」(Prismium Drifter追加)だったので、今回は「質」寄りのタスクを選び、複数セッション(#59・#60・#61)にわたって申し送りの上位項目であり続けていた**Issue #7の残る要求「専用のアニメーションUIでのアイテム説明表示」**に着手した。設計方針(a)-(d)はセッション#59・#60時点で既に合意済み(PROGRESS.md§5参照)だったため、今回はその実装フェーズに専念した。
+
+### 3BN-3. 実装: `ItemDetailsOverlay`(Issue #7第三コメントへの初対応)
+
+新規クラス`com.claudemod.client.overlay.ItemDetailsOverlay`(Forge既定バス=FORGE、`value = Dist.CLIENT`で物理サーバーへのロードを回避、既存の`PrismiumGearTooltipHandler`等と同じ`@Mod.EventBusSubscriber`パターン)。`ScreenEvent.Render.Post`を購読し、現在の`Screen`が`AbstractContainerScreen`かつ`ModKeyMappings.SHOW_ITEM_DETAILS`(セッション#60既存のキー、再利用)を閾値フレーム数(25フレーム)以上連続で押し続けている間、ホバー中のスロットのアイテムについて名前+説明文を表示する半透明パネルを画面上部からスライドインさせる。
+
+- **設計判断(詳細は`ItemDetailsOverlay`自身のjavadocに記載)**: (1)新しいキーは追加せず既存の`SHOW_ITEM_DETAILS`を再利用、閾値を2段階にして「短い保持→ツールチップ拡張(セッション#60)」「長い保持→このオーバーレイ」と自然にエスカレートするようにした。(2)`Minecraft#setScreen`で別Screenへ遷移するのではなく、**現在のScreenの上に重ねて描画するオーバーレイ**として実装した。新規Screenへのライブ遷移は、既存5GUIの状態を壊さず開閉するロジックを実機検証なしで書くリスクが高いと判断したため(ユーザーのコメント自体も「専用Screen」ではなく「アニメーションUIに飛べるように」という表現で、厳密に新規Screenを要求してはいない)。(3)「アニメーション」は保持フレーム数から計算した単純な縦方向スライドのみとし、テキストのアルファフェードは行わなかった(`GuiGraphics#drawString`の色引数はアルファ0バイトを"強制的に不透明"と解釈する既知の癖があり、この罠を踏まずに済むよう回避)。(4)内容はコメントの「最初は文字列のみで構いません」という許容に従い、アイテム名+説明1本のみ。
+
+- **API調査(このMOD初のAPI群、すべて一次情報で裏取り)**: `ScreenEvent.Render.Post`はFORGEバス・クライアント論理サイドのみで発火し、`getScreen()`/`getGuiGraphics()`/`getMouseX/Y()`/`getPartialTick()`を持つ - MinecraftForgeの`ScreenEvent.java`(GitHubの`1.20.x`ブランチ、`github.com/MinecraftForge/MinecraftForge/blob/1.20.x/...`)を直接fetchして確認した。検索で最初に出てくる1.19.3時点のjavadocミラーはコンストラクタが`PoseStack`ベースだったため(1.20.1のレンダリング刷新で`GuiGraphics`に変わっている)、バージョン違いの情報を鵜呑みにしないよう`1.20.x`ブランチのソースを直接見て確認した(セッション#61のYarn/Forge命名差異の教訓を踏まえた慎重さ)。`AbstractContainerScreen#getSlotUnderMouse()`はForgeが`AbstractContainerScreen.java.patch`(同じ`1.20.x`ブランチ)でバニラのprivateな`hoveredSlot`フィールドに対して追加している公開アクセサ(`public Slot getSlotUnderMouse() { return this.hoveredSlot; }`)であることを確認し、リフレクションではなくこちらを使用した。`Font#split(FormattedText, int)`・`GuiGraphics#drawString(Font, FormattedCharSequence, int, int, int, boolean)`・`I18n.exists(String)`(NeoForge 1.20.6ミラーで確認 - Yarn側は`hasTranslation`という別名になっているが、Forge公式マッピングでは`exists`のまま、というセッション#61と同種の命名差異にここでも遭遇し、公式マッピング側を採用)・`net.minecraft.world.inventory.Slot`のパッケージも、それぞれ個別にWebSearch/javadocミラーで裏取りした。
+
+- **内容ソース**: `resolveDescription()`が`<descriptionId>.details`(新設、今回はエネルギー6ブロックのみ)→`<descriptionId>.usage`(既存)→`tooltip.claudemod.no_details`(新設の汎用フォールバック)の順に存在確認(`I18n.exists`)して選択するため、どのアイテムでも空のパネルにはならない。
+
+### 3BN-4. lang: エネルギー6ブロックへの`.details`キー追加(en_us.json/ja_jp.json)
+
+Issue #7第三コメントの核心("電力系統のブロックは「どのように操作するか」に重さが置かれた説明が多い為、それがどのようなブロックであることは依然としてわからないまま")に直接応えるため、既存の操作手順フォーカスの`.usage`とは別に、「これは何なのか」を説明する`.details`を`EnergyStorageBlockItem`の6ブロック(Cell/Generator/Cable/Pylon/Restorer/Wardstone)分だけ新設した(例: Cellの`.usage`は「空手で右クリックするとGUIが開く...」という操作説明、`.details`は「FEを蓄えておけるだけの可搬式バッテリーブロック...発電や消費の機能自体は持たない」という役割説明)。既存の`.usage`エントリの直後に1行ずつ追加する形の完全一致文字列置換で編集し(既存ルール、json.load/dumpによる全体再整形はしていない)、Python の`json.load`で構文検証済み。ツール・アーマー・アクセサリ系(Featherstone等)には今回`.details`を追加しておらず、`.usage`へのフォールバックのままである(次回以降の課題、§3BN-8参照)。
+
+### 3BN-5. push・ビルド確認
+
+1コミットとしてpush(`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功): `b327245` "Add Item Details overlay: dedicated animation UI for Issue #7's third comment"
+
+push後、`ci: update built jar`(`c891e4f`)→`ci: update datapack validation results`(`7de395e`、`status=ok commit=b327245...`)の到着を確認。**通常ビルド・データパック検証とも成功。** エラーログ(`last_datapack_validation_errors.log`)を確認しても`ItemDetailsOverlay`や`.details`関連の新規エラーは見当たらず、既知の無害なノイズ(`server.properties`未検出等)以外は無かった。これはこのMOD初の`ScreenEvent`購読・`AbstractContainerScreen#getSlotUnderMouse()`呼び出し・`Font#split`/`I18n.exists`使用がコンパイルレベルでは問題ないことを裏付けている。
+
+### 3BN-6. リリース判断: 今回は見送り
+
+直近リリースの`v0.9.0`(セッション#61)からまだ1セッションしか経過しておらず、今回の変更もIssue #7への追加対応1件のみ(新規登録コンテンツ・新規ブロック/アイテムなし、既存キー体系とオーバーレイ描画の追加のみ)のため、§0のリリースポリシー(3セッション経過 or 複数の実質的変更の積み上がり、のいずれか早い方)にはまだ該当しないと判断し、今回はリリースを見送った。次回以降、変更がさらに積み重なるか3セッション目に達した時点で改めて判断すること。
+
+### 3BN-7. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要**: `ItemDetailsOverlay`一式(スライドインアニメーションの見た目、`getSlotUnderMouse()`の実際の戻り値、長押し閾値25フレームの体感的な長さ、パネルの固定位置が5つの既存GUI画面のいずれかと視覚的に衝突しないか)はCIでのビルド・データパック検証成功以外、実機で一切検証できていない。
+- `getSlotUnderMouse()`はForgeの`1.20.x`ブランチの`AbstractContainerScreen.java.patch`に存在することを確認したが、このMODが実際に使っているピン留めバージョン(`forge-1.20.1-47.4.0`)にも同一のパッチが含まれているかは、ブランチ全体を見ての確認であり、47.4.0ピンポイントでの確認はできていない(ブランチ内でこの種のパッチが変わることは考えにくいが、100%の確証ではない)。
+- ホールド閾値(25フレーム、60fps換算で約0.4秒を想定)は感覚的な見積もりで、フレームレート依存の挙動(低スペック環境で閾値到達が遅くなる/tick数ではなくrender frame数でカウントしているため、GUI画面を開いたままフレームレートが変動する状況での体感差)は考慮できていない。
+- パネルは画面上部固定位置にスライドダウンする。既存の5GUI(Cell/Generator/Pylon/Restorer/Wardstone)はいずれも自身のタイトル文字列を左上付近に描画しているため、長押し中はパネルが最前面に描画されて隠れることはないはずだが、実際の見た目・重なり方は未検証。
+- `.details`キーを追加したのはエネルギー6ブロックのみ。ツール・アーマー・アクセサリ系はまだ`.usage`テキスト(操作手順フォーカス)がそのまま「詳細」として表示される状態のまま(§3BN-8参照)。
+- Issue関連の新規動きは無かった(§3BN-1)。
+
+### 3BN-8. 議論したい論点・改善案
+
+- 【新規】Issue #7第三コメントが本来求めているのは「電力系統のブロックが根本的に何なのか」を伝えることだが、今回は範囲をエネルギー6ブロックの`.details`のみに絞った。ツール(ピッケル等)・アーマー・アクセサリ(Featherstone/Emberguard/Vitastone/Guardian Charm)にも同様の「これは何なのか」framingの`.details`を追加していく価値が引き続きある。
+- 【新規】今回、新規Screenへの遷移ではなく既存Screenへのオーバーレイ描画を選んだ判断について: 動作するはずだが、ユーザーの「専用のアニメーションUI」という言葉により忠実に応えるなら、将来的に独立した`Screen`へ格上げする(現行のホバー中スロット追跡ロジックを新Screen側にどう引き継ぐか)の検討は残っている。実機フィードバックで「これで十分」と分かれば、あえて格上げしない判断もあり得る。
+- 【新規】今回もYarn/Forge公式マッピングの命名差異(`I18n.exists`(Forge公式) vs `hasTranslation`(Yarn))に遭遇した。セッション#61の教訓(申し送り項目12)が早速このセッションでも効いた形で、この種の確認を毎回省略しないことの重要性が改めて裏付けられた。
+- 【継続】質と量を交互に意識するバランス感覚について: セッション#61が量、セッション#62(今回)が質、で交互のバランスは維持できている。次回はどちらでも良いが、実機フィードバックが届いていればそれを最優先すること。
+- PROGRESS.mdの肥大化(2900行超、今回さらに増加)について、詳細ログと申し送りの分離を検討する余地がある(複数セッションで繰り返し「見送った」と記録されている項目、今回も着手せず)。
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(セッション#61、定期実行)の最重要な新情報
+### 今回(セッション#62、定期実行)の最重要な新情報
 
-- **Prismium Drifter(モッド4体目のMOB、初の非戦闘・環境系エンティティ)を追加した(§3BM-3)。モッド初のSquidベース・WATER_CREATUREカテゴリ・IN_WATERスポーン配置。実機で一切未検証、次回最優先でフィードバックを確認すること。特に「Prism Realmの水中に実際に自然出現するか」(自前spawn placement predicateの検証)と「遊泳時の見た目が不自然でないか」(SquidRendererではなく汎用MobRendererを継承した影響)の2点。**
-- **v0.9.0をリリースした(§3BM-5)。Prismium Drifter追加とセッション#60のツールチップWキー長押し化の両方を含む。直近のリリースは**v0.9.0**(セッション#61)。**
-- 新規のIssueコメントは無かった(§3BM-1)。Open Issueは引き続き#7・#9・#15・#16の4件、すべて投稿者`Konpeitou24`本人。
-- **Yarn mappingsとForge公式(Mojang)マッピングでメソッド名が食い違うケースに遭遇した(`Squid.createSquidAttributes`(Yarn) vs `Squid.createAttributes`(Forge公式) - 実際に使われるのは後者)。新しいバニラAPIを調べる際はForge公式マッピングベースの情報源(nekoyue.github.io/ForgeJavaDocs-NG等)で最終確認すること(§3BM-7、申し送り項目12に反映)。**
+- **Issue #7第三コメント(「専用のアニメーションUIでのアイテム説明表示」)への初対応として、`ItemDetailsOverlay`(§3BN-3)を追加した。既存の`SHOW_ITEM_DETAILS`キーを長押し(25フレーム)すると、ホバー中アイテムの名前+説明パネルが画面上部からスライドインする。実機で一切未検証、次回最優先でフィードバックを確認すること。特に「長押しで実際にパネルが出るか」「アニメーション・位置に違和感が無いか」「既存5GUIのいずれかと視覚的に衝突しないか」の3点。**
+- **エネルギー6ブロック(Cell/Generator/Cable/Pylon/Restorer/Wardstone)に`.details`lang キーを新設した(§3BN-4)。「操作方法」ではなく「これは何なのか」を説明する内容。ツール・アーマー・アクセサリ系にはまだ無い(次回以降の拡張候補)。**
+- 新規のIssueコメントは無かった(§3BN-1)。Open Issueは引き続き#7・#9・#15・#16の4件、すべて投稿者`Konpeitou24`本人。
+- **今回リリースは見送った(§3BN-6)。直近リリースは引き続き`v0.9.0`(セッション#61)。次回セッション開始時、v0.9.0から2セッション経過している状態になるので、§0のルール通り3セッション目(=次々回)か、それより早く変更が積み重なった時点でリリースを検討すること。**
+- **GitHub Issueコメント抽出方法を`"createdAt"`羅列から`"databaseId"`(`IssueComment`の実コメントID)抽出に精緻化した(§3BN-1)。今後もこの方式(`"databaseId":[0-9]*`をgrep)を使うこと - タイムラインイベントのノイズが混ざらず、前回記録との突き合わせがより確実。**
 
 ### すぐやるべきこと(継続項目、優先度順は前回から概ね維持)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。新機能追加を含むセッションが完了した時点、前回リリースから3セッション以上経過した時点、または前回リリースからまだ日が浅くても複数の実質的な修正が積み上がった時点のいずれか早い方で、そのセッション内でリリースを切ることを検討する。見送る場合もその判断と理由をPROGRESS.mdに明記すること。直近のリリースはv0.9.0(セッション#61、今回)。**
-1. **【新規・最優先】今回追加したPrismium Drifter(§3BM-3)について、実機フィードバックが無いか最優先で確認すること。Prism Realmの水中に実際にスポーンするか、見た目(遊泳アニメーション含む)に違和感が無いかが特に未検証。**
-2. 【継続】ツールチップのWキー長押し化(session 60)について、実機フィードバックが無いか引き続き確認すること。特にモッド初のKeyMappingのため、キーが実際に機能するか、インベントリ画面での移動と干渉しないかが未検証。
-3. Issue #7の残る要求(本格的なアニメーション説明UI、専用Screenでのアイテム説明表示)への対応を検討すること。設計方針(セッション#59・#60時点の合意事項、継続): (a) 新しい`KeyMapping`は既に`ModKeyMappings.SHOW_ITEM_DETAILS`として存在するので流用できる、(b) 押している間だけツールチップの代わりに簡易な説明Screenを開く、(c) 最初のバージョンは文字列だけでよく、専用レイアウト・アニメーションは後回しでよい、(d) 実機でのキー入力・Screen遷移検証ができないサンドボックスなので、既存のキーバインドAPIパターンから極力逸脱しない実装にすること。
-4. Prismium Sentinel(session 59)について、実機フィードバックが無いか引き続き確認すること(継続、まだ反応なし)。
-5. Issue #15への対応(発生/送電レート表示、session 59)について本人の反応を確認すること。もし依然として「壊れている」ように見える、あるいは実際に算術的不一致が確認された場合は、pushレート自体を絞る、複数tickでスムージングするなど、より踏み込んだ対応を検討する。
-6. Prismium GeneratorのGUI燃料スロット(session 58)について、実機フィードバックが無いか引き続き確認すること。
-7. Chronoflameの新しい針の配色・隙間(session 57)、エネルギーフロー可視化のパーティクル(session 57)について、ユーザーからの実機フィードバックが無いか引き続き確認すること。
-8. Prismium Portalの見た目(薄い板状+アニメーション)・新レシピ、枠破壊バグ・当たり判定バグ修正(session 56)について、ユーザーからの実機フィードバックが無いか引き続き確認すること。
-9. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。毎tickのBFS再計算をやめ、ブロック設置/破壊時にのみネットワーク形状を再計算する設計に発展させると、issue #15の「負荷が大きい」という指摘により本質的に応えられる。
-10. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
-11. GitHub Actionsの`actions/runs` API(`api.github.com`)は今回も試みたが到達不可(継続)。Issue状態の確認は`github.com/<owner>/<repo>/issues/<番号>`への直接curl(プロキシは弄らない素の状態、`?_cb=<timestamp>`付き)を使うこと。埋め込みJSON中の`"createdAt":"..."`を正規表現で機械的に全件抽出し、PROGRESS.mdの既存記録と突き合わせる方式が有効(今回も踏襲、§3BM-1)。
-12. 【継続・更新】worldgen/レジストリ系のJSONを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。新しいバニラAPI(今回のSquid関連クラスのように)を使う際も同様に、実在するForge 1.20.1 MODのソースや公式マッピングベースのjavadocミラー(nekoyue.github.io/ForgeJavaDocs-NG等)を直接確認してから実装すること。**【今回の新知見】Yarn mappingsのjavadocは「そのメソッド/クラスが存在すること」の傍証として有用だが、Yarnは独自の可読性重視の命名を採用しており、Forge公式(Mojang)マッピングでのメソッド名と食い違うことがある(今回`Squid.createAttributes`で発生)。正確な名前は必ずForge公式マッピングベースの情報源で最終確認すること。**
-13. 【継続】`/tmp`直下等の固定名ディレクトリは他セッション所有で書き込み不可なことが多い。`$HOME`配下(例: `~/work/<一意な名前>`)に新規ディレクトリを掘るのが引き続き有効(今回`~/work/ClaudeMod`で問題なし)。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
-14. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。Issueのコメントを読む際は、要約や「前回から変化なし」という印象だけで済ませず、必ず全コメントの`createdAt`を機械的に抽出してPROGRESS.mdの既存記録と突き合わせること。今回確認できた時点でOpenなのは#7・#9・#15・#16の4件、すべて投稿者`Konpeitou24`本人。#8は引き続きCLOSED。新規Issueは無し。
-15. 【継続】リリース(v0.9.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
-16. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素(今回追加したPrismium Drifterも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
-17. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること。
-18. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換(該当行が一意に1回だけ出現することを確認してから置換)+末尾への新規キー追記という最小差分の方法を使うこと(今回も踏襲、問題なし)。
-19. 【新規】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーション(`SquidRenderer#setupRotations`)が再現されていない可能性がある(§3BM-6)。実機で見た目に違和感があれば、`SquidRenderer`の実際のクラス形状(ジェネリックかどうか)を確認した上で継承先の切り替えを検討すること。
-20. 【新規】Prismium Drifterのテクスチャーサイズ(64x32)は一般的な旧世代MODテクスチャーサイズという推測に基づいており、実際のバニラsquid.pngの寸法をこのサンドボックスから確認できていない(§3BM-6)。実機で間延び・圧縮した見た目になっていないか確認すること。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。新機能追加を含むセッションが完了した時点、前回リリースから3セッション以上経過した時点、または前回リリースからまだ日が浅くても複数の実質的な修正が積み上がった時点のいずれか早い方で、そのセッション内でリリースを切ることを検討する。見送る場合もその判断と理由をPROGRESS.mdに明記すること。直近のリリースはv0.9.0(セッション#61)、セッション#62(今回)は見送り(§3BN-6)。次回はv0.9.0から2セッション経過。**
+1. **【新規・最優先】今回追加した`ItemDetailsOverlay`(§3BN-3)について、実機フィードバックが無いか最優先で確認すること。長押しでパネルが実際に表示されるか、スライドアニメーション・パネル位置に違和感が無いかが特に未検証。**
+2. **【新規】`.details`lang キーを追加していないツール・アーマー・アクセサリ系(Featherstone/Emberguard/Vitastone/Guardian Charm/5ツール/4アーマー)について、実機フィードバックを踏まえつつ、優先度の高いものから`.details`を追加していくこと(§3BN-8)。**
+3. 【継続】今回追加したPrismium Drifter(session 61、§3BM-3)について、実機フィードバックが無いか引き続き確認すること。Prism Realmの水中に実際にスポーンするか、見た目(遊泳アニメーション含む)に違和感が無いかが特に未検証。
+4. 【継続】ツールチップのWキー長押し化(session 60)について、実機フィードバックが無いか引き続き確認すること。特にモッド初のKeyMappingのため、キーが実際に機能するか、インベントリ画面での移動と干渉しないかが未検証。
+5. Prismium Sentinel(session 59)について、実機フィードバックが無いか引き続き確認すること(継続、まだ反応なし)。
+6. Issue #15への対応(発生/送電レート表示、session 59)について本人の反応を確認すること。もし依然として「壊れている」ように見える、あるいは実際に算術的不一致が確認された場合は、pushレート自体を絞る、複数tickでスムージングするなど、より踏み込んだ対応を検討する。
+7. Prismium GeneratorのGUI燃料スロット(session 58)について、実機フィードバックが無いか引き続き確認すること。
+8. Chronoflameの新しい針の配色・隙間(session 57)、エネルギーフロー可視化のパーティクル(session 57)について、ユーザーからの実機フィードバックが無いか引き続き確認すること。
+9. Prismium Portalの見た目(薄い板状+アニメーション)・新レシピ、枠破壊バグ・当たり判定バグ修正(session 56)について、ユーザーからの実機フィードバックが無いか引き続き確認すること。
+10. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。毎tickのBFS再計算をやめ、ブロック設置/破壊時にのみネットワーク形状を再計算する設計に発展させると、issue #15の「負荷が大きい」という指摘により本質的に応えられる。
+11. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
+12. GitHub Actionsの`actions/runs` API(`api.github.com`)は今回も試みたが到達不可(継続)。Issue状態の確認は`github.com/<owner>/<repo>/issues/<番号>`への直接curl(プロキシは弄らない素の状態、`?_cb=<timestamp>`付き)を使い、**`"databaseId":[0-9]*`(`IssueComment`の実コメントID)を抽出する方式(今回精緻化、§3BN-1)を使うこと** - `"createdAt"`の羅列だけでは非コメントのタイムラインイベントまで拾ってノイズになる。
+13. 【継続・更新】worldgen/レジストリ系のJSONやクライアント専用API(今回のScreenEvent/AbstractContainerScreen関連のように)を書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。**Yarn mappingsの命名とForge公式(Mojang)マッピングの命名が食い違うケースに、セッション#61(`Squid.createAttributes`)・セッション#62(今回、`I18n.exists` vs Yarnの`hasTranslation`)と2セッション連続で遭遇した。正確な名前は必ずForge公式マッピングベースの情報源(nekoyue.github.io/ForgeJavaDocs-NG、または実際のMinecraftForgeリポジトリソース)で最終確認することを徹底し続けること。**
+14. 【継続】`/tmp`直下等の固定名ディレクトリは他セッション所有で書き込み不可なことが多い。`$HOME`配下(例: `~/work/<一意な名前>`)に新規ディレクトリを掘るのが引き続き有効(今回`~/work/ClaudeMod`で問題なし)。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
+15. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。Issueのコメントを読む際は、要約や「前回から変化なし」という印象だけで済ませず、必ず全コメントの`databaseId`(項目12参照)を機械的に抽出してPROGRESS.mdの既存記録と突き合わせること。今回確認できた時点でOpenなのは#7・#9・#15・#16の4件、すべて投稿者`Konpeitou24`本人。#8は引き続きCLOSED。新規Issueは無し。
+16. 【継続】リリース(v0.9.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。
+17. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素(今回追加したItemDetailsOverlayも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+18. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること。
+19. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換(該当行が一意に1回だけ出現することを確認してから置換)+末尾への新規キー追記という最小差分の方法を使うこと(今回も踏襲、問題なし)。
+20. 【継続】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーション(`SquidRenderer#setupRotations`)が再現されていない可能性がある(セッション#61§3BM-6)。実機で見た目に違和感があれば、`SquidRenderer`の実際のクラス形状(ジェネリックかどうか)を確認した上で継承先の切り替えを検討すること。
+21. 【継続】Prismium Drifterのテクスチャーサイズ(64x32)は一般的な旧世代MODテクスチャーサイズという推測に基づいており、実際のバニラsquid.pngの寸法をこのサンドボックスから確認できていない(セッション#61§3BM-6)。実機で間延び・圧縮した見た目になっていないか確認すること。
 
 ### 議論したい論点・改善案
 
-- 【新規】Yarn/Forge公式マッピングの命名差異について(§3BM-7、申し送り項目12に反映済み)。
-- 【新規】モッド初の非Monster系MOBが問題なくビルドを通ったことで、今後さらに毛色の違うMOB基底クラスを試す際の心理的ハードルは下がったと感じる。ただし実機未検証の積み残しも同時に増え続けていることを忘れないこと。
-- 【継続】session 57から: 質(視認性・UX・フィードバック対応)と量(新規ブロック/アイテム/MOB)を交互に意識するバランス感覚について。セッション#60が質、セッション#61(今回)が量、で交互のバランスは維持できている。
+- 【新規】Issue #7の残り(ツール・アーマー・アクセサリへの`.details`拡充、オーバーレイ→独立Screen格上げの是非)について(§3BN-8)。
+- 【継続】Yarn/Forge公式マッピングの命名差異が2セッション連続で発生したことについて(§3BN-8、申し送り項目13に反映済み)。
+- 【継続】質と量を交互に意識するバランス感覚について。セッション#61が量、セッション#62(今回)が質、で交互のバランスは維持できている。
 - PROGRESS.mdの肥大化(2900行超、今回さらに増加)について、詳細ログと申し送りの分離を検討する余地がある(複数セッションで繰り返し「見送った」と記録されている項目、今回も着手せず)。
 
 ### コミット/プッシュ状況
 
-セッション#61(定期実行)は以下のコミットをpush:
-1. `34b767d` Add Prismium Drifter: the mod's fourth mob, first non-combat/environmental entity
-2. `62ed2e8` Release v0.9.0: bump mod_version, add release notes(+タグ`v0.9.0`)
+セッション#62(定期実行)は以下のコミットをpush:
+1. `b327245` Add Item Details overlay: dedicated animation UI for Issue #7's third comment
 
-いずれも`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功。push後、それぞれ`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)の到着を確認済み。**通常ビルド・データパック検証とも成功。** v0.9.0のGitHub Release公開(jar添付含む)も直接curlで確認済み(§3BM-5)。
+`git fetch origin main`で並行セッション無しを確認、素のまま`git push origin main`で一発成功。push後、`ci: update built jar`(`c891e4f`)→`ci: update datapack validation results`(`7de395e`、`status=ok`)の到着を確認済み。**通常ビルド・データパック検証とも成功。** リリースは今回見送り(§3BN-6)。
 
 本PROGRESS.md更新コミット自体のCI結果は、次回セッション開始時に確認すること。
 
