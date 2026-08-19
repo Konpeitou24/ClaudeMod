@@ -3509,30 +3509,38 @@ push後、`653ef1c`(ci: update built jar)→`c62d2d4`(ci: update datapack valida
 - **今回、`api.github.com`が`mcp__workspace__web_fetch`ツール経由でのみ到達可能(素のbash curlでは引き続きブロック)という新しい観測をした。次回セッションで再現するか確認すること。**
 - 作業ディレクトリは今回も固定パス(`/tmp/work/ClaudeMod`相当)が前セッションの残留物で書き込み不可だったため、ユニークな新規パス(`/tmp/cmwork2/ClaudeMod`)に切り替えて解決した。次回も同様の問題が起きる前提で、固定パスに戻さないこと。
 
+### ユーザー(こんぺいとう氏)からの直接リクエスト(定期実行セッション終了後のチャットで受領、未着手)
+
+セッション#70完了後、リポジトリ所有者本人とのチャットで以下2件のリクエストを受けた。まだ一切着手していない、次回以降のセッションで検討・実装すべき項目としてここに記録する。
+
+1. **【新規・ユーザー要望】新しい「青白い」ブロックの追加。** 具体的な用途(装飾用か、機能ブロックか)・配置場所の指定は無し。既存のPrismium系ブロックの寒色パレット(Compressor/Alloy Ingot/Alloy Blockが今回開拓したスチールブルー/プラチナ系、あるいはPylonのシアン系)を踏まえつつ、次回セッションで用途を判断して着手してよい。ユーザーからは「今はあまり安定していないようなので、タスクに追加する程度でいい」という位置づけの発言があり、緊急実装は求められていない。
+2. **【新規・ユーザー要望・大型】Prism Realm(プリズミウムディメンション)に、ワールドの高さ制限すら超える巨大な山岳地帯を生成してほしい。斜面には巨大な建造物があり、ボスや宝が眠っている、というイメージ。** ユーザー自身が「ディメンションもまだ生成アルゴリズムがうまくいっていないようですし」と明言しており、現状のPrism Realm実装(ロードマップ§1項目3参照: データパック駆動、バニラのオーバーワールド設定+固定バイオームcherry_grove流用、専用地形はまだ)がこの規模の要望を実現できる段階にないことを本人も認識した上での、将来的な方向性の提示。**現時点では「実装する」ではなく「ロードマップに記録し、地形生成が安定してから着手する」という位置づけの要望である点に注意。** 検討事項: (a) バニラの通常ワールド高さ制限(Y=320)を超える地形は、`dimension_type`の`min_y`/`height`/`logical_height`をカスタム値に設定した専用ディメンション設定が必要(現行のPrism Realmがオーバーワールド設定を流用しているなら要変更)。(b) 「巨大な建造物」はJigsaw構造物(`template_pool`等)による手続き生成か、あるいは固定NBTストラクチャーの単純配置か、実装コストが大きく異なるため次回以降で方針を検討すること。(c) 「ボス」はロードマップ§1項目4(新MOB)が「ボス級はまだ無い」と繰り返し記録している通り未着手の柱でもあり、この山岳地帯要望と合わせて着手する好機になり得る。(d) 現行のPrism Realm地形生成自体が「うまくいっていない」というユーザー本人の認識があるため、この巨大山岳要望に着手する前に、まず現行の地形生成の問題点を洗い出し安定化させることを優先すべき。
+
 ### すぐやるべきこと(優先度順)
 
 0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.17.0(セッション#70、今回)。次回はここから1セッション目。**
-1. **【最優先・新規】Prismium Alloy Ingotに装備面での本格的な使い道を与えること。候補: (a) 新規装備(session 69のWarhammerと同じ発想で、既存Item/ArmorItemクラスを流用した低リスクな新武器・防具)、(b) session 69で却下されたスミシングアップグレード経路(Ingotで既存装備を強化 -> Alloy Ingotでさらに強化、という二段階構想。1.20のスミシングテンプレート仕様の一次ソース確認が前提)。**
-2. **【新規】今回追加したPrismium Compressorについて、実機フィードバックが無いか確認すること。特に4個消費という比率のバランス感、GUIの実際の表示が未検証(§3BV-8参照)。**
-3. **【新規】3機械(Pulverizer/Smelter/Compressor)が出揃ったので、共通基底クラスへの抽出を段階的アプローチ(§3BV-9参照: まず1機械だけ移行してCI成功を確認してから展開)で検討する価値がある。**
-4. **【新規】`api.github.com`への`web_fetch`経由アクセスが再現するか確認すること(§3BV-8/9参照)。再現すればAtomフィード方式より確実なビルド状況確認手段になる。**
-5. 【継続】GitHub Issue #7・#9・#16は、コード上は対応済みと判断されるが、Issueとしては開いたまま。次回以降、クローズすべきかどうかの方針を検討すること(投稿者本人の確認を待つべきか、コード対応をコメントで報告すべきか等)。
-6. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと(session 69 §3BU-8参照)。
-7. 【継続・優先度は下げてよい】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BT-1)。一次情報源での確定的な確認ができれば試すこと。できなければこのまま保留でよい(恐らく実在しない懸念という再評価あり、session 68参照)。
-8. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群は、今回のPrismium Compressor / Prismium Alloy Ingot・Blockも加わり、さらに積み上がっている: Compressor(session 70、今回)、Warhammer(session 69)、Smelter(session 68)、Geyser(session 66)、Magnet Charm(session 65)、Snare(session 64)、ItemDetailsOverlay(session 62)、Pulse Charm(session 63)、Drifter(session 61)、Sentinel(session 59)、GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色(session 57)、Portalの見た目・当たり判定(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
-9. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
-10. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
-11. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式(HTMLの`<title>`/`og:description`メタタグから内容を読む)を使うこと。加えて今回`mcp__workspace__web_fetch`での`api.github.com`直接アクセスも試す価値がある(§3BV-8/9)。
-12. 【継続】worldgen/レジストリ系のJSONやクライアント専用APIを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
-13. 【最優先・継続・全セッション必読】作業ディレクトリは必ずユニークなパス(タイムスタンプ+乱数、例: `/tmp/cm_$(date +%s%N)`)を使うこと。かつ、パイプで終わるコマンドを`&&`チェーンの成否判定に使わないこと。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
-14. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#16はいずれも投稿者`Konpeitou24`本人で、新規コメントは無かった。
-15. 【継続】リリース(v0.17.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。`/releases/expanded_assets/<tag>`のキャッシュが古い値を返すことがある(過去複数回報告あり)ため、添付jarのファイル名確認に固執しすぎず、`/releases`一覧ページ・タグ個別ページでの存在確認とビルドCIの成功で十分と割り切ってよい。
-16. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械(今回追加したPrismium Compressor/Alloy Ingot/Alloy Blockも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
-17. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること(ただしパイプが絡む場合は罠に注意)。
-18. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換+末尾への新規キー追記という最小差分の方法を使うこと(今回、Smelterの古い文言修正・新規キー追加の両方にこの方式を使った)。
-19. 【継続】新規のimportミスをpush前に自己チェックする習慣。今回もItemStackHandler/PrismiumEnergyStorage/BlockStateProperties等のimportパスを既存コード(PrismiumSmelterBlockEntity/Block)と突き合わせてから使用した。
-20. 【継続】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーションが再現されていない可能性がある(セッション#61、未検証のまま継続)。
-21. 【継続・低優先度】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressor(今回追加分も含む)を含む複数ブロックで未生成のまま(session 66から継続)。低優先度だが、いつか着手する価値がある。
+1. **【新規・ユーザー直接要望】上記「ユーザーからの直接リクエスト」2件(青白いブロック追加、Prism Realmの巨大山岳地帯+ボス構造物)を検討すること。ユーザー本人が「安定してから」「タスクに追加する程度でいい」と明言しているため、実装の緊急度は低いが、次回以降のセッションで着手タイミングを判断すること。**
+2. **【最優先・新規】Prismium Alloy Ingotに装備面での本格的な使い道を与えること。候補: (a) 新規装備(session 69のWarhammerと同じ発想で、既存Item/ArmorItemクラスを流用した低リスクな新武器・防具)、(b) session 69で却下されたスミシングアップグレード経路(Ingotで既存装備を強化 -> Alloy Ingotでさらに強化、という二段階構想。1.20のスミシングテンプレート仕様の一次ソース確認が前提)。**
+3. **【新規】今回追加したPrismium Compressorについて、実機フィードバックが無いか確認すること。特に4個消費という比率のバランス感、GUIの実際の表示が未検証(§3BV-8参照)。**
+4. **【新規】3機械(Pulverizer/Smelter/Compressor)が出揃ったので、共通基底クラスへの抽出を段階的アプローチ(§3BV-9参照: まず1機械だけ移行してCI成功を確認してから展開)で検討する価値がある。**
+5. **【新規】`api.github.com`への`web_fetch`経由アクセスが再現するか確認すること(§3BV-8/9参照)。再現すればAtomフィード方式より確実なビルド状況確認手段になる。**
+6. 【継続】GitHub Issue #7・#9・#16は、コード上は対応済みと判断されるが、Issueとしては開いたまま。次回以降、クローズすべきかどうかの方針を検討すること(投稿者本人の確認を待つべきか、コード対応をコメントで報告すべきか等)。
+7. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと(session 69 §3BU-8参照)。
+8. 【継続・優先度は下げてよい】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BT-1)。一次情報源での確定的な確認ができれば試すこと。できなければこのまま保留でよい(恐らく実在しない懸念という再評価あり、session 68参照)。
+9. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群は、今回のPrismium Compressor / Prismium Alloy Ingot・Blockも加わり、さらに積み上がっている: Compressor(session 70、今回)、Warhammer(session 69)、Smelter(session 68)、Geyser(session 66)、Magnet Charm(session 65)、Snare(session 64)、ItemDetailsOverlay(session 62)、Pulse Charm(session 63)、Drifter(session 61)、Sentinel(session 59)、GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色(session 57)、Portalの見た目・当たり判定(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
+10. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
+11. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
+12. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式(HTMLの`<title>`/`og:description`メタタグから内容を読む)を使うこと。加えて今回`mcp__workspace__web_fetch`での`api.github.com`直接アクセスも試す価値がある(§3BV-8/9)。
+13. 【継続】worldgen/レジストリ系のJSONやクライアント専用APIを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
+14. 【最優先・継続・全セッション必読】作業ディレクトリは必ずユニークなパス(タイムスタンプ+乱数、例: `/tmp/cm_$(date +%s%N)`)を使うこと。かつ、パイプで終わるコマンドを`&&`チェーンの成否判定に使わないこと。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
+15. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#16はいずれも投稿者`Konpeitou24`本人で、新規コメントは無かった。
+16. 【継続】リリース(v0.17.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。`/releases/expanded_assets/<tag>`のキャッシュが古い値を返すことがある(過去複数回報告あり)ため、添付jarのファイル名確認に固執しすぎず、`/releases`一覧ページ・タグ個別ページでの存在確認とビルドCIの成功で十分と割り切ってよい。
+17. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械(今回追加したPrismium Compressor/Alloy Ingot/Alloy Blockも含む)が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+18. 【継続】複数commitを作る際は各ステップの成否を都度確認するか、`&&`で連結してエラー時に早期停止させること(ただしパイプが絡む場合は罠に注意)。
+19. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換+末尾への新規キー追記という最小差分の方法を使うこと(今回、Smelterの古い文言修正・新規キー追加の両方にこの方式を使った)。
+20. 【継続】新規のimportミスをpush前に自己チェックする習慣。今回もItemStackHandler/PrismiumEnergyStorage/BlockStateProperties等のimportパスを既存コード(PrismiumSmelterBlockEntity/Block)と突き合わせてから使用した。
+21. 【継続】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーションが再現されていない可能性がある(セッション#61、未検証のまま継続)。
+22. 【継続・低優先度】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressor(今回追加分も含む)を含む複数ブロックで未生成のまま(session 66から継続)。低優先度だが、いつか着手する価値がある。
 
 ### 議論したい論点・改善案
 
