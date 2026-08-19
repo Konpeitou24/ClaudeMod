@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "pattern": [
+        " E ",
+        "RSR",
+        " E "
+    ],
+    "key": {
+        "E": { "item": "minecraft:echo_shard" },
+        "R": { "item": "minecraft:redstone" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "result": {
+        "item": "claudemod:prismium_pulse_charm",
+        "count": 1
+    }
+}

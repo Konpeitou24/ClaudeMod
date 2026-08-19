@@ -17,6 +17,7 @@ import com.claudemod.item.PrismiumFeatherstoneItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumGuardianCharmItem;
 import com.claudemod.item.PrismiumLocatorItem;
+import com.claudemod.item.PrismiumPulseCharmItem;
 import com.claudemod.item.PrismiumRiftAnchorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
 import com.claudemod.item.PrismiumShieldItem;
@@ -212,6 +213,13 @@ public class ModItems {
     // like the rift shard - this is a reusable tool, not a consumable.
     public static final RegistryObject<Item> PRISMIUM_LOCATOR = ITEMS.register("prismium_locator",
             () -> new PrismiumLocatorItem(new Item.Properties().stacksTo(1)));
+
+    // Prismium Pulse Charm (scheduled session #63): the mod's fourth
+    // detection accessory, this time for hostile mobs rather than ore -
+    // see PrismiumPulseCharmItem. stacksTo(1) like the Locator/Rift
+    // Shard/Guardian Charm - a reusable tool, not a consumable.
+    public static final RegistryObject<Item> PRISMIUM_PULSE_CHARM = ITEMS.register("prismium_pulse_charm",
+            () -> new PrismiumPulseCharmItem(new Item.Properties().stacksTo(1)));
 
     // Prismium Wraith spawn egg (session 12): uses Forge's ForgeSpawnEggItem
     // rather than vanilla SpawnEggItem because the latter needs the
