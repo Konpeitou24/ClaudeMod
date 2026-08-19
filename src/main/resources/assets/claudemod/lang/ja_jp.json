@@ -79,6 +79,7 @@
     "message.claudemod.prismium_chronoflame.rewind": "時刻を6時間戻した",
     "gui.claudemod.fe_amount": "%1$s / %2$s FE",
     "gui.claudemod.burn_seconds": "燃料: %1$s秒",
+    "gui.claudemod.generator_rate": "発生+%1$s ・ 送電-%2$s FE/t",
     "gui.claudemod.pylon_status_active": "放射中",
     "gui.claudemod.pylon_status_idle": "待機中",
     "gui.claudemod.wardstone_status_active": "結界展開中",

@@ -33,8 +33,11 @@ import net.minecraftforge.items.SlotItemHandler;
  * The interesting difference from Cell, and the reason Generator was
  * picked as the second GUI target (see PROGRESS.md session 23 handoff,
  * "(a) Generatorは燃焼ゲージという2つ目の同期すべき値がある"): this menu
- * syncs **three** {@code ContainerData} ints instead of Cell's two -
- * current energy, max energy, and burn time - giving
+ * syncs {@code ContainerData} ints - current energy, max energy, and
+ * burn time, plus (session, GitHub issue #15 follow-up comment - see
+ * {@link #getLastGenerated()}/{@link #getLastPushed()}) two more for this
+ * tick's actual generated/pushed FE, five in total, versus Cell's two -
+ * giving
  * {@link com.claudemod.client.screen.PrismiumGeneratorScreen} a second,
  * differently-shaped gauge (a vertical "flame" bar) to draw alongside the
  * horizontal energy bar already established by Cell's screen.
@@ -78,7 +81,7 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
     public PrismiumGeneratorMenu(int windowId, Inventory inv, ContainerData data, ContainerLevelAccess access,
                                   ItemStackHandler fuelInventory) {
         super(ModMenuTypes.PRISMIUM_GENERATOR_MENU.get(), windowId);
-        checkContainerDataCount(data, 3);
+        checkContainerDataCount(data, 5);
         this.data = data;
         this.access = access;
         addDataSlots(data);
@@ -100,7 +103,7 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
         if (inv.player.level().getBlockEntity(pos) instanceof PrismiumGeneratorBlockEntity generator) {
             return generator.getContainerData();
         }
-        return new SimpleContainerData(3);
+        return new SimpleContainerData(5);
     }
 
     /** Client-side resolution of the block entity's real fuel-inventory
@@ -152,6 +155,23 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
 
     public int getBurnSeconds() {
         return getBurnTime() / 20;
+    }
+
+    /** FE this generator actually added to its own buffer on the most
+     * recently-ticked server tick (0 most ticks it isn't burning, or
+     * once the buffer is already full). See
+     * {@link PrismiumGeneratorBlockEntity#lastGenerated}'s doc - part of
+     * this session's response to the GitHub issue #15 follow-up comment
+     * about the buffer reading 0 once a hungry consumer is attached. */
+    public int getLastGenerated() {
+        return data.get(3);
+    }
+
+    /** FE this generator actually pushed out to the network on the most
+     * recently-ticked server tick (0 if nothing moved). See
+     * {@link PrismiumGeneratorBlockEntity#lastPushed}'s doc. */
+    public int getLastPushed() {
+        return data.get(4);
     }
 
     /** GitHub issue #8 ("発電できない" - opening the Generator's GUI

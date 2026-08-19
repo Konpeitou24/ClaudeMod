@@ -137,6 +137,18 @@ public class PrismiumGeneratorScreen extends AbstractContainerScreen<PrismiumGen
         Component burnText = Component.translatable("gui.claudemod.burn_seconds", menu.getBurnSeconds());
         guiGraphics.drawString(font, burnText, FLAME_X + FLAME_WIDTH + 8, FLAME_Y + FLAME_HEIGHT / 2 - 4, 0x404040, false);
 
+        // GitHub issue #15 follow-up comment ("生産側が0になる"): shows this
+        // tick's actual generated/pushed FE side by side so a buffer that
+        // reads near-0 next to a hungry consumer reads as "keeping up in
+        // real time" rather than "broken" - see
+        // PrismiumGeneratorBlockEntity's class-doc addendum for the full
+        // investigation this responds to. Muted gray like burnText/energy
+        // labels rather than the brighter status colors above, since this
+        // is supplementary detail, not the primary status signal.
+        Component rateText = Component.translatable("gui.claudemod.generator_rate",
+                menu.getLastGenerated(), menu.getLastPushed());
+        guiGraphics.drawString(font, rateText, FLAME_X + FLAME_WIDTH + 8, FLAME_Y + FLAME_HEIGHT / 2 - 4 + 10, 0x707070, false);
+
         Component energyText = Component.translatable("gui.claudemod.fe_amount",
                 menu.getEnergy(), menu.getMaxEnergy());
         int textWidth = font.width(energyText);

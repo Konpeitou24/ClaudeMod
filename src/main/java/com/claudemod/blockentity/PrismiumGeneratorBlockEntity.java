@@ -85,6 +85,42 @@ import javax.annotation.Nullable;
  * neighbor-pushing logic out into {@link EnergyPushHelper#pushToNeighbors}
  * so {@link com.claudemod.blockentity.PrismiumCableBlockEntity} could reuse
  * it verbatim instead of copy-pasting a third time; behavior is unchanged.
+ *
+ * <p><b>Session (GitHub issue #15 follow-up comment) investigation:</b>
+ * the report read "隣接する消費ブロックを置いた際に、一時的に電力の合計が
+ * 合わなくなる（生産側が0になる）バグが増えました" - placing an adjacent
+ * consuming block makes the generator's own FE total temporarily read 0,
+ * more often than before. A careful re-read of every FE transfer in this
+ * class and {@link EnergyPushHelper} (no code change to the push/BFS logic
+ * itself in this pass - see below for why) did not turn up an actual
+ * conservation bug: every extraction here is still exactly the amount a
+ * receiver's {@code receiveEnergy} reported as {@code accepted}, the
+ * server tick loop is single-threaded (no cross-tick race is possible
+ * between this method and another block's), and
+ * {@link com.claudemod.energy.PrismiumEnergyStorage} is a thin, otherwise
+ * untouched subclass of Forge's own {@code EnergyStorage}. What the report
+ * almost certainly describes instead: {@link #MAX_EXTRACT} (200 FE/tick)
+ * is twenty times {@link #GENERATION_PER_TICK} (10 FE/tick), so as soon as
+ * a reachable receiver has spare room, this generator's small buffer gets
+ * pushed back down to (or very near) zero the same tick it was topped up -
+ * correct, intentional "just-in-time" throughput, not data loss. Session
+ * 55's network-wide {@link EnergyPushHelper#pushThroughNetwork} fix made
+ * this far more noticeable than before ("バグが増えました"): pre-session-55,
+ * a generator could only reach its six immediate neighbors, so most
+ * networks left the buffer fuller more of the time; post-fix, *any*
+ * hungry receiver anywhere on the connected cable run can drain it
+ * instantly, every tick. Rather than touch the already-carefully-verified
+ * push/BFS math to chase a bug that this review could not actually
+ * confirm exists, this session instead makes the *behavior* legible: see
+ * {@link #lastGenerated}/{@link #lastPushed} and the two new
+ * {@link #getContainerData()} slots they feed, surfaced on
+ * {@link com.claudemod.client.screen.PrismiumGeneratorScreen} so a player
+ * can see "generating +10, pushing -10, buffer 0" and recognize that as
+ * healthy throughput instead of a suspected bug. If a future session gets
+ * an in-game repro that contradicts this analysis (e.g. an actual
+ * arithmetic mismatch between a source's total lifetime output and a
+ * sink's total lifetime input, not just a low instantaneous reading),
+ * that would point at a real bug this pass did not find - see PROGRESS.md.
  */
 public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuProvider {
 
@@ -184,6 +220,28 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
 
     private int burnTime = 0;
 
+    /** How much FE {@link #serverTick} actually added to
+     * {@link #energyStorage} on the most recent tick it ran (0 if not
+     * burning, or if the buffer was already full - see the burn block
+     * below). Purely a this-tick display stat, not persisted - session
+     * (GitHub issue #15 follow-up comment, see class javadoc addendum
+     * below) exposes this through {@link #getContainerData()} so the
+     * screen can show *why* the buffer often reads near-empty once a
+     * hungry consumer is attached, instead of leaving the player to
+     * wonder whether generation itself has stopped. */
+    private int lastGenerated = 0;
+
+    /** How much FE {@link #serverTick}'s call to
+     * {@link EnergyPushHelper#pushThroughNetwork} actually moved out of
+     * {@link #energyStorage} on the most recent tick (0 if nothing was
+     * pushed). Computed as the storage's before/after delta around that
+     * call rather than by changing {@code pushThroughNetwork}'s return
+     * type - keeps that already-verified shared method (and
+     * {@link com.claudemod.blockentity.PrismiumCableBlockEntity}, its
+     * other caller) completely untouched. See {@link #lastGenerated}'s
+     * doc for why this exists. */
+    private int lastPushed = 0;
+
     /** Backs this block entity's GUI (session 24, following the pattern
      * {@link com.claudemod.blockentity.PrismiumCellBlockEntity} established
      * in session 23). Three slots instead of Cell's two: index 0/1 are
@@ -200,6 +258,14 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
                 case 0 -> energyStorage.getEnergyStored();
                 case 1 -> energyStorage.getMaxEnergyStored();
                 case 2 -> Math.min(burnTime, BURN_TIME_SYNC_CAP);
+                // GitHub issue #15 follow-up comment ("隣接する消費ブロックを
+                // 置いた際に、一時的に電力の合計が合わなくなる（生産側が0に
+                // なる）"): indices 3/4 expose this tick's actual
+                // generated/pushed amounts (both always comfortably inside
+                // short range - see field docs - so no divisor/cap dance
+                // like Cell's ENERGY_SYNC_DIVISOR is needed here).
+                case 3 -> lastGenerated;
+                case 4 -> lastPushed;
                 default -> 0;
             };
         }
@@ -211,7 +277,7 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
 
         @Override
         public int getCount() {
-            return 3;
+            return 5;
         }
     };
 
@@ -278,23 +344,30 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
             changed = true;
         }
 
+        int generatedThisTick = 0;
         if (generator.burnTime > 0
                 && generator.energyStorage.getEnergyStored() < generator.energyStorage.getMaxEnergyStored()) {
             generator.burnTime--;
+            int before = generator.energyStorage.getEnergyStored();
             int newAmount = Math.min(
-                    generator.energyStorage.getEnergyStored() + GENERATION_PER_TICK,
+                    before + GENERATION_PER_TICK,
                     generator.energyStorage.getMaxEnergyStored());
             generator.energyStorage.setEnergy(newAmount);
+            generatedThisTick = newAmount - before;
             changed = true;
         }
+        generator.lastGenerated = generatedThisTick;
 
+        int pushedThisTick = 0;
         if (generator.energyStorage.getEnergyStored() > 0) {
+            int beforePush = generator.energyStorage.getEnergyStored();
             // Session 55 (GitHub issue #15): was pushToNeighbors (six
             // immediate neighbors only) - now walks any connected
             // Prismium Cable run to reach distant receivers in the same
             // tick. See EnergyPushHelper#pushThroughNetwork's doc.
             if (EnergyPushHelper.pushThroughNetwork(level, pos, generator.energyStorage, MAX_EXTRACT)) {
                 changed = true;
+                pushedThisTick = beforePush - generator.energyStorage.getEnergyStored();
                 // Session 57 (GitHub issue #15 comment): "電力の流れが目視
                 // できない". Purely cosmetic, heavily throttled (see
                 // EnergyPushHelper#visualizeFlow's doc) - only called from
@@ -306,6 +379,7 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
                 }
             }
         }
+        generator.lastPushed = pushedThisTick;
 
         // GitHub issue #8 (session 38): reported "burn-time display goes
         // up but nothing looks like it's actually generating". Root
