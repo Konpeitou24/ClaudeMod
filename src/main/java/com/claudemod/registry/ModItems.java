@@ -86,6 +86,10 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_STONE_ITEM = ITEMS.register("prismium_stone",
             () -> new BlockItem(ModBlocks.PRISMIUM_STONE.get(), new Item.Properties()));
 
+    // Session 72: BlockItem for Prismium Deepstone (see ModBlocks.PRISMIUM_DEEPSTONE).
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_ITEM = ITEMS.register("prismium_deepstone",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOCK_ITEM = ITEMS.register("prismium_block",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK.get(), new Item.Properties()));
 

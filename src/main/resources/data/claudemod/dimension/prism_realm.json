@@ -12,8 +12,12 @@
                     "height": 1
                 },
                 {
+                    "block": "claudemod:prismium_deepstone",
+                    "height": 64
+                },
+                {
                     "block": "claudemod:prismium_stone",
-                    "height": 59
+                    "height": 39
                 },
                 {
                     "block": "claudemod:prismium_soil",
@@ -21,7 +25,7 @@
                 },
                 {
                     "block": "minecraft:water",
-                    "height": 68
+                    "height": 22
                 }
             ],
             "structure_overrides": []

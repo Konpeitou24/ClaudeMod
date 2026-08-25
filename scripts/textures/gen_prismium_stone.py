@@ -80,13 +80,18 @@ def make_stone_texture():
         x, y = rng.randrange(W), rng.randrange(H)
         px[x, y] = STONE_DARK_EDGE
 
-    # A handful of single-pixel teal flecks - deliberately few (3-5 per
-    # tile) so this reads as "family resemblance to the ore" rather than
-    # "this is secretly ore".
-    for _ in range(rng.randint(3, 5)):
-        x, y = rng.randrange(W), rng.randrange(H)
-        px[x, y] = rng.choice(ACCENT_FLECKS)
-
+    # GitHub issue #22 ("紛らわしいリソースパック" - Prismium Stone is hard
+    # to tell apart from Prismium Ore at a glance; "does the stone even
+    # need the blue part?"): the handful of teal accent flecks used to be
+    # sprinkled in on purpose as a "family resemblance" to the ore (see
+    # docstring above), but a real player report says that resemblance is
+    # actually a liability - a bulk fill block that reads as "might be
+    # ore" makes every wall of it a chore to double-check while mining.
+    # Removed entirely (not just reduced) rather than second-guessed:
+    # this block's job is to be unambiguously mundane stone. ACCENT_FLECKS
+    # itself is left defined above (now unused) only so a future session
+    # that wants a different, clearly-non-ore-colored accent still has the
+    # sampled palette on hand rather than needing to re-derive it.
     return img
 
 

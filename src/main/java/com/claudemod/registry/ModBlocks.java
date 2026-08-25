@@ -82,6 +82,33 @@ public class ModBlocks {
                     .strength(2.0f, 6.0f)
                     .sound(SoundType.STONE)));
 
+    // Session 72 (GitHub issue #23, "新ディメンションの生成アルゴリズムに
+    // ついて"): Prismium Deepstone, the dark deep-layer counterpart to
+    // Prismium Stone above - the same "stone gets darker/denser once you
+    // go deep enough" relationship vanilla expresses with Stone versus
+    // Deepslate. Directly requested by the repo owner ("0付近より下の高
+    // さには、専用の深層岩を置いてほしいです" - place a dedicated deep
+    // stone below around y=0); see data/claudemod/dimension/prism_realm.json
+    // for where this is actually placed in the flat generator's layer
+    // list (below y=0, as asked) and this session's PROGRESS.md entry for
+    // the accompanying sea-level/ocean-depth rebalance in that same file.
+    // Slightly tougher than Prismium Stone (matches vanilla's own
+    // stone -> deepslate strength bump) and reuses DEEPSLATE_PRISMIUM_ORE's
+    // map colour/sound for the same "this is the deep layer" family
+    // resemblance that block already established. Texture
+    // (scripts/textures/gen_prismium_deepstone.py) samples
+    // deepslate_prismium_ore.png's own dark stone-matrix greys - and,
+    // per the same issue #23/#22 investigation, deliberately carries NO
+    // ore-colored accent flecks (see that script's docstring: Prismium
+    // Stone's now-removed flecks were exactly what issue #22 complained
+    // about, so Deepstone was written plain from the start).
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE = BLOCKS.register("prismium_deepstone",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
     // Compressed storage block, crafted from 9 Prismium Shards.
     public static final RegistryObject<Block> PRISMIUM_BLOCK = BLOCKS.register("prismium_block",
             () -> new Block(BlockBehaviour.Properties.of()
