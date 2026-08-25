@@ -3,6 +3,7 @@ package com.claudemod.event;
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -93,6 +94,7 @@ public class PrismiumFeatherstoneHandler {
 
         event.setDamageMultiplier(event.getDamageMultiplier() * DAMAGE_MULTIPLIER);
         playFeedback(player);
+        announceReduction(player);
     }
 
     /**
@@ -119,6 +121,40 @@ public class PrismiumFeatherstoneHandler {
             serverLevel.playSound(null, player.blockPosition(), SoundEvents.AMETHYST_BLOCK_CHIME,
                     SoundSource.PLAYERS, 0.6F, 1.4F);
         }
+    }
+
+    /**
+     * GitHub issue #17 ("羽石の効果がわかりずらい" - when Featherstone
+     * triggers, it's not intuitively clear how much effect just fired;
+     * please improve part of the UI). {@link #playFeedback} already gives
+     * a particle/sound cue that *something* happened, but per the report
+     * that still leaves the actual magnitude invisible - a player cannot
+     * tell a 75% reduction from, say, a 10% one just from a puff of cloud
+     * particles. This adds a one-line action-bar message (the same
+     * {@code displayClientMessage(component, true)} pattern already used
+     * elsewhere in this mod, e.g. {@code PrismiumGeneratorBlock#use}'s
+     * fuel message) stating the fixed reduction percentage in plain
+     * terms. Deliberately a static percentage rather than a computed
+     * before/after damage number: {@link net.minecraft.world.entity.LivingEntity#causeFallDamage}
+     * derives the actual health delta from this event's multiplier
+     * *after* this listener returns, taking armor/enchantments/other mods'
+     * own {@code LivingFallEvent} listeners into account, so this
+     * handler cannot know the final applied damage at the point it runs -
+     * showing the guaranteed, always-true "75%" figure is honest, whereas
+     * guessing a final HP number here could easily be wrong. **Unverified
+     * in-game** (no Minecraft client in this sandbox, per PROGRESS.md's
+     * standing note): whether an action-bar message reads clearly at the
+     * exact moment of landing (players are typically looking at the
+     * ground/GUI, not the action bar, right after a fall) is a real
+     * design question a future session may want to revisit, e.g. by
+     * moving this to a short-lived on-screen HUD element instead if
+     * player feedback says the action bar gets missed.
+     */
+    private static void announceReduction(Player player) {
+        int reductionPercent = Math.round((1.0F - DAMAGE_MULTIPLIER) * 100.0F);
+        player.displayClientMessage(
+                Component.translatable("message.claudemod.prismium_featherstone.reduced", reductionPercent),
+                true);
     }
 
     private static boolean hasFeatherstone(Player player) {

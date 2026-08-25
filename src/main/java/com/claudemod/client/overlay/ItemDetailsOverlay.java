@@ -132,8 +132,39 @@ public final class ItemDetailsOverlay {
     private static int holdTicks = 0;
     private static Item lastHoveredItem = null;
 
+    /** GitHub issue #19 ("詳細表示のバグ" - holding the details key shows
+     * nothing at all) follow-up: this session's code review (see
+     * PROGRESS.md) could not find a confirmed root cause for that report
+     * by reading alone - {@link ModKeyMappings#SHOW_ITEM_DETAILS}'s
+     * registration, this class's {@code AbstractContainerScreen} check,
+     * and {@code getSlotUnderMouse()}'s Forge-added accessor all read as
+     * correct against this class's own citations. Rather than guess at a
+     * fix blind, this listener body is now wrapped so that *if* some
+     * exception is actually being thrown here every frame (which would
+     * silently and completely disable the overlay with zero visible
+     * symptom besides "nothing happens" - exactly matching the report),
+     * it gets logged once instead of vanishing, giving the next session
+     * (or the repo owner, if they can share a log) a concrete stack
+     * trace to work from instead of another round of blind code review.
+     * Guarded by {@link #loggedFailure} so a real per-frame exception
+     * cannot spam the log. */
+    private static boolean loggedFailure = false;
+
     @SubscribeEvent
     public static void onScreenRenderPost(ScreenEvent.Render.Post event) {
+        try {
+            renderIfHeld(event);
+        } catch (Exception e) {
+            if (!loggedFailure) {
+                loggedFailure = true;
+                ClaudeMod.LOGGER.error(
+                        "ItemDetailsOverlay failed while rendering (GitHub issue #19 investigation - "
+                                + "this stack trace is the concrete evidence that session lacked)", e);
+            }
+        }
+    }
+
+    private static void renderIfHeld(ScreenEvent.Render.Post event) {
         Screen screen = event.getScreen();
         if (!(screen instanceof AbstractContainerScreen<?> containerScreen)) {
             reset();
