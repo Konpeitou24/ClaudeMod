@@ -1,164 +1,170 @@
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:painting_variant
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:painting_variant
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:stat_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:stat_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:custom_stat
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:custom_stat
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:chunk_status
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:chunk_status
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:rule_test
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:rule_test
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:rule_block_entity_modifier
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:rule_block_entity_modifier
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:pos_rule_test
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:pos_rule_test
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:menu
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:menu
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:recipe_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:recipe_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:recipe_serializer
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:recipe_serializer
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:position_source_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:position_source_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:command_argument_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:command_argument_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:villager_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:villager_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:villager_profession
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:villager_profession
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:point_of_interest_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:point_of_interest_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:schedule
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:schedule
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:activity
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:activity
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_pool_entry_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_pool_entry_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_function_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_function_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_condition_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_condition_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_number_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_number_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_nbt_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_nbt_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_score_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_score_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:float_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:float_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:int_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:int_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:height_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:height_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:block_predicate_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:block_predicate_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/carver
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/carver
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/feature
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/feature
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_processor
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_processor
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_placement
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_placement
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_piece
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_piece
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/placement_modifier_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/placement_modifier_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/block_state_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/block_state_provider_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/foliage_placer_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/foliage_placer_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/trunk_placer_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/trunk_placer_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/root_placer_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/root_placer_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/tree_decorator_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/tree_decorator_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/feature_size_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/feature_size_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/biome_source
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/biome_source
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/chunk_generator
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/chunk_generator
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/material_condition
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/material_condition
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/material_rule
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/material_rule
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/density_function_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/density_function_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_pool_element
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_pool_element
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:cat_variant
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:cat_variant
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:frog_variant
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:frog_variant
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:banner_pattern
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:banner_pattern
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:instrument
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:instrument
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:decorated_pot_patterns
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:decorated_pot_patterns
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:creative_mode_tab
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:creative_mode_tab
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:biome_modifier_serializers
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:biome_modifier_serializers
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:display_contexts
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:display_contexts
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:entity_data_serializers
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:entity_data_serializers
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:fluid_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:fluid_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:global_loot_modifier_serializers
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:global_loot_modifier_serializers
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:holder_set_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:holder_set_type
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:structure_modifier_serializers
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:structure_modifier_serializers
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/biome
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/biome
-[21:56:02] [main/DEBUG] [ne.mi.fm.co.ConfigTracker/CONFIG]: Loading configs type COMMON
-[21:56:02] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Freezing registries
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:block Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:fluid Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:item Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:mob_effect Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:sound_event Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:potion Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:enchantment Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:entity_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:block_entity_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:particle_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:menu Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:painting_variant Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:recipe_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:recipe_serializer Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:attribute Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:stat_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:command_argument_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:villager_profession Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:point_of_interest_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:memory_module_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:sensor_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:schedule Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:activity Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/carver Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/feature Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:chunk_status Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/block_state_provider_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/foliage_placer_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/tree_decorator_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/biome Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:entity_data_serializers Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:global_loot_modifier_serializers Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:biome_modifier_serializers Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:fluid_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:structure_modifier_serializers Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:holder_set_type Sync: FROZEN -> ACTIVE
-[21:56:02] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:display_contexts Sync: FROZEN -> ACTIVE
-[21:56:03] [Forge Version Check/INFO] [ne.mi.fm.VersionChecker/]: [forge] Starting version check at https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json
-[21:56:03] [Forge Version Check/DEBUG] [ne.mi.fm.VersionChecker/]: [forge] Received version check data:
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:game_event
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:game_event
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:enchantment
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:enchantment
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:block_entity_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:block_entity_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:painting_variant
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:painting_variant
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:stat_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:stat_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:custom_stat
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:custom_stat
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:chunk_status
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:chunk_status
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:rule_test
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:rule_test
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:rule_block_entity_modifier
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:rule_block_entity_modifier
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:pos_rule_test
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:pos_rule_test
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:menu
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:menu
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:recipe_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:recipe_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:recipe_serializer
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:recipe_serializer
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:position_source_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:position_source_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:command_argument_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:command_argument_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:villager_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:villager_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:villager_profession
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:villager_profession
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:point_of_interest_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:point_of_interest_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:schedule
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:schedule
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:activity
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:activity
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_pool_entry_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_pool_entry_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_function_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_function_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_condition_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_condition_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_number_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_number_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_nbt_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_nbt_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:loot_score_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:loot_score_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:float_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:float_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:int_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:int_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:height_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:height_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:block_predicate_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:block_predicate_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/carver
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/carver
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/feature
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/feature
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_processor
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_processor
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_placement
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_placement
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_piece
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_piece
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/placement_modifier_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/placement_modifier_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/block_state_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/block_state_provider_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/foliage_placer_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/foliage_placer_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/trunk_placer_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/trunk_placer_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/root_placer_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/root_placer_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/tree_decorator_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/tree_decorator_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/feature_size_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/feature_size_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/biome_source
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/biome_source
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/chunk_generator
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/chunk_generator
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/material_condition
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/material_condition
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/material_rule
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/material_rule
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/density_function_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/density_function_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/structure_pool_element
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/structure_pool_element
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:cat_variant
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:cat_variant
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:frog_variant
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:frog_variant
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:banner_pattern
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:banner_pattern
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:instrument
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:instrument
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:decorated_pot_patterns
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:decorated_pot_patterns
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:creative_mode_tab
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:creative_mode_tab
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:biome_modifier_serializers
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:biome_modifier_serializers
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:display_contexts
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:display_contexts
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:entity_data_serializers
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:entity_data_serializers
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:fluid_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:fluid_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:global_loot_modifier_serializers
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:global_loot_modifier_serializers
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:holder_set_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:holder_set_type
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: forge:structure_modifier_serializers
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: forge:structure_modifier_serializers
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Applying holder lookups: minecraft:worldgen/biome
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Holder lookups applied: minecraft:worldgen/biome
+[22:00:33] [main/DEBUG] [ne.mi.fm.co.ConfigTracker/CONFIG]: Loading configs type COMMON
+[22:00:33] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Freezing registries
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:block Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:fluid Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:item Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:mob_effect Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:sound_event Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:potion Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:enchantment Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:entity_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:block_entity_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:particle_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:menu Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:painting_variant Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:recipe_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:recipe_serializer Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:attribute Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:stat_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:command_argument_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:villager_profession Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:point_of_interest_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:memory_module_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:sensor_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:schedule Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:activity Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/carver Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/feature Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:chunk_status Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/block_state_provider_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/foliage_placer_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/tree_decorator_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/biome Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:entity_data_serializers Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:global_loot_modifier_serializers Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:biome_modifier_serializers Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:fluid_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:structure_modifier_serializers Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:holder_set_type Sync: FROZEN -> ACTIVE
+[22:00:33] [main/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:display_contexts Sync: FROZEN -> ACTIVE
+[22:00:33] [Forge Version Check/INFO] [ne.mi.fm.VersionChecker/]: [forge] Starting version check at https://files.minecraftforge.net/net/minecraftforge/forge/promotions_slim.json
+[22:00:33] [Forge Version Check/DEBUG] [ne.mi.fm.VersionChecker/]: [forge] Received version check data:
 {
   "homepage": "https://files.minecraftforge.net/net/minecraftforge/forge/",
   "promos": {
@@ -280,9 +286,9 @@
     "26.2-recommended": "65.1.0"
   }
 }
-[21:56:03] [Forge Version Check/INFO] [ne.mi.fm.VersionChecker/]: [forge] Found status: OUTDATED Current: 47.4.0 Target: 47.4.10
-[21:56:04] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: All registries frozen
-[21:56:04] [main/ERROR] [minecraft/Settings]: Failed to load properties from file: server.properties
+[22:00:33] [Forge Version Check/INFO] [ne.mi.fm.VersionChecker/]: [forge] Found status: OUTDATED Current: 47.4.0 Target: 47.4.10
+[22:00:34] [main/DEBUG] [ne.mi.re.GameData/REGISTRIES]: All registries frozen
+[22:00:34] [main/ERROR] [minecraft/Settings]: Failed to load properties from file: server.properties
 java.nio.file.NoSuchFileException: server.properties
 	at sun.nio.fs.UnixException.translateToIOException(UnixException.java:92) ~[?:?] {}
 	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106) ~[?:?] {}
@@ -311,184 +317,178 @@ java.nio.file.NoSuchFileException: server.properties
 	at cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:26) ~[modlauncher-10.0.9.jar:?] {}
 	at cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:23) ~[modlauncher-10.0.9.jar:?] {}
 	at cpw.mods.bootstraplauncher.BootstrapLauncher.main(BootstrapLauncher.java:141) ~[bootstraplauncher-1.1.2.jar:?] {}
-[21:56:04] [main/INFO] [mojang/YggdrasilAuthenticationService]: Environment: authHost='https://authserver.mojang.com', accountsHost='https://api.mojang.com', sessionHost='https://sessionserver.mojang.com', servicesHost='https://api.minecraftservices.com', name='PROD'
-[21:56:04] [main/WARN] [minecraft/VanillaPackResourcesBuilder]: Assets URL 'union:/home/runner/work/ClaudeMod/ClaudeMod/build/fg_cache/net/minecraftforge/forge/1.20.1-47.4.0_mapped_official_1.20.1/forge-1.20.1-47.4.0_mapped_official_1.20.1.jar%23181!/assets/.mcassetsroot' uses unexpected schema
-[21:56:04] [main/WARN] [minecraft/VanillaPackResourcesBuilder]: Assets URL 'union:/home/runner/work/ClaudeMod/ClaudeMod/build/fg_cache/net/minecraftforge/forge/1.20.1-47.4.0_mapped_official_1.20.1/forge-1.20.1-47.4.0_mapped_official_1.20.1.jar%23181!/data/.mcassetsroot' uses unexpected schema
-[21:56:04] [main/DEBUG] [ne.mi.se.ServerLifecycleHooks/CORE]: Generating PackInfo named mod:forge for mod file /
-[21:56:04] [main/DEBUG] [ne.mi.se.ServerLifecycleHooks/CORE]: Generating PackInfo named mod:claudemod for mod file /home/runner/work/ClaudeMod/ClaudeMod/build/resources/main
-[21:56:05] [main/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/server/commands/SummonCommand
-[21:56:05] [Worker-Main-3/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/entity/raid/Raid
-[21:56:06] [main/INFO] [minecraft/RecipeManager]: Loaded 7 recipes
-[21:56:06] [main/INFO] [minecraft/AdvancementList]: Loaded 1271 advancements
-[21:56:06] [main/DEBUG] [ne.mi.co.ForgeHooks/WP]: Gathering id map for writing to world save world
-[21:56:06] [main/DEBUG] [ne.mi.co.ForgeHooks/WP]: ID Map collection complete world
-[21:56:06] [main/INFO] [ne.mi.ga.ForgeGameTestHooks/]: Enabled Gametest Namespaces: [claudemod]
-[21:56:06] [Server thread/DEBUG] [ne.mi.fm.co.ConfigTracker/CONFIG]: Loading configs type SERVER
-[21:56:06] [Server thread/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Built TOML config for ./world/serverconfig/forge-server.toml
-[21:56:06] [Server thread/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Loaded TOML config file ./world/serverconfig/forge-server.toml
-[21:56:06] [Server thread/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Watching TOML config file ./world/serverconfig/forge-server.toml for changes
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Configuration file ./world/serverconfig/forge-server.toml is not correct. Correcting
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server was corrected from null to its default, SimpleCommentedConfig:{}. 
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.removeErroringBlockEntities was corrected from null to its default, false. 
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.removeErroringBlockEntities does not match the spec. This may create a backup.
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.removeErroringEntities was corrected from null to its default, false. 
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.removeErroringEntities does not match the spec. This may create a backup.
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.fullBoundingBoxLadders was corrected from null to its default, false. 
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.fullBoundingBoxLadders does not match the spec. This may create a backup.
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.zombieBaseSummonChance was corrected from null to its default, 0.1. 
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.zombieBaseSummonChance does not match the spec. This may create a backup.
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.zombieBabyChance was corrected from null to its default, 0.05. 
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.zombieBabyChance does not match the spec. This may create a backup.
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.permissionHandler was corrected from null to its default, forge:default_handler. 
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.permissionHandler does not match the spec. This may create a backup.
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.advertiseDedicatedServerToLan was corrected from null to its default, true. 
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.advertiseDedicatedServerToLan does not match the spec. This may create a backup.
-[21:56:06] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.useItemWithDurationZero was corrected from null to its default, false. 
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.useItemWithDurationZero does not match the spec. This may create a backup.
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server does not match the spec. This may create a backup.
-[21:56:06] [Thread-1/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Config file forge-server.toml changed, sending notifies
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.ForgeConfig/FORGEMOD]: Loaded forge config file forge-server.toml
-[21:56:06] [Thread-1/DEBUG] [ne.mi.co.ForgeConfig/FORGEMOD]: Forge config just got changed on the file system!
-[21:56:06] [Thread-1/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Config file forge-server.toml changed, sending notifies
-[21:56:06] [Thread-1/DEBUG] [ne.mi.co.ForgeConfig/FORGEMOD]: Forge config just got changed on the file system!
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/level/levelgen/PhantomSpawner
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/level/levelgen/PatrolSpawner
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/entity/npc/CatSpawner
-[21:56:06] [Server thread/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/entity/ai/village/VillageSiege
-[21:56:09] [Worker-Main-1/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate
-[21:56:12] [Worker-Main-3/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/level/NaturalSpawner
-[21:56:12] [Server thread/INFO] [minecraft/MinecraftServer]: Preparing start region for dimension minecraft:overworld
-[21:56:13] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
-[21:56:13] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
-[21:56:13] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
-[21:56:14] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
-[21:56:14] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
-[21:56:15] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 1%
-[21:56:15] [Worker-Main-3/DEBUG] [io.ne.ut.in.InternalThreadLocalMap/]: -Dio.netty.threadLocalMap.stringBuilder.initialSize: 1024
-[21:56:15] [Worker-Main-3/DEBUG] [io.ne.ut.in.InternalThreadLocalMap/]: -Dio.netty.threadLocalMap.stringBuilder.maxSize: 4096
-[21:56:15] [Worker-Main-3/DEBUG] [io.ne.ut.in.ThreadLocalRandom/]: -Dio.netty.initialSeedUniquifier: 0x3f4f59ce8c748faa
-[21:56:15] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 1%
-[21:56:16] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 2%
-[21:56:16] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 2%
-[21:56:17] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 3%
-[21:56:17] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 4%
-[21:56:18] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 4%
-[21:56:18] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 5%
-[21:56:19] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 6%
-[21:56:19] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 7%
-[21:56:20] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 9%
-[21:56:20] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 10%
-[21:56:21] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 11%
-[21:56:21] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 13%
-[21:56:22] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 14%
-[21:56:22] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 16%
-[21:56:23] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 17%
-[21:56:23] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 19%
-[21:56:24] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 20%
-[21:56:24] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 22%
-[21:56:25] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 23%
-[21:56:25] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 25%
-[21:56:26] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 27%
-[21:56:26] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 30%
-[21:56:27] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 31%
-[21:56:27] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 33%
-[21:56:28] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 35%
-[21:56:28] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 37%
-[21:56:29] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 40%
-[21:56:29] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 42%
-[21:56:30] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 43%
-[21:56:30] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 46%
-[21:56:31] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 48%
-[21:56:31] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 51%
-[21:56:32] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 54%
-[21:56:32] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 55%
-[21:56:33] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 57%
-[21:56:33] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 59%
-[21:56:34] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 61%
-[21:56:34] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 63%
-[21:56:35] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 66%
-[21:56:35] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 68%
-[21:56:36] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 69%
-[21:56:36] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 72%
-[21:56:37] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 74%
-[21:56:37] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 77%
-[21:56:38] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 80%
-[21:56:38] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 83%
-[21:56:39] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 84%
-[21:56:39] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 86%
-[21:56:40] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 88%
-[21:56:40] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 91%
-[21:56:41] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 94%
-[21:56:41] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 96%
-[21:56:42] [Server thread/INFO] [minecraft/LoggerChunkProgressListener]: Time elapsed: 29485 ms
-[21:56:42] [Server thread/INFO] [minecraft/GameTestServer]: Started game test server
-[21:56:42] [Server thread/DEBUG] [ne.mi.co.ForgeI18n/CORE]: Loading I18N data entries: 419
-[21:56:42] [Server thread/INFO] [ne.mi.se.pe.PermissionAPI/]: Successfully initialized permission handler forge:default_handler
-[21:56:42] [Server thread/DEBUG] [io.ne.bu.AbstractByteBuf/]: -Dio.netty.buffer.checkAccessible: true
-[21:56:42] [Server thread/DEBUG] [io.ne.bu.AbstractByteBuf/]: -Dio.netty.buffer.checkBounds: true
-[21:56:42] [Server thread/DEBUG] [io.ne.ut.ResourceLeakDetectorFactory/]: Loaded default ResourceLeakDetector: io.netty.util.ResourceLeakDetector@67fb75b8
-[21:56:42] [Server thread/INFO] [minecraft/GameTestServer]: 0 tests are now running!
-[21:56:42] [Server thread/INFO] [minecraft/GameTestServer]: []
-[21:56:42] [Server thread/INFO] [minecraft/GameTestServer]: ========= 0 GAME TESTS COMPLETE ======================
-[21:56:42] [Server thread/INFO] [minecraft/GameTestServer]: All 0 required tests passed :)
-[21:56:42] [Server thread/INFO] [minecraft/GameTestServer]: ====================================================
-[21:56:42] [Server thread/INFO] [minecraft/MinecraftServer]: Stopping server
-[21:56:42] [Server thread/INFO] [minecraft/MinecraftServer]: Saving players
-[21:56:42] [Server thread/INFO] [minecraft/MinecraftServer]: Saving worlds
-[21:56:44] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
-[21:56:45] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
-[21:56:45] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/claudemod:prism_realm
-[21:56:45] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
-[21:56:45] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: Gathering id map for writing to world save world
-[21:56:45] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: ID Map collection complete world
-[21:56:45] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (world): All chunks are saved
-[21:56:45] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
-[21:56:45] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (prism_realm): All chunks are saved
-[21:56:45] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
-[21:56:45] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage: All dimensions are saved
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Reverting to FROZEN data state.
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:block Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:fluid Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:item Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:mob_effect Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:sound_event Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:potion Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:enchantment Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:entity_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:block_entity_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:particle_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:menu Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:painting_variant Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:recipe_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:recipe_serializer Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:attribute Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:stat_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:command_argument_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:villager_profession Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:point_of_interest_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:memory_module_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:sensor_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:schedule Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:activity Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/carver Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/feature Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:chunk_status Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/block_state_provider_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/foliage_placer_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/tree_decorator_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/biome Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:entity_data_serializers Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:global_loot_modifier_serializers Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:biome_modifier_serializers Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:fluid_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:structure_modifier_serializers Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:holder_set_type Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:display_contexts Sync: ACTIVE -> FROZEN
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ObjectHolderRegistry/REGISTRIES]: Applying holder lookups
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.ObjectHolderRegistry/REGISTRIES]: Holder lookups applied
-[21:56:46] [Server thread/DEBUG] [ne.mi.re.GameData/REGISTRIES]: FROZEN state restored.
-[21:56:46] [Server thread/DEBUG] [ne.mi.fm.co.ConfigTracker/CONFIG]: Unloading configs type SERVER
-[21:56:46] [Server thread/INFO] [minecraft/GameTestServer]: Game test server shutting down
+[22:00:34] [main/INFO] [mojang/YggdrasilAuthenticationService]: Environment: authHost='https://authserver.mojang.com', accountsHost='https://api.mojang.com', sessionHost='https://sessionserver.mojang.com', servicesHost='https://api.minecraftservices.com', name='PROD'
+[22:00:34] [main/WARN] [minecraft/VanillaPackResourcesBuilder]: Assets URL 'union:/home/runner/work/ClaudeMod/ClaudeMod/build/fg_cache/net/minecraftforge/forge/1.20.1-47.4.0_mapped_official_1.20.1/forge-1.20.1-47.4.0_mapped_official_1.20.1.jar%23181!/assets/.mcassetsroot' uses unexpected schema
+[22:00:34] [main/WARN] [minecraft/VanillaPackResourcesBuilder]: Assets URL 'union:/home/runner/work/ClaudeMod/ClaudeMod/build/fg_cache/net/minecraftforge/forge/1.20.1-47.4.0_mapped_official_1.20.1/forge-1.20.1-47.4.0_mapped_official_1.20.1.jar%23181!/data/.mcassetsroot' uses unexpected schema
+[22:00:34] [main/DEBUG] [ne.mi.se.ServerLifecycleHooks/CORE]: Generating PackInfo named mod:forge for mod file /
+[22:00:34] [main/DEBUG] [ne.mi.se.ServerLifecycleHooks/CORE]: Generating PackInfo named mod:claudemod for mod file /home/runner/work/ClaudeMod/ClaudeMod/build/resources/main
+[22:00:35] [main/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/server/commands/SummonCommand
+[22:00:35] [Worker-Main-1/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/entity/raid/Raid
+[22:00:36] [main/INFO] [minecraft/RecipeManager]: Loaded 7 recipes
+[22:00:36] [main/INFO] [minecraft/AdvancementList]: Loaded 1271 advancements
+[22:00:36] [main/DEBUG] [ne.mi.co.ForgeHooks/WP]: Gathering id map for writing to world save world
+[22:00:36] [main/DEBUG] [ne.mi.co.ForgeHooks/WP]: ID Map collection complete world
+[22:00:36] [main/INFO] [ne.mi.ga.ForgeGameTestHooks/]: Enabled Gametest Namespaces: [claudemod]
+[22:00:36] [Server thread/DEBUG] [ne.mi.fm.co.ConfigTracker/CONFIG]: Loading configs type SERVER
+[22:00:36] [Server thread/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Built TOML config for ./world/serverconfig/forge-server.toml
+[22:00:36] [Server thread/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Loaded TOML config file ./world/serverconfig/forge-server.toml
+[22:00:36] [Server thread/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Watching TOML config file ./world/serverconfig/forge-server.toml for changes
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Configuration file ./world/serverconfig/forge-server.toml is not correct. Correcting
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server was corrected from null to its default, SimpleCommentedConfig:{}. 
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.removeErroringBlockEntities was corrected from null to its default, false. 
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.removeErroringBlockEntities does not match the spec. This may create a backup.
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.removeErroringEntities was corrected from null to its default, false. 
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.removeErroringEntities does not match the spec. This may create a backup.
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.fullBoundingBoxLadders was corrected from null to its default, false. 
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.fullBoundingBoxLadders does not match the spec. This may create a backup.
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.zombieBaseSummonChance was corrected from null to its default, 0.1. 
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.zombieBaseSummonChance does not match the spec. This may create a backup.
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.zombieBabyChance was corrected from null to its default, 0.05. 
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.zombieBabyChance does not match the spec. This may create a backup.
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.permissionHandler was corrected from null to its default, forge:default_handler. 
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.permissionHandler does not match the spec. This may create a backup.
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.advertiseDedicatedServerToLan was corrected from null to its default, true. 
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.advertiseDedicatedServerToLan does not match the spec. This may create a backup.
+[22:00:36] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.useItemWithDurationZero was corrected from null to its default, false. 
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.useItemWithDurationZero does not match the spec. This may create a backup.
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server does not match the spec. This may create a backup.
+[22:00:36] [Thread-1/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Config file forge-server.toml changed, sending notifies
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.ForgeConfig/FORGEMOD]: Loaded forge config file forge-server.toml
+[22:00:36] [Thread-1/DEBUG] [ne.mi.co.ForgeConfig/FORGEMOD]: Forge config just got changed on the file system!
+[22:00:36] [Thread-1/DEBUG] [ne.mi.fm.co.ConfigFileTypeHandler/CONFIG]: Config file forge-server.toml changed, sending notifies
+[22:00:36] [Thread-1/DEBUG] [ne.mi.co.ForgeConfig/FORGEMOD]: Forge config just got changed on the file system!
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/level/levelgen/PhantomSpawner
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/level/levelgen/PatrolSpawner
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/entity/npc/CatSpawner
+[22:00:36] [Server thread/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/entity/ai/village/VillageSiege
+[22:00:39] [Worker-Main-3/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/level/levelgen/structure/templatesystem/StructureTemplate
+[22:00:41] [Worker-Main-3/DEBUG] [ne.mi.co.tr.CoreModBaseTransformer/COREMOD]: Transforming net/minecraft/world/level/NaturalSpawner
+[22:00:42] [Server thread/INFO] [minecraft/MinecraftServer]: Preparing start region for dimension minecraft:overworld
+[22:00:42] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
+[22:00:42] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
+[22:00:43] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
+[22:00:43] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
+[22:00:44] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
+[22:00:44] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 0%
+[22:00:45] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 1%
+[22:00:45] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 1%
+[22:00:46] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 2%
+[22:00:46] [Worker-Main-3/DEBUG] [io.ne.ut.in.InternalThreadLocalMap/]: -Dio.netty.threadLocalMap.stringBuilder.initialSize: 1024
+[22:00:46] [Worker-Main-3/DEBUG] [io.ne.ut.in.InternalThreadLocalMap/]: -Dio.netty.threadLocalMap.stringBuilder.maxSize: 4096
+[22:00:46] [Worker-Main-3/DEBUG] [io.ne.ut.in.ThreadLocalRandom/]: -Dio.netty.initialSeedUniquifier: 0x9f04e8603dc0a454
+[22:00:46] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 3%
+[22:00:47] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 4%
+[22:00:47] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 4%
+[22:00:48] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 6%
+[22:00:48] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 7%
+[22:00:49] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 9%
+[22:00:49] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 9%
+[22:00:50] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 10%
+[22:00:50] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 13%
+[22:00:51] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 15%
+[22:00:51] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 16%
+[22:00:52] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 19%
+[22:00:52] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 21%
+[22:00:53] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 23%
+[22:00:53] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 25%
+[22:00:54] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 27%
+[22:00:54] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 30%
+[22:00:55] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 31%
+[22:00:55] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 34%
+[22:00:56] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 36%
+[22:00:56] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 39%
+[22:00:57] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 42%
+[22:00:57] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 43%
+[22:00:58] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 46%
+[22:00:58] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 49%
+[22:00:59] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 52%
+[22:00:59] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 55%
+[22:01:00] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 56%
+[22:01:00] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 59%
+[22:01:01] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 62%
+[22:01:01] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 65%
+[22:01:02] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 68%
+[22:01:02] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 70%
+[22:01:03] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 71%
+[22:01:03] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 74%
+[22:01:04] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 77%
+[22:01:04] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 80%
+[22:01:05] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 83%
+[22:01:05] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 84%
+[22:01:06] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 86%
+[22:01:06] [Worker-Main-3/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 89%
+[22:01:07] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 93%
+[22:01:07] [Worker-Main-1/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 95%
+[22:01:08] [Worker-Main-2/INFO] [minecraft/LoggerChunkProgressListener]: Preparing spawn area: 98%
+[22:01:08] [Server thread/INFO] [minecraft/LoggerChunkProgressListener]: Time elapsed: 26174 ms
+[22:01:08] [Server thread/INFO] [minecraft/GameTestServer]: Started game test server
+[22:01:08] [Server thread/DEBUG] [ne.mi.co.ForgeI18n/CORE]: Loading I18N data entries: 419
+[22:01:08] [Server thread/INFO] [ne.mi.se.pe.PermissionAPI/]: Successfully initialized permission handler forge:default_handler
+[22:01:08] [Server thread/DEBUG] [io.ne.bu.AbstractByteBuf/]: -Dio.netty.buffer.checkAccessible: true
+[22:01:08] [Server thread/DEBUG] [io.ne.bu.AbstractByteBuf/]: -Dio.netty.buffer.checkBounds: true
+[22:01:08] [Server thread/DEBUG] [io.ne.ut.ResourceLeakDetectorFactory/]: Loaded default ResourceLeakDetector: io.netty.util.ResourceLeakDetector@7789e9a8
+[22:01:08] [Server thread/INFO] [minecraft/GameTestServer]: 0 tests are now running!
+[22:01:08] [Server thread/INFO] [minecraft/GameTestServer]: []
+[22:01:08] [Server thread/INFO] [minecraft/GameTestServer]: ========= 0 GAME TESTS COMPLETE ======================
+[22:01:08] [Server thread/INFO] [minecraft/GameTestServer]: All 0 required tests passed :)
+[22:01:08] [Server thread/INFO] [minecraft/GameTestServer]: ====================================================
+[22:01:08] [Server thread/INFO] [minecraft/MinecraftServer]: Stopping server
+[22:01:08] [Server thread/INFO] [minecraft/MinecraftServer]: Saving players
+[22:01:08] [Server thread/INFO] [minecraft/MinecraftServer]: Saving worlds
+[22:01:18] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[22:01:19] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[22:01:19] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/claudemod:prism_realm
+[22:01:19] [Server thread/INFO] [minecraft/MinecraftServer]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[22:01:19] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: Gathering id map for writing to world save world
+[22:01:19] [Server thread/DEBUG] [ne.mi.co.ForgeHooks/WP]: ID Map collection complete world
+[22:01:19] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[22:01:19] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[22:01:19] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (prism_realm): All chunks are saved
+[22:01:19] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[22:01:19] [Server thread/INFO] [minecraft/MinecraftServer]: ThreadedAnvilChunkStorage: All dimensions are saved
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.GameData/REGISTRIES]: Reverting to FROZEN data state.
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:block Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:fluid Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:item Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:mob_effect Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:sound_event Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:potion Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:enchantment Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:entity_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:block_entity_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:particle_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:menu Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:painting_variant Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:recipe_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:recipe_serializer Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:attribute Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:stat_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:command_argument_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:villager_profession Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:point_of_interest_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:memory_module_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:sensor_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:schedule Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:activity Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/carver Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/feature Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:chunk_status Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/block_state_provider_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/foliage_placer_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/tree_decorator_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry minecraft:worldgen/biome Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:entity_data_serializers Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:global_loot_modifier_serializers Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:biome_modifier_serializers Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:fluid_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:structure_modifier_serializers Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:holder_set_type Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ForgeRegistry/REGISTRIES]: Registry forge:display_contexts Sync: ACTIVE -> FROZEN
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ObjectHolderRegistry/REGISTRIES]: Applying holder lookups
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.ObjectHolderRegistry/REGISTRIES]: Holder lookups applied
+[22:01:19] [Server thread/DEBUG] [ne.mi.re.GameData/REGISTRIES]: FROZEN state restored.
+[22:01:19] [Server thread/DEBUG] [ne.mi.fm.co.ConfigTracker/CONFIG]: Unloading configs type SERVER
+[22:01:19] [Server thread/INFO] [minecraft/GameTestServer]: Game test server shutting down
 
 Deprecated Gradle features were used in this build, making it incompatible with Gradle 9.0.
 
@@ -496,5 +496,5 @@ You can use '--warning-mode all' to show the individual deprecation warnings and
 
 See https://docs.gradle.org/8.1.1/userguide/command_line_interface.html#sec:command_line_warnings
 
-BUILD SUCCESSFUL in 1m 9s
+BUILD SUCCESSFUL in 1m 13s
 10 actionable tasks: 7 executed, 3 up-to-date
