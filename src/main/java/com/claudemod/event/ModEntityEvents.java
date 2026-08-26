@@ -46,9 +46,13 @@ public class ModEntityEvents {
         // Session 47: Prismium Deep Wraith needs its own attribute supplier
         // registered even though it is never naturally spawned - it is
         // still a full LivingEntity constructed via
-        // PrismiumWraithEntity#doUnderWaterConversion (and by its spawn
-        // egg), and attempting to tick a living entity with no registered
-        // AttributeSupplier throws/crashes.
+        // PrismiumWraithEntity#tickWaterConversion (and by its spawn egg),
+        // and attempting to tick a living entity with no registered
+        // AttributeSupplier throws/crashes. (Method name updated 2026-08-26:
+        // the water-conversion logic used to live in an overridden
+        // doUnderWaterConversion() inherited from Zombie; since
+        // PrismiumWraithEntity no longer extends Zombie, it's now a plain
+        // hand-rolled tickWaterConversion() - see that class's javadoc.)
         event.put(ModEntities.PRISMIUM_DEEP_WRAITH.get(), com.claudemod.entity.PrismiumDeepWraithEntity.createAttributes().build());
         // Third mob (see PrismiumSentinelEntity's javadoc) - same
         // requirement, a registered AttributeSupplier is needed before

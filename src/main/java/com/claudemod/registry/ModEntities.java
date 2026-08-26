@@ -33,8 +33,11 @@ public class ModEntities {
                             .build("prismium_wraith"));
 
     // Session 47: Prismium Deep Wraith, the dedicated conversion target
-    // PrismiumWraithEntity#doUnderWaterConversion redirects to instead of
-    // vanilla Drowned. Same size as the land Wraith (same base body/model).
+    // PrismiumWraithEntity converts into (via Mob#convertTo, see that
+    // class's tickWaterConversion()) instead of vanilla Drowned. Same size
+    // as the land Wraith (same base body/model). Neither of these two
+    // classes extends vanilla Zombie as of 2026-08-26 (see
+    // AbstractPrismiumMonster's javadoc).
     // Deliberately has no SpawnPlacementRegisterEvent registration (see
     // ModEntityEvents) - it is never placed by natural chunk spawning, only
     // by conversion (or its spawn egg), so a spawn placement predicate

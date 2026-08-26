@@ -1,50 +1,93 @@
 package com.claudemod.entity;
 
-import net.minecraft.util.RandomSource;
-import net.minecraft.world.DifficultyInstance;
-import net.minecraft.world.entity.EntityType;
-import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
-import net.minecraft.world.entity.ai.attributes.Attributes;
-import net.minecraft.world.entity.monster.Zombie;
-import net.minecraft.world.level.Level;
+import com.claudemod.registry.ModEntities;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.tags.FluidTags;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.level.Level;
 import org.jetbrains.annotations.Nullable;
 
 /**
  * Prismium Wraith - ClaudeMod's first mob (session 12), and the opening move
- * of the mod concept's "new MOB" pillar which had been completely untouched
- * across 11 prior sessions (blocks/energy/equipment all existed, no living
- * entity did). See PROGRESS.md session 12 notes for the full design writeup.
+ * of the mod concept's "new MOB" pillar. See PROGRESS.md session 12 notes
+ * for the original design writeup, and session 38/session directly-after
+ * (issue #5/#10) for the Peaceful-difficulty despawn history that shaped
+ * {@code shouldDespawnInPeaceful} being left at its inherited default
+ * below.
  *
- * Implementation choice: rather than writing a brand new AI/model/renderer
- * stack from scratch (high risk in a sandbox that cannot locally compile or
- * playtest), this extends vanilla {@link Zombie} directly. That means it
- * inherits Zombie's entire proven AI goal set (melee attack, target nearest
- * player, sunlight-burning, water avoidance, etc.) for free, and can reuse
- * vanilla's ZombieModel for rendering (see PrismiumWraithRenderer) with only
- * a custom texture swapped in. The only behavioural changes made here are:
- * - Reworked attributes (tankier, harder hitting than a plain zombie, to
- *   read as a "guardian" rather than a generic shambler).
- * - No default equipment (populateDefaultEquipmentSlots is a no-op) so it
- *   never randomly spawns holding vanilla iron gear, which would clash with
- *   the Prismium theme.
- * - Distinct ambient/hurt/death sounds (borrowed from Vex) for a more
- *   otherworldly feel than the default zombie groan.
- * Burning in daylight is intentionally left as inherited default behaviour:
- * it reinforces the intended flavor of a guardian that lurks in caves near
- * Prismium ore and punishes players who drag a fight up to the surface.
+ * <p><b>Rewritten (2026-08-26, repo owner direct request) to no longer
+ * extend vanilla {@code Zombie}.</b> The original implementation extended
+ * {@code Zombie} directly to get its AI/model for free; the reported cost
+ * of that shortcut was a two-session saga (session 47, then this session)
+ * where a Prismium Wraith left in water would eventually turn into a plain
+ * vanilla Drowned, because {@code Zombie} (and, it turned out, the
+ * {@link PrismiumDeepWraithEntity} class created to redirect that
+ * conversion) both carry a hardcoded water-conversion timer that isn't
+ * visible anywhere in this mod's own code. Full history and root-cause
+ * writeup: PROGRESS.md, the "Prismium Wraith water-conversion" sections.
+ * The repo owner's conclusion, quoted directly: "MOBを何かのMOBベースに
+ * 作るからこんなことになるんじゃないですか?...なのでMOBは追加するので
+ * あれば頑張って自作してほしいです(MOBのAIとかも)".
+ *
+ * <p>This class now extends {@link AbstractPrismiumMonster} (itself a thin,
+ * neutral wrapper around vanilla {@code Monster} - see that class's
+ * javadoc) and builds its AI out of generic {@code Goal} classes via
+ * {@link #registerGoals()} rather than inheriting a fixed goal set. The
+ * water-to-Deep-Wraith conversion this mob is known for is now hand-rolled
+ * in {@link #aiStep()} using a plain tick counter, instead of relying on
+ * {@code Zombie}'s internal (and, as this rewrite proves, leaky) machinery.
+ * Daylight burning is preserved via {@link #isSunBurnTick()}, which is a
+ * neutral {@code Mob}-level helper (not Zombie-specific) that vanilla
+ * Zombie/Skeleton/etc. all call internally - reusing it carries none of the
+ * hidden-behaviour risk that reusing the rest of {@code Zombie} did.
+ *
+ * <p>Rendering still reuses vanilla's humanoid body geometry (same
+ * {@code ModelLayers.ZOMBIE} baked layer as before) via a plain
+ * {@code HumanoidModel} instead of the Zombie-specific {@code ZombieModel}
+ * (which is generically bound to {@code T extends Zombie} and could not be
+ * used once this class stopped extending {@code Zombie}) - see {@link
+ * com.claudemod.entity.client.PrismiumWraithRenderer}. Known, accepted
+ * cosmetic trade-off: this mob no longer plays the distinctive "arms held
+ * forward" zombie shamble animation, since that pose is baked into
+ * {@code AbstractZombieModel#setupAnim} and that class shares the same
+ * {@code T extends Zombie} restriction. It now animates with a plain
+ * humanoid walk/arm-swing instead. Purely visual, not a behaviour change;
+ * flagged in PROGRESS.md as a nice-to-have follow-up (a small custom model
+ * class could reproduce the forward-arms pose without needing {@code
+ * Zombie} as a bound) rather than blocking this rewrite on it.
+ *
+ * <p><b>Unverified</b>: like everything else in this mod, this rewrite has
+ * not been confirmed in a running client. If this mob behaves noticeably
+ * worse than before (worse pathfinding, doesn't notice/chase players as
+ * readily, etc.), that is the first thing to check - see
+ * {@link AbstractPrismiumMonster}'s javadoc for the general trade-off this
+ * new pattern accepts.
  */
-public class PrismiumWraithEntity extends Zombie {
+public class PrismiumWraithEntity extends AbstractPrismiumMonster {
 
-    public PrismiumWraithEntity(EntityType<? extends Zombie> entityType, Level level) {
+    /**
+     * How long (in ticks) this mob's eyes must stay submerged before it
+     * converts into a {@link PrismiumDeepWraithEntity}. 600 ticks (30s) is
+     * carried over unchanged from the threshold vanilla {@code Zombie}
+     * itself uses before starting its (here, hand-rolled instead of
+     * inherited) water-conversion countdown - picked for continuity with
+     * the mob's previous behaviour, not re-derived from scratch.
+     */
+    private static final int WATER_CONVERSION_TICKS = 600;
+
+    private int waterConversionTimer;
+
+    public PrismiumWraithEntity(EntityType<? extends PrismiumWraithEntity> entityType, Level level) {
         super(entityType, level);
     }
 
     public static AttributeSupplier.Builder createAttributes() {
-        return Zombie.createAttributes()
+        return Monster.createMonsterAttributes()
                 .add(Attributes.MAX_HEALTH, 30.0D)
                 .add(Attributes.ATTACK_DAMAGE, 4.0D)
                 .add(Attributes.ARMOR, 4.0D)
@@ -52,83 +95,51 @@ public class PrismiumWraithEntity extends Zombie {
                 .add(Attributes.KNOCKBACK_RESISTANCE, 0.15D);
     }
 
-    /**
-     * GitHub issue #5 (session 38) reported "spawns via spawn egg then
-     * vanishes immediately" on a Peaceful-difficulty world. Session 38's
-     * diagnosis was correct (vanilla {@code Monster} subclasses despawn
-     * instantly on Peaceful via {@code shouldDespawnInPeaceful() == true},
-     * regardless of spawn method), but its fix - overriding that method to
-     * {@code false} so the Wraith would never despawn on Peaceful - was a
-     * misdiagnosis of what needed fixing: that despawn behaviour is not a
-     * ClaudeMod bug, it is the same standard, expected vanilla rule every
-     * hostile mob follows (using a hostile-mob spawn egg on a
-     * Peaceful-difficulty world despawns the mob instantly - this is
-     * intentional upstream behaviour, confirmed by the very same Forge
-     * Forums thread cited in the old revision of this javadoc, where the
-     * "bug" turned out to be the reporter's world being on Peaceful).
-     *
-     * That override then caused a real regression, reported directly by
-     * the repo owner as GitHub issue #10 ("ピースフルでレイスがスポーンして
-     * しまう" - a Wraith ends up existing/visible on a Peaceful world):
-     * because the override made the Wraith immune to the peaceful despawn
-     * sweep, any Wraith already alive when a player switched their world
-     * to Peaceful (or spawned one via egg while on Peaceful) would now
-     * stick around indefinitely instead of vanishing like every other
-     * hostile mob - which reads as "a hostile mob spawns/persists even on
-     * Peaceful", clearly not the intended behaviour for a plain
-     * MobCategory.MONSTER entity.
-     *
-     * Fix (this session): removed the override entirely, restoring the
-     * inherited {@code Monster} default ({@code true}). The Wraith now
-     * despawns on Peaceful exactly like a vanilla Zombie, matching player
-     * expectations and closing issue #10. Natural spawning was never the
-     * problem in either direction - {@link com.claudemod.event.ModEntityEvents}
-     * already registers {@code Monster::checkMonsterSpawnRules} (which
-     * itself refuses to naturally spawn anything while
-     * {@code Difficulty.PEACEFUL}) as this entity's spawn placement
-     * predicate, so natural overworld/Prism Realm spawning was already
-     * correctly gated; only spawn-egg/summon-triggered instances plus the
-     * "already alive, difficulty changed under it" case were affected by
-     * this override, and both are fixed by removing it.
-     * <b>Unverified</b>: like all worldgen/entity behaviour in this mod,
-     * not confirmed in an actual running game client from this sandbox -
-     * if a hostile-mob-on-Peaceful report resurfaces after this change,
-     * re-open this method as the first thing to check.
-     */
-    // (shouldDespawnInPeaceful intentionally left at the inherited Monster
-    // default of true - see the javadoc above for why an override here was
-    // tried and reverted.)
-
-    /**
-     * Session 47 (interactive session, repo owner request): without this
-     * override, a Prismium Wraith left fully submerged long enough would
-     * silently turn into a plain vanilla {@code Drowned} via inherited
-     * {@code Zombie} behaviour - {@code Zombie#doUnderWaterConversion()}
-     * normally calls {@code this.convertToZombieType(EntityType.DROWNED)}.
-     * {@code convertToZombieType} is {@code protected} on {@code Zombie}
-     * and does the actual entity swap generically (health/position/
-     * equipment/etc. all transfer to the new entity, same mechanism
-     * vanilla uses for Zombie-to-ZombieVillager and Husk-to-Zombie), so it
-     * can be redirected to any other {@code Zombie} subtype just by
-     * overriding this one method and calling it with a different target
-     * type - no need to reimplement the conversion machinery itself.
-     * Redirects to {@link PrismiumDeepWraithEntity} instead, so the Wraith
-     * stays visually/thematically "in-family" underwater rather than
-     * becoming a reskinned vanilla mob.
-     */
     @Override
-    protected void doUnderWaterConversion() {
-        this.convertToZombieType(com.claudemod.registry.ModEntities.PRISMIUM_DEEP_WRAITH.get());
+    protected void registerGoals() {
+        this.registerBasicMeleeGoals(1.0D);
     }
 
+    // (shouldDespawnInPeaceful intentionally left at the inherited Monster
+    // default of true - see this class's pre-rewrite javadoc history in
+    // PROGRESS.md session 38/issue #10 for why an override here was tried
+    // and reverted long before this rewrite. Monster's default is unrelated
+    // to Zombie, so this rewrite doesn't disturb that fix.)
+
     @Override
-    protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
-        // Deliberately empty: a Prismium Wraith should never spawn holding
-        // random vanilla armor/weapons like a normal Zombie can. Known
-        // limitation (documented in PROGRESS.md): this also means it cannot
-        // "pick up" dropped items mid-fight the way a zombie can, since we
-        // never give it starting gear to build on - considered an acceptable
-        // trade-off for staying on-theme.
+    public void aiStep() {
+        if (!this.level().isClientSide && this.isAlive()) {
+            if (this.isSunBurnTick()) {
+                this.setSecondsOnFire(8);
+            }
+            tickWaterConversion();
+        }
+        super.aiStep();
+    }
+
+    /**
+     * Hand-rolled replacement for the water-conversion timer this mob used
+     * to get for free (and get burned by) via inherited {@code Zombie}
+     * behaviour. Counts ticks spent with eyes underwater and, once past
+     * {@link #WATER_CONVERSION_TICKS}, swaps this entity for a {@link
+     * PrismiumDeepWraithEntity} via {@code Mob#convertTo} - the same
+     * generic, non-Zombie-specific entity-swap helper {@code Zombie}
+     * itself uses internally, just called directly instead of through a
+     * Zombie-only override.
+     */
+    private void tickWaterConversion() {
+        if (this.isEyeInFluid(FluidTags.WATER)) {
+            this.waterConversionTimer++;
+            if (this.waterConversionTimer >= WATER_CONVERSION_TICKS) {
+                PrismiumDeepWraithEntity deepWraith =
+                        this.convertTo(ModEntities.PRISMIUM_DEEP_WRAITH.get(), false);
+                if (deepWraith != null && !this.isSilent()) {
+                    this.level().levelEvent(null, 1040, this.blockPosition(), 0);
+                }
+            }
+        } else {
+            this.waterConversionTimer = 0;
+        }
     }
 
     @Nullable
