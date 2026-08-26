@@ -139,25 +139,26 @@ public class PrismiumPortalIgniteHandler {
         // Direct-chat session (2026-08-26): was SoundEvents.PORTAL_TRIGGER
         // (a reused vanilla sound) until the repo owner asked for an
         // original ignite sound - see ModSounds' class javadoc for how
-        // it was synthesized/self-reviewed. Follow-up the same session:
-        // the repo owner noted purely-synthesized audio tends to feel
-        // "flat"/monotonous and suggested mixing in vanilla sound sources
-        // whenever real musical/tonal content is wanted, rather than
-        // trying to synthesize a convincing bell from scratch. This now
-        // layers the mod's own atmospheric whoosh/shimmer bed together
-        // with vanilla's AMETHYST_BLOCK_CHIME (a real, pitched, recorded
-        // sound - thematically apt too, since AMETHYST-flavored sounds
-        // are already used elsewhere on Prismium blocks) as two separate
-        // playSound calls rather than trying to bake a vanilla sample
-        // into the synthesized file. Slight per-play pitch randomization
-        // on both, matching the standard vanilla convention (see e.g.
-        // most SoundEvents.*_STEP calls) so repeated triggers don't all
-        // sound identical.
+        // it was synthesized/self-reviewed, then revised twice more the
+        // same session after listening: first for feeling "flat" (fixed
+        // with richer synthesis + a layered vanilla sound for genuine
+        // musical content), then again for being "way too loud" and
+        // "goofy, doesn't fit the mod's mood". The second complaint
+        // pointed at AMETHYST_BLOCK_CHIME itself - vanilla's bright,
+        // music-box-like twinkle used for a *growing* crystal cluster,
+        // too playful/cute for a dimensional gate - so it was swapped for
+        // the deeper, more ambient AMETHYST_BLOCK_RESONATE (same family,
+        // no bell-like "ding") and both volumes were cut substantially so
+        // this stays a subtle background cue rather than the loudest
+        // thing in the mix. Pitch randomized per play on both, matching
+        // the standard vanilla convention (see e.g. most
+        // SoundEvents.*_STEP calls) so repeated triggers don't all sound
+        // identical.
         RandomSource random = serverLevel.getRandom();
         float pitch = 0.95F + random.nextFloat() * 0.1F;
-        serverLevel.playSound(null, clickedPos, ModSounds.PRISMIUM_PORTAL_IGNITE.get(), SoundSource.BLOCKS, 1.0F, pitch);
-        serverLevel.playSound(null, clickedPos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.8F,
-                0.9F + random.nextFloat() * 0.2F);
+        serverLevel.playSound(null, clickedPos, ModSounds.PRISMIUM_PORTAL_IGNITE.get(), SoundSource.BLOCKS, 0.6F, pitch);
+        serverLevel.playSound(null, clickedPos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 0.4F,
+                1.0F + random.nextFloat() * 0.15F);
         event.setCanceled(true);
         event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
     }

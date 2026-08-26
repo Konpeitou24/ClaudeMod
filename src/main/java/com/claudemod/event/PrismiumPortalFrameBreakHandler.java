@@ -148,23 +148,24 @@ public class PrismiumPortalFrameBreakHandler {
                     }
                     // Direct-chat session (2026-08-26): the collapse used
                     // to be silent - added an original "fizzle" sound
-                    // here (see ModSounds' class javadoc) to match the
-                    // ignite sound played on the way up. Played once per
+                    // here (see ModSounds' class javadoc), revised twice
+                    // more the same session after listening (see
+                    // PrismiumPortalIgniteHandler's updated javadoc for
+                    // the full story - felt "flat" first, then "way too
+                    // loud"/"goofy" on the follow-up). Played once per
                     // collapse (not per removed block) from roughly the
-                    // interior's center. Follow-up the same session:
-                    // layered with vanilla's AMETHYST_BLOCK_RESONATE at a
-                    // lowered pitch (the "settling down" counterpart to
-                    // AMETHYST_BLOCK_CHIME on ignite, see
-                    // PrismiumPortalIgniteHandler) for real musical/tonal
-                    // texture a pure synth can't easily match - see that
-                    // class's updated javadoc for the repo owner's
-                    // reasoning. Pitch randomized per play on both.
+                    // interior's center, layered with vanilla's
+                    // AMETHYST_BLOCK_RESONATE at a lowered pitch (the
+                    // "settling down" counterpart to the same event at a
+                    // normal-ish pitch on ignite) at a substantially
+                    // quieter volume than the first two passes. Pitch
+                    // randomized per play on both.
                     BlockPos soundPos = interior.get(interior.size() / 2);
                     RandomSource random = level.getRandom();
                     level.playSound(null, soundPos, ModSounds.PRISMIUM_PORTAL_FIZZLE.get(),
-                            SoundSource.BLOCKS, 1.0F, 0.95F + random.nextFloat() * 0.1F);
+                            SoundSource.BLOCKS, 0.55F, 0.95F + random.nextFloat() * 0.1F);
                     level.playSound(null, soundPos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS,
-                            0.7F, 0.6F + random.nextFloat() * 0.15F);
+                            0.35F, 0.6F + random.nextFloat() * 0.15F);
                     return;
                 }
             }

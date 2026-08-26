@@ -58,7 +58,22 @@ import net.minecraftforge.registries.RegistryObject;
  * the Python synthesis for the atmospheric whoosh/shimmer/crackle texture
  * vanilla doesn't have an equivalent for. This mix-vanilla-and-synthesis
  * approach is now a standing rule recorded in PROGRESS.md section 0.
- * Still genuinely unverified whether this second pass reads better -
+ *
+ * <p>Third pass, same session, after the repo owner listened to the
+ * second version: "way too loud" and "goofy, doesn't fit the mod's
+ * mood". Two root causes addressed: (1) the waveshaping intensity in
+ * {@code detuned_sweep} was cut drastically (a sine pushed hard through
+ * {@code tanh} turns almost square, which reads as buzzy/honky/kazoo-like
+ * - exactly "goofy" - not epic); (2) {@code AMETHYST_BLOCK_CHIME} (a
+ * bright, music-box-like twinkle meant for a *growing* crystal cluster)
+ * was swapped for the deeper, more ambient {@code AMETHYST_BLOCK_RESONATE}
+ * for both ignite and fizzle (differentiated by pitch instead of by
+ * picking two different vanilla events), and every {@code playSound}
+ * volume parameter was cut substantially (see
+ * {@link com.claudemod.event.PrismiumPortalIgniteHandler} /
+ * {@link com.claudemod.event.PrismiumPortalFrameBreakHandler}) so this
+ * stays a subtle background cue instead of the loudest thing in the mix.
+ * Still genuinely unverified whether this third pass reads better -
  * that's for the next listen.
  */
 public class ModSounds {
