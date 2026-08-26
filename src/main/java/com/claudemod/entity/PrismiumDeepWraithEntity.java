@@ -83,6 +83,44 @@ public class PrismiumDeepWraithEntity extends Zombie {
         return true;
     }
 
+    /**
+     * Root-cause fix for the repo owner's follow-up report that a Prismium
+     * Wraith left in water "still" turns into a vanilla {@code Drowned}
+     * (session 47's fix only redirected {@link PrismiumWraithEntity}'s own
+     * water conversion to spawn a Deep Wraith instead - see that class's
+     * {@code doUnderWaterConversion()} javadoc - but never touched this
+     * class). Because {@code PrismiumDeepWraithEntity} also extends vanilla
+     * {@link Zombie} and never overrode {@code convertsInWater()} or
+     * {@code doUnderWaterConversion()} itself, it was fully subject to the
+     * exact same inherited water-conversion timer as any other Zombie: after
+     * ~600 ticks with its eye in fluid plus a further ~300-tick conversion
+     * countdown, vanilla would call the *inherited* (unredirected)
+     * {@code doUnderWaterConversion()} on the Deep Wraith and turn it into a
+     * plain {@code EntityType.DROWNED} via {@code convertToZombieType}. Since
+     * a Deep Wraith's entire habitat is underwater (that is the point of
+     * this class), it was essentially guaranteed to eventually hit that
+     * second, unhandled conversion - so "leave a Wraith in water" reliably
+     * ended in a vanilla Drowned after two silent hops (Wraith to Deep
+     * Wraith, then Deep Wraith to Drowned) instead of one, which is why the
+     * original session 47 fix looked complete in code review but did not
+     * actually resolve the reported symptom.
+     *
+     * Fix: override {@code convertsInWater()} to {@code false} so this class
+     * never enters the water-conversion timer/state machine at all. This is
+     * the terminal type in the chain (nothing should replace a Deep Wraith),
+     * so cutting off conversion here rather than re-overriding
+     * {@code doUnderWaterConversion()} again closes the loop for good instead
+     * of just adding one more hop.
+     * <b>Unverified</b>: cannot be confirmed in a running client from this
+     * sandbox; if a Wraith is still observed becoming a vanilla Drowned
+     * after this change, re-check whether any other code path independently
+     * triggers a zombie-type conversion.
+     */
+    @Override
+    protected boolean convertsInWater() {
+        return false;
+    }
+
     @Override
     protected void populateDefaultEquipmentSlots(RandomSource random, DifficultyInstance difficulty) {
         // See PrismiumWraithEntity#populateDefaultEquipmentSlots - same
