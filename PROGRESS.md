@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-08-26 (セッション #72、定期実行)
+最終更新: 2026-08-26 (対話セッション、v0.22.0公開後 — こんぺいとう氏本人とのチャットでノイズ生成ユーティリティを新設、v0.23.0リリース)
 
 ---
 
@@ -3781,44 +3781,103 @@ push後`git fetch`ポーリングで確認したところ、`ci: update built ja
 - 実機での動作確認は今回も未検証(このサンドボックスではローカルビルド・実プレイ不可)。次回、こんぺいとう氏に「v0.22.0でもう一度、水中に長時間放置して確認してもらえたか」を尋ねる価値がある。
 
 
+## 3CB. 対話セッション(定期実行ではなく本人との直接チャット、v0.22.0公開後): 再利用可能なノイズ生成ユーティリティを新設 + Prism Realm境界のまばら化 + v0.23.0リリース
+
+こんぺいとう氏本人とのチャットで、GitHub Issue #23への追加コメント「0付近にはプリズミウムの深層岩と、プリズミウムの石の生成がくっきり分かれているように思えます。ノイズを自作して、まばらに切り替わるようにしてください」への対応を依頼された。あわせて「今後バイオームの境目などで活用する可能性があるので再利用のできる形がいい」という要望と、「ついでにリファクタリングもお願いします」という要望も受けた。
+
+### 3CB-1. スコープの確定(ユーザーへの確認)
+
+コードを書く前に、AskUserQuestionツールで実装範囲の許可を確認した(「ノイズ生成のみ」「両方進める」「計画を詳しく見たい」の3択)。回答は**「ノイズ生成のみ」**。3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出リファクタリング(PROGRESS.mdで複数セッションにわたり申し送りされていた項目)は、今回は着手せず次回以降に持ち越しとなった。
+
+### 3CB-2. 対象Issueの特定
+
+GitHub issue一覧(api.github.comは今回も到達不能だったため、`github.com/<owner>/<repo>/issues`のReact埋め込みJSON(`data-target="react-app.embeddedData"`)をパースする方法で取得。§2-4/§2-7の手法の発展形)から、Issue #23「新ディメンションの生成アルゴリズムについて」の本文とコメントを確認した。本文自体(海面高すぎ・深層岩追加要望)はセッション#72(§3BX)で既に対応済みで、今回はその後に付いた追加コメント(ノイズ自作の要望)への対応にあたる。
+
+### 3CB-3. 実装: com.claudemod.worldgen.noise パッケージ(再利用可能なノイズユーティリティ)
+
+- `Noise2D` / `Noise3D`: 座標を渡すと決定論的な値(概ね[-1, 1])を返す関数型インターフェース。ブロック・ディメンション・feature等、特定の用途に一切依存しない、純粋な「座標→値」の契約のみを定義している。
+- `PerlinNoise`: Ken Perlinの改良版Perlinノイズアルゴリズム(順列テーブル+fadeカーブ+勾配ベクトルの内積)を自前実装。`net.minecraft.world.level.levelgen.synth.PerlinNoise`(Minecraft内部クラス)には一切依存しない。Issue本文の「ノイズを自作して」という要望に文字通り応える形。
+- `FractalNoise`: `Noise3D`をラップし、複数オクターブを重ねて(fractal Brownian motion)より粒度の細かい・まだらな結果を作るユーティリティ。単一周波数のPerlinノイズだけでは滑らかすぎて「まばら」に見えなかったため導入。
+
+3クラスとも既存のfeature・ブロック・ディメンションを一切importしておらず、`worldgen.noise`パッケージは完全に独立している。次回以降、バイオームの境目のスキャッタリングや、他のブロック遷移・feature密度の変動などにそのまま再利用できる想定。
+
+### 3CB-4. 実装: PrismiumStoneTransitionFeature(Prism Realm境界への適用)
+
+Prism Realmディメンション(`data/claudemod/dimension/prism_realm.json`)は`minecraft:flat`ジェネレータを使っており、深層岩(y=-63〜0)と石(y=1〜39)の境界は元々完全に平らな面だった。ノイズベースのディメンションと違い`surface_rule`が使えないため、生成後にブロックを塗り直すfeatureとして実装した:
+
+- チャンクの256列それぞれについて、y=0を中心に上下6ブロックの帯を1ブロックずつ走査する。
+- 各ブロックについて、「本来どちら側にいるべきか」を表す直線的な勾配値と、`FractalNoise`のサンプル値を組み合わせ、その組み合わせがしきい値を超えたかどうかで深層岩/石を決定する。
+- 現在のブロックがどちらでもない場合(将来的に他のfeatureが先に何かを置いていた場合など)はスキップし、無関係なブロックには触れない。
+- ノイズの種(順列テーブル)は`level.getSeed()`(ワールドシード)に固定のsaltをXORした値から作られ、**チャンクをまたいでも同一のノイズ場になる**ようにしている(チャンクごとに異なる乱数を使うとチャンク境界で継ぎ目ができてしまうため、ここは要注意ポイントとして特記)。
+- `ModFeatures`に`PRISMIUM_STONE_TRANSITION`として登録し、`data/claudemod/forge/biome_modifier/add_prismium_stone_transition.json`で`step: raw_generation`(鉱石配置=UNDERGROUND_ORES、土壌配置=LOCAL_MODIFICATIONSより前)に配置。境界のどちらの状態になっても両方とも通常の深層岩/石のままなので、後続のfeatureへの影響は無い(はず)。
+
+`level.getSeed()`が`WorldGenLevel`インターフェースに存在するかは、コードを書く前にWebSearchで確認した(1.19.3時点のJavadocで`WorldGenLevel`インターフェースに`long getSeed()`が明記されていることを確認。1.20.1でのシグネチャ変更は見当たらなかった)。
+
+### 3CB-5. push・ビルド確認・リリース: v0.23.0
+
+1コミットにまとめてpush(`git config user.name/user.email`は運用ルール通り`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`を事前設定。push前に`git fetch`で並行セッションのコミット3件(CI自動コミット)を検知し、`git rebase origin/main`してから素直にpush、問題なく一発成功)。
+
+`git fetch`ポーリングで確認したところ、`ci: update built jar`→`ci: update datapack validation results`(`status=ok commit=<今回のコミット>`)→`ci: update ore generation verification results`(`commit=<今回のコミット>`、`prismium_ore`/`deepslate_prismium_ore`とも生成チャンクを検出)まで到達し、通常ビルド・データパック検証・鉱石生成検証がいずれも成功したことを確認した。
+
+続けて`gradle.properties`を`0.22.0`→`0.23.0`、`RELEASE_NOTES.md`に新規セクションを追加してコミット・push、タグ`v0.23.0`をpushしてリリースを作成する(本PROGRESS.md更新と合わせて本セクション末尾のコミットとして追う)。
+
+### 3CB-6. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最大の懸念点: 境界の見た目が実際に「まばら」で自然に見えるかは完全に未検証。** `BAND_RADIUS=6`(上下6ブロック)・`NOISE_FREQUENCY=0.08`・`NOISE_WEIGHT=0.75`・3オクターブという数値は「妥当そうな初期値」として選んだだけで、実際にゲーム内で見て調整したものではない(このサンドボックスには音声同様、レンダリング環境が無く「見る」ことができない)。パッチが大きすぎる/小さすぎる、境界が思ったより急峻/滑らかすぎる等の見た目の調整は、次回以降ユーザーからのスクリーンショット等のフィードバックを受けて詰める必要がある。
+- ore検証(`scripts/ci/verify_ore_generation.py`)で鉱石自体は変わらず生成されていることは確認したが、これは「鉱石が消えていない」ことの確認であり、「境界が意図通りまばらになっている」ことの確認にはなっていない。境界専用の実証検証(例えば生成されたリージョンファイルからy=0付近の深層岩/石の並びを読み取り、単調な平面になっていないかをチェックするCIスクリプト)は今回追加していない。次回以降の改善候補。
+- チャンク境界での継ぎ目が本当に出ないかも未検証。ノイズの種をワールドシード由来の固定値にすることで理論上は連続するはずだが、実際に隣接チャンクをまたいで見た目を確認できていない。
+- ユーザーの要望のうち「ついでのリファクタリング」(3機械の共通基底クラス抽出)は、本人の希望で今回のスコープ外となった。次回、着手してよいか改めて確認する価値がある。
+
+### 3CB-7. 議論したい論点・改善案
+
+- 【新規】今回新設した`com.claudemod.worldgen.noise`パッケージを、実際にバイオームの境目やその他のまだら化に使う具体的な次の一手を検討する価値がある(ユーザー本人が「今後バイオームの境目などで活用する可能性がある」と述べている)。
+- 【新規】境界の見た目パラメータ(`BAND_RADIUS`/`NOISE_FREQUENCY`/`NOISE_WEIGHT`/オクターブ数)は最初の仮の値であり、実プレイフィードバックを受けてチューニングする前提。
+- 【新規】§3CB-6で触れた通り、`verify_ore_generation.py`のようなCI実証検証を境界のまだら具合にも拡張できないか(例えば深層岩/石が隣接して混在しているブロック数の割合を測る、等)。
+- 【継続・今回見送り】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。ユーザー本人の希望で今回はスコープ外。次回改めて着手してよいか確認する価値がある。
+- 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
+- 【継続】PROGRESS.mdの肥大化(3900行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
+
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(対話セッション、v0.21.0公開後)の最重要な新情報
+### 今回(対話セッション、v0.22.0公開後)の最重要な新情報
 
-- **【解決(推定・実機未検証)】「プリズミウム・レイスを水中に放置するとバニラのドラウンドになる」バグの再報告(§3CA)に対応した。根本原因は、session 47で新設した`PrismiumDeepWraithEntity`自身が`convertsInWater()`をオーバーライドしておらず、レイス→ディープレイスへの転換後、ディープレイス自身がさらに(未対応のまま)バニラのドラウンドへ転換してしまっていたこと。`PrismiumDeepWraithEntity#convertsInWater()`を`false`でオーバーライドして修正し、v0.22.0としてリリース済み。** 次回、こんぺいとう氏に実際に水中で長時間(できれば数分単位)放置して確認してもらえたかを確認すること。もし再発する場合、他に水中転換系のロジックが残っていないか(例えば`Zombie`の別のサブクラス経由や、Forgeイベント経由の別経路)を再度洗い直す必要がある。
-- **【教訓】「過去に直したはずの不具合」の再報告時は、修正コミットの内容を鵜呑みにせず、その修正が生んだ新しいコード自身が同じ問題を継承していないか(再帰的な見落とし)を必ず疑うこと(§3CA-5)。**
-- **【運用上の注意・重要】`git push`が`GH007`(「メールアドレス非公開設定によりpushが拒否される」)で失敗することがある。原因は`git config user.email`がこんぺいとう氏(Konpeitou24)本人の実メールアドレスになっていた場合。必ずセッション開始時に`git config user.name "ClaudeMod Session Agent"` / `git config user.email "claudemod-agent@users.noreply.github.com"`(過去セッションの慣例)を明示的に設定してからコミットすること。もし既に本人のメールアドレスでコミットしてしまった場合は`git commit --amend --reset-author`(config設定後)でauthor/committer両方を書き換えてからpushし直すこと。**
-- **【継続・注意】`api.github.com`は今回のセッションでは(タスク指示の想定に反し)プロキシの許可リストでブロックされ続けた(`https_proxy`等を空にしてもDNS解決自体ができなくなるだけで回復せず)。ビルド結果の確認は`git fetch`によるCI自動コミットのポーリング、リリース確認は`github.com`のリリースページ自体をfetchする方法で代替できる。次回セッションでも同様に`api.github.com`が使えない場合はこの代替手段を使うこと。**
+- **【実装・実機未検証】GitHub Issue #23への追加コメント(「ノイズを自作して、まばらに切り替わるようにしてください」)に対応した(§3CB)。再利用可能な`com.claudemod.worldgen.noise`パッケージ(Noise2D/Noise3D/PerlinNoise/FractalNoise)を新設し、`PrismiumStoneTransitionFeature`でPrism Realmのy=0付近の深層岩/石境界をまばらに描き直すようにした。v0.23.0としてリリース済み。** 次回、こんぺいとう氏に実際の見た目(まばら具合が自然か、パッチが大きすぎ/小さすぎないか)を確認してもらうことが最優先。
+- **【ユーザー本人の希望でスコープ外】今回、こんぺいとう氏に「ノイズ生成のみ」「両方(ノイズ生成+3機械リファクタリング)」の選択を尋ねたところ「ノイズ生成のみ」との回答だった。3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出は依然として未着手。次回、改めて着手してよいか確認する価値がある。**
+- 【新規・再利用パターン】`api.github.com`が到達不能な場合、GitHub issueの一覧・本文・コメントは`github.com/<owner>/<repo>/issues`(または`/issues/<番号>`)ページ内の`<script type="application/json" data-target="react-app.embeddedData">`をJSONとしてパースすることで取得できる(GraphQLのpreloadedQueriesが埋め込まれている)。次回以降、api.github.comが不通の際はこの方法を標準手順にすること。
 
 ### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.22.0(対話セッション、§3CA)。次回はここから1セッション目。**
-1. **【最優先・新規】v0.22.0のPrismium Wraith水中転換修正が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。まだ直っていない場合は§3CA-5の教訓に従い、他の水中転換経路を再度洗い直すこと。**
-2. **【最優先・継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。特に発光しないという報告は`lightLevel(state -> 11)`の設定自体は正しいはずなのに矛盾しており、最新版での再現有無を確認する価値がある。**
-3. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。session 72で追加した診断ログ(`ItemDetailsOverlay`)の結果を確認できないか試すこと。
-4. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討(いずれも大型・前提Mod連携機能)。
-5. 【継続・ユーザー直接要望】青白いブロック追加、Prism Realmの巨大山岳地帯+ボス構造物(session 70から継続、こんぺいとう氏は緊急度低いと明言)。
-6. 【継続】session 72で追加したPrismium Deepstoneおよびプリズムレルムの海面・海底変更について、実機フィードバックが無いか確認すること。
-7. 【継続】羽石のアクションバーメッセージが実際に読みやすいか確認すること。
-8. 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラスへの抽出を段階的アプローチ(session 70 §3BV-9参照)で検討する価値がある。
-9. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること。
-10. 【継続】`scripts/ci/verify_ore_generation.py`のような「CI側で実際のワールドデータを検証する」手法を、他のworldgenコンテンツ(Prism Realmの地形・フローラ等)にも展開できないか検討すること。
-11. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと。
-12. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている。個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。
-13. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
-14. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式を使うこと。画像添付URLはこのサンドボックスから閲覧できない(継続、変化なし)。`api.github.com`も今回ブロックされたため、可能ならこの方式に統一することを検討する価値がある。
-15. **【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ずローカルに設定すること(`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`)。こんぺいとう氏本人の実メールアドレスをcommitter/authorに使わないこと(§3CA-4のGH007エラー参照)。**
-16. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
-17. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
-18. 【継続】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
-19. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.23.0(対話セッション、§3CB)。次回はここから1セッション目。**
+1. **【最優先・新規】v0.23.0のPrism Realm境界まだら化が実機でどう見えるか、こんぺいとう氏に確認を依頼すること。見た目のパラメータ(BAND_RADIUS/NOISE_FREQUENCY/NOISE_WEIGHT/オクターブ数、PrismiumStoneTransitionFeature.java参照)の調整が必要になる可能性が高い。**
+2. **【優先・新規】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出リファクタリングに着手してよいか、こんぺいとう氏に確認すること(§3CB-1参照、今回は本人の希望でスコープ外にした)。**
+3. **【最優先・継続】v0.22.0のPrismium Wraith水中転換修正が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。まだ直っていない場合は§3CA-5の教訓に従い、他の水中転換経路を再度洗い直すこと。**
+4. **【最優先・継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。特に発光しないという報告は`lightLevel(state -> 11)`の設定自体は正しいはずなのに矛盾しており、最新版での再現有無を確認する価値がある。**
+5. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。session 72で追加した診断ログ(`ItemDetailsOverlay`)の結果を確認できないか試すこと。
+6. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討(いずれも大型・前提Mod連携機能)。
+7. 【継続・ユーザー直接要望】青白いブロック追加、Prism Realmの巨大山岳地帯+ボス構造物(session 70から継続、こんぺいとう氏は緊急度低いと明言)。
+8. 【継続】session 72で追加したPrismium Deepstoneおよびプリズムレルムの海面・海底変更について、実機フィードバックが無いか確認すること。
+9. 【継続】羽石のアクションバーメッセージが実際に読みやすいか確認すること。
+10. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること(今回のIssue #23追加コメントの発見はこの手順のおかげ)。
+11. 【継続】`scripts/ci/verify_ore_generation.py`のような「CI側で実際のワールドデータを検証する」手法を、他のworldgenコンテンツ(Prism Realmの地形・フローラ・今回の境界まだら化等)にも展開できないか検討すること。
+12. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと。
+13. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている。個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。
+14. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
+15. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式、もしくは今回確立した埋め込みJSON抽出方式を使うこと。画像添付URLはこのサンドボックスから閲覧できない(継続、変化なし)。
+16. **【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ずローカルに設定すること(`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`)。こんぺいとう氏本人の実メールアドレスをcommitter/authorに使わないこと(§3CA-4のGH007エラー参照)。**
+17. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
+18. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
+19. 【継続】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+20. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
 
 ### 議論したい論点・改善案
 
-- 【新規・重要】「過去に直したはずの不具合」の再報告を受けたときの標準手順として、「修正が新しく生んだクラス・コードパス自身が同じ問題を継承していないか」を必ずチェックリスト化すべきではないか(§3CA-5)。
-- 【新規】`api.github.com`への到達性がセッションごとに変動している(以前は到達可能とされていたが今回は不可)。今後は`api.github.com`に依存しない確認手順(`git fetch`ポーリング、`github.com`本体のfetch)をデフォルトにする方が安定するかもしれない。
+- 【新規・重要】今回新設した`com.claudemod.worldgen.noise`(Noise2D/Noise3D/PerlinNoise/FractalNoise)を、次にどこへ再利用するか(バイオーム境界のまだら化、feature密度の変動、等)を具体的に検討する価値がある。
+- 【新規】境界まだら化のパラメータチューニングを、実プレイフィードバックを待たずにCI側の画像的な検証(例えばワールドデータから断面を可視化する等)で先回りできないか検討する価値がある。
+- 【継続】「過去に直したはずの不具合」の再報告を受けたときの標準手順として、「修正が新しく生んだクラス・コードパス自身が同じ問題を継承していないか」を必ずチェックリスト化すべきではないか(§3CA-5)。
+- 【継続】`api.github.com`への到達性がセッションごとに変動している。埋め込みJSON抽出方式(§3CB-2)を今後のデフォルト手順にする方が安定するかもしれない。
 - 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
-- 【継続】3機械の共通基底クラス抽出、段階的アプローチ(session 70 §3BV-9)。
+- 【継続】3機械の共通基底クラス抽出、段階的アプローチ(session 70 §3BV-9)。今回ユーザー本人の希望でスコープ外にしたが、次回改めて確認すること。
 - 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
 - 【継続】`LivingEntity#knockback`のMojangマッピング一次ソース確認。
 - 【継続】ロードマップ項目6(新ブロック/ギミック)の「トラップルーム」構想は持ち越し。
@@ -3826,15 +3885,13 @@ push後`git fetch`ポーリングで確認したところ、`ci: update built ja
 
 ### コミット/プッシュ状況
 
-今回(対話セッション、v0.21.0公開後)は以下をpush:
-1. `f4228dd` Fix Prismium Wraith -> vanilla Drowned bug for real: stop Deep Wraith's own water conversion
-2. `54989d0` Bump version to 0.22.0, add release notes for the Deep Wraith water-conversion fix
-3. タグ`v0.22.0`(release.ymlによりGitHub Releaseを自動作成、ブラウザ相当のfetchでリリースページの存在を確認済み)
+今回(対話セッション、v0.22.0公開後)は以下をpush:
+1. `0979e58` Add reusable Perlin/fractal noise utilities, scatter Prismium Stone/Deepstone boundary (Issue #23 follow-up)
+2. (バージョンアップ+RELEASE_NOTES.md追記のコミットをこの後push)
+3. タグ`v0.23.0`(release.ymlによりGitHub Releaseを自動作成予定)
 4. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
 
-1コミット目のpushは`GH007`(メールアドレス非公開設定)で一度拒否され、`git config`のuser.name/user.emailを`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定し直した上で`git commit --amend --reset-author`によりauthor/committer双方を書き換えて解消した(§3CA-4参照)。各pushについて`git fetch`ポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`の到着を確認し、通常ビルドの成功を確認した。
-
-本PROGRESS.md更新コミットについても、push後に同様の確認を行う予定。
+push前に`git fetch`で並行セッション(CI自動コミット3件)を検知し、`git rebase origin/main`してから素直にpushして解決した(GH007等のエラーは今回発生せず)。push後`git fetch`ポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`の到着を確認し、通常ビルドの成功を確認した。
 
 ### 通知状況
 
