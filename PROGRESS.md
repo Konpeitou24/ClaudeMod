@@ -3840,61 +3840,98 @@ Prism Realmディメンション(`data/claudemod/dimension/prism_realm.json`)は
 - 【継続】PROGRESS.mdの肥大化(3900行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
 
 
+## 3CC. 対話セッション(定期実行ではなく本人との直接チャット、v0.23.0公開後): Prismium Wraith/Deep Wraithをバニラ非継承の自作AIモブに全面書き直し + v0.24.0リリース
+
+v0.22.0(§3CA)のPrismium Wraith水中転換バグ修正の直後、こんぺいとう氏から次のような直接の指摘を受けた(原文): 「というかMOBを何かのMOBベースに作るからこんなことになるんじゃないですか?今後こういうのがMOBを増やすごとに増えて対応に追われるのはごめんです。(雷に打たれて別のバニラのMOBになるとかも)なのでMOBは追加するのであれば頑張って自作してほしいです(MOBのAIとかも)」。
+
+`AskUserQuestion`で適用範囲を確認したところ、「今後の新規MOBのみ」ではなく「既存モブも順次置き換え」を選択された。今回はその第一歩として、直前のバグの当事者である`PrismiumWraithEntity`/`PrismiumDeepWraithEntity`の2体を、バニラ`Zombie`を継承しない実装に全面書き直しした。
+
+### 3CC-1. 設計
+
+新設`AbstractPrismiumMonster`(バニラ`Monster`を継承)を、今後のClaudeMod製ホスティルモブ共通の基底クラスとした。`Monster`はZombie/Skeleton/Creeper等の具象サブクラスと違い、「敵対モブとしての基本(Enemyインターフェース、Peaceful時の自動デスポーン等)」しか持たない中立的なクラスであることをJavadocで確認済み(具象クラス側にこそ、雷での変換・水中転換のような隠れた種族固有ロジックが乗っている)。
+
+AIは、`FloatGoal`(溺れ防止の浮き)・`MeleeAttackGoal`(近接攻撃)・`WaterAvoidingRandomStrollGoal`(徘徊)・`LookAtPlayerGoal`・`RandomLookAroundGoal`・`HurtByTargetGoal`・`NearestAttackableTargetGoal<Player>`という、Forgeのjavadoc(1.18.2版、1.20.1でもコンストラクタは同一のはずと判断)で事前にコンストラクタシグネチャを裏取りした汎用`Goal`クラス群の組み合わせで自作した。これらはいずれも`Mob`/`PathfinderMob`/`LivingEntity`に対して汎用的に宣言されており、特定の種族(Zombie等)に紐づいていないため、丸ごと継承する場合と違って隠れた挙動を持ち込むリスクが無い。`AbstractPrismiumMonster#registerBasicMeleeGoals(double)`として共通化し、両モブの`registerGoals()`から1行で呼び出すだけで済むようにした。
+
+日光での発火は`Mob#isSunBurnTick()`(Zombie固有ではなく`Mob`に定義されている中立的なヘルパー)をそのまま再利用して`aiStep()`から呼び出す形で維持した。レイスの水中転換(→ディープレイス)は、Zombie内部の`conversionTime`タイマー機構に頼らず、`isEyeInFluid(FluidTags.WATER)`による自前のカウンター(600tickでこれまでと同じ)+`Mob#convertTo`(Zombieが内部で使っているのと同じ、種族非依存の汎用エンティティ差し替えヘルパー)で書き直した。この結果、ディープレイス側には水中転換の処理コード自体が一切存在しなくなり、v0.22.0のような「変換先モブがさらに変換されてしまう」再帰的な見落としが構造的に起こり得なくなった。
+
+### 3CC-2. レンダラーの制約とその対応
+
+実装中に判明した制約: `ZombieModel<T>`は`T extends Zombie`という型境界を持つ(Forge javadocで確認)。そのため、エンティティ側がZombieを継承しなくなると、レンダラーで`ZombieModel<PrismiumWraithEntity>`のような指定はコンパイルエラーになる。
+
+調査の結果、`HumanoidMobRenderer<T, M>`自体は`T extends Mob`のみを要求し、`HumanoidModel<T>`も`T extends LivingEntity`のみを要求する(いずれもZombie非依存)ことをjavadocで確認した。また`ZombieModel`は`HumanoidModel.createMesh`をそのまま使っており独自のメッシュ定義を持たないため、`ModelLayers.ZOMBIE`という同じベイク済みレイヤーを`ZombieModel`ではなく素の`HumanoidModel`でラップしても、体型・当たり判定・UVは完全に同一のまま維持できると判断した。
+
+**既知の副作用(受け入れ済みのトレードオフ)**: `AbstractZombieModel#setupAnim`が持つ「腕を前に突き出す」ゾンビ特有の歩行ポーズは失われ、通常のヒューマノイドの腕振りアニメーションになる。見た目のみの変化で、当たり判定・挙動には影響しない。今回はこの書き直し自体を優先し、専用ポーズの再現(Zombieに依存しない小さな独自Modelクラスでのポーズ再現)はPROGRESS.mdの申し送りとして次回以降に持ち越した。
+
+### 3CC-3. ビルド失敗からの復旧(正直な記録)
+
+初回push(コミット`c81dbe3`)はCIビルドが**失敗**した。ローカルにJDK/Forge環境が無くコンパイル確認ができないこのサンドボックスの制約が実際に表面化した例。GitHub Actionsのrunページ(`https://github.com/.../actions/runs/<id>`、api.github.com経由ではなくgithub.com本体を直接fetchする方式で今回も到達)から実際のコンパイルエラー注釈を読み取り、以下2種4件の実エラーを特定した:
+
+1. `AbstractPrismiumMonster.java`で`HurtByTargetGoal`を`net.minecraft.world.entity.ai.goal`から誤ってimportしていた(正しくは`net.minecraft.world.entity.ai.goal.target`パッケージ)。事前にjavadocで確認していたはずが、実装時に手が滑った単純なタイプミス。
+2. `PrismiumWraithEntity`/`PrismiumDeepWraithEntity`双方で`getStepSound()`に`@Override`を付けていたが、これは**Zombieクラス自身に定義されたメソッドであり、Mob/LivingEntity側には存在しない**ことが判明(Zombie継承時はコンパイルが通っていたため見落としていた)。両クラスから削除した(WITHER_SKELETON_STEPという足音の上書きが無くなる、見た目のみの些細な影響)。
+
+修正コミット(`8258088`→rebase後`55a684e`)をpushし、`git fetch`ポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`まで到達したことを確認、ビルド成功を確認した。
+
+**教訓**: このサンドボックスにはローカルビルド手段が無いため、vanillaクラスの継承関係を変更するような大きな変更では、javadocでの裏取りを尽くしても実際に無いメソッドへの`@Override`やimportパスの間違いのようなケアレスミスがコンパイル時まで発見できない。CIの失敗を前提に、pushしたら必ず結果を確認し、失敗していれば即座に修正コミットを重ねるサイクルを回すことが重要(今回はこのサイクル自体は正しく機能し、2回目のpushで解決できた)。
+
+### 3CC-4. 同時実行セッションとの遭遇
+
+作業中、定期実行の別セッションが同時にmainへpushしていることを`git fetch`で複数回検知した(ポータル音の作り直し、ノイズユーティリティ+v0.23.0リリース)。いずれも`git fetch`→`git rebase origin/main`→再pushで無理なく解消できた。バージョン確認(`git tag --sort=-creatordate`)を都度行っていたため、`gradle.properties`の値が自分の想定と食い違っている(0.21.0のつもりが既に0.23.0だった等)ことにもすぐ気付けた。
+
+### 3CC-5. push・ビルド確認・リリース: v0.24.0
+
+最終的に以下をpush: `c81dbe3`(初回書き直し、ビルド失敗)→`55a684e`(コンパイル修正、ビルド成功確認済み)。バージョンは`0.23.0`(同時実行セッションが既に使用済み)から`0.24.0`へ。リリースノートには自分の変更(Wraith/Deep Wraith書き直し)に加え、同時実行セッションが同区間でpushしたポータル音の作り直し(`9bf056a`)も簡潔に触れた。
+
+**PrismiumSentinelEntity(骨格ベース)・PrismiumDrifterEntity(イカベース)は今回未着手。「既存モブも順次置き換え」の続きとして次回以降の対象。**
+
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(対話セッション、v0.22.0公開後)の最重要な新情報
+### 今回(対話セッション、v0.23.0公開後)の最重要な新情報
 
-- **【実装・実機未検証】GitHub Issue #23への追加コメント(「ノイズを自作して、まばらに切り替わるようにしてください」)に対応した(§3CB)。再利用可能な`com.claudemod.worldgen.noise`パッケージ(Noise2D/Noise3D/PerlinNoise/FractalNoise)を新設し、`PrismiumStoneTransitionFeature`でPrism Realmのy=0付近の深層岩/石境界をまばらに描き直すようにした。v0.23.0としてリリース済み。** 次回、こんぺいとう氏に実際の見た目(まばら具合が自然か、パッチが大きすぎ/小さすぎないか)を確認してもらうことが最優先。
-- **【ユーザー本人の希望でスコープ外】今回、こんぺいとう氏に「ノイズ生成のみ」「両方(ノイズ生成+3機械リファクタリング)」の選択を尋ねたところ「ノイズ生成のみ」との回答だった。3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出は依然として未着手。次回、改めて着手してよいか確認する価値がある。**
-- 【新規・再利用パターン】`api.github.com`が到達不能な場合、GitHub issueの一覧・本文・コメントは`github.com/<owner>/<repo>/issues`(または`/issues/<番号>`)ページ内の`<script type="application/json" data-target="react-app.embeddedData">`をJSONとしてパースすることで取得できる(GraphQLのpreloadedQueriesが埋め込まれている)。次回以降、api.github.comが不通の際はこの方法を標準手順にすること。
+- **【解決(推定・実機未検証)】こんぺいとう氏の直接指摘「MOBは自作してほしい(AIも)」を受け、`PrismiumWraithEntity`/`PrismiumDeepWraithEntity`をバニラ`Zombie`を継承しない実装に全面書き直しした(§3CC)。新設`AbstractPrismiumMonster`が今後のホスティルモブ共通基底。v0.24.0としてリリース済み、CIビルド成功確認済み。**
+- **【最優先・新規】「既存モブも順次置き換え」の続き: `PrismiumSentinelEntity`(現在バニラ`Skeleton`継承)と`PrismiumDrifterEntity`(現在バニラ`Squid`継承)がまだ手つかず。次回以降、同じパターン(`AbstractPrismiumMonster`ベース、汎用Goal自作、レンダラーは`HumanoidModel`/適切な非バニラ専用モデルに置き換え)で対応すること。特にDrifterは非戦闘モブなので`registerBasicMeleeGoals`は使えず、専用のAI設計が必要な点に注意。**
+- **【重要な教訓】バニラのモブクラスを継承しないよう書き直す際、javadocで事前にAPIを裏取りしていても、(a)存在しないメソッドへの`@Override`(継承していた具象クラス固有のメソッドだったケース)、(b)importパスの単純なタイプミス、の2種類のケアレスミスでビルドが失敗し得る(§3CC-3)。ビルド失敗時はGitHub Actionsのrunページ(`https://github.com/<owner>/<repo>/actions/runs/<id>`、github.com本体を直接fetchすればapi.github.comが使えなくても注釈からエラー内容を読み取れる)を必ず確認し、次のpushで即座に修正すること。
+- **【継続・注意】`api.github.com`は今回のセッションでも終始プロキシの許可リストでブロックされ続けた。ビルド結果・エラー内容の確認は`git fetch`によるCI自動コミットのポーリングと、`github.com`のActions run/リリースページ自体を直接fetchする方法で完全に代替できることを再確認した(runページのHTMLに実際のコンパイルエラー注釈が含まれている)。**
+- **【新規・確認済みAPI事実、次回以降のモブ自作で再利用可】`ZombieModel<T>`は`T extends Zombie`という型境界を持つため、バニラ`Zombie`を継承しないモブでは使えない。代わりに`HumanoidMobRenderer<T extends Mob, M extends HumanoidModel<T>>`と`HumanoidModel<T extends LivingEntity>`はいずれも非Zombie限定なので、同じ`ModelLayers.ZOMBIE`等の既存ベイク済みレイヤーを流用しつつ`HumanoidModel`でラップすれば体型はそのまま維持できる(ただしZombie特有の「腕を前に突き出す」歩行ポーズは失われる、§3CC-2)。同様に`getStepSound()`はZombie固有のメソッドでMob/LivingEntityには存在しない(§3CC-3)。`Mob#isSunBurnTick()`・`Mob#convertTo(EntityType, boolean)`はいずれもMobレベルの中立的なヘルパーで、Zombieを継承しなくても使える。**
+- **【継続・重要】`git push`が`GH007`(メールアドレス非公開設定)で失敗する場合の対処(v0.22.0セッションで確立): `git config user.name "ClaudeMod Session Agent"` / `git config user.email "claudemod-agent@users.noreply.github.com"`を必ず設定してからコミットすること。**
+- **【継続】同時実行の定期セッションとmainへ同時にpushする状況が今回も発生した。`git fetch`→`git rebase origin/main`→再pushのサイクルで無理なく解消できることを再確認(§3CC-4)。作業開始時・pushのたびに`git tag --sort=-creatordate`と`gradle.properties`の値を確認し、バージョン番号の想定違いに早期に気付くこと。**
 
 ### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.23.0(対話セッション、§3CB)。次回はここから1セッション目。**
-1. **【最優先・新規】v0.23.0のPrism Realm境界まだら化が実機でどう見えるか、こんぺいとう氏に確認を依頼すること。見た目のパラメータ(BAND_RADIUS/NOISE_FREQUENCY/NOISE_WEIGHT/オクターブ数、PrismiumStoneTransitionFeature.java参照)の調整が必要になる可能性が高い。**
-2. **【優先・新規】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出リファクタリングに着手してよいか、こんぺいとう氏に確認すること(§3CB-1参照、今回は本人の希望でスコープ外にした)。**
-3. **【最優先・継続】v0.22.0のPrismium Wraith水中転換修正が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。まだ直っていない場合は§3CA-5の教訓に従い、他の水中転換経路を再度洗い直すこと。**
-4. **【最優先・継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。特に発光しないという報告は`lightLevel(state -> 11)`の設定自体は正しいはずなのに矛盾しており、最新版での再現有無を確認する価値がある。**
-5. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。session 72で追加した診断ログ(`ItemDetailsOverlay`)の結果を確認できないか試すこと。
-6. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討(いずれも大型・前提Mod連携機能)。
-7. 【継続・ユーザー直接要望】青白いブロック追加、Prism Realmの巨大山岳地帯+ボス構造物(session 70から継続、こんぺいとう氏は緊急度低いと明言)。
-8. 【継続】session 72で追加したPrismium Deepstoneおよびプリズムレルムの海面・海底変更について、実機フィードバックが無いか確認すること。
-9. 【継続】羽石のアクションバーメッセージが実際に読みやすいか確認すること。
-10. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること(今回のIssue #23追加コメントの発見はこの手順のおかげ)。
-11. 【継続】`scripts/ci/verify_ore_generation.py`のような「CI側で実際のワールドデータを検証する」手法を、他のworldgenコンテンツ(Prism Realmの地形・フローラ・今回の境界まだら化等)にも展開できないか検討すること。
-12. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと。
-13. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている。個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。
-14. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
-15. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式、もしくは今回確立した埋め込みJSON抽出方式を使うこと。画像添付URLはこのサンドボックスから閲覧できない(継続、変化なし)。
-16. **【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ずローカルに設定すること(`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`)。こんぺいとう氏本人の実メールアドレスをcommitter/authorに使わないこと(§3CA-4のGH007エラー参照)。**
-17. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
-18. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
-19. 【継続】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
-20. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.24.0(対話セッション、§3CC)。次回はここから1セッション目。**
+1. **【最優先・新規】`PrismiumSentinelEntity`・`PrismiumDrifterEntity`をバニラ非継承(`AbstractPrismiumMonster`または`PathfinderMob`直接継承)に書き直す(§3CCの続き、こんぺいとう氏承認済みの既定路線)。Drifterは非戦闘モブなので専用のAI設計が必要。**
+2. **【最優先・新規】v0.24.0のレイス系モブAIが実機で以前と遜色ない挙動か(索敵・追跡の反応、パスファインディング)、こんぺいとう氏に確認を依頼すること。もし明らかに劣化していれば、Goalの優先度・速度パラメータの調整を検討すること。**
+3. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
+4. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
+5. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+6. 【継続・新規アイデア】ゾンビ特有の「腕を前に突き出す」歩行ポーズを、Zombieに依存しない小さな独自Modelクラスで再現できないか(§3CC-2、低優先度の見た目改善)。
+7. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること。
+8. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか。
+9. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている。反応があった項目から個別に切り出して対応すること。
+10. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
+11. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
+12. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
+13. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
 
 ### 議論したい論点・改善案
 
-- 【新規・重要】今回新設した`com.claudemod.worldgen.noise`(Noise2D/Noise3D/PerlinNoise/FractalNoise)を、次にどこへ再利用するか(バイオーム境界のまだら化、feature密度の変動、等)を具体的に検討する価値がある。
-- 【新規】境界まだら化のパラメータチューニングを、実プレイフィードバックを待たずにCI側の画像的な検証(例えばワールドデータから断面を可視化する等)で先回りできないか検討する価値がある。
-- 【継続】「過去に直したはずの不具合」の再報告を受けたときの標準手順として、「修正が新しく生んだクラス・コードパス自身が同じ問題を継承していないか」を必ずチェックリスト化すべきではないか(§3CA-5)。
-- 【継続】`api.github.com`への到達性がセッションごとに変動している。埋め込みJSON抽出方式(§3CB-2)を今後のデフォルト手順にする方が安定するかもしれない。
+- 【新規・重要】モブをバニラ非継承で自作する新方針(`AbstractPrismiumMonster`)を、残るPrismiumSentinel/Drifterにもいつ・どう適用するか(§3CC、最優先タスク1)。
+- 【新規】ゾンビの「腕を前に突き出す」歩行ポーズの再現(§3CC-2)は優先度低めだが、見た目の一貫性のためにやる価値はあるかもしれない。
 - 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
-- 【継続】3機械の共通基底クラス抽出、段階的アプローチ(session 70 §3BV-9)。今回ユーザー本人の希望でスコープ外にしたが、次回改めて確認すること。
+- 【継続】3機械の共通基底クラス抽出、段階的アプローチ。
 - 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
-- 【継続】`LivingEntity#knockback`のMojangマッピング一次ソース確認。
-- 【継続】ロードマップ項目6(新ブロック/ギミック)の「トラップルーム」構想は持ち越し。
 - 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手(今回も増加)。
 
 ### コミット/プッシュ状況
 
-今回(対話セッション、v0.22.0公開後)は以下をpush:
-1. `0979e58` Add reusable Perlin/fractal noise utilities, scatter Prismium Stone/Deepstone boundary (Issue #23 follow-up)
-2. (バージョンアップ+RELEASE_NOTES.md追記のコミットをこの後push)
-3. タグ`v0.23.0`(release.ymlによりGitHub Releaseを自動作成予定)
+今回(対話セッション、v0.23.0公開後)は以下をpush:
+1. `c81dbe3` Rewrite Prismium Wraith / Deep Wraith to stop extending vanilla Zombie(**ビルド失敗**、§3CC-3参照)
+2. `55a684e`(rebase後) Fix compile errors from the Zombie-decoupling rewrite(ビルド成功確認済み)
+3. `gradle.properties`を`0.23.0`→`0.24.0`、`RELEASE_NOTES.md`に新規セクション追加、タグ`v0.24.0`
 4. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
 
-push前に`git fetch`で並行セッション(CI自動コミット3件)を検知し、`git rebase origin/main`してから素直にpushして解決した(GH007等のエラーは今回発生せず)。push後`git fetch`ポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`の到着を確認し、通常ビルドの成功を確認した。
+作業中、同時実行の定期セッションによる複数回のpush(ポータル音の作り直し、ノイズユーティリティ+v0.23.0リリース)を`git fetch`で検知し、都度`git rebase origin/main`で解消してから自分のpushを行った。各pushについて`git fetch`ポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`の到着を確認し、最終的な成功を確認した。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`・`release.yml`)がpush/タグに対応する通知を送信済みのはず(Secret設定済み前提)。
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`・`release.yml`)がpush/タグに対応する通知を送信済みのはず。
