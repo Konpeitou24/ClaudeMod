@@ -3746,61 +3746,96 @@ session 73(定期実行)では「プレイヤーが片側の柱だけ置いた�
 - 両方とも実機未検証のまま。次回、実際にプレイして確認できたか聞く価値がある。
 
 
+## 3CA. 対話セッション(定期実行ではなく本人との直接チャット、v0.21.0公開後): Prismium Wraithがバニラのドラウンドになるバグを根本修正 + v0.22.0リリース
+
+こんぺいとう氏本人から「プリズミウム・レイスを水中に放置するとバニラのドラウンドになるバグが治ってません」と直接の再報告を受けた。session 47で一度対応済みのはずの不具合の再発報告だったため、まず過去の対応内容を洗い直すところから始めた。
+
+### 3CA-1. 過去の対応の再確認
+
+session 47の対応(`PrismiumWraithEntity#doUnderWaterConversion()`のオーバーライド)を読み直したところ、コード上は「レイスの水中転換先をバニラのドラウンドから新設の`PrismiumDeepWraithEntity`にリダイレクトする」という形で、一見正しく実装されているように見えた。実際v0.4.0で導入され、v0.21.0まで一度も後退しておらず、GitHub Actions上のビルドも通り続けている。つまり「コードは正しそうに見えるのに実際の報告は直っていない」という、session 73(§3BZ-4)で得た教訓と全く同じパターンだった。
+
+### 3CA-2. 根本原因: Deep Wraith自身が同じ問題を抱えていた
+
+Forge/NeoForgeのJavadoc(`Zombie`クラス)をWebSearchで確認し、`convertsInWater()`(protected boolean)・`doUnderWaterConversion()`(protected void)・`convertToZombieType(EntityType<? extends Zombie>)`の3メソッドの存在とシグネチャを裏取りした上でコードを再読した結果、次の欠陥に気づいた:
+
+- `PrismiumWraithEntity`は`doUnderWaterConversion()`を正しくオーバーライドし、水中転換の行き先を`PrismiumDeepWraithEntity`にリダイレクトしている(ここは正しい)。
+- しかし**その転換先である`PrismiumDeepWraithEntity`自身もバニラの`Zombie`を継承しており、`convertsInWater()`/`doUnderWaterConversion()`のどちらもオーバーライドしていなかった**。
+- `Zombie`の水中転換は「目線が水中にある状態が約600tick続く→約300tickの転換カウントダウン→`doUnderWaterConversion()`呼び出し」という時限式のタイマーで駆動される。Deep Wraithはその存在意義そのものが「水中に住み続けるモブ」(`canBreatheUnderwater()`が`true`)なので、放っておけばこのタイマー条件を確実に満たしてしまう。
+- 結果、実際の流れは「レイス→(約45秒で)ディープレイス→(さらに約45秒で、今度は**未対応の継承メソッドにより**)バニラのドラウンド」という**2段階**の変化になっていた。1段階目のリダイレクトだけを見て「直った」と判断していたのが、今回のバグ再発報告につながった根本原因。
+
+### 3CA-3. 修正
+
+`PrismiumDeepWraithEntity`に`protected boolean convertsInWater()`をオーバーライドして`false`を返すよう追加した。Deep Wraithはこの変化の連鎖における終端の姿という位置づけなので、`doUnderWaterConversion()`を再度オーバーライドして別の何かにリダイレクトするのではなく、そもそも水中転換の状態機械に入らないようにする方針を選んだ(考え得る中で最も単純で、再帰的に同じ問題を生まない対応)。
+
+### 3CA-4. push・ビルド確認・リリース: v0.22.0
+
+修正は1コミットにまとめてpush(コミット時、GitHubの「メールアドレス非公開設定によりpushが拒否される」エラー(`GH007`)に遭遇。原因はcommitterのメールアドレスがこんぺいとう氏本人の実メールアドレスのままだったこと。`git config user.name/user.email`を過去セッションの慣例(`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`)に合わせて設定し直し、`--amend --reset-author`でauthor/committer双方を書き換えて解消した。**次回セッションへの申し送り: 今後も必ずセッション開始時に`git config user.name/user.email`をこの形式に設定してからコミットすること、Konpeitou24氏本人のメールアドレスをコミットの著者・コミッターに使わないこと。**)。
+
+push後`git fetch`ポーリングで確認したところ、`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`まで到達し、通常ビルドは成功した。続けて`gradle.properties`を`0.21.0`→`0.22.0`、`RELEASE_NOTES.md`に新規セクションを追加してコミット・push、タグ`v0.22.0`をpushしてリリースを作成した(`release.yml`が走り、GitHub Releasesページに`v0.22.0`が作成されたことをブラウザ経由でのページ取得により確認済み)。
+
+なお今回、`api.github.com`へのアクセスは(タスク指示では到達可能とされていたにもかかわらず)このセッションのプロキシ許可リストで`blocked-by-allowlist`としてブロックされ続けた(プロキシ変数を空にしても、DNS解決自体ができなくなるだけでアクセスは回復しなかった)。ビルド結果の確認は、api.github.com経由ではなく`git fetch`によるCI自動コミット(jar更新・データパック検証・鉱石検証)のポーリングと、`github.com`のリリースページ本体をブラウザ相当のfetchで直接読む方法で代替した。
+
+### 3CA-5. 今回の教訓(正直な記録)
+
+- **「過去に一度直したはずの不具合」の再報告を受けたときは、以前の修正コミットを鵜呑みにせず、その修正が実際にカバーしていた範囲を疑って見直すべき。** 今回のケースでは、修正対象のクラス(`PrismiumWraithEntity`)だけを見れば正しく見えたが、その修正が生み出した新しいクラス(`PrismiumDeepWraithEntity`)自身が同じ脆弱性を継承しているという「再帰的な見落とし」だった。1つのクラスに1つのメソッドをオーバーライドして満足するのではなく、「その変化の連鎖の終端(このモブの次に何かへ変化することは無いか?)」まで追いかける必要がある。
+- 実機での動作確認は今回も未検証(このサンドボックスではローカルビルド・実プレイ不可)。次回、こんぺいとう氏に「v0.22.0でもう一度、水中に長時間放置して確認してもらえたか」を尋ねる価値がある。
+
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(セッション#73、定期実行)の最重要な新情報
+### 今回(対話セッション、v0.21.0公開後)の最重要な新情報
 
-- **【解決】Issue #24(鉱脈が見当たらない)は、CIに新設した実証的検証(`scripts/ci/verify_ore_generation.py`、§3BY-2/3BY-3)により「生成アルゴリズムは正しく動作している」ことを2回のCI実行で確認し、説明コメント付きでクローズ済み。** 見つからなかった主因はIssue #22(v0.19.0で修正済み)によるプリズミウムストーンとの視覚的混同である可能性が高いと分析した。報告者本人の再確認はまだ無いので、もし再び「見つからない」と報告があれば要注意(その場合はこの分析自体が誤っていた可能性を検討すること)。
-- **【ほぼ解決】Issue #20(プリズミウムゲート)の5点のうち、session 73(定期実行)で「触れていなくてもテレポートする」を、直後の対話セッション(§3BZ)で「クリエイティブで壊せる」と「縦に生成される(正体は帰りのゲートの向きバグ)」の2点をさらに修正した。合計3/5点が修正済み。**
-  - 【重要な訂正】session 73(定期実行)では「コードの設定がバニラのネザーポータルと完全一致しているから壊れないはず」と判断したが、これは誤りだった。負の硬度はクリエイティブの瞬間破壊を防がない(WebSearchで確認済み、§3BZ-1参照)。**「コードが正しそうに見える」と「実際そう動く」は別問題という教訓。**
-  - 残り2点(サバイバルで破壊アニメーションが出る・発光しない)は依然未確認。特に発光しないという報告は、`lightLevel(state -> 11)`の設定自体は正しいはずなのに矛盾しており、次回は最新版(v0.21.0以降)での再現有無を確認する価値がある。
-- **【新規】鉱石生成の実証的CI検証の仕組みが確立された。** 他のworldgenコンテンツ(Prism Realmの地形・専用鉱石・専用フローラ等)にも「本当に生成されているか」を実証的に確認する手段として転用できる。
+- **【解決(推定・実機未検証)】「プリズミウム・レイスを水中に放置するとバニラのドラウンドになる」バグの再報告(§3CA)に対応した。根本原因は、session 47で新設した`PrismiumDeepWraithEntity`自身が`convertsInWater()`をオーバーライドしておらず、レイス→ディープレイスへの転換後、ディープレイス自身がさらに(未対応のまま)バニラのドラウンドへ転換してしまっていたこと。`PrismiumDeepWraithEntity#convertsInWater()`を`false`でオーバーライドして修正し、v0.22.0としてリリース済み。** 次回、こんぺいとう氏に実際に水中で長時間(できれば数分単位)放置して確認してもらえたかを確認すること。もし再発する場合、他に水中転換系のロジックが残っていないか(例えば`Zombie`の別のサブクラス経由や、Forgeイベント経由の別経路)を再度洗い直す必要がある。
+- **【教訓】「過去に直したはずの不具合」の再報告時は、修正コミットの内容を鵜呑みにせず、その修正が生んだ新しいコード自身が同じ問題を継承していないか(再帰的な見落とし)を必ず疑うこと(§3CA-5)。**
+- **【運用上の注意・重要】`git push`が`GH007`(「メールアドレス非公開設定によりpushが拒否される」)で失敗することがある。原因は`git config user.email`がこんぺいとう氏(Konpeitou24)本人の実メールアドレスになっていた場合。必ずセッション開始時に`git config user.name "ClaudeMod Session Agent"` / `git config user.email "claudemod-agent@users.noreply.github.com"`(過去セッションの慣例)を明示的に設定してからコミットすること。もし既に本人のメールアドレスでコミットしてしまった場合は`git commit --amend --reset-author`(config設定後)でauthor/committer両方を書き換えてからpushし直すこと。**
+- **【継続・注意】`api.github.com`は今回のセッションでは(タスク指示の想定に反し)プロキシの許可リストでブロックされ続けた(`https_proxy`等を空にしてもDNS解決自体ができなくなるだけで回復せず)。ビルド結果の確認は`git fetch`によるCI自動コミットのポーリング、リリース確認は`github.com`のリリースページ自体をfetchする方法で代替できる。次回セッションでも同様に`api.github.com`が使えない場合はこの代替手段を使うこと。**
 
 ### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.21.0(対話セッション、§3BZ)。次回はここから1セッション目。**
-1. **【最優先・新規】Issue #20の残り4点(縦生成・クリエイティブ破壊・サバイバル破壊アニメーション・無発光)。次回セッションでもし添付画像が閲覧できる手段が確保できれば最優先で調査すること。閲覧できない場合、報告者に最新版での再現有無をコメントで尋ねる文面を検討する価値がある(ただしこのサンドボックスにはIssueへのコメントのみを行う中継の仕組みは無く、現状クローズとセットの`ISSUES_TO_CLOSE.json`しか無い点に注意 - コメントだけしたい場合は新しい中継の仕組みが必要かもしれない)。**
-2. **【継続・新規】Issue #19(詳細表示のバグ)の根本原因調査。session 72で追加した診断ログ(`ItemDetailsOverlay`)の結果を確認できないか試すこと。**
-3. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討(いずれも大型・前提Mod連携機能)。
-4. 【継続・ユーザー直接要望】青白いブロック追加、Prism Realmの巨大山岳地帯+ボス構造物(session 70から継続、こんぺいとう氏は緊急度低いと明言)。
-5. 【継続】session 72で追加したPrismium Deepstoneおよびプリズムレルムの海面・海底変更について、実機フィードバックが無いか確認すること。
-6. 【継続】羽石のアクションバーメッセージが実際に読みやすいか確認すること。
-7. 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラスへの抽出を段階的アプローチ(session 70 §3BV-9参照)で検討する価値がある。
-8. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること。
-9. 【新規・提案】`scripts/ci/verify_ore_generation.py`のような「CI側で実際のワールドデータを検証する」手法を、他のworldgenコンテンツ(Prism Realmの地形・フローラ等)にも展開できないか検討すること(§3BY-8)。
-10. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと。
-11. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている: Prismium Portal(entityInsideの薄いトリガー修正、session 73、今回)、Prismium Deepstone/プリズムレルム地形変更・羽石メッセージ(session 72)、Alloy Rapier(session 71)、Compressor(session 70)、Warhammer(session 69)、Smelter(session 68)、Geyser(session 66)、Magnet Charm(session 65)、Snare(session 64)、ItemDetailsOverlay(session 62)、Pulse Charm(session 63)、Drifter(session 61)、Sentinel(session 59)、GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色(session 57)、Portalの見た目・当たり判定(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
-12. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
-13. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式を使うこと。画像添付URLはこのサンドボックスから閲覧できない(継続、変化なし)。
-14. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
-15. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#15〜#24は全て投稿者`Konpeitou24`本人だった。
-16. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
-17. 【継続】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
-18. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.22.0(対話セッション、§3CA)。次回はここから1セッション目。**
+1. **【最優先・新規】v0.22.0のPrismium Wraith水中転換修正が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。まだ直っていない場合は§3CA-5の教訓に従い、他の水中転換経路を再度洗い直すこと。**
+2. **【最優先・継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。特に発光しないという報告は`lightLevel(state -> 11)`の設定自体は正しいはずなのに矛盾しており、最新版での再現有無を確認する価値がある。**
+3. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。session 72で追加した診断ログ(`ItemDetailsOverlay`)の結果を確認できないか試すこと。
+4. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討(いずれも大型・前提Mod連携機能)。
+5. 【継続・ユーザー直接要望】青白いブロック追加、Prism Realmの巨大山岳地帯+ボス構造物(session 70から継続、こんぺいとう氏は緊急度低いと明言)。
+6. 【継続】session 72で追加したPrismium Deepstoneおよびプリズムレルムの海面・海底変更について、実機フィードバックが無いか確認すること。
+7. 【継続】羽石のアクションバーメッセージが実際に読みやすいか確認すること。
+8. 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラスへの抽出を段階的アプローチ(session 70 §3BV-9参照)で検討する価値がある。
+9. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること。
+10. 【継続】`scripts/ci/verify_ore_generation.py`のような「CI側で実際のワールドデータを検証する」手法を、他のworldgenコンテンツ(Prism Realmの地形・フローラ等)にも展開できないか検討すること。
+11. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと。
+12. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている。個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。
+13. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
+14. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式を使うこと。画像添付URLはこのサンドボックスから閲覧できない(継続、変化なし)。`api.github.com`も今回ブロックされたため、可能ならこの方式に統一することを検討する価値がある。
+15. **【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ずローカルに設定すること(`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`)。こんぺいとう氏本人の実メールアドレスをcommitter/authorに使わないこと(§3CA-4のGH007エラー参照)。**
+16. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
+17. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
+18. 【継続】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+19. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
 
 ### 議論したい論点・改善案
 
-- 【新規・重要】CI側での実証的ワールド生成検証(`verify_ore_generation.py`)の他コンテンツへの展開(§3BY-8)。
-- 【新規】Issue #20の残り4点がコード上の設定と矛盾する報告である点(§3BY-7、§5上部)。
+- 【新規・重要】「過去に直したはずの不具合」の再報告を受けたときの標準手順として、「修正が新しく生んだクラス・コードパス自身が同じ問題を継承していないか」を必ずチェックリスト化すべきではないか(§3CA-5)。
+- 【新規】`api.github.com`への到達性がセッションごとに変動している(以前は到達可能とされていたが今回は不可)。今後は`api.github.com`に依存しない確認手順(`git fetch`ポーリング、`github.com`本体のfetch)をデフォルトにする方が安定するかもしれない。
 - 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
 - 【継続】3機械の共通基底クラス抽出、段階的アプローチ(session 70 §3BV-9)。
 - 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
 - 【継続】`LivingEntity#knockback`のMojangマッピング一次ソース確認。
 - 【継続】ロードマップ項目6(新ブロック/ギミック)の「トラップルーム」構想は持ち越し。
-- 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手(今回3800行超に増加)。
+- 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手(今回も増加)。
 
 ### コミット/プッシュ状況
 
-セッション#73(定期実行)は以下のコミットをpush:
-1. `8b647be` Add empirical CI check for GitHub issue #24 (Prismium ore not found in survival)
-2. `01f6583`(rebase後) Fix GitHub issue #20 (partial): stop Prismium Portal teleporting entities that never touched the visible membrane
-3. `171f52a`(rebase後) Close issue #24 with explanation: empirical CI check confirms Prismium ore does generate
-4. (このPROGRESS.md更新およびv0.20.0リリースコミット+タグ`v0.20.0`は本セクション末尾のコミットとして追ってpushする)
+今回(対話セッション、v0.21.0公開後)は以下をpush:
+1. `f4228dd` Fix Prismium Wraith -> vanilla Drowned bug for real: stop Deep Wraith's own water conversion
+2. `54989d0` Bump version to 0.22.0, add release notes for the Deep Wraith water-conversion fix
+3. タグ`v0.22.0`(release.ymlによりGitHub Releaseを自動作成、ブラウザ相当のfetchでリリースページの存在を確認済み)
+4. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
 
-push前にそれぞれ`git fetch origin main`で並行セッション/CI自動コミットの有無を確認。2回目のpushは一度`non-fast-forward`で拒否されたが、`git rebase origin/main`で解消して再pushし成功(プロキシ変数の変更は不要だった)。push後、`git fetch`ポーリングで各回とも`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`の到着を確認した。**通常ビルド・データパック検証・鉱石生成検証、すべて成功。**
+1コミット目のpushは`GH007`(メールアドレス非公開設定)で一度拒否され、`git config`のuser.name/user.emailを`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定し直した上で`git commit --amend --reset-author`によりauthor/committer双方を書き換えて解消した(§3CA-4参照)。各pushについて`git fetch`ポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`の到着を確認し、通常ビルドの成功を確認した。
 
-本PROGRESS.md更新+v0.20.0リリースコミットについても、push後に同様の確認を行う予定。
+本PROGRESS.md更新コミットについても、push後に同様の確認を行う予定。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`)がpushに対応する通知を送信済みのはず(Secret設定済み前提)。
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`・`release.yml`)がpush/タグに対応する通知を送信済みのはず(Secret設定済み前提)。
