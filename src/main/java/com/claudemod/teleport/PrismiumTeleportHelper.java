@@ -144,20 +144,38 @@ public final class PrismiumTeleportHelper {
      *
      * <p>Reuses the exact ring dimensions and per-cell materials {@code
      * PrismiumPortalIgniteHandler} validates (4 wide x 5 tall outer ring,
-     * 2x3 interior, {@code Direction.Axis.X}, top/bottom rows of {@code
-     * PRISMIUM_BLOCK} and left/right columns of {@code
-     * PRISMIUM_BLOCK_WALL} - updated in the direct-chat session on
-     * 2026-08-19 alongside that handler's own recipe change, see its
-     * javadoc) so this auto-built frame looks identical to one a player
-     * builds and ignites by hand, and remains a legitimate,
-     * walk-through-both-ways {@code PrismiumPortalBlock} pair once
-     * built - not a teleport pad or a special case.
+     * 2x3 interior, top/bottom rows of {@code PRISMIUM_BLOCK} and
+     * left/right columns of {@code PRISMIUM_BLOCK_WALL} - updated in the
+     * direct-chat session on 2026-08-19 alongside that handler's own
+     * recipe change, see its javadoc) so this auto-built frame looks
+     * identical to one a player builds and ignites by hand, and remains a
+     * legitimate, walk-through-both-ways {@code PrismiumPortalBlock} pair
+     * once built - not a teleport pad or a special case.
+     *
+     * <p><b>Session 73 direct-chat fix - wrong-facing return portal</b>:
+     * a screenshot showed the auto-built return portal looking like a
+     * thin vertical pole instead of a gate. The frame geometry itself was
+     * fine; the bug was that the frame's plane ({@code Direction.Axis.X},
+     * spanning along X) was parallel to {@link #RETURN_PORTAL_X_OFFSET},
+     * the very direction the landing spot is offset from it - so walking
+     * straight toward the portal (the obvious thing to do, since it's
+     * directly ahead) meant walking along its own width axis and seeing
+     * it perfectly edge-on, all 4 width-blocks of each row visually
+     * stacked behind one another. Fixed by building the frame in the
+     * perpendicular plane instead (spanning Z, {@code Direction.Axis.Z})
+     * so its thin, visible membrane faces back down the +X approach from
+     * the landing spot, the same way a real doorway is oriented across
+     * the hallway leading to it rather than along it. Unverified in an
+     * actual client - reasoned from the same axis/getShape relationship
+     * documented in {@link com.claudemod.block.PrismiumPortalBlock}, not
+     * confirmed by walking up to it in a running game.
      */
     private static void ensureReturnPortal(ServerLevel realmLevel, int landingY) {
         BlockPos origin = new BlockPos(
-                REALM_ANCHOR.getX() + RETURN_PORTAL_X_OFFSET, landingY, REALM_ANCHOR.getZ());
+                REALM_ANCHOR.getX() + RETURN_PORTAL_X_OFFSET, landingY,
+                REALM_ANCHOR.getZ() - RETURN_PORTAL_RING_WIDTH / 2);
 
-        BlockPos interiorProbe = origin.offset(1, 1, 0);
+        BlockPos interiorProbe = origin.offset(0, 1, 1);
         if (realmLevel.getBlockState(interiorProbe).getBlock() == ModBlocks.PRISMIUM_PORTAL.get()) {
             // Already built on a previous arrival - nothing to do.
             return;
@@ -166,9 +184,11 @@ public final class PrismiumTeleportHelper {
         // Solid footing under the whole footprint first, in case the
         // ground here is water/void (this Realm is a flat "waterworld",
         // see PROGRESS.md session 47) - same material/reasoning as the
-        // landing platform carved by findSafeRealmLanding.
-        for (int dx = -1; dx <= RETURN_PORTAL_RING_WIDTH; dx++) {
-            for (int dz = -1; dz <= 1; dz++) {
+        // landing platform carved by findSafeRealmLanding. dx/dz swapped
+        // relative to the pre-fix version to match the frame now
+        // spanning Z instead of X (see javadoc above).
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= RETURN_PORTAL_RING_WIDTH; dz++) {
                 BlockPos floorPos = origin.offset(dx, -1, dz);
                 realmLevel.setBlockAndUpdate(floorPos, ModBlocks.PRISMIUM_SOIL.get().defaultBlockState());
             }
@@ -178,7 +198,8 @@ public final class PrismiumTeleportHelper {
             for (int h = 0; h < RETURN_PORTAL_RING_HEIGHT; h++) {
                 boolean isTopOrBottomRow = h == 0 || h == RETURN_PORTAL_RING_HEIGHT - 1;
                 boolean isLeftOrRightColumn = w == 0 || w == RETURN_PORTAL_RING_WIDTH - 1;
-                BlockPos pos = origin.offset(w, h, 0);
+                // w now walks along Z (was X pre-fix) - see javadoc above.
+                BlockPos pos = origin.offset(0, h, w);
                 if (isTopOrBottomRow) {
                     realmLevel.setBlockAndUpdate(pos, ModBlocks.PRISMIUM_BLOCK.get().defaultBlockState());
                 } else if (isLeftOrRightColumn) {
@@ -186,7 +207,7 @@ public final class PrismiumTeleportHelper {
                 } else {
                     realmLevel.setBlockAndUpdate(pos,
                             ModBlocks.PRISMIUM_PORTAL.get().defaultBlockState()
-                                    .setValue(BlockStateProperties.HORIZONTAL_AXIS, Direction.Axis.X));
+                                    .setValue(BlockStateProperties.HORIZONTAL_AXIS, Direction.Axis.Z));
                 }
             }
         }
