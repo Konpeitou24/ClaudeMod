@@ -40,13 +40,26 @@ import net.minecraftforge.registries.RegistryObject;
  * files are valid Vorbis streams (44.1kHz mono) that decode cleanly.
  * <b>What this self-review cannot cover, unlike this mod's usual texture
  * self-review process</b>: whether the sounds actually sound good/fitting
- * once played - this sandbox has no audio output device. Genuinely
- * unverified until the repo owner hears them in-game; if either sound
- * feels off (too loud/quiet, wrong character, clips at Minecraft's own
- * mixing stage), that's the first thing to revisit next session, and the
- * synthesis parameters in the generation script are deliberately
- * commented per-component so they're easy to retune without starting
- * over.
+ * once played - this sandbox has no audio output device. The repo owner
+ * did listen (direct-chat session, same day) and reported the first
+ * version felt "flat"/monotonous, which lines up with a known limitation
+ * of simple additive/parametric synthesis. Two follow-up changes were
+ * made in response: (1) the synthesis itself was reworked to use
+ * detuned-unison oscillators, slow organic pitch jitter, mild waveshaping
+ * and a small algorithmic reverb instead of clean single sine waves (see
+ * {@code detuned_sweep}/{@code make_ir}/{@code apply_reverb} in the
+ * generation script); (2) per the repo owner's own suggestion, the
+ * synthesized chime layer was dropped entirely in favor of layering real
+ * vanilla {@code SoundEvent}s ({@code SoundEvents.AMETHYST_BLOCK_CHIME}
+ * on ignite, {@code SoundEvents.AMETHYST_BLOCK_RESONATE} at a lowered
+ * pitch on fizzle - see {@link com.claudemod.event.PrismiumPortalIgniteHandler}
+ * / {@link com.claudemod.event.PrismiumPortalFrameBreakHandler}) for
+ * genuine musical/tonal content a synthesizer can't easily fake, keeping
+ * the Python synthesis for the atmospheric whoosh/shimmer/crackle texture
+ * vanilla doesn't have an equivalent for. This mix-vanilla-and-synthesis
+ * approach is now a standing rule recorded in PROGRESS.md section 0.
+ * Still genuinely unverified whether this second pass reads better -
+ * that's for the next listen.
  */
 public class ModSounds {
 

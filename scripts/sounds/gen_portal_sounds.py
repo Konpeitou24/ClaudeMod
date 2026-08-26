@@ -1,7 +1,5 @@
 import numpy as np
 import wave
-import struct
-import subprocess
 import os
 
 SR = 44100
@@ -25,28 +23,35 @@ def write_wav(path, samples, sr=SR):
         w.setframerate(sr)
         w.writeframes(pcm.tobytes())
 
-def sine_sweep(dur, f_start, f_end, sr=SR):
-    t = np.linspace(0, dur, int(dur * sr), endpoint=False)
-    # exponential frequency glide (more natural sounding than linear for pitch sweeps)
-    k = (f_end / f_start) ** (t / dur)
-    freq = f_start * k
-    phase = 2 * np.pi * np.cumsum(freq) / sr
-    return np.sin(phase)
+def slow_jitter(n, depth, rate_hz, seed, sr=SR):
+    rng = np.random.default_rng(seed)
+    t = np.linspace(0, n / sr, n, endpoint=False)
+    out = np.zeros(n)
+    for i in range(3):
+        f = rate_hz * (0.6 + 0.8 * rng.random())
+        phase = rng.random() * 2 * np.pi
+        out += np.sin(2 * np.pi * f * t + phase)
+    out /= 3.0
+    return out * depth
 
-def chime_stack(dur, base_freq, n_partials, decay, sr=SR):
-    t = np.linspace(0, dur, int(dur * sr), endpoint=False)
-    out = np.zeros_like(t)
-    for i in range(1, n_partials + 1):
-        partial_freq = base_freq * i * (1.0 + 0.003 * i)  # slight inharmonicity, bell-like
-        amp = (1.0 / i) * np.exp(-decay * i * t)
-        out += amp * np.sin(2 * np.pi * partial_freq * t)
-    return out / np.max(np.abs(out) + 1e-9)
+def detuned_sweep(dur, f_start, f_end, seed, sr=SR, voices=3, detune_cents=9):
+    n = int(dur * sr)
+    t = np.linspace(0, dur, n, endpoint=False)
+    out = np.zeros(n)
+    for v in range(voices):
+        cents = (v - (voices - 1) / 2) * detune_cents
+        ratio = 2 ** (cents / 1200)
+        jitter = slow_jitter(n, depth=0.006, rate_hz=3.0 + v, seed=seed * 10 + v, sr=sr)
+        k = (f_end / f_start) ** (t / dur)
+        freq = f_start * k * ratio * (1.0 + jitter)
+        phase = 2 * np.pi * np.cumsum(freq) / sr
+        out += np.tanh(1.4 * np.sin(phase))
+    return out / voices
 
 def filtered_noise(dur, cutoff_lo, cutoff_hi, sr=SR, seed=0):
     rng = np.random.default_rng(seed)
     n = int(dur * sr)
     noise = rng.standard_normal(n)
-    # crude bandpass via FFT masking - fine for short one-shot SFX
     spec = np.fft.rfft(noise)
     freqs = np.fft.rfftfreq(n, 1 / sr)
     mask = (freqs >= cutoff_lo) & (freqs <= cutoff_hi)
@@ -66,76 +71,98 @@ def crackle_bursts(dur, n_bursts, sr=SR, seed=1):
         out[pos:pos + burst_len] += burst * rng.uniform(0.3, 0.8)
     return out / (np.max(np.abs(out)) + 1e-9)
 
+def make_ir(dur, seed, early_taps=4, sr=SR):
+    rng = np.random.default_rng(seed)
+    n = int(dur * sr)
+    ir = np.zeros(n)
+    for i in range(early_taps):
+        pos = int((0.005 + 0.02 * i) * sr)
+        if pos < n:
+            ir[pos] += (0.5 ** i) * rng.uniform(0.5, 1.0)
+    tail = rng.standard_normal(n) * np.exp(-np.linspace(0, 7, n))
+    spec = np.fft.rfft(tail)
+    freqs = np.fft.rfftfreq(n, 1 / sr)
+    spec = spec * (freqs < 6000)
+    tail = np.fft.irfft(spec, n)
+    ir += tail * 0.25
+    ir[0] += 1.0
+    return ir / (np.max(np.abs(ir)) + 1e-9)
+
+def apply_reverb(signal, ir, wet=0.22):
+    n = len(signal) + len(ir) - 1
+    nfft = 1
+    while nfft < n:
+        nfft *= 2
+    wet_sig = np.fft.irfft(np.fft.rfft(signal, nfft) * np.fft.rfft(ir, nfft), nfft)[:len(signal)]
+    wet_sig = wet_sig / (np.max(np.abs(wet_sig)) + 1e-9) * (np.max(np.abs(signal)) + 1e-9)
+    return signal * (1 - wet) + wet_sig * wet
+
 
 def make_ignite():
-    dur = 1.1
+    """Session follow-up (2026-08-26): dropped the synthesized chime
+    layer entirely - the repo owner pointed out that a synthesized bell
+    can't easily match a real, pitched musical texture, and suggested
+    mixing in vanilla sound sources whenever actual musical/tonal content
+    is needed. SoundEvents.AMETHYST_BLOCK_CHIME (played separately,
+    layered by two playSound calls rather than baked into this file - see
+    PrismiumPortalIgniteHandler) now carries that role. This file is just
+    the atmospheric whoosh+shimmer bed underneath it."""
+    dur = 1.15
     n = int(dur * SR)
-    # 1) rising pitch sweep - the "portal opening" whoosh
-    sweep = sine_sweep(dur, 140, 780) * fade(n, 0.05, 0.5)
-    sweep *= np.linspace(0.15, 0.55, n)
+    sweep = detuned_sweep(dur, 140, 780, seed=7) * fade(n, 0.05, 0.5)
+    sweep *= np.linspace(0.2, 0.55, n)
 
-    # 2) shimmering high-frequency noise swelling in alongside the sweep
     shimmer = filtered_noise(dur, 3500, 9000, seed=11)
-    shimmer *= np.linspace(0.0, 0.22, n) * fade(n, 0.3, 0.4)
-
-    # 3) crystalline chime stack near the end - the "gate now active" accent
-    chime_dur = 0.75
-    chime = chime_stack(chime_dur, 660, 6, 3.2)
-    chime_env = fade(len(chime), 0.01, 0.6)
-    chime *= chime_env * 0.35
-    chime_start = int(0.35 * SR)
-    chime_full = np.zeros(n)
-    end = min(n, chime_start + len(chime))
-    chime_full[chime_start:end] += chime[:end - chime_start]
+    shimmer *= np.linspace(0.0, 0.24, n) * fade(n, 0.3, 0.4)
 
     mix = np.zeros(n)
     mix[:len(sweep)] += sweep
     mix[:len(shimmer)] += shimmer
-    mix += chime_full
     mix *= fade(n, 0.02, 0.15)
+
+    ir = make_ir(0.35, seed=101)
+    mix = apply_reverb(mix, ir, wet=0.20)
+
     mix = mix / (np.max(np.abs(mix)) + 1e-9) * 0.9
     return mix
 
 
 def make_fizzle():
-    dur = 0.85
+    """Same rationale as make_ignite() - SoundEvents.AMETHYST_BLOCK_RESONATE
+    (played at a lower pitch, see PrismiumPortalFrameBreakHandler) now
+    supplies the musical/tonal 'closing' texture; this file is the
+    descending whoosh + glassy crackle bed underneath it."""
+    dur = 0.9
     n = int(dur * SR)
-    # 1) falling pitch sweep - the "portal collapsing" reverse whoosh
-    sweep = sine_sweep(dur, 700, 120) * fade(n, 0.02, 0.55)
+    sweep = detuned_sweep(dur, 700, 120, seed=17) * fade(n, 0.02, 0.55)
     sweep *= np.linspace(0.5, 0.05, n)
 
-    # 2) glassy/crystal crackle bursts - matches this mod's crystal theme
-    #    (SoundType.GLASS/AMETHYST is used across its Prismium blocks)
     crackle = crackle_bursts(dur, 14, seed=22)
-    crackle *= np.linspace(0.4, 0.15, n)
+    crackle *= np.linspace(0.42, 0.15, n)
 
-    # 3) short descending chime "un-ringing" as the frame goes dark
-    chime_dur = 0.5
-    chime = chime_stack(chime_dur, 520, 5, 5.5)
-    chime *= fade(len(chime), 0.005, 0.4) * 0.3
-    chime_full = np.zeros(n)
-    end = min(n, len(chime))
-    chime_full[:end] += chime[:end]
-
-    mix = sweep + crackle + chime_full
+    mix = sweep + crackle
     mix *= fade(n, 0.005, 0.2)
+
+    ir = make_ir(0.3, seed=202)
+    mix = apply_reverb(mix, ir, wet=0.18)
+
     mix = mix / (np.max(np.abs(mix)) + 1e-9) * 0.85
     return mix
 
 
-def analyze(path, samples):
+def analyze(name, samples):
     peak = float(np.max(np.abs(samples)))
     rms = float(np.sqrt(np.mean(samples ** 2)))
     dur = len(samples) / SR
-    print(f"{path}: duration={dur:.3f}s peak={peak:.3f} rms={rms:.4f} nan={np.isnan(samples).any()}")
+    print(f"{name}: duration={dur:.3f}s peak={peak:.3f} rms={rms:.4f} nan={np.isnan(samples).any()}")
 
 
 if __name__ == "__main__":
-    os.makedirs("/tmp/portal_sounds", exist_ok=True)
+    os.makedirs("/tmp/portal_sounds_v3", exist_ok=True)
     ignite = make_ignite()
     fizzle = make_fizzle()
     analyze("ignite", ignite)
     analyze("fizzle", fizzle)
-    write_wav("/tmp/portal_sounds/ignite.wav", ignite)
-    write_wav("/tmp/portal_sounds/fizzle.wav", fizzle)
+    write_wav("/tmp/portal_sounds_v3/ignite.wav", ignite)
+    write_wav("/tmp/portal_sounds_v3/fizzle.wav", fizzle)
     print("WAV files written")

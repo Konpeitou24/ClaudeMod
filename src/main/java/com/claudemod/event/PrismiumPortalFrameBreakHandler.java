@@ -6,7 +6,9 @@ import com.claudemod.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -149,10 +151,20 @@ public class PrismiumPortalFrameBreakHandler {
                     // here (see ModSounds' class javadoc) to match the
                     // ignite sound played on the way up. Played once per
                     // collapse (not per removed block) from roughly the
-                    // interior's center.
+                    // interior's center. Follow-up the same session:
+                    // layered with vanilla's AMETHYST_BLOCK_RESONATE at a
+                    // lowered pitch (the "settling down" counterpart to
+                    // AMETHYST_BLOCK_CHIME on ignite, see
+                    // PrismiumPortalIgniteHandler) for real musical/tonal
+                    // texture a pure synth can't easily match - see that
+                    // class's updated javadoc for the repo owner's
+                    // reasoning. Pitch randomized per play on both.
                     BlockPos soundPos = interior.get(interior.size() / 2);
+                    RandomSource random = level.getRandom();
                     level.playSound(null, soundPos, ModSounds.PRISMIUM_PORTAL_FIZZLE.get(),
-                            SoundSource.BLOCKS, 1.0F, 1.0F);
+                            SoundSource.BLOCKS, 1.0F, 0.95F + random.nextFloat() * 0.1F);
+                    level.playSound(null, soundPos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS,
+                            0.7F, 0.6F + random.nextFloat() * 0.15F);
                     return;
                 }
             }

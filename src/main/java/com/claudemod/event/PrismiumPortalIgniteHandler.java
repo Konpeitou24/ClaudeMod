@@ -7,7 +7,9 @@ import com.claudemod.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
+import net.minecraft.util.RandomSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
@@ -137,8 +139,25 @@ public class PrismiumPortalIgniteHandler {
         // Direct-chat session (2026-08-26): was SoundEvents.PORTAL_TRIGGER
         // (a reused vanilla sound) until the repo owner asked for an
         // original ignite sound - see ModSounds' class javadoc for how
-        // it was synthesized/self-reviewed.
-        serverLevel.playSound(null, clickedPos, ModSounds.PRISMIUM_PORTAL_IGNITE.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
+        // it was synthesized/self-reviewed. Follow-up the same session:
+        // the repo owner noted purely-synthesized audio tends to feel
+        // "flat"/monotonous and suggested mixing in vanilla sound sources
+        // whenever real musical/tonal content is wanted, rather than
+        // trying to synthesize a convincing bell from scratch. This now
+        // layers the mod's own atmospheric whoosh/shimmer bed together
+        // with vanilla's AMETHYST_BLOCK_CHIME (a real, pitched, recorded
+        // sound - thematically apt too, since AMETHYST-flavored sounds
+        // are already used elsewhere on Prismium blocks) as two separate
+        // playSound calls rather than trying to bake a vanilla sample
+        // into the synthesized file. Slight per-play pitch randomization
+        // on both, matching the standard vanilla convention (see e.g.
+        // most SoundEvents.*_STEP calls) so repeated triggers don't all
+        // sound identical.
+        RandomSource random = serverLevel.getRandom();
+        float pitch = 0.95F + random.nextFloat() * 0.1F;
+        serverLevel.playSound(null, clickedPos, ModSounds.PRISMIUM_PORTAL_IGNITE.get(), SoundSource.BLOCKS, 1.0F, pitch);
+        serverLevel.playSound(null, clickedPos, SoundEvents.AMETHYST_BLOCK_CHIME, SoundSource.BLOCKS, 0.8F,
+                0.9F + random.nextFloat() * 0.2F);
         event.setCanceled(true);
         event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
     }
