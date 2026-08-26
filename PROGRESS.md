@@ -3639,78 +3639,124 @@ push後、`fa41aa5`(ci: update built jar)→`7bb695f`(ci: update datapack valida
 - 【継続】PROGRESS.mdの肥大化(3600行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
 
 
+## 3BY. セッション#73(定期実行)で実装した内容: Issue #24(鉱脈が見当たらない)の実証的検証・クローズ + Issue #20(プリズミウムゲート)の一部修正 + v0.20.0リリース
+
+セッション開始時、`git fetch`で最新コミット(`dd68ee3` ci: update datapack validation results、直前は`40882d7`/`e7d6d1c`)を確認し、直近ビルドが成功していることを確認した(§2-4/§2-7のrunsページ手法ではなく、確立済みの`git fetch`ポーリング方式を最初から使用)。続けてGitHub Issue一覧を確認したところ、session 72の時点では存在しなかった新規Issue #24「鉱脈が見当たりません」(投稿者Konpeitou24、2026-08-26付近)を発見した。内容は「プリズミウムの鉱脈がオーバーワールドに見当たらない。珍しいだけなら閉じて構わないが、生成アルゴリズムを書き忘れているようなミスなら即座に修正してほしい、サバイバルで遊べないため」という趣旨。これをsession 72の申し送り(§5、旧版)にあった諸タスクより優先度が高いと判断し、最優先で着手した。
+
+### 3BY-1. Issue #24調査: コードレビューでは原因を特定できず
+
+`configured_feature/prismium_ore.json`・`placed_feature/prismium_ore_placed.json`・`forge/biome_modifier/add_prismium_ore.json`を精読したが、いずれも構文・スキーマ上の問題は見当たらなかった。特に`biomes`フィールドの`"#minecraft:is_overworld"`という単一文字列形式(配列でラップしない形)は、session相当の過去の修正(Issue #11対応、commit `9b1fab2`)で確立された「正しい」パターンと完全に一致しており、他の複数のbiome_modifierファイルでも同じパターンが使われ、既存のCIデータパック検証(`runGameTestServer`によるレジストリ読み込みテスト)でも一貫して成功していることを確認した。鉱脈の高さレンジ(Y=-64〜40、trapezoid分布)・本数(5本/チャンク、ダイヤモンド鉱石と同程度の頻度)にも不審な点はなかった。
+
+**ここで重要な認識に至った**: 既存のCIデータパック検証(`runGameTestServer`)は「レジストリが正しく読み込めること」しか証明しておらず、「実際に生成された地形にその鉱石ブロックが配置されること」は一度も検証されていなかった。これはこのサンドボックス環境にはできない検証(実際のワールド生成をシミュレートするには本物のMinecraft/Forgeクライアント環境が必要)だが、GitHub Actionsのランナー(フルネットワークアクセス、実際にForge/Minecraftをビルド・実行できる)なら可能なはずだと気づいた。
+
+### 3BY-2. 新設: 鉱石生成の実証的CI検証(`scripts/ci/verify_ore_generation.py`)
+
+- 標準ライブラリのみ(`struct`+`zlib`)で書かれた最小限のAnvilリージョンファイル(`.mca`)リーダーを新規作成。`runGameTestServer`のヘッドレスサーバーは(プレイヤーが1人も接続していなくても)ワールドスポーン地点を探すために実際にスポーン周辺のチャンクを強制生成し、`run/world/region/*.mca`に書き出す。このスクリプトは各チャンクのNBTペイロードを解凍し、生の文字列`claudemod:prismium_ore`/`claudemod:deepslate_prismium_ore`が含まれるかを検索する(フルNBTパーサーは実装せず、NBTの文字列タグが長さプレフィックス付きの生UTF-8であることを利用した部分文字列検索、外部pip依存無し)。
+- **自己検証**: このサンドボックスは本物のMinecraftワールドを生成できないため、`struct`+`zlib`で手作りした合成`.mca`ファイル(既知の文字列を埋め込んだもの)に対してスクリプトを実行し、埋め込んだ文字列を正しく検出できること・埋め込んでいない文字列を正しく「見つからない」と報告できることを確認した。実際のMinecraft生成ワールドに対する動作確認はCI側でのみ可能。
+- `build-and-notify.yml`に2つの新規ステップ(「Verify Prismium ore actually generates」「Publish ore generation verification results to repo」)を追加し、既存のデータパック検証ステップの直後、Discord通知ステップの前に実行されるよう配線。結果は`builds/last_ore_verification.txt`として、既存の`last_datapack_validation_summary.txt`と同じ「CIがリポジトリにコミットして次回サンドボックスセッションが`git fetch`だけで読める」中継パターンでリポジトリにコミットされる。診断目的のみでビルドの成否には影響しない(見つからなくても即座に「不在の証明」にはならないため)。
+
+### 3BY-3. 検証結果: 鉱脈は実際に生成されている(2回のCI実行で再現確認)
+
+pushした2回のCI実行(コミット`8b647be`・`171f52a`)いずれでも、走査した2025チャンク中およそ461〜468チャンクに`claudemod:prismium_ore`、629〜635チャンクに`claudemod:deepslate_prismium_ore`が実際に生成されていることを確認した(約4分の1〜3分の1のチャンクに存在、鉄鉱石に近い頻度という当初の設計通り)。**これにより「生成アルゴリズムを書き忘れている」という懸念は完全に否定された。**
+
+見つからなかった理由として最も可能性が高いのは、同じv0.19.0(session 72)で修正されたIssue #22(プリズミウムストーンが鉱石と紛らわしい)だと判断した。修正前のバージョンで探索していた場合、実際には鉱脈が近くにあっても周囲の石ブロックと視覚的に区別できず見落としていた可能性が高い。
+
+### 3BY-4. Issue #24をコメント付きでクローズ
+
+上記の実証結果と考察をまとめた日本語コメントを`ISSUES_TO_CLOSE.json`に追加してpushし、`build-and-notify.yml`の既存の中継ステップ(「Close flagged resolved issues」、Issue #11修正の際に整備済み)経由でクローズした。投稿者本人が本文中で「珍しいものであれば閉じて構わない」と明言していたことを踏まえた判断。最新版で見つからなければ再オープンするよう案内済み。
+
+### 3BY-5. Issue #20(プリズミウムゲート)の一部修正
+
+Issue #24対応と並行して、session 72から持ち越しだったIssue #20(プリズミウムゲートの5点の不具合報告)にも着手した。添付画像3枚は今回も閲覧できなかった(§3BX-1の制約、変化なし)ため、テキストの記述とコードレビューのみで対応した。
+
+- **`PrismiumPortalBlock`のプロパティ(`strength(-1.0f)`・`noCollission()`・`lightLevel(state -> 11)`・`noLootTable()`)は、WebSearchでバニラの`NetherPortalBlock`の実際のプロパティ(hardness -1、light level 11)と突き合わせた結果、完全に一致していることを確認した。** コード上は「クリエイティブで破壊できる」「発光しない」という報告と矛盾しており、原因を特定できなかった。Issue #20は該当コミット(`a1194e4`、フレーム破壊・当たり判定の直前の修正)より14.5時間後に投稿されているため、単純に古いビルドを見ていたという可能性は薄いように見えるが、念のため次回以降、報告者に最新版での再現を確認してもらう価値がある。
+- **「ゲートが縦に生成される」報告**についても、フレーム検出ロジック(`PrismiumPortalIgniteHandler#tryFrame`)は設計上常にY方向を高さとする縦長の矩形(バニラのネザーポータルと同じ)しか生成できない構造になっており、これが「バグ」なのか「期待していた見た目と違う」という意味なのか、画像なしでは判断できなかった。
+- **「触れていなくても1ブロック前を通過しただけでテレポートする」報告について、1つ具体的で説明可能な原因を特定・修正した**: `entityInside`はブロックの実際の見た目(2px厚の薄い膜、`getShape`が返す形状)や当たり判定(`getCollisionShape`、空)とは無関係に、そのブロック位置の**フルブロック(1x1x1)の空間**とエンティティの当たり判定が重なっただけで発火するというMinecraftのエンジンの仕組み(溶岩・サボテン・粉雪・バニラのネザーポータル自身も同じ仕組み)に気づいた。薄い視覚モデルにもかかわらずトリガー判定範囲はブロック1個分丸ごとだったため、見た目の膜に触れていなくてもテレポートしうる状態だった。`entityInside`内で、エンティティの実際の当たり判定と`getShape`が返す薄い箱(選択アウトライン用に既に定義済みだったもの)が重なっているかを追加でチェックするよう修正した。
+  - **トレードオフを新しいjavadocに明記した**: トリガー範囲を1/8ブロック厚のスライスまで絞ったことで、既存のjavadocで既に指摘されていた「エリトラや高速移動時に1tickで通過判定を取りこぼすリスク」が以前より高まった可能性がある。次回セッション以降、「通常の歩行速度でもゲートに反応しなくなった」という報告があれば、この修正が最初に疑うべき箇所。
+  - この修正は実機未検証(このサンドボックスではクライアントを起動できないため)。
+
+### 3BY-6. push・ビルド確認・リリース: v0.20.0
+
+3回に分けてpush(`git fetch origin main`で並行セッションの有無を都度確認):
+1. `8b647be` "Add empirical CI check for GitHub issue #24 (Prismium ore not found in survival)" - 単独で一発成功
+2. `01f6583`/`171f52a`(rebase後のハッシュ) "Fix GitHub issue #20 (partial)..." + "Close issue #24 with explanation..." - 2回目のpushで一度`non-fast-forward`により拒否された(CI自身が`ci: update ore generation verification results`をpushしていたため)。`git fetch`→`git rebase origin/main`で解消して再push、成功。プロキシ変数の変更は今回も不要だった。
+
+各pushについて`git fetch`ポーリングで実際のビルド結果を確認した:
+- 1回目のpush(`8b647be`)後: `ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`(461/629チャンク検出)の到着を確認。
+- 2回目のpush(`171f52a`)後: Issue #24クローズの中継(`ci: clear processed ISSUES_TO_CLOSE entries`)→`ci: update built jar`→`ci: update datapack validation results`(`status=ok`、エラーログにも新規の問題なし)→`ci: update ore generation verification results`(468/635チャンク検出、1回目とほぼ同じ結果で再現性を確認)の到着を確認。**通常ビルド・データパック検証・鉱石生成検証、すべて成功。**
+
+続けて`gradle.properties`を`0.19.0`→`0.20.0`に変更、`RELEASE_NOTES.md`に新規セクションを追加してリリースコミット・タグ`v0.20.0`をpush予定(本PROGRESS.md更新と合わせて本セクション末尾のコミットとして追う)。
+
+### 3BY-7. 今回の既知の限界・未検証事項(正直な記録)
+
+- Issue #20の残り4点(縦生成・クリエイティブ破壊・サバイバル破壊アニメーション・無発光)は未解決のまま。特に「クリエイティブで壊せる」「発光しない」はコード上の設定がバニラのネザーポータルと完全に一致しているにもかかわらず報告されており、原因不明という点で気がかりが残る。次回、報告者に最新版での再現有無を確認してもらうのが最も確実な次の一手。
+- `entityInside`のトリガー範囲を薄くした修正は実機未検証。トレードオフ(高速移動時の取りこぼしリスク増加)も未検証。
+- Issue #24はコード上・実証データ上「解決」と判断してクローズしたが、報告者本人による再確認(実際にプレイして見つかったかどうか)はまだない。
+- Issue #18(CuriosAPI対応)・#21(JEI互換性)は今回も未着手(session 72から継続、大型・前提Mod連携機能のため)。
+- 新設した`scripts/ci/verify_ore_generation.py`によるワールド生成の実証検証は、今回鉱石生成の確認に使ったのみで、Prism Realmの地形やその他の`worldgen`コンテンツ(プリズムの花・蔦・ブランブル等)には未適用。次回以降、同様の「本当に生成されているか分からない」懸念が出た際に転用できる。
+
+### 3BY-8. 議論したい論点・改善案
+
+- 【新規・重要】`scripts/ci/verify_ore_generation.py`の手法(実際に生成されたワールドデータをCI側で直接検証する)は、他の「実プレイ検証ゼロ」のワールド生成コンテンツ(Prism Realmの地形・専用鉱石・専用フローラ)にも応用できる可能性がある。汎用化(対象ブロックIDやリージョンディレクトリを引数で切り替えられるようにする、既に対応済み)して、次回以降の「新しいworldgenコンテンツを追加したら、そのCI検証も一緒に追加する」という習慣にする価値があるかもしれない。
+- 【継続】Issue #20の残り4点、特に「クリエイティブで破壊できる」「発光しない」は、コードが正しいのに再現するなら、こちらが把握していない別の要因(例えば別のMOD/データパックとの競合、実際にはユーザーが古いビルドを見ていた等)を疑う必要がある。次回、報告者に最新版での再確認を依頼する文面を用意しておくとよい。
+- 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+- 【継続】3機械の共通基底クラス抽出、段階的アプローチ(session 70 §3BV-9)。
+- 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
+- 【継続】PROGRESS.mdの肥大化(3700行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
+
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(セッション#72、定期実行、約1週間ぶりの再開)の最重要な新情報
+### 今回(セッション#73、定期実行)の最重要な新情報
 
-- **【最優先】Issue #19「詳細表示のバグ」(Wキー長押しで詳細パネルが表示されない)は、今回のコードレビューでは根本原因を特定できなかった。** `ItemDetailsOverlay#onScreenRenderPost`を`try/catch`で包み、初回例外発生時に`ClaudeMod.LOGGER.error(...)`でスタックトレースを記録するようにしたので、次回セッションはまずこの診断ログの有無を確認すること(ただしこのサンドボックスに実機ログを取得する手段は無いため、こんぺいとう氏本人にログの共有をお願いするのが最も確実)。§3BX-6に詳細な調査経緯を記録した。
-- **Issue #22(プリズミウムストーンが鉱石と紛らわしい)・#23(海面が高すぎる/海底が深すぎる/深層岩が欲しい)・#17(羽石の効果がわかりにくい)は、いずれもコード上の対応が完了しv0.19.0としてリリース済み。** 新ブロック`Prismium Deepstone`を追加し、プリズムレルムの海面をバニラ標準のY=62に、海底をY=-4からY=40まで浅く修正した。
-- **Issue #15(電力バグ)は、全コメント履歴を精読した結果、報告されていた不具合の大部分(2倍充電・ケーブル到達範囲・発電機のインベントリ欠如)が既に過去セッション(#55〜#58)で対応済みであり、報告者自身も「2倍充電は解消した」とコメント済みであることが判明した。** 唯一未確証なのは「GUIが機能していない」という古いコメント(session 58以前、燃料スロット追加前の状況を指している可能性が高い)。クローズはしていない(§3BX-2参照)。
-- **新たに発覚したGitHub Issue 7件(#17〜#23)は、いずれも2026-08-19(セッション#71と同日)に投稿されており、これまでのどのセッションも一度も見ていなかった。** 今回全件の本文を読み、#22/#23/#17に対応、#19は調査のみ、#20/#21/#18は今回未着手(詳細は下記)。
-- **スケジュール実行が約1週間(2026-08-19セッション#71→2026-08-26セッション#72)停止していたことが判明した。** 原因はこのセッションからは分からない。
-
-### 今回未着手のIssue(次回以降の検討課題)
-
-1. **Issue #20「プリズミウムゲートの仕様について」**: (a) ゲートが縦に生成されるバグ、(b) クリエイティブで破壊できてしまう、(c) サバイバルでも長押しで破壊アニメーションが出てしまう、(d) 光を発しない、(e) 触れていなくても近くを通っただけでテレポートすることがある、の5点の報告。添付画像3枚は本セッションから閲覧できなかった(§3BX-1参照)。コードレビューでは:
-   - (d)は`ModBlocks.PRISMIUM_PORTAL`に`.lightLevel(state -> 11)`が既に設定されており、コード上は光るはずだが、実際に光っていないという報告と矛盾する - バニラ側の光伝播やクライアント描画の問題か、あるいは報告時点が別バージョンだった可能性がある。
-   - (b)は「クリエイティブモードでは通常どんなブロックも硬度に関わらず左クリックで即座に破壊できる」というバニラの標準仕様である可能性が高く、バグではなく仕様である可能性が高い(要一次情報源確認)。
-   - (a)(c)(e)はコードレビューだけでは原因を特定できなかった。
-   次回、画像が確認できる状態になれば(こんぺいとう氏に会話内で再送してもらう等)最優先で調査すること。
-2. **Issue #18「CuriosAPI対応」**: チャーム類にCuriosAPI経由の専用スロットを追加してほしいという要望。CuriosAPIが存在する場合のみ有効化する、というオプション依存の実装が求められている。新規の前提Mod連携(このMod初めての「他Modとの相互運用」機能)であり、1セッションでローカルビルド検証なしに安全に実装できるか要検討。次回以降、まずCuriosAPIのAPIドキュメント調査から始めるのが良さそう。
-3. **Issue #21「JEI互換性について」**: プリズミウムの新規加工チェーン(粉砕・精錬・圧縮)のレシピをJEIに表示してほしいという要望。同じく新規の前提Mod連携で、JEIのカスタムレシピカテゴリ実装(`IRecipeCategory`等)が必要。CuriosAPI同様、規模の大きい機能として次回以降に持ち越し。
+- **【解決】Issue #24(鉱脈が見当たらない)は、CIに新設した実証的検証(`scripts/ci/verify_ore_generation.py`、§3BY-2/3BY-3)により「生成アルゴリズムは正しく動作している」ことを2回のCI実行で確認し、説明コメント付きでクローズ済み。** 見つからなかった主因はIssue #22(v0.19.0で修正済み)によるプリズミウムストーンとの視覚的混同である可能性が高いと分析した。報告者本人の再確認はまだ無いので、もし再び「見つからない」と報告があれば要注意(その場合はこの分析自体が誤っていた可能性を検討すること)。
+- **【一部解決】Issue #20(プリズミウムゲート)の5点のうち、「触れていなくてもテレポートする」問題を1つ具体的に修正した(§3BY-5)。** 残り4点(縦生成・クリエイティブ破壊・サバイバル破壊アニメーション・無発光)はコードレビューでは原因不明のまま。特にクリエイティブ破壊と無発光は、コードの設定(バニラのネザーポータルと完全一致)と矛盾する報告であり、次回は報告者に最新版(v0.20.0以降)での再現有無を確認してもらうことを最優先で検討すること。
+- **【新規】鉱石生成の実証的CI検証の仕組みが確立された。** 他のworldgenコンテンツ(Prism Realmの地形・専用鉱石・専用フローラ等)にも「本当に生成されているか」を実証的に確認する手段として転用できる。
 
 ### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.19.0(セッション#72、今回)。次回はここから1セッション目。**
-1. **【最優先・新規】Issue #19(詳細表示のバグ)の根本原因調査。今回追加した診断ログ(`ItemDetailsOverlay`)の結果を確認できないか試すこと。**
-2. **【新規】Issue #20(プリズミウムゲート)の調査。可能であれば添付画像の閲覧方法を確保すること(こんぺいとう氏に会話内で画像を再送してもらう等、§3BX-9参照)。**
-3. 【新規】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討(いずれも大型・前提Mod連携機能)。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.20.0(セッション#73、今回)。次回はここから1セッション目。**
+1. **【最優先・新規】Issue #20の残り4点(縦生成・クリエイティブ破壊・サバイバル破壊アニメーション・無発光)。次回セッションでもし添付画像が閲覧できる手段が確保できれば最優先で調査すること。閲覧できない場合、報告者に最新版での再現有無をコメントで尋ねる文面を検討する価値がある(ただしこのサンドボックスにはIssueへのコメントのみを行う中継の仕組みは無く、現状クローズとセットの`ISSUES_TO_CLOSE.json`しか無い点に注意 - コメントだけしたい場合は新しい中継の仕組みが必要かもしれない)。**
+2. **【継続・新規】Issue #19(詳細表示のバグ)の根本原因調査。session 72で追加した診断ログ(`ItemDetailsOverlay`)の結果を確認できないか試すこと。**
+3. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討(いずれも大型・前提Mod連携機能)。
 4. 【継続・ユーザー直接要望】青白いブロック追加、Prism Realmの巨大山岳地帯+ボス構造物(session 70から継続、こんぺいとう氏は緊急度低いと明言)。
-5. 【継続】今回追加したPrismium Deepstoneおよびプリズムレルムの海面・海底変更について、実機フィードバックが無いか確認すること(既存セーブデータには新しい地形は反映されない点に注意 - フラットワールド生成は新規チャンクにのみ適用される)。
-6. 【継続】今回追加した羽石のアクションバーメッセージが実際に読みやすいか確認すること(§3BX-5、着地直後はアクションバーを見ていないプレイヤーが多い可能性がある)。
+5. 【継続】session 72で追加したPrismium Deepstoneおよびプリズムレルムの海面・海底変更について、実機フィードバックが無いか確認すること。
+6. 【継続】羽石のアクションバーメッセージが実際に読みやすいか確認すること。
 7. 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラスへの抽出を段階的アプローチ(session 70 §3BV-9参照)で検討する価値がある。
-8. 【継続】Issue #15は大部分コード上対応済みと判断されるが、Issueとしては開いたまま。クローズすべきかどうかの方針を検討すること(投稿者本人の確認を待つべきか、コード対応をコメントで報告すべきか等)。
-9. 【継続】既存Issueを確認する際は、本文だけでなく全コメント(GitHubの埋め込みJSONで`__typename":"IssueComment"`のもの)を時系列で読むことを標準手順にすること(§3BX-9、Issue #15で最新コメントを見落とすと状況を誤解しかねないことが今回判明した)。
-10. 【継続】`api.github.com`への到達性(web_fetch経由/直接とも)は今回はAtomフィード+HTMLスクレイピングのみで完結し確認しなかった。
-11. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと(session 69 §3BU-8参照)。
-12. 【継続・優先度は下げてよい】既存GUI5種のSWAPキー配列範囲外アクセス懸念(§3BT-1、恐らく誤りだった可能性が高いという再評価が session 68 で出ている)。
-13. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている: Prismium Deepstone/プリズムレルム地形変更・羽石メッセージ(session 72、今回)、Alloy Rapier(session 71)、Compressor(session 70)、Warhammer(session 69)、Smelter(session 68)、Geyser(session 66)、Magnet Charm(session 65)、Snare(session 64)、ItemDetailsOverlay(session 62)、Pulse Charm(session 63)、Drifter(session 61)、Sentinel(session 59)、GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色(session 57)、Portalの見た目・当たり判定(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
-14. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
-15. Prismium Portalの片道問題はsession 53の`ensureReturnPortal`で対応済みだが実機未検証のまま(継続)。
-16. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式(HTMLの`<title>`/`og:description`メタタグ、および`__typename":"IssueComment"`を含む埋め込みJSONから本文・コメントを読む)を使うこと。**画像添付URL(`github.com/user-attachments/assets/...`)はこのサンドボックスから閲覧できない(§3BX-1、新規判明の制約)。**
-17. 【継続】worldgen/レジストリ系のJSONやクライアント専用APIを書く/直す際は、必ず一次情報・実例で裏取りしてから確定させること。
-18. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと(ありふれた名前の再利用は避ける)。パイプで終わるコマンドを`&&`チェーンの成否判定に使わないこと。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
-19. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#15・#16・#17〜#23は全て投稿者`Konpeitou24`本人だった。
-20. 【継続】リリース(v0.19.0等)の中身を実際にダウンロードして展開しての検証はまだ一度もしていない。`/releases`一覧ページ・タグ個別ページでの存在確認とビルドCIの成功で十分と割り切ってよい。
-21. 【継続、最重要度は維持】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと(今回のセッションはまさにその蓄積されたフィードバックへの対応回だった)。
-22. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。既存のテキストに対する文字列の完全一致置換+末尾への新規キー追記という最小差分の方法を使うこと。
-23. 【継続】新規のimportミスをpush前に自己チェックする習慣(今回、`ItemDetailsOverlay.java`への`import com.claudemod.ClaudeMod;`追加時に重複importを一度作ってしまい、pushの直前に気付いて修正した - 完全に見落としていたわけではないが、次回以降も引き続き注意すること)。
-24. 【継続】Prismium Drifterのレンダラーが汎用`MobRenderer`を継承したことで、バニラSquidの遊泳回転アニメーションが再現されていない可能性がある(セッション#61、未検証のまま継続)。
-25. 【継続・低優先度】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま(session 66から継続)。
+8. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること。
+9. 【新規・提案】`scripts/ci/verify_ore_generation.py`のような「CI側で実際のワールドデータを検証する」手法を、他のworldgenコンテンツ(Prism Realmの地形・フローラ等)にも展開できないか検討すること(§3BY-8)。
+10. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか、時間があれば試すこと。
+11. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている: Prismium Portal(entityInsideの薄いトリガー修正、session 73、今回)、Prismium Deepstone/プリズムレルム地形変更・羽石メッセージ(session 72)、Alloy Rapier(session 71)、Compressor(session 70)、Warhammer(session 69)、Smelter(session 68)、Geyser(session 66)、Magnet Charm(session 65)、Snare(session 64)、ItemDetailsOverlay(session 62)、Pulse Charm(session 63)、Drifter(session 61)、Sentinel(session 59)、GeneratorのGUI燃料スロット(session 58)、Chronoflameの針配色(session 57)、Portalの見た目・当たり判定(session 56)。**個別の詳細は各セッションの§3を参照。反応があった項目から個別に切り出して対応すること。**
+12. `EnergyPushHelper.pushThroughNetwork`(および`visualizeFlow`)のネットワークトポロジーキャッシュ化(継続、複数セッションで見送り)。
+13. GitHub Issue状態の確認は`curl -s -L -A "Mozilla/5.0 ..." "github.com/<owner>/<repo>/issues/<番号>"`方式を使うこと。画像添付URLはこのサンドボックスから閲覧できない(継続、変化なし)。
+14. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`をローカルに設定すること(`ClaudeMod Agent <konpeitou-agent@users.noreply.github.com>`)。
+15. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。今回確認した#7・#9・#15〜#24は全て投稿者`Konpeitou24`本人だった。
+16. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
+17. 【継続】実プレイ検証ゼロの装備・ブロック・ディメンション機能・MOB・UI要素・機械が積み上がり続けている。ユーザー側でのプレイフィードバックを今後も最優先で拾うこと。
+18. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
 
 ### 議論したい論点・改善案
 
-- 【新規・重要】スケジュール実行の約1週間の停止(§3BX-9)。
-- 【新規】GitHub Issue添付画像が閲覧できない制約への対処法(§3BX-9)。
-- 【新規】既存Issueは全コメントを時系列で読むことを標準化する(§3BX-9)。
+- 【新規・重要】CI側での実証的ワールド生成検証(`verify_ore_generation.py`)の他コンテンツへの展開(§3BY-8)。
+- 【新規】Issue #20の残り4点がコード上の設定と矛盾する報告である点(§3BY-7、§5上部)。
 - 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
 - 【継続】3機械の共通基底クラス抽出、段階的アプローチ(session 70 §3BV-9)。
 - 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
 - 【継続】`LivingEntity#knockback`のMojangマッピング一次ソース確認。
-- 【継続】既存GUI5種のSWAPキー懸念は恐らく誤りだった可能性が高いという再評価。
 - 【継続】ロードマップ項目6(新ブロック/ギミック)の「トラップルーム」構想は持ち越し。
-- 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手(今回3700行超に増加)。
+- 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手(今回3800行超に増加)。
 
 ### コミット/プッシュ状況
 
-セッション#72(定期実行)は以下のコミットをpush:
-1. `b31129f` Fix GitHub issues #22/#23: remove ore-like flecks from Prismium Stone, add Prismium Deepstone and rebalance Prism Realm sea level/ocean depth
-2. `de18d9f` Fix GitHub issue #17 (Featherstone feedback) and add diagnostics for issue #19 (details overlay)
-3. (このPROGRESS.md更新およびv0.19.0リリースコミット+タグ`v0.19.0`は本セクション末尾のコミットとして追ってpushする)
+セッション#73(定期実行)は以下のコミットをpush:
+1. `8b647be` Add empirical CI check for GitHub issue #24 (Prismium ore not found in survival)
+2. `01f6583`(rebase後) Fix GitHub issue #20 (partial): stop Prismium Portal teleporting entities that never touched the visible membrane
+3. `171f52a`(rebase後) Close issue #24 with explanation: empirical CI check confirms Prismium ore does generate
+4. (このPROGRESS.md更新およびv0.20.0リリースコミット+タグ`v0.20.0`は本セクション末尾のコミットとして追ってpushする)
 
-push前にそれぞれ`git fetch origin main`で並行セッションの有無を確認し、いずれも並行セッション無しで一発成功(プロキシ変数の変更は不要だった)。push後、`fa41aa5`(ci: update built jar)→`7bb695f`(ci: update datapack validation results、`status=ok commit=de18d9f...`)の到着をAtomフィードで確認済み。**通常ビルド・データパック検証とも成功。**
+push前にそれぞれ`git fetch origin main`で並行セッション/CI自動コミットの有無を確認。2回目のpushは一度`non-fast-forward`で拒否されたが、`git rebase origin/main`で解消して再pushし成功(プロキシ変数の変更は不要だった)。push後、`git fetch`ポーリングで各回とも`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`の到着を確認した。**通常ビルド・データパック検証・鉱石生成検証、すべて成功。**
 
-本PROGRESS.md更新+v0.19.0リリースコミット(`3ed81e5`)についても、push後に`ci: update built jar`→`ci: update datapack validation results`(`status=ok commit=3ed81e5...`)の到着をAtomフィードで確認した。**通常ビルド・データパック検証とも成功。** `release.yml`起動によるv0.19.0のGitHub Release公開も`/releases/tag/v0.19.0`への直接curlでHTTP 200を確認した。**v0.19.0リリースも含め、今回のビルド・データパック検証は全てCI上で成功した。**
+本PROGRESS.md更新+v0.20.0リリースコミットについても、push後に同様の確認を行う予定。
 
 ### 通知状況
 
