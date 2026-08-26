@@ -7,7 +7,6 @@ import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModFeatures;
 import com.claudemod.registry.ModItems;
 import com.claudemod.registry.ModMenuTypes;
-import com.claudemod.registry.ModSounds;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
@@ -38,7 +37,6 @@ public class ClaudeMod {
         ModItems.register(modEventBus);
         ModCreativeTabs.register(modEventBus);
         ModMenuTypes.register(modEventBus);
-        ModSounds.register(modEventBus);
 
         LOGGER.info("ClaudeMod initializing - {}", MOD_ID);
     }

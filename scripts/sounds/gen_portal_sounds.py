@@ -1,3 +1,24 @@
+"""ABANDONED for Prismium Portal (2026-08-26, direct-chat session): three
+rounds of synthesized ignite/fizzle sounds using this script all got
+rejected on listen ("flat"/monotonous, then "way too loud"/"goofy"). The
+repo owner's own diagnosis: a pitch-swept sine wave, even layered and
+detuned, is inherently the classic cartoon "boioioing" sound, and fighting
+that with more DSP wasn't worth it - PrismiumPortalIgniteHandler and
+PrismiumPortalFrameBreakHandler were rewritten to layer real vanilla
+SoundEvents (SoundEvents.PORTAL_TRIGGER/AMETHYST_BLOCK_RESONATE/
+CONDUIT_ACTIVATE for ignite, CONDUIT_DEACTIVATE/AMETHYST_CLUSTER_BREAK/
+AMETHYST_BLOCK_RESONATE for fizzle) instead, and the ModSounds registry
+plus the .ogg files this script produced were deleted.
+
+Left in the repo (not deleted) as a starting point for a *future* sound
+that might actually need synthesis rather than a pitch-swept whoosh -
+e.g. something with no close vanilla equivalent, or where the goal isn't
+"realistic" but a deliberately alien/electronic texture that a sine sweep
+might actually suit. The lesson for next time: prefer vanilla layering by
+default (per PROGRESS.md session 0's audio rule) and only reach for this
+kind of synthesis when nothing built-in fits, not as the first attempt.
+"""
+
 import numpy as np
 import wave
 import os

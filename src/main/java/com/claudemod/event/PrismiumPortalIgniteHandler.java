@@ -3,7 +3,6 @@ package com.claudemod.event;
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModItems;
-import com.claudemod.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -136,29 +135,30 @@ public class PrismiumPortalIgniteHandler {
                     3);
         }
 
-        // Direct-chat session (2026-08-26): was SoundEvents.PORTAL_TRIGGER
-        // (a reused vanilla sound) until the repo owner asked for an
-        // original ignite sound - see ModSounds' class javadoc for how
-        // it was synthesized/self-reviewed, then revised twice more the
-        // same session after listening: first for feeling "flat" (fixed
-        // with richer synthesis + a layered vanilla sound for genuine
-        // musical content), then again for being "way too loud" and
-        // "goofy, doesn't fit the mod's mood". The second complaint
-        // pointed at AMETHYST_BLOCK_CHIME itself - vanilla's bright,
-        // music-box-like twinkle used for a *growing* crystal cluster,
-        // too playful/cute for a dimensional gate - so it was swapped for
-        // the deeper, more ambient AMETHYST_BLOCK_RESONATE (same family,
-        // no bell-like "ding") and both volumes were cut substantially so
-        // this stays a subtle background cue rather than the loudest
-        // thing in the mix. Pitch randomized per play on both, matching
-        // the standard vanilla convention (see e.g. most
-        // SoundEvents.*_STEP calls) so repeated triggers don't all sound
-        // identical.
+        // Direct-chat session (2026-08-26): went through three rounds of
+        // an original, Python-synthesized ignite sound (see git history /
+        // PROGRESS.md session 0's audio rule for the earlier attempts) -
+        // "flat", then "way too loud"/"goofy" even after a fix pass. The
+        // repo owner's own diagnosis on the third listen: a single
+        // pitch-swept sine wave (even layered/detuned) is inherently the
+        // classic cartoon "boioioing" sound, and the pragmatic move is to
+        // stop fighting that and build the sound entirely out of layered
+        // *vanilla* SoundEvents instead - real, well-produced game audio,
+        // no synthesis. This restores SoundEvents.PORTAL_TRIGGER (the
+        // original sound this class used before any of the synthesis
+        // attempts - it was never actually the problem) as the base
+        // "whoosh", layered with two quiet accents for a
+        // crystal/ancient-structure color: AMETHYST_BLOCK_RESONATE (this
+        // mod's established amethyst-family sound language) and
+        // CONDUIT_ACTIVATE (a deep "structure powering on" swell). Pitch
+        // randomized per layer, matching standard vanilla convention.
         RandomSource random = serverLevel.getRandom();
-        float pitch = 0.95F + random.nextFloat() * 0.1F;
-        serverLevel.playSound(null, clickedPos, ModSounds.PRISMIUM_PORTAL_IGNITE.get(), SoundSource.BLOCKS, 0.6F, pitch);
-        serverLevel.playSound(null, clickedPos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 0.4F,
+        serverLevel.playSound(null, clickedPos, SoundEvents.PORTAL_TRIGGER, SoundSource.BLOCKS, 1.0F,
+                0.9F + random.nextFloat() * 0.2F);
+        serverLevel.playSound(null, clickedPos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 0.35F,
                 1.0F + random.nextFloat() * 0.15F);
+        serverLevel.playSound(null, clickedPos, SoundEvents.CONDUIT_ACTIVATE, SoundSource.BLOCKS, 0.25F,
+                0.95F + random.nextFloat() * 0.1F);
         event.setCanceled(true);
         event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
     }

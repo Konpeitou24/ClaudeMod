@@ -2,7 +2,6 @@ package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModBlocks;
-import com.claudemod.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -147,25 +146,31 @@ public class PrismiumPortalFrameBreakHandler {
                         level.removeBlock(interiorPos, false);
                     }
                     // Direct-chat session (2026-08-26): the collapse used
-                    // to be silent - added an original "fizzle" sound
-                    // here (see ModSounds' class javadoc), revised twice
-                    // more the same session after listening (see
-                    // PrismiumPortalIgniteHandler's updated javadoc for
-                    // the full story - felt "flat" first, then "way too
-                    // loud"/"goofy" on the follow-up). Played once per
-                    // collapse (not per removed block) from roughly the
-                    // interior's center, layered with vanilla's
-                    // AMETHYST_BLOCK_RESONATE at a lowered pitch (the
-                    // "settling down" counterpart to the same event at a
-                    // normal-ish pitch on ignite) at a substantially
-                    // quieter volume than the first two passes. Pitch
-                    // randomized per play on both.
+                    // to be silent, then went through the same three
+                    // rounds of Python-synthesized "fizzle" sound as
+                    // PrismiumPortalIgniteHandler's ignite sound (see that
+                    // class's javadoc for the full story). Same
+                    // conclusion: stop fighting sine-wave synthesis and
+                    // layer vanilla SoundEvents instead. This is the
+                    // "power down" counterpart to ignite's layering -
+                    // CONDUIT_DEACTIVATE (a deep magical power-down swell,
+                    // the mirror of CONDUIT_ACTIVATE on ignite) as the
+                    // base, with AMETHYST_CLUSTER_BREAK (a real crystal
+                    // shatter, ties into this mod's amethyst-family sound
+                    // language and actually sounds like something
+                    // breaking, unlike a synthesized sweep) and
+                    // AMETHYST_BLOCK_RESONATE at a low pitch for the
+                    // "settling down" tail. Played once per collapse (not
+                    // per removed block) from roughly the interior's
+                    // center. Pitch randomized per layer.
                     BlockPos soundPos = interior.get(interior.size() / 2);
                     RandomSource random = level.getRandom();
-                    level.playSound(null, soundPos, ModSounds.PRISMIUM_PORTAL_FIZZLE.get(),
-                            SoundSource.BLOCKS, 0.55F, 0.95F + random.nextFloat() * 0.1F);
-                    level.playSound(null, soundPos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS,
-                            0.35F, 0.6F + random.nextFloat() * 0.15F);
+                    level.playSound(null, soundPos, SoundEvents.CONDUIT_DEACTIVATE, SoundSource.BLOCKS, 0.8F,
+                            0.9F + random.nextFloat() * 0.2F);
+                    level.playSound(null, soundPos, SoundEvents.AMETHYST_CLUSTER_BREAK, SoundSource.BLOCKS, 0.4F,
+                            0.8F + random.nextFloat() * 0.2F);
+                    level.playSound(null, soundPos, SoundEvents.AMETHYST_BLOCK_RESONATE, SoundSource.BLOCKS, 0.3F,
+                            0.55F + random.nextFloat() * 0.15F);
                     return;
                 }
             }
