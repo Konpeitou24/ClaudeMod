@@ -185,6 +185,42 @@ jobs:
           git diff --cached --quiet || git commit -m "ci: update datapack validation results [skip ci]"
           git push
 
+      - name: Verify Prismium ore actually generates (GitHub issue #24)
+        # runGameTestServer force-generates spawn-area chunks (it has to, to
+        # find a valid world spawn point) even though no player ever
+        # connects, and writes them to run/world/region/*.mca same as any
+        # real dedicated server would. gradlew build only compiles/packages
+        # and the datapack-validation step above only proves the worldgen
+        # JSON *parses* into valid registry entries - neither one proves the
+        # ore feature actually places blocks into generated terrain. This
+        # step closes that gap with a real (if small-sample) empirical
+        # check: scripts/ci/verify_ore_generation.py decompresses every
+        # chunk in the overworld region files this run produced and searches
+        # for the raw NBT string "claudemod:prismium_ore" /
+        # "claudemod:deepslate_prismium_ore". Diagnostic only (always exits
+        # 0) - see the script's docstring and PROGRESS.md for details.
+        if: steps.build.outcome == 'success' && steps.datapack.outcome != 'skipped'
+        run: |
+          set +e
+          OUT=$(python3 scripts/ci/verify_ore_generation.py run/world/region 2>&1)
+          echo "$OUT"
+          {
+            echo "commit=${{ github.sha }}  run=${{ github.run_id }}"
+            echo "$OUT"
+          } > ore_verification_result.txt
+          set -e
+
+      - name: Publish ore generation verification results to repo
+        if: steps.build.outcome == 'success' && steps.datapack.outcome != 'skipped'
+        run: |
+          mkdir -p builds
+          cp ore_verification_result.txt builds/last_ore_verification.txt 2>/dev/null || echo "(no result produced)" > builds/last_ore_verification.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add builds/last_ore_verification.txt
+          git diff --cached --quiet || git commit -m "ci: update ore generation verification results [skip ci]"
+          git push
+
       - name: Notify Discord
         if: always()
         env:
