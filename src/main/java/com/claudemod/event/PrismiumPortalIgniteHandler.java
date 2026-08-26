@@ -3,10 +3,10 @@ package com.claudemod.event;
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModItems;
+import com.claudemod.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
@@ -134,7 +134,11 @@ public class PrismiumPortalIgniteHandler {
                     3);
         }
 
-        serverLevel.playSound(null, clickedPos, SoundEvents.PORTAL_TRIGGER, SoundSource.BLOCKS, 1.0F, 1.0F);
+        // Direct-chat session (2026-08-26): was SoundEvents.PORTAL_TRIGGER
+        // (a reused vanilla sound) until the repo owner asked for an
+        // original ignite sound - see ModSounds' class javadoc for how
+        // it was synthesized/self-reviewed.
+        serverLevel.playSound(null, clickedPos, ModSounds.PRISMIUM_PORTAL_IGNITE.get(), SoundSource.BLOCKS, 1.0F, 1.0F);
         event.setCanceled(true);
         event.setCancellationResult(net.minecraft.world.InteractionResult.SUCCESS);
     }

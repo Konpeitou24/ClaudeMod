@@ -2,9 +2,11 @@ package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModBlocks;
+import com.claudemod.registry.ModSounds;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.level.block.Block;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
@@ -142,6 +144,15 @@ public class PrismiumPortalFrameBreakHandler {
                     for (BlockPos interiorPos : interior) {
                         level.removeBlock(interiorPos, false);
                     }
+                    // Direct-chat session (2026-08-26): the collapse used
+                    // to be silent - added an original "fizzle" sound
+                    // here (see ModSounds' class javadoc) to match the
+                    // ignite sound played on the way up. Played once per
+                    // collapse (not per removed block) from roughly the
+                    // interior's center.
+                    BlockPos soundPos = interior.get(interior.size() / 2);
+                    level.playSound(null, soundPos, ModSounds.PRISMIUM_PORTAL_FIZZLE.get(),
+                            SoundSource.BLOCKS, 1.0F, 1.0F);
                     return;
                 }
             }

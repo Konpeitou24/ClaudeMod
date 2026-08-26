@@ -200,5 +200,7 @@
     "key.categories.claudemod": "ClaudeMod",
     "key.claudemod.show_details": "アイテム詳細を表示",
     "tooltip.claudemod.hold_for_details": "%sを押しながら詳細を表示",
-    "tooltip.claudemod.no_details": "この項目についての詳しい説明はまだありません。"
+    "tooltip.claudemod.no_details": "この項目についての詳しい説明はまだありません。",
+    "subtitle.claudemod.prismium_portal.ignite": "プリズミウムの門が唸りを上げて起動する",
+    "subtitle.claudemod.prismium_portal.fizzle": "プリズミウムの門が沈黙する"
 }

@@ -200,5 +200,7 @@
     "key.categories.claudemod": "ClaudeMod",
     "key.claudemod.show_details": "Show Item Details",
     "tooltip.claudemod.hold_for_details": "Hold %s for details",
-    "tooltip.claudemod.no_details": "No further details for this item yet."
+    "tooltip.claudemod.no_details": "No further details for this item yet.",
+    "subtitle.claudemod.prismium_portal.ignite": "The Prismium Gate hums to life",
+    "subtitle.claudemod.prismium_portal.fizzle": "The Prismium Gate falls silent"
 }
