@@ -1,0 +1,8 @@
+{
+    "feature": "claudemod:prismium_stone_transition",
+    "placement": [
+        {
+            "type": "minecraft:biome"
+        }
+    ]
+}
