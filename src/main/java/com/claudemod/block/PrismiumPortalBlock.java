@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
 import net.minecraft.world.phys.shapes.VoxelShape;
@@ -167,9 +168,35 @@ public class PrismiumPortalBlock extends Block {
                 : Block.box(7.0D, 0.0D, 0.0D, 9.0D, 16.0D, 16.0D);
     }
 
+    /**
+     * GitHub issue #20 (2026-08-19, "触れていなくても1ブロック前を通過し
+     * ただけでディメンションに飛ばされるときがある" - teleported just by
+     * passing near the gate without touching it): {@link #entityInside} is
+     * invoked by the engine for any entity whose bounding box intersects
+     * this block's full 1x1x1 cell, independent of {@link #getCollisionShape}
+     * (empty here) or {@link #getShape} (the thin visual box below) - the
+     * same mechanism vanilla relies on for lava/cactus/powder-snow/its own
+     * nether portal. Since this block's model is only a 2px-deep membrane
+     * (1/8 of the cell), a player could previously trigger teleportation by
+     * clipping the mostly-empty remainder of the full cell without ever
+     * visually touching the glowing membrane, which matches the report
+     * closely. Fixed by requiring the entity's actual bounding box to
+     * overlap {@link #getShape}'s thin box (the same box already used for
+     * the selection/pick outline) before teleporting, so the trigger volume
+     * matches what the player can actually see. <b>Unverified</b> in an
+     * actual client/server like the rest of this class - a plausible
+     * explanation grounded in how {@code entityInside} is documented/used
+     * elsewhere in vanilla, not a confirmed root-cause from a debugger or
+     * log.
+     */
     @Override
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (level.isClientSide) {
+            return;
+        }
+        VoxelShape thinShape = getShape(state, level, pos, CollisionContext.empty());
+        AABB thinBox = thinShape.bounds().move(pos);
+        if (!entity.getBoundingBox().intersects(thinBox)) {
             return;
         }
         if (entity.isOnPortalCooldown()) {
