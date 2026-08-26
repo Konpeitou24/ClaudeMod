@@ -160,9 +160,4 @@ public class PrismiumWraithEntity extends AbstractPrismiumMonster {
         return SoundEvents.VEX_DEATH;
     }
 
-    @Nullable
-    @Override
-    protected SoundEvent getStepSound() {
-        return SoundEvents.WITHER_SKELETON_STEP;
-    }
 }
