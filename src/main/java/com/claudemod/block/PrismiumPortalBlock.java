@@ -302,7 +302,7 @@ public class PrismiumPortalBlock extends Block {
      * fixing the identical default.
      */
     @Override
-    protected boolean canBeReplaced(BlockState state, Fluid fluid) {
+    public boolean canBeReplaced(BlockState state, Fluid fluid) {
         return false;
     }
 
