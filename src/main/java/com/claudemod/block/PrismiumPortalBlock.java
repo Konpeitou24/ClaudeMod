@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.EnumProperty;
+import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.shapes.CollisionContext;
 import net.minecraft.world.phys.shapes.Shapes;
@@ -257,6 +258,52 @@ public class PrismiumPortalBlock extends Block {
         }
         level.addParticle(ParticleTypes.PORTAL, x, y, z,
                 (random.nextDouble() - 0.5D) * 0.5D, -random.nextDouble(), (random.nextDouble() - 0.5D) * 0.5D);
+    }
+
+    /**
+     * Direct-chat session (2026-08-27): the repo owner confirmed the
+     * Creative-punch fix ({@link com.claudemod.event.PrismiumPortalIndestructibleHandler})
+     * works, but reported a second, previously-unnoticed way to destroy
+     * the portal: simply pouring water onto/into it makes it vanish, with
+     * no drop and (per the same report) no sound.
+     *
+     * <p><b>Root cause (verified via WebSearch against {@code
+     * BlockBehaviour}'s 1.20.x method list, not just code reading)</b>:
+     * {@link net.minecraft.world.level.block.state.BlockBehaviour#canBeReplaced(BlockState, Fluid)}
+     * is the method flowing fluid consults before it overwrites whatever
+     * block is currently in its path (the same mechanism that lets
+     * water/lava silently sweep away torches, saplings, tall grass, etc).
+     * The inherited default resolves to {@code state.canBeReplaced() ||
+     * !state.isSolid()} - and {@code isSolid()} is derived from this
+     * block's collision shape, which {@link #getCollisionShape} already
+     * returns empty (so players can walk through). That combination made
+     * this block look "replaceable" to fluid code by default, exactly
+     * like an un-collidable decoration - nothing before this fix ever
+     * told the engine "no, not even fluid may overwrite this." Vanilla's
+     * own {@code NetherPortalBlock} and {@code EndPortalBlock} hit the
+     * same default and both explicitly override this method to
+     * {@code false}; this mirrors that.
+     *
+     * <p>This also explains the "no sound" half of the report without a
+     * separate bug: fluid overwriting a block is a direct
+     * {@code setBlock} from the fluid-spread code, not a
+     * {@code BlockEvent.BreakEvent} - so {@link
+     * com.claudemod.event.PrismiumPortalFrameBreakHandler}'s collapse
+     * sound (which only plays for a player-initiated frame-material
+     * break) was never in the loop for this path, and neither was any
+     * other break/place sound. With this override, fluid can no longer
+     * remove the block at all, so there is nothing left to be silent
+     * about.
+     *
+     * <p><b>Unverified</b>, like the rest of this class: no in-game
+     * confirmation that water actually leaves the portal alone after
+     * this change (this sandbox cannot run a client), though the
+     * reasoning is grounded in vanilla's own portal blocks hitting and
+     * fixing the identical default.
+     */
+    @Override
+    protected boolean canBeReplaced(BlockState state, Fluid fluid) {
+        return false;
     }
 
     @Override
