@@ -36,3 +36,4 @@ src/generated/
 # other
 eclipse
 .gradletasknamecache
+__pycache__/

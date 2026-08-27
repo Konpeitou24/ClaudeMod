@@ -43,6 +43,21 @@ LIGHT_LEVELS = {
     "prismium_wardstone_lit.png": 10,
     "prismium_restorer.png": 0,        # never glows (no LIT state at all)
     "prismium_soil.png": 0,            # ground block, never glows
+    "prismium_snare.png": 0,           # camouflage plant - deliberately never glows (see class doc)
+    "prismium_snare_triggered.png": 0,
+    "prismium_geyser.png": 5,
+    "prismium_pulverizer.png": 0,       # unlit state
+    "prismium_pulverizer_lit.png": 8,
+    "prismium_smelter.png": 0,          # unlit state
+    "prismium_smelter_lit.png": 8,
+    "prismium_compressor.png": 0,       # unlit state
+    "prismium_compressor_lit.png": 8,
+    "prismium_stone.png": 0,           # plain worldgen stone variant, never glows
+    "prismium_deepstone.png": 0,       # plain worldgen deepslate variant, never glows
+    "prismium_alloy_block.png": 6,
+    "prismium_portal.png": 11,
+    "prismium_chronoflame.png": 14,
+    "prismium_chronoflame_top.png": 14,
 }
 
 
