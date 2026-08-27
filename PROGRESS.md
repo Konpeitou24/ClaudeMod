@@ -3946,34 +3946,79 @@ AIは、`FloatGoal`(溺れ防止の浮き)・`MeleeAttackGoal`(近接攻撃)・`
 - 【継続】PROGRESS.mdの肥大化(4000行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
 
 
+## 3CE. 対話セッション(定期実行ではなく本人との直接チャット、v0.25.0公開後): プリズミウムポータルが水で壊れる不具合を修正 + v0.25.1リリース
+
+こんぺいとう氏本人から直接チャットで2件の報告を受けた: (1)「ポータルなんですけど クリエイティブでは壊せなくなりましたが 水を流すと壊れるようです。」(2)「フレームが壊されたときにポータルが消えるとき ガラスの破壊音がないです。無音で壊れますので修正してください。」あわせて、ポータルフレームを「かたいけど壊せてアイテム化できるもの」の専用ブロックに作り直し、ポータルフレーム(新アイテム)+プリズミウムで作れるようにした上で6個セットのみディメンションへ行けるようにする、という再設計案も提示された。
+
+### 3CE-1. 再設計案についての確認
+
+再設計はゲームバランス・仕様に関わる決定のため、実装前にAskUserQuestionで2点確認した: (a)新設する「ポータルフレーム」アイテムの素材、(b)現行の召喚方式(プリズミウムブロック+ウォールで14個のリングを組む方式)を今後どうするか。回答は「ポータルフレームは新しいものではなく、既存の形、仕様を流用してください」「現行のまま」だった。これにより、フレームの再設計(専用ブロック化・6個セット化)は今回スコープ外となり、報告された2件のバグ修正のみに絞ることになった。
+
+### 3CE-2. 原因調査: 2件の報告は実は同一のバグだった
+
+`PrismiumPortalBlock`(ポータル本体)のコードを読み、`PrismiumPortalFrameBreakHandler`(フレーム破壊時にポータルを崩壊させ、実際に崩壊音を鳴らしている既存ロジック)も確認した上で、WebSearchでMinecraft 1.20.x系の`BlockBehaviour`のメソッド一覧を裏取りした。
+
+- `PrismiumPortalBlock`は`noCollission()`(当たり判定なし)だが、`canBeReplaced(BlockState, Fluid)`をオーバーライドしていなかった。継承元(`BlockBehaviour`)の既定実装は`state.canBeReplaced() || !state.isSolid()`であり、`isSolid()`は当たり判定形状から導出されるため、当たり判定が空のこのブロックは既定で「流体に置き換え可能」と判定されてしまっていた。
+- 水がポータルのセルに触れると、この既定動作により直接`setBlock`で水に置き換えられて消えていた。これは`BlockEvent.BreakEvent`を経由しない経路のため、`PrismiumPortalFrameBreakHandler`が用意している崩壊音(プレイヤーがフレーム素材を破壊した場合のみ発火)も、他のどの破壊音も鳴らない。つまり「水で壊れる」と「無音で消える」は**別々の2つのバグではなく、同じ根本原因(`canBeReplaced`未オーバーライド)から来る1つの現象**だった。
+- バニラの`NetherPortalBlock`/`EndPortalBlock`も同じ既定値に当てはまるはずだが、両方ともこのメソッドを明示的に`false`でオーバーライドしていることを踏まえ、同じ対処を`PrismiumPortalBlock`にも適用した。
+
+### 3CE-3. 実装とビルド失敗からの学び
+
+`canBeReplaced(BlockState, Fluid)`を`protected boolean`としてオーバーライドする1コミットをpushしたところ、GitHub Actionsのビルドが失敗した(`canBeReplaced(BlockState,Fluid) in PrismiumPortalBlock cannot override canBeReplaced(BlockState,Fluid) in BlockBehaviour`)。事前にWebSearchで確認した1.20.6版NeoForge javadocでは同メソッドが`protected`と表示されていたが、実際にこのプロジェクトが使っているForge 1.20.1のマッピングでは`public`だったため、アクセス修飾子を弱めてしまっていた(Javaの規則で、オーバーライド時にアクセス範囲を狭めることはできない)。`public`に修正した2つ目のコミットをpushし、ビルド成功(`ci: update built jar`→データパック検証`status=ok`→鉱石生成検証で`prismium_ore`/`deepslate_prismium_ore`とも生成チャンク検出)を確認した。
+
+**教訓**: 別マイナーバージョン(今回は1.20.6)のjavadocはアクセス修飾子まで完全に信用してはいけない。特にpublic/protectedの違いは実際にビルドを通すまで確定しない。今後、他バージョンのjavadocでシグネチャを裏取りする際は「メソッド名・引数・戻り値の型」までは信頼できるが、修飾子はCIのビルド結果で最終確認する前提で進めること。
+
+### 3CE-4. push・ビルド確認・リリース: v0.25.1
+
+2コミット(修正+ビルド修正)をpush。ビルド成功確認後、`gradle.properties`を`0.25.0`→`0.25.1`(パッチバージョン、新規コンテンツではなくバグ修正のためsemver的にminorではなくpatchとした)、`RELEASE_NOTES.md`に新規セクションを追加してコミット・push、タグ`v0.25.1`をpushしてリリースを作成する(本PROGRESS.md更新と合わせて本セクション末尾のコミットとして追う)。
+
+### 3CE-5. 今回の既知の限界・未検証事項(正直な記録)
+
+- **実機未検証**: 今回もこのサンドボックスではローカルビルド・実プレイができないため、実際に水をポータルに向けて流しても本当に壊れなくなったかは未確認。ビルド成功は確認できたが、それは「コンパイルが通った」ことの確認であり「意図通り動く」ことの確認ではない。
+- ポータルフレームの再設計案(専用の硬いが壊せてアイテム化できるブロック、6個セットでの活性化)は、こんぺいとう氏の意向により今回は見送った。今後改めて要望があれば、素材(新規アイテムか既存流用か)と召喚方式の変更範囲を再度確認すること。
+- 今回のバグは「当たり判定を空にしたブロックは`canBeReplaced`も明示的にfalseへ倒さないと流体に消される」という、この種の非ソリッドブロック全般に当てはまりうる注意点。ClaudeMod内に他に同様の非ソリッド・重要ブロックが無いか、次回以降ざっと洗い直す価値がある(現時点では未調査)。
+
+### 3CE-6. 議論したい論点・改善案
+
+- 【新規】ポータルフレームの再設計案(専用ブロック化・6個セット化)自体は魅力的な提案なので、今後こんぺいとう氏から改めて要望があれば着手を検討する価値がある。
+- 【新規】§3CE-5の「他の非ソリッドブロックにも`canBeReplaced`漏れが無いか」の洗い直し。
+- 【継続】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち。
+- 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
+- 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
+- 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+- 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。
+- 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
+- 【継続】PROGRESS.mdの肥大化(4000行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(定期実行、v0.24.0公開後)の最重要な新情報
+### 今回(対話セッション、v0.25.1公開後)の最重要な新情報
 
-- **【解決(推定・実機未検証)】「既存モブも順次置き換え」プロジェクトが完了した。`PrismiumSentinelEntity`(→`AbstractPrismiumMonster`+`RangedAttackMob`)・`PrismiumDrifterEntity`(→`PathfinderMob`直接継承)をバニラ`Skeleton`/`Squid`を継承しない実装に書き直した(§3CD)。v0.25.0としてリリース済み、CIビルド・データパック検証・鉱石生成検証すべて一発成功確認済み。これでClaudeModの4体のMOB全てがバニラモブ非継承になった。**
-- **【新規・確認済みAPI事実、次回以降のモブ自作で再利用可】`SkeletonModel<T>`は`<T extends Mob & RangedAttackMob>`、`SquidModel`(実体`SquidEntityModel`)は`<T extends Entity>`という型境界(いずれも該当モブクラス固有ではない)。`RangedBowAttackGoal<T extends Mob & RangedAttackMob>`・`RandomSwimmingGoal(PathfinderMob, double, int)`・`PanicGoal(PathfinderMob, double)`・`WaterBoundPathNavigation(Mob, Level)`はいずれも汎用クラスで、特定モブへの依存なく再利用できる。`Mob#createNavigation(Level)`はoverride可能、`Mob#canBreatheUnderwater()`/`Entity#isPushedByFluid()`もモブ非依存の中立メソッド。**
-- **【新規・重要】GitHub issue一覧ページ(`issues?q=...`)の埋め込みJSON(`react-app.embeddedData`)取得方式が使えなくなっていた(GitHub側のUI変更で一覧データがクライアントサイドの別リクエストに移動したと見られる、ヘッダー情報しか埋め込まれていない)。今回は個別Issue番号ページ(`/issues/<N>`)へのHTTPステータス確認(404=不存在)による新規Issue検出で代替した。次回以降もこの方式を使うか、Chrome拡張が接続されていればブラウザ経由で一覧を確認すること。**
-- **【継続・注意】`api.github.com`は今回のセッションでも終始プロキシの許可リストでブロックされ続けた。ビルド結果の確認は引き続き`git fetch`によるCI自動コミットのポーリングで代替できる。**
-- **【継続・重要】`git config user.name/user.email`を`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定してからコミットすること(GH007エラー回避)。**
+- **【解決・実機未検証】プリズミウムポータルが水で壊れる不具合(+それに伴う無音消失)を修正した(§3CE)。原因は`PrismiumPortalBlock#canBeReplaced(BlockState, Fluid)`未オーバーライド。バニラの`NetherPortalBlock`/`EndPortalBlock`に倣い`false`を返すようオーバーライドした。v0.25.1としてリリース済み、CIビルド・データパック検証・鉱石生成検証すべて成功確認済み。次回、こんぺいとう氏に実際に水を流して直っているか確認してもらうことが最優先。**
+- **【新規・重要な教訓】別マイナーバージョン(今回はNeoForge 1.20.6)のjavadocでメソッドシグネチャを裏取りする際、メソッド名・引数・戻り値の型は信頼できるが、アクセス修飾子(public/protected)は実際のバージョンで異なりうる。今回`protected`と書いてビルドが「弱いアクセス権限」エラーで失敗し、`public`に直して解決した。今後は修飾子までは裏取り情報を過信せず、CIのビルド結果で最終確認する前提で進めること。**
+- **【ユーザー本人の希望でスコープ外】ポータルフレームを専用の「硬いが壊せてアイテム化できる」ブロックに作り直し、ポータルフレーム(新アイテム)+プリズミウムで作成、6個セットのみディメンションへ行けるようにする、という再設計案が本人から提示されたが、AskUserQuestionでの確認の結果「素材は既存の形・仕様を流用」「召喚方式は現行のまま」との回答だったため、今回は着手しなかった。次回、改めて要望があれば着手を検討すること。**
 
 ### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.25.0(定期実行、§3CD)。次回はここから1セッション目。**
-1. **【最優先・新規】v0.25.0のセンチネル(弓AI)・ドリフター(遊泳AI)が実機で以前と遜色ない挙動か、こんぺいとう氏に確認を依頼すること。もし明らかに劣化していれば、`RangedBowAttackGoal`/`RandomSwimmingGoal`のパラメータ調整を検討すること(§3CD-5)。**
-2. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
-3. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
-4. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
-5. 【継続・新規アイデア】ゾンビの「腕を前に突き出す」歩行ポーズ、Squidの「インク雲」演出を、それぞれ非バニラ依存の形で再現できないか(低優先度の見た目改善)。
-6. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること。
-7. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている。反応があった項目から個別に切り出して対応すること。
-8. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
-9. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
-10. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
-11. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.25.1(対話セッション、§3CE)。次回はここから1セッション目。**
+1. **【最優先・新規】v0.25.1のポータル水破壊修正が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。**
+2. 【継続】v0.25.0のセンチネル(弓AI)・ドリフター(遊泳AI)が実機で以前と遜色ない挙動か、こんぺいとう氏に確認を依頼すること。
+3. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
+4. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
+5. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+6. 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。
+7. 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
+8. 【新規・低優先度】§3CE-5: 他の非ソリッド(`noCollission`)ブロックにも`canBeReplaced`未オーバーライドによる同種の脆弱性が無いか洗い直す。
+9. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
+10. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
+11. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
+12. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
 
 ### 議論したい論点・改善案
 
-- 【新規】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち(§3CD-6)。
+- 【新規】ポータルフレームの専用ブロック化・6個セット化案(§3CE-6)。今後要望があれば着手を検討。
+- 【新規】§3CE-5の他ブロックへの横展開調査。
+- 【継続】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち。
 - 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
 - 【継続】3機械の共通基底クラス抽出、段階的アプローチ。
 - 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
@@ -3981,13 +4026,14 @@ AIは、`FloatGoal`(溺れ防止の浮き)・`MeleeAttackGoal`(近接攻撃)・`
 
 ### コミット/プッシュ状況
 
-今回(定期実行、v0.24.0公開後)は以下をpush:
-1. `78d2007` Rewrite Prismium Sentinel / Drifter to stop extending vanilla Skeleton/Squid(ビルド成功確認済み、データパック検証・鉱石生成検証も成功)
-2. `gradle.properties`を`0.24.0`→`0.25.0`、`RELEASE_NOTES.md`に新規セクション追加、タグ`v0.25.0`
-3. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
+今回(対話セッション、v0.25.0公開後)は以下をpush:
+1. `10eae2d` Fix Prismium Portal being silently destroyed by flowing water
+2. `46112ca` Fix build: canBeReplaced(BlockState, Fluid) override must stay public(ビルド成功確認済み、データパック検証・鉱石生成検証も成功)
+3. `gradle.properties`を`0.25.0`→`0.25.1`、`RELEASE_NOTES.md`に新規セクション追加、タグ`v0.25.1`
+4. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
 
-作業中、並行セッションによるpushは検知しなかった(`git fetch`で毎回確認)。
+push前に`git fetch`で並行セッションのCI自動コミット(jar更新・データパック検証・鉱石検証)を検知し、`git rebase origin/main`してから素直にpush、問題なく一発成功した。
 
 ### 通知状況
 
-Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`・`release.yml`)がpush/タグに対応する通知を送信済みのはず。
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`・`release.yml`)がpush/タグに対応する通知を送信済みのはず(Secret設定済み前提)。
