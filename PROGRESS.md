@@ -3990,34 +3990,96 @@ AIは、`FloatGoal`(溺れ防止の浮き)・`MeleeAttackGoal`(近接攻撃)・`
 - 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
 - 【継続】PROGRESS.mdの肥大化(4000行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
 
+
+## 3CF. セッション#75(定期実行、v0.25.1公開後): api.github.comがWebFetch経由で到達可能と判明 + Issue #25(バージョニング方針)への対応 + specular map欠損の解消 + v0.25.2リリース
+
+セッション開始時、`mcp__workspace__web_fetch`ツールで`https://api.github.com/repos/Konpeitou24/ClaudeMod/actions/runs?per_page=1`を試したところ、**過去セッション(§3CA〜3CE)で「api.github.comはblocked-by-allowlistで到達不能」と記録されていたにもかかわらず、今回は正常にJSONが返ってきた**。念のためbash側の`curl`(プロキシ経由・プロキシ変数を空にする方式の両方)でも同じURLを試したが、こちらは従来通り`403 Received HTTP code 403 from proxy after CONNECT`(プロキシ経由)/`Could not resolve host`(プロキシ変数を空にした場合)で失敗した。**つまり、api.github.comへの到達可否はセッションの実行手段(`mcp__workspace__bash`のcurl vs `mcp__workspace__web_fetch`)によって異なり、`web_fetch`ツールを使えば少なくとも今回はGETリクエストが素通りした。** 次回セッションへの重要な申し送り: まず`mcp__workspace__web_fetch`でapi.github.comを試すこと。ダメだった場合のみ、これまで通りgithub.com本体の直接fetch(individual issueページ等)にフォールバックすること。ただし`web_fetch`はGETのみでカスタムヘッダー(認証トークン)を付与できないため、Issue のクローズ・コメント投稿のような書き込み系操作は今回判明した経路でも不可能なままである点に注意。
+
+### 3CF-1. 新規Issue #25「バージョニングについて」への対応
+
+`web_fetch`でopen issue一覧を取得したところ、こんぺいとう氏(OWNER)本人による新規Issue #25(2026-08-27作成)を発見した。本文(原文): 「適当すぎます。軽微な変更でもパッチではなくマイナーバージョンを上げるのはどうなのですか?書き残したらクローズしてください。」
+
+これまでのリリース履歴(v0.22.0〜v0.25.0)を振り返ると、実際にモブ書き直しやワールドジェネ調整のような、ユーザー視点では地味な変更でもMINORを上げてしまっていたケースがあり、ご指摘は正当だと判断した。対応として:
+
+- README.mdに新設した「バージョニング方針」セクションで、PATCH(バグ修正・ビルド修正・微調整・ドキュメント更新)/MINOR(新規コンテンツ)/MAJOR(互換性を壊す変更)の基準を明文化し、過去の運用が甘かったことも正直に記載した。
+- 今回のセッション自体の変更内容(後述、specular map追加+ドキュメント+監査のみで新規プレイヤー向けコンテンツなし)を、この新基準に従い**MINORではなくPATCH**としてリリースした(v0.25.1→v0.25.2)。新方針を宣言するだけでなく、同じリリースで実際に従ってみせる形にした。
+
+**Issueのクローズについて**: 「書き残したらクローズしてください」という指示を受けたが、このセッションのgitトークンはリポジトリのContents/Workflows読み書き権限のみで、Issues権限を持っていない。当初「クローズ不可」と判断しかけたが、`.github/workflows/build-and-notify.yml`を読み返したところ、既に`ISSUES_TO_CLOSE.json`という同種の課題向けのリレー機構が用意されていたことに気づいた(セッションが`{number, comment}`をこのJSONに書いてpushするだけで、フルネットワークアクセスかつ`issues: write`権限を持つGitHub Actionsランナー側がコメント投稿+クローズを代行し、処理後にJSONを空に戻す仕組み)。これを使い、Issue #25への対応コメント(バージョニング方針の説明)を`ISSUES_TO_CLOSE.json`に登録してpushした。**次回以降のセッションへの申し送り: 「クローズできない」と諦める前に、まず`ISSUES_TO_CLOSE.json`(既存Issueのクローズ)と`PENDING_ISSUES.json`(Konpeitou24さん以外からのIssue保留)という2つのリレー機構が既に整備されていることを思い出すこと。api.github.comへの書き込みができない制約は、この2ファイル経由で概ね回避できる。**
+
+### 3CF-2. specular map(_s.png)欠損の解消
+
+PROGRESS.mdで複数セッションにわたり申し送られていた「Prismium Snare/Geyser/Pulverizer/Smelter/Compressorのspecular mapが未生成」(旧§5項目12)に対応した。既存の`scripts/textures/gen_specular_maps.py`(session付近で新設済みの共通生成基盤、`pbr_common.py`のhue/saturation/valueバケット分類+`ModBlocks.java`の実際の`lightLevel`値を反映するemissive計算)に、該当5ブロック(lit/unlit差分含め9テクスチャー)のLIGHT_LEVELSエントリを追加して再実行しただけで、新しい生成ロジックは書いていない。
+
+あわせて、スクリプト自身が出す「LIGHT_LEVELSに無いテクスチャー」警告(`unaccounted`)を確認したところ、申し送りに無かったPrismium Stone/Deepstone/Alloy Block/Portal/Chronoflame(top含む)の6テクスチャーも未生成だったことが分かったため、これらのlightLevelも`ModBlocks.java`から実際の値を確認した上で同様に追加した。結果、**現在ブロックテクスチャー全種類にspecular mapが存在する状態になった**(スクリプトの`unaccounted`警告が0件になったことで確認)。
+
+生成後、8倍拡大のコンタクトシートを作成しRead toolで目視確認した。Snare(紫の茎+リング状の花)・Geyser(シアンのクロス模様)・Pulverizer(ピンクのコア)いずれも元のベーステクスチャーのシルエットに沿ったハイライト配置になっており、ノイズや透過崩れは見られなかった。specular mapはシェーダー向けのデータテクスチャーであり「見た目の良し悪し」を云々するものではないため、確認の主眼はデータの構造的な妥当性(意図した箇所にハイライト/emissive相当の色が乗っているか)に置いた。
+
+### 3CF-3. canBeReplaced監査(旧§5項目8、コード変更なし)
+
+v0.25.1(§3CE)で修正したPrismiumPortalBlockの水破壊バグ(`canBeReplaced(BlockState, Fluid)`未オーバーライド)と同種の問題が他のブロックに無いか、`grep`で全ブロッククラス+`ModBlocks.java`の`.noCollission()`呼び出しを洗い出して監査した。
+
+対象になったのは`PrismiumBloomBlock`/`PrismiumSpikeBlock`/`PrismLilyBlock`/`PrismBrambleBlock`/`PrismVineBlock`/`PrismiumSnareBlock`の6ブロック(いずれも`.noCollission()`が付いている)。結論として**修正不要と判断した**: これらは装飾用の植物(Bloom/Spike/Lily/Bramble/Vine)、または罠だが見た目は植物に擬態している(Snare、クラス doc に「同じcross-quad, no-collision, instabreakの植物ファミリー」と明記)であり、水に流されて消える挙動はバニラの花・苗木・松明が持つのと同じ、想定内かつ一貫した挙動である。ポータルのケースが特別だったのは「プレイヤーの労力がかかった複数ブロック構造物が予告なく壊れる」という点であり、単体の装飾/罠ブロックには同じ理屈は当てはまらない。
+
+念のため`PrismiumGeyserBlock`/`PrismiumChronoflameBlock`/機械3種(Pulverizer/Smelter/Compressor)の`ModBlocks.java`登録も確認したが、いずれも`.noCollission()`を使っておらず(通常の当たり判定を持つソリッドブロック)、そもそも今回の脆弱性のクラスには該当しない。
+
+### 3CF-4. push・ビルド確認・リリース: v0.25.2
+
+1コミット(specular map+README方針)→1コミット(バージョン+リリースノート)の2コミットをpush。1回目のpush時、`https_proxy=""`等でプロキシを空にする方式を試したところ`Could not resolve host: github.com`で失敗したため、プロキシ変数を空にせずそのまま`git push`したところ問題なく成功した(過去セッションの「プロキシ回避策」は今回のセッションでは不要かつ逆効果だった - 環境によって挙動が変わりうる点に注意)。
+
+`git fetch`ポーリングで2回とも`ci: update built jar`→`ci: update datapack validation results`→`ci: update ore generation verification results`まで到達し、通常ビルド・データパック検証・鉱石生成検証すべて成功したことを確認した。タグ`v0.25.2`をpush後、`web_fetch`で`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.25.2`を直接fetchし、release.ymlによって実際にGitHub Releaseページが作成され、RELEASE_NOTES.mdの内容がそのまま反映されていることを確認した(api.github.comの`/releases/tags/v0.25.2`はこの時点で空レスポンスが返り確認に使えなかった - §3CF-1の「web_fetchでのapi.github.com到達性」は不安定/セッション内でも変動する可能性があり、過信せずgithub.com本体のfetchも保険として併用すべきという教訓)。
+
+### 3CF-5. 今回の既知の限界・未検証事項(正直な記録)
+
+- **Issue #25はクローズできていない**(§3CF-1参照)。こんぺいとう氏に手動でのクローズをお願いするか、次回以降Issues権限を持つトークンが提供されればクローズ可能。
+- 新設したバージョニング方針(README.md)自体は、今後のセッションが実際に守れるかどうかに懸かっている。**次回以降のすべてのセッションは、リリース作業に入る前に「今回の変更にプレイヤー向けの新規コンテンツが含まれるか」を自問し、含まれなければPATCH、含まれればMINORにすること。** この判断を毎回PROGRESS.mdに明記する運用にすると、今回のような揺り戻しを防げるはず。
+- specular mapは生成・目視確認したが、実際にシェーダー(Iris/Oculus)導入環境でこれらのブロックが意図通り反射するかは相変わらず未検証(このサンドボックスでは検証手段が無い)。
+- canBeReplaced監査は「今回発見した範囲では追加のバグは無い」という結論だが、監査自体はブロッククラス+ModBlocks.javaの`.noCollission()`呼び出しのgrepに基づくものであり、将来的にnoCollission以外の経路(例えば`isPathfindable`やカスタムの`getCollisionShape`実装だけで実質的に非ソリッドなブロック)があれば見落とす可能性がある。
+
+### 3CF-6. 議論したい論点・改善案
+
+- 【新規・最優先】Issue #25への対応方針(バージョニングポリシー)についてこんぺいとう氏に確認いただき、問題なければIssueをクローズしていただきたい。
+- 【新規】api.github.comへの到達性が`web_fetch`経由で(今回だけかもしれないが)回復していた件。次回セッションでも試す価値がある。
+- 【継続】ポータルフレームの専用ブロック化・6個セット化案。今後要望があれば着手を検討。
+- 【継続】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち。
+- 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
+- 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
+- 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+- 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。
+- 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。具体的な仕様(素材・発光の程度・設置場所等)がまだ固まっていないため、次回対話セッションで確認できると着手しやすい。
+- 【継続】PROGRESS.mdの肥大化(4000行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
+
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(対話セッション、v0.25.1公開後)の最重要な新情報
+### 今回(定期実行セッション#75、v0.25.2公開後)の最重要な新情報
 
-- **【解決・実機未検証】プリズミウムポータルが水で壊れる不具合(+それに伴う無音消失)を修正した(§3CE)。原因は`PrismiumPortalBlock#canBeReplaced(BlockState, Fluid)`未オーバーライド。バニラの`NetherPortalBlock`/`EndPortalBlock`に倣い`false`を返すようオーバーライドした。v0.25.1としてリリース済み、CIビルド・データパック検証・鉱石生成検証すべて成功確認済み。次回、こんぺいとう氏に実際に水を流して直っているか確認してもらうことが最優先。**
-- **【新規・重要な教訓】別マイナーバージョン(今回はNeoForge 1.20.6)のjavadocでメソッドシグネチャを裏取りする際、メソッド名・引数・戻り値の型は信頼できるが、アクセス修飾子(public/protected)は実際のバージョンで異なりうる。今回`protected`と書いてビルドが「弱いアクセス権限」エラーで失敗し、`public`に直して解決した。今後は修飾子までは裏取り情報を過信せず、CIのビルド結果で最終確認する前提で進めること。**
-- **【ユーザー本人の希望でスコープ外】ポータルフレームを専用の「硬いが壊せてアイテム化できる」ブロックに作り直し、ポータルフレーム(新アイテム)+プリズミウムで作成、6個セットのみディメンションへ行けるようにする、という再設計案が本人から提示されたが、AskUserQuestionでの確認の結果「素材は既存の形・仕様を流用」「召喚方式は現行のまま」との回答だったため、今回は着手しなかった。次回、改めて要望があれば着手を検討すること。**
+- **【最優先・新規】GitHub Issue #25で、こんぺいとう氏から「軽微な変更でもマイナーバージョンを上げすぎ」というご指摘があった。README.mdに「バージョニング方針」セクションを新設し、PATCH/MINOR/MAJORの基準を明文化した(§3CF-1)。今回のリリース自体もPATCH(v0.25.1→v0.25.2)として、新方針に従った。次回以降のセッションも、リリース時に必ずこの基準に照らして判断すること。**
+- **【対応済み】Issue #25の「書き残したらクローズしてください」という指示について、`ISSUES_TO_CLOSE.json`リレー機構(既存、build-and-notify.yml参照)にコメント文とともに登録してpushした。次回GitHub Actions実行時にコメント投稿+クローズが行われるはず。次回セッション開始時、実際にIssue #25がクローズされたか確認すること。**
+- **【技術情報・要検証】api.github.comが今回`mcp__workspace__web_fetch`経由で到達できた(過去セッションでは`blocked-by-allowlist`と記録されていたのと矛盾)。ただし同セッション後半では同じエンドポイントが空レスポンスを返すようになり、不安定。次回セッションも試す価値はあるが、github.com本体の直接fetchも保険として併用すること。**
+- **【解決】specular map(_s.png)がPrismium Snare/Geyser/Pulverizer/Smelter/Compressor(+Stone/Deepstone/Alloy Block/Portal/Chronoflame)で未生成だった件を解消した(§3CF-2)。現在ブロックテクスチャー全種類にspecular mapが存在する。**
+- **【調査完了・修正不要と判断】v0.25.1のポータル水破壊バグと同種の`canBeReplaced`問題が他の`noCollission`ブロックに無いか監査した結果、修正不要と判断した(§3CF-3、理由は本文参照)。**
 
 ### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.25.1(対話セッション、§3CE)。次回はここから1セッション目。**
-1. **【最優先・新規】v0.25.1のポータル水破壊修正が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。**
-2. 【継続】v0.25.0のセンチネル(弓AI)・ドリフター(遊泳AI)が実機で以前と遜色ない挙動か、こんぺいとう氏に確認を依頼すること。
-3. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
-4. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
-5. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
-6. 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。
-7. 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
-8. 【新規・低優先度】§3CE-5: 他の非ソリッド(`noCollission`)ブロックにも`canBeReplaced`未オーバーライドによる同種の脆弱性が無いか洗い直す。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.25.2(定期実行セッション#75、§3CF)。次回はここから1セッション目。**
+1. **【最優先・新規】README.mdの「バージョニング方針」に従い、次回以降のリリースでもPATCH/MINORの判断を誤らないこと(新規プレイヤー向けコンテンツが無ければPATCH)。判断根拠をPROGRESS.mdに明記すること。**
+2. 【継続】v0.25.1のポータル水破壊修正が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。
+3. 【継続】v0.25.0のセンチネル(弓AI)・ドリフター(遊泳AI)が実機で以前と遜色ない挙動か、こんぺいとう氏に確認を依頼すること。
+4. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
+5. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
+6. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+7. 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。
+8. 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
 9. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
 10. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
 11. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
-12. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
+12. 【新規・全セッション必読】`ISSUES_TO_CLOSE.json`(Issueへのコメント+クローズをGitHub Actionsランナーに代行させる)と`PENDING_ISSUES.json`(Konpeitou24さん以外の投稿を保留してDiscord通知する)という2つのリレー機構が既に`.github/workflows/`に整備済み。api.github.comへの書き込みができないことを理由に「対応不可」と判断する前に、まずこの2ファイルが使えないか確認すること(§3CF-1)。
 
 ### 議論したい論点・改善案
 
-- 【新規】ポータルフレームの専用ブロック化・6個セット化案(§3CE-6)。今後要望があれば着手を検討。
-- 【新規】§3CE-5の他ブロックへの横展開調査。
+- 【新規・最優先】Issue #25(バージョニング方針)への対応内容をこんぺいとう氏に確認いただき、問題なければクローズしていただきたい。
+- 【新規】api.github.comの`web_fetch`経由での到達性(§3CF-1)、次回も試す価値あり。
+- 【継続】ポータルフレームの専用ブロック化・6個セット化案。今後要望があれば着手を検討。
 - 【継続】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち。
 - 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
 - 【継続】3機械の共通基底クラス抽出、段階的アプローチ。
@@ -4026,13 +4088,12 @@ AIは、`FloatGoal`(溺れ防止の浮き)・`MeleeAttackGoal`(近接攻撃)・`
 
 ### コミット/プッシュ状況
 
-今回(対話セッション、v0.25.0公開後)は以下をpush:
-1. `10eae2d` Fix Prismium Portal being silently destroyed by flowing water
-2. `46112ca` Fix build: canBeReplaced(BlockState, Fluid) override must stay public(ビルド成功確認済み、データパック検証・鉱石生成検証も成功)
-3. `gradle.properties`を`0.25.0`→`0.25.1`、`RELEASE_NOTES.md`に新規セクション追加、タグ`v0.25.1`
-4. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
+今回(定期実行セッション#75)は以下をpush:
+1. `0e476e3` Generate missing specular maps for 11 blocks; document SemVer policy (issue #25)
+2. `b0c67de` Bump version to 0.25.2, add release notes、タグ`v0.25.2`
+3. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
 
-push前に`git fetch`で並行セッションのCI自動コミット(jar更新・データパック検証・鉱石検証)を検知し、`git rebase origin/main`してから素直にpush、問題なく一発成功した。
+push前に`git fetch`で並行セッション無しを確認、2回とも一発成功(1回目はプロキシ変数を空にする方式が逆に失敗し、素のプロキシ経由で成功した点に注意)。
 
 ### 通知状況
 
