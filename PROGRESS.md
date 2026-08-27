@@ -3884,39 +3884,96 @@ AIは、`FloatGoal`(溺れ防止の浮き)・`MeleeAttackGoal`(近接攻撃)・`
 **PrismiumSentinelEntity(骨格ベース)・PrismiumDrifterEntity(イカベース)は今回未着手。「既存モブも順次置き換え」の続きとして次回以降の対象。**
 
 
+
+
+## 3CD. セッション#74(定期実行、v0.24.0公開後): PrismiumSentinel/Drifterのバニラ非継承書き直し + v0.25.0リリース
+
+セッション開始時、`git fetch`で最新コミット(`112d2fe` ci: update ore generation verification results、直前は`5c6a1e2` v0.24.0リリースコミット)を確認し、直近ビルドが成功していることを確認した。続けてPROGRESS.mdの申し送り(§5、旧版)を読み、「すぐやるべきこと」の最優先項目が `PrismiumSentinelEntity`(バニラ`Skeleton`継承)・`PrismiumDrifterEntity`(バニラ`Squid`継承)の非継承書き直し(session 3CCで確立した`AbstractPrismiumMonster`パターンの続き)であることを確認した。GitHub Issue一覧(`github.com/<owner>/<repo>/issues/<N>`個別ページの直接fetchで#25〜#27の不在を確認、新規Issue無し)も併せて確認し、この最優先タスクにそのまま着手した。
+
+なお今回、api.github.com は今回のセッションでもプロキシの許可リスト(`blocked-by-allowlist`)でブロックされ続けた。Issue一覧ページ(`issues?q=...`)自体もGitHub側のUI刷新により埋め込みJSON(`react-app.embeddedData`)に一覧データが含まれなくなっていた(ヘッダー情報のみ)ため、代わりに個別Issue番号(`/issues/25`等)へのHTTPステータス確認(404=不存在)で新規Issueの有無を判定する方式に切り替えた。Chrome拡張(`claude-in-chrome`)もこの定期実行セッションでは接続されておらず利用不可だった。
+
+### 3CD-1. 事前調査: SkeletonModel/SquidModelの型境界をWebSearch+javadocで確認
+
+書き直しに着手する前に、両モブのレンダラー(`PrismiumSentinelRenderer`/`PrismiumDrifterRenderer`)が変更不要かどうかを先に確認した。
+
+- `SkeletonModel<T>`は`<T extends Mob & RangedAttackMob>`という型境界であることをForge 1.18.2 javadoc(nekoyue.github.io)で直接確認した。`Skeleton`固有ではなく、`Mob`かつ`RangedAttackMob`を実装してさえいれば使える。
+- `SquidModel`の実体である`SquidEntityModel`は`<T extends Entity>`という、ほぼ無条件の型境界であることを確認した。
+- この2点により、両モブのレンダラーは**一切変更不要**と判断できた(実際、CIビルドも変更無しで成功した)。
+
+### 3CD-2. PrismiumSentinelEntity書き直し
+
+`AbstractPrismiumMonster`を継承し、`RangedAttackMob`インターフェースを直接実装する形に変更。
+
+- `AbstractPrismiumMonster#populateDefaultEquipmentSlots`(何も装備しない空実装)を再度オーバーライドし、弓(`Items.BOW`)をメインハンドに装備するようにした。これが無いと遠距離攻撃AI(`RangedBowAttackGoal`)が機能しない武器なしのアーチャーになってしまう。
+- AIは`FloatGoal`・`RangedBowAttackGoal<>(this, 1.0D, 20, 15.0F)`・`WaterAvoidingRandomStrollGoal`・`LookAtPlayerGoal`・`RandomLookAroundGoal`(goalSelector)、`HurtByTargetGoal`・`NearestAttackableTargetGoal<Player>`(targetSelector)の組み合わせ。`RangedBowAttackGoal`のコンストラクタ引数(`<T extends Mob & RangedAttackMob>`型境界含む)はWebSearchで事前に裏取り済み。
+- `performRangedAttack(LivingEntity, float)`を新規実装。バニラの矢(`Arrow`)を生成し、対象までの相対座標から弾道を計算して`AbstractArrow#shoot`で発射する(高さのリード量・散布度の計算式は、バニラの遠距離攻撃モブが共通して使う一般的なパターンに基づく自前実装で、特定クラスのソースをそのまま転記したものではない)。発射音は引き続き`SoundEvents.SKELETON_SHOOT`(汎用の弓発射音、特定モブ専用ではない)を使用。
+- ステータス(`createAttributes()`)は変更なし(HP24・移動速度0.28等、書き直し前と同じ数値)、ベースのビルダーだけ`Skeleton.createAttributes()`から`Monster.createMonsterAttributes()`に変更。
+
+### 3CD-3. PrismiumDrifterEntity書き直し
+
+`PathfinderMob`を直接継承する形に変更(ClaudeMod初の非`Monster`系モブ。`AbstractPrismiumMonster`のjavadoc自体が「非戦闘モブはPathfinderMob/Mobを直接継承すべき」と明記していたため、これに従った)。
+
+- `createNavigation(Level)`をオーバーライドして`WaterBoundPathNavigation`(バニラの魚類・イルカ等が使う汎用の水中経路探索クラス)を返すようにした。
+- `canBreatheUnderwater()`を`true`に、`isPushedByFluid()`を`false`にオーバーライド(いずれも`Mob`/`Entity`レベルの中立的なメソッドで、`Squid`固有ではないことを確認済み)。
+- AIは`PanicGoal(this, 1.4D)`(攻撃されたら逃げる)・`RandomSwimmingGoal(this, 1.0D, 20)`(バニラのタラ・サケ等が使う汎用の遊泳Goal、`PathfinderMob`に対して宣言されておりモブ固有ではないことを確認済み)・`LookAtPlayerGoal`・`RandomLookAroundGoal`の組み合わせ。targetSelectorは一切登録しておらず、純粋に非戦闘・環境モブとして振る舞う(以前のSquid由来の「攻撃されるとインク雲を出す」演出は失われたが、行動自体には影響しない見た目のみの変更)。
+- ステータス(`createAttributes()`)は変更なし(HP12)、ベースのビルダーだけ`Squid.createAttributes()`から`Mob.createMobAttributes()`に変更。
+
+### 3CD-4. push・ビルド確認・リリース: v0.25.0
+
+1コミットにまとめてpush(`git config user.name/user.email`は運用ルール通り事前設定済み。push前に`git fetch`で並行セッション無しを確認、一発成功、プロキシ変数の変更は不要だった)。
+
+`git fetch`ポーリングで確認したところ、`ci: update built jar`→`ci: update datapack validation results`(`status=ok commit=78d2007...`)→`ci: update ore generation verification results`(`commit=78d2007...`、`prismium_ore`/`deepslate_prismium_ore`とも生成チャンクを検出、鉱石生成に影響なしを再確認)まで到達し、**通常ビルド・データパック検証・鉱石生成検証すべて一発成功**したことを確認した。事前のWebSearch+javadoc裏取り(§3CD-1〜3CD-3)が功を奏し、session 3CCのような「存在しないメソッドへの@Override」「importパスのタイプミス」によるビルド失敗は今回発生しなかった。
+
+続けて`gradle.properties`を`0.24.0`→`0.25.0`、`RELEASE_NOTES.md`に新規セクションを追加してコミット・push、タグ`v0.25.0`をpushしてリリースを作成する(本PROGRESS.md更新と合わせて本セクション末尾のコミットとして追う)。
+
+### 3CD-5. 今回の既知の限界・未検証事項(正直な記録)
+
+- **実機未検証**: 今回もこのサンドボックスではローカルビルド・実プレイができないため、両モブの実際の挙動(センチネルの弓の狙い・間合い、ドリフターの遊泳の自然さ)は未確認。特にセンチネルは`RangedBowAttackGoal`の攻撃間隔(20 tick)・射程(15.0F)が「妥当そうな初期値」の域を出ておらず、バニラSkeletonと比べて反応が良い/悪いは実際にプレイしてもらわないと分からない。
+- ドリフターの`WaterBoundPathNavigation`+`RandomSwimmingGoal`の組み合わせが、以前のSquid由来の「漂うような」遊泳の質感を再現できているかも未検証。もし動きがぎこちない・パスファインディングに失敗して固まる等の報告があれば、この部分を疑うこと。
+- ドリフターは以前のSquid由来の「攻撃されるとインク雲を出す」演出を失っている(§3CD-3)。行動には影響しないが、見た目の一貫性が気になるようなら独自のパーティクル演出を追加する余地がある。
+- これで4体のMOB全てがバニラモブ非継承になったが、**今後新しいMOBを追加する際も同じ方針(`AbstractPrismiumMonster`または`PathfinderMob`直接継承、汎用Goalの組み合わせ)を徹底すること**。
+- GitHub issue一覧ページの取得方法が今回変わった(§3CD冒頭、埋め込みJSON方式が使えなくなり個別ページの404判定に切り替え)。次回以降もこの方式(`/issues/<連番>`への直接アクセスでの存在確認)を使うこと。ページ全体のスクレイピングで一覧を得る方法は、GitHub側のUI変更で今後も不安定になりうる。
+
+### 3CD-6. 議論したい論点・改善案
+
+- 【新規】§3CD-5の実機フィードバック待ち事項(センチネルの弓AI・ドリフターの遊泳AI)は、こんぺいとう氏にプレイして確認してもらう価値がある。
+- 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
+- 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
+- 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+- 【継続・新規アイデア】ゾンビ特有の「腕を前に突き出す」歩行ポーズ、Squid特有の「インク雲」演出を、それぞれZombie/Squidに依存しない形で再現できないか(見た目のみの改善、低優先度)。
+- 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。
+- 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
+- 【継続】PROGRESS.mdの肥大化(4000行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
+
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(対話セッション、v0.23.0公開後)の最重要な新情報
+### 今回(定期実行、v0.24.0公開後)の最重要な新情報
 
-- **【解決(推定・実機未検証)】こんぺいとう氏の直接指摘「MOBは自作してほしい(AIも)」を受け、`PrismiumWraithEntity`/`PrismiumDeepWraithEntity`をバニラ`Zombie`を継承しない実装に全面書き直しした(§3CC)。新設`AbstractPrismiumMonster`が今後のホスティルモブ共通基底。v0.24.0としてリリース済み、CIビルド成功確認済み。**
-- **【最優先・新規】「既存モブも順次置き換え」の続き: `PrismiumSentinelEntity`(現在バニラ`Skeleton`継承)と`PrismiumDrifterEntity`(現在バニラ`Squid`継承)がまだ手つかず。次回以降、同じパターン(`AbstractPrismiumMonster`ベース、汎用Goal自作、レンダラーは`HumanoidModel`/適切な非バニラ専用モデルに置き換え)で対応すること。特にDrifterは非戦闘モブなので`registerBasicMeleeGoals`は使えず、専用のAI設計が必要な点に注意。**
-- **【重要な教訓】バニラのモブクラスを継承しないよう書き直す際、javadocで事前にAPIを裏取りしていても、(a)存在しないメソッドへの`@Override`(継承していた具象クラス固有のメソッドだったケース)、(b)importパスの単純なタイプミス、の2種類のケアレスミスでビルドが失敗し得る(§3CC-3)。ビルド失敗時はGitHub Actionsのrunページ(`https://github.com/<owner>/<repo>/actions/runs/<id>`、github.com本体を直接fetchすればapi.github.comが使えなくても注釈からエラー内容を読み取れる)を必ず確認し、次のpushで即座に修正すること。
-- **【継続・注意】`api.github.com`は今回のセッションでも終始プロキシの許可リストでブロックされ続けた。ビルド結果・エラー内容の確認は`git fetch`によるCI自動コミットのポーリングと、`github.com`のActions run/リリースページ自体を直接fetchする方法で完全に代替できることを再確認した(runページのHTMLに実際のコンパイルエラー注釈が含まれている)。**
-- **【新規・確認済みAPI事実、次回以降のモブ自作で再利用可】`ZombieModel<T>`は`T extends Zombie`という型境界を持つため、バニラ`Zombie`を継承しないモブでは使えない。代わりに`HumanoidMobRenderer<T extends Mob, M extends HumanoidModel<T>>`と`HumanoidModel<T extends LivingEntity>`はいずれも非Zombie限定なので、同じ`ModelLayers.ZOMBIE`等の既存ベイク済みレイヤーを流用しつつ`HumanoidModel`でラップすれば体型はそのまま維持できる(ただしZombie特有の「腕を前に突き出す」歩行ポーズは失われる、§3CC-2)。同様に`getStepSound()`はZombie固有のメソッドでMob/LivingEntityには存在しない(§3CC-3)。`Mob#isSunBurnTick()`・`Mob#convertTo(EntityType, boolean)`はいずれもMobレベルの中立的なヘルパーで、Zombieを継承しなくても使える。**
-- **【継続・重要】`git push`が`GH007`(メールアドレス非公開設定)で失敗する場合の対処(v0.22.0セッションで確立): `git config user.name "ClaudeMod Session Agent"` / `git config user.email "claudemod-agent@users.noreply.github.com"`を必ず設定してからコミットすること。**
-- **【継続】同時実行の定期セッションとmainへ同時にpushする状況が今回も発生した。`git fetch`→`git rebase origin/main`→再pushのサイクルで無理なく解消できることを再確認(§3CC-4)。作業開始時・pushのたびに`git tag --sort=-creatordate`と`gradle.properties`の値を確認し、バージョン番号の想定違いに早期に気付くこと。**
+- **【解決(推定・実機未検証)】「既存モブも順次置き換え」プロジェクトが完了した。`PrismiumSentinelEntity`(→`AbstractPrismiumMonster`+`RangedAttackMob`)・`PrismiumDrifterEntity`(→`PathfinderMob`直接継承)をバニラ`Skeleton`/`Squid`を継承しない実装に書き直した(§3CD)。v0.25.0としてリリース済み、CIビルド・データパック検証・鉱石生成検証すべて一発成功確認済み。これでClaudeModの4体のMOB全てがバニラモブ非継承になった。**
+- **【新規・確認済みAPI事実、次回以降のモブ自作で再利用可】`SkeletonModel<T>`は`<T extends Mob & RangedAttackMob>`、`SquidModel`(実体`SquidEntityModel`)は`<T extends Entity>`という型境界(いずれも該当モブクラス固有ではない)。`RangedBowAttackGoal<T extends Mob & RangedAttackMob>`・`RandomSwimmingGoal(PathfinderMob, double, int)`・`PanicGoal(PathfinderMob, double)`・`WaterBoundPathNavigation(Mob, Level)`はいずれも汎用クラスで、特定モブへの依存なく再利用できる。`Mob#createNavigation(Level)`はoverride可能、`Mob#canBreatheUnderwater()`/`Entity#isPushedByFluid()`もモブ非依存の中立メソッド。**
+- **【新規・重要】GitHub issue一覧ページ(`issues?q=...`)の埋め込みJSON(`react-app.embeddedData`)取得方式が使えなくなっていた(GitHub側のUI変更で一覧データがクライアントサイドの別リクエストに移動したと見られる、ヘッダー情報しか埋め込まれていない)。今回は個別Issue番号ページ(`/issues/<N>`)へのHTTPステータス確認(404=不存在)による新規Issue検出で代替した。次回以降もこの方式を使うか、Chrome拡張が接続されていればブラウザ経由で一覧を確認すること。**
+- **【継続・注意】`api.github.com`は今回のセッションでも終始プロキシの許可リストでブロックされ続けた。ビルド結果の確認は引き続き`git fetch`によるCI自動コミットのポーリングで代替できる。**
+- **【継続・重要】`git config user.name/user.email`を`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定してからコミットすること(GH007エラー回避)。**
 
 ### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.24.0(対話セッション、§3CC)。次回はここから1セッション目。**
-1. **【最優先・新規】`PrismiumSentinelEntity`・`PrismiumDrifterEntity`をバニラ非継承(`AbstractPrismiumMonster`または`PathfinderMob`直接継承)に書き直す(§3CCの続き、こんぺいとう氏承認済みの既定路線)。Drifterは非戦闘モブなので専用のAI設計が必要。**
-2. **【最優先・新規】v0.24.0のレイス系モブAIが実機で以前と遜色ない挙動か(索敵・追跡の反応、パスファインディング)、こんぺいとう氏に確認を依頼すること。もし明らかに劣化していれば、Goalの優先度・速度パラメータの調整を検討すること。**
-3. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
-4. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
-5. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
-6. 【継続・新規アイデア】ゾンビ特有の「腕を前に突き出す」歩行ポーズを、Zombieに依存しない小さな独自Modelクラスで再現できないか(§3CC-2、低優先度の見た目改善)。
-7. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること。
-8. 【継続】`LivingEntity#knockback(double,double,double)`のMojangマッピングでの正式名・可視性を一次情報源で確定できないか。
-9. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている。反応があった項目から個別に切り出して対応すること。
-10. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
-11. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
-12. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
-13. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.25.0(定期実行、§3CD)。次回はここから1セッション目。**
+1. **【最優先・新規】v0.25.0のセンチネル(弓AI)・ドリフター(遊泳AI)が実機で以前と遜色ない挙動か、こんぺいとう氏に確認を依頼すること。もし明らかに劣化していれば、`RangedBowAttackGoal`/`RandomSwimmingGoal`のパラメータ調整を検討すること(§3CD-5)。**
+2. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
+3. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
+4. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+5. 【継続・新規アイデア】ゾンビの「腕を前に突き出す」歩行ポーズ、Squidの「インク雲」演出を、それぞれ非バニラ依存の形で再現できないか(低優先度の見た目改善)。
+6. 【継続】既存Issueを確認する際は、本文だけでなく全コメントを時系列で読むことを標準手順にすること。
+7. 【継続】これまで複数セッションにわたって「実機フィードバック待ち」と記録されてきた機能群がさらに積み上がっている。反応があった項目から個別に切り出して対応すること。
+8. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
+9. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
+10. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
+11. 【継続】specular map(`_s.png`)がPrismium Snare・Geyser・Pulverizer・Smelter・Compressorを含む複数ブロックで未生成のまま。
 
 ### 議論したい論点・改善案
 
-- 【新規・重要】モブをバニラ非継承で自作する新方針(`AbstractPrismiumMonster`)を、残るPrismiumSentinel/Drifterにもいつ・どう適用するか(§3CC、最優先タスク1)。
-- 【新規】ゾンビの「腕を前に突き出す」歩行ポーズの再現(§3CC-2)は優先度低めだが、見た目の一貫性のためにやる価値はあるかもしれない。
+- 【新規】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち(§3CD-6)。
 - 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
 - 【継続】3機械の共通基底クラス抽出、段階的アプローチ。
 - 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
@@ -3924,13 +3981,12 @@ AIは、`FloatGoal`(溺れ防止の浮き)・`MeleeAttackGoal`(近接攻撃)・`
 
 ### コミット/プッシュ状況
 
-今回(対話セッション、v0.23.0公開後)は以下をpush:
-1. `c81dbe3` Rewrite Prismium Wraith / Deep Wraith to stop extending vanilla Zombie(**ビルド失敗**、§3CC-3参照)
-2. `55a684e`(rebase後) Fix compile errors from the Zombie-decoupling rewrite(ビルド成功確認済み)
-3. `gradle.properties`を`0.23.0`→`0.24.0`、`RELEASE_NOTES.md`に新規セクション追加、タグ`v0.24.0`
-4. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
+今回(定期実行、v0.24.0公開後)は以下をpush:
+1. `78d2007` Rewrite Prismium Sentinel / Drifter to stop extending vanilla Skeleton/Squid(ビルド成功確認済み、データパック検証・鉱石生成検証も成功)
+2. `gradle.properties`を`0.24.0`→`0.25.0`、`RELEASE_NOTES.md`に新規セクション追加、タグ`v0.25.0`
+3. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
 
-作業中、同時実行の定期セッションによる複数回のpush(ポータル音の作り直し、ノイズユーティリティ+v0.23.0リリース)を`git fetch`で検知し、都度`git rebase origin/main`で解消してから自分のpushを行った。各pushについて`git fetch`ポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`の到着を確認し、最終的な成功を確認した。
+作業中、並行セッションによるpushは検知しなかった(`git fetch`で毎回確認)。
 
 ### 通知状況
 

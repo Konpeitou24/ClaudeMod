@@ -1,3 +1,17 @@
+## ClaudeMod v0.25.0
+
+対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
+
+v0.24.0 からの変更点です。v0.24.0で着手した「MOBはバニラのMOBを継承せず自作する」プロジェクトの続きとして、残っていた2体を対応しました。
+
+### プリズミウム・センチネル/ドリフターがバニラのSkeleton/Squidを継承しない実装に
+
+- `PrismiumSentinelEntity`(弓を持つ遠距離攻撃モブ)は、`AbstractPrismiumMonster`を継承し`RangedAttackMob`インターフェースを直接実装する形に書き直しました。矢を撃つAI自体は`RangedBowAttackGoal`(特定のモブに紐づかない汎用クラスであることをjavadocで確認済み)を使い、実際に矢を発射する処理(`performRangedAttack`)も自前で実装しました。見た目は今まで通り(`SkeletonModel`の型境界が`Skeleton`ではなく`Mob`+`RangedAttackMob`であることを確認済みのため、レンダラーの変更は不要でした)。
+- `PrismiumDrifterEntity`(非戦闘の水中モブ)は、`PathfinderMob`を直接継承する形に書き直しました(ClaudeMod初の非`Monster`系モブです)。移動は`WaterBoundPathNavigation`(バニラの魚類が使うのと同じ汎用クラス)、AIは`RandomSwimmingGoal`(バニラのタラ・サケ等が使う汎用の遊泳Goal)と`PanicGoal`(攻撃されたら逃げる)の組み合わせです。ターゲット選択Goalは一切登録しておらず、他のMOBを攻撃したり反撃したりすることはありません。こちらも見た目は変更なし(`SquidModel`の型境界が`Entity`のみであることを確認済み)。
+- これで、ClaudeModの4体のMOB(レイス・ディープレイス・センチネル・ドリフター)すべてが、バニラの具象モブクラスを継承しない実装になりました。
+
+**注意**: 本バージョンの変更内容も実機(ゲームクライアント)での動作確認ができておらず、CIでのビルド成功以外の検証は行えていません。特にセンチネルの弓の狙い・間合いや、ドリフターの遊泳の自然さが以前(バニラ由来のAI)と比べて見劣りしないか、実際にプレイしての確認をお願いします。不具合や改善要望は [Issues](https://github.com/Konpeitou24/ClaudeMod/issues) までお願いします。
+
 ## ClaudeMod v0.24.0
 
 対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
