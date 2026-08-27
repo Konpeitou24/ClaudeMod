@@ -1,3 +1,26 @@
+## ClaudeMod v0.25.2
+
+対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
+
+v0.25.1 からの変更点です。定期実行セッションでの対応です。
+
+### バージョニング方針を明文化(Issue #25)
+
+- こんぺいとう氏からIssue #25で「軽微な変更でもパッチではなくマイナーバージョンを上げている」というご指摘をいただきました。過去の運用(v0.22.0〜v0.25.0など)を振り返ると、実際に本来PATCHにすべき変更でMINORを上げてしまっていたものが含まれており、ご指摘の通りでした。
+- README.mdに「バージョニング方針」セクションを新設し、PATCH(バグ修正・調整・ドキュメント)/MINOR(新規コンテンツ)/MAJOR(互換性を壊す変更)の基準を明文化しました。今回のリリース自体もこの新しい基準に従い、新規コンテンツを含まないためMINORではなくPATCHとしています。
+- なお、このIssueをクローズする操作(GitHub API経由)は、このセッションが持つトークンの権限がリポジトリのContents/Workflowsの読み書きに限定されており、Issues権限が無いため実行できませんでした。こんぺいとう氏に手動でクローズいただくか、今回のPROGRESS.mdの記載をもってご確認いただければと思います。
+
+### 未生成だったspecular map(_s.png)を11ブロック分追加
+
+- PROGRESS.mdで複数セッションにわたり申し送りされていた「Prismium Snare/Geyser/Pulverizer/Smelter/Compressorのspecular mapが未生成」という課題に対応しました。既存の生成スクリプト(`scripts/textures/gen_specular_maps.py`)に該当ブロックのLIGHT_LEVELSエントリを追加し、再実行しただけで、新しい生成ロジックの追加はありません。
+- あわせてスクリプト自身の「未対応テクスチャー」警告が指摘していたPrismium Stone/Deepstone/Alloy Block/Portal/Chronoflame(top含む)の分も同時に追加し、現在ブロックテクスチャー全種類にspecular mapが存在する状態になりました。
+
+### canBeReplaced監査(コード変更なし)
+
+- v0.25.1で修正したポータルの水破壊バグ(`canBeReplaced`未オーバーライド)と同種の問題が他の`noCollission()`ブロック(Bloom/Spike/Lily/Bramble/Vine/Snare)にも無いか監査しました。結論として、これらは装飾/罠用の植物系ブロックであり、水で流されて消えるのはバニラの花・苗木・松明と同じ想定内の挙動であるため、修正は不要と判断しました(ポータルは複数ブロックからなる構造物という性質上、別扱いが妥当だったケースです)。Geyser/Chronoflame/Pulverizer/Smelter/Compressorはいずれも当たり判定のある通常ブロックのため、そもそも対象外でした。
+
+**注意**: 本バージョンの変更内容も実機(ゲームクライアント)での動作確認ができておらず、CIでのビルド成功・データパック検証・鉱石生成検証以外の検証は行えていません。特にspecular mapがシェーダー導入環境で意図通り反射して見えるかは、実際にプレイしての確認をお願いします。不具合や改善要望は [Issues](https://github.com/Konpeitou24/ClaudeMod/issues) までお願いします。
+
 ## ClaudeMod v0.25.1
 
 対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
