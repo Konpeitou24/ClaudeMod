@@ -231,32 +231,24 @@ public final class ItemDetailsOverlay {
 
         // Repo owner-reported bug (direct chat, after v0.25.3): item icons
         // and the vanilla tooltip box from the underlying container screen
-        // were rendering *on top of* this panel, even though this method
-        // only ever runs from ScreenEvent.Render.Post - i.e. strictly after
-        // the screen (including its tooltip) has already drawn. GuiGraphics
-        // batches draw calls per-RenderType rather than physically
-        // submitting them to the GPU in Java call order, so something
-        // queued earlier (e.g. renderItem's 3D-ish item render type, or the
-        // tooltip's own render type) can still end up flushed after - and
-        // therefore visually on top of - a plain fill()/drawString() call
-        // issued later in code but never explicitly flushed. See the
-        // "flush()"/"drawManaged()" guidance in GuiGraphics's own 1.20.x
-        // migration notes (docs.neoforged.net) and the Forge forums thread
-        // on exactly this "custom overlay ends up behind items" symptom -
-        // both point at the same two-part fix used here:
-        //   1. flush() *before* drawing, so every already-queued call from
-        //      the screen's own render (slots, items, tooltip) is actually
-        //      submitted to the GPU first, instead of possibly still
-        //      sitting in a buffer that gets flushed after ours.
-        //   2. Push the pose stack to GuiGraphics#MAX_GUI_Z (the same
-        //      "always in front" Z plane vanilla's own tooltip rendering
-        //      uses) before drawing, then pop it back afterward, so even
-        //      if GPU depth testing is still enabled from the screen's own
-        //      3D-ish item rendering, this panel cannot lose a depth test
-        //      against anything drawn at a lower Z.
-        guiGraphics.flush();
+        // were rendering *on top of* this panel. First attempt at a fix
+        // (flush() + translate to GuiGraphics.MAX_GUI_Z, i.e. 10000) made
+        // things worse - the panel stopped rendering at all. Checked
+        // vanilla's own GuiGraphics#renderTooltipInternal source directly
+        // (Forge's GuiGraphics.java.patch, 1.20.x branch, github.com) for
+        // how the game itself guarantees tooltips draw on top of item
+        // icons: it does exactly one thing for this - pushPose(), then
+        // translate(0, 0, 400.0F) - no manual flush() call around the
+        // translated draws at all. 400 is a comfortably small Z bump
+        // relative to normal GUI content (Z=0), whereas 10000
+        // (MAX_GUI_Z) most likely exceeded this screen's orthographic
+        // projection's far clip plane and got the whole panel clipped by
+        // the GPU instead of drawn in front - which matches "disappeared
+        // entirely" far better than "still behind items" would. This now
+        // mirrors vanilla's own proven value/pattern exactly instead of
+        // reaching for the most extreme constant available.
         guiGraphics.pose().pushPose();
-        guiGraphics.pose().translate(0.0, 0.0, GuiGraphics.MAX_GUI_Z);
+        guiGraphics.pose().translate(0.0F, 0.0F, 400.0F);
 
         guiGraphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, PANEL_BACKGROUND);
         guiGraphics.fill(panelX, panelY, panelX + panelWidth, panelY + 1, PANEL_BORDER);
@@ -270,10 +262,6 @@ public final class ItemDetailsOverlay {
             textY += font.lineHeight;
         }
 
-        // Flush our own draws immediately too (rather than leaving them to
-        // whatever flushes next), then restore the pose stack so this
-        // method never leaks a Z offset into anything rendered afterward.
-        guiGraphics.flush();
         guiGraphics.pose().popPose();
     }
 
