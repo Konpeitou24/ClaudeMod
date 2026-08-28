@@ -3819,51 +3819,102 @@ v0.25.1(§3CE)で修正したPrismiumPortalBlockの水破壊バグ(`canBeReplace
 - 【継続】PROGRESS.mdの肥大化(4000行超、今回さらに増加)。詳細ログと申し送りの分離は依然として未着手。
 
 
+## 3CG. セッション#76(定期実行、v0.25.2公開後): Issue #19(詳細表示のバグ)の根本原因を特定・修正 + Issue #23クローズ + v0.25.3リリース
+
+セッション開始時、リポジトリをclone・PROGRESS.md(§3CF、§5)を確認。直近ビルド(v0.25.2)は成功していることを`git log`のci系コミット3点セット(built jar→datapack validation→ore verification、いずれも`status=ok`)で確認した。api.github.comは今回も`mcp__workspace__bash`のcurl(プロキシ経由・プロキシ変数を空にする方式の両方)では`blocked-by-allowlist`/`Could not resolve host`で到達不能だったが、`mcp__workspace__web_fetch`では今回もgithub.com本体のHTML(issue一覧・個別issueページ・releasesページ・actionsページ)は問題なく取得できた(§3CFで報告された「web_fetch経由でapi.github.comに到達できた」再現は今回は試していない)。
+
+issue一覧ページの取得方法として、今回`curl`(github.com本体、プロキシ経由・到達可能)で個別issueページのHTMLを取得し、ページに埋め込まれた`<script type="application/json" data-target="react-app.embeddedData">`内のReact GraphQLペイロードを`python3`でJSONパースしてコメント本文(`body`/`bodyHTML`フィールド)を直接読み取る手法を確立した。これにより、`mcp__workspace__web_fetch`のテキスト抽出では見えていなかったissueのコメントスレッド(こんぺいとう氏本人からのフォローアップコメント含む)を正確に読めるようになった。次回以降のセッションもissueのコメント内容を確認する必要がある場合はこの手法(`curl`→`react-app.embeddedData`のJSONパース→`body`フィールド検索)を使うこと。
+
+### 3CG-1. Issue #19「詳細表示のバグ」: 根本原因の特定
+
+Open issue一覧(#7, #15, #16, #17, #18, #19, #21, #23の8件)を確認し、その中からissue #19(「Wを押しても詳細が表示されません」)に着手した。この issue は過去複数セッションで調査されており(`ItemDetailsOverlay`のjavadocに記録あり)、直近では「コードレビューでは原因を特定できなかったため、例外が発生していたら次回ログに残るよう try/catch でガードした」という状態で止まっていた。
+
+上記の新手法でissue #19のコメントスレッドを確認したところ、こんぺいとう氏本人からのフォローアップコメント(2026-08-26)を発見した: 「0.20.0を確認しましたが治ってません。Wの検知はそれほど難しいのですか?」。過去のtry/catchガード追加だけでは直っていないこと、実際に存在するバグであることが本人の実機確認で裏付けられた。
+
+これを受けて`docs.minecraftforge.net`の「Key Mappings」ページ(`/en/latest/`と`/en/1.20.1/`の両方を取得し内容が同一であることを確認)を精読したところ、"Checking a KeyMapping"セクションが「ゲーム内(`ClientTickEvent`から`KeyMapping#isDown()`/`#consumeClick()`をポーリング)」と「GUI内(`Screen`が開いている間は`IForgeKeyMapping#isActiveAndMatches`を`keyPressed`/`keyReleased`から確認する、自分がScreenを所有していない場合は`ScreenEvent.KeyPressed`/`KeyReleased`のPre/Postイベントを使う)」を明確に**別の機構**として説明していることを確認した。
+
+`TooltipUsageHelper`(ツールチップ拡張)と`ItemDetailsOverlay`(詳細パネル)はどちらも`AbstractContainerScreen`等の`Screen`が開いている間しか動作しない機能であるにもかかわらず、いずれも「ゲーム内」向けの`ModKeyMappings.SHOW_ITEM_DETAILS.isDown()`を直接呼んでいた。Forge公式ドキュメントが明示的に区別している2つの経路のうち、この機能が実際に必要とする方(GUI内)ではなく、もう一方(ゲーム内)を読んでいたことが、「クラッシュではなく、キーの状態が単に常にfalseのまま」という報告内容(例外ログも一度も出なかったであろうこと)と完全に整合する。念のため`ScreenEvent.java`のForge 1.20.xブランチ実ソース(github.com、raw)も取得し、`KeyPressed.Pre`/`Post`・`KeyReleased.Pre`/`Post`の実際のクラス形状(`getKeyCode()`/`getScanCode()`/`getModifiers()`、Forgeメインイベントバス・クライアント限定で発火)を確認してから実装した。
+
+### 3CG-2. 実装: GuiKeyStateTracker
+
+新設`com.claudemod.client.GuiKeyStateTracker`が、ドキュメント通りの「GUI内」パターンを実装する:
+
+- `ScreenEvent.KeyPressed.Pre`/`ScreenEvent.KeyReleased.Pre`を購読し(Preを使うことで、他Mod等がイベントを later 消費/キャンセルしても確実に生の押下/離上を検知できる)、`ModKeyMappings.SHOW_ITEM_DETAILS.isActiveAndMatches(InputConstants.getKey(keyCode, scanCode))`で対象キーかどうかを確認して独自の`static boolean`で保持状態を追跡する。
+- `ScreenEvent.Closing`で保持状態を強制リセットするフェイルセーフを追加(何らかの理由でreleaseイベントを取りこぼした場合に「押しっぱなし」状態が永続してしまうことを防ぐため)。
+- `isShowItemDetailsHeld()`は、このGUI用トラッキングを優先しつつ、念のため生の`isDown()`もORで残す(将来GUI外でこのキーをポーリングする用途が増えても安全なように)。
+- `TooltipUsageHelper#isDetailKeyDown()`と`ItemDetailsOverlay#renderIfHeld()`の該当箇所を、`ModKeyMappings.SHOW_ITEM_DETAILS.isDown()`直接呼び出しから`GuiKeyStateTracker.isShowItemDetailsHeld()`経由に置き換えた。`ItemDetailsOverlay`の以前の「原因不明」javadocコメントも、今回特定した根本原因の説明に更新した(try/catchのログガード自体は、per-frameのレンダーリスナーが例外を握りつぶさないための一般的な保険として残置)。
+
+### 3CG-3. Issue #23クローズ
+
+PROGRESS.mdの記録(§3BX、§3CB)とコード(`prism_realm.json`のlayers設定、`PrismiumStoneTransitionFeature`)を照合し、issue #23の本文(海面・海底の高さ)と追加コメント(石/深層岩境界のノイズ化)のいずれも既に実装済みであることを確認した(海面Y=62・海底Y=40という計算結果もlayers設定の数値から再計算して一致を確認)。過去セッションが対応完了後にクローズし忘れていたと判断し、`ISSUES_TO_CLOSE.json`リレーに対応内容の説明コメントとともに登録してクローズした。
+
+### 3CG-4. push・ビルド確認・リリース: v0.25.3
+
+2コミット(issue #19修正+#23クローズ登録 → バージョン+リリースノート)をpush。push前に`git fetch`で並行セッション無しを確認、2回とも一発成功(プロキシ回避策は不要だった)。`git fetch`ポーリングで両方とも`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`(`prismium_ore`/`deepslate_prismium_ore`とも生成チャンク検出)まで到達し、ビルド成功を確認。1回目のpush直後には`ci: clear processed ISSUES_TO_CLOSE entries`コミットも確認でき、issue #23が実際にCLOSEDになったことを`react-app.embeddedData`のJSON(`"state": "CLOSED", "stateReason": "COMPLETED"`)で確認した。
+
+README.mdのバージョニング方針(§3CF)に照らし、今回の変更は新規プレイヤー向けコンテンツを含まないバグ修正+issue整理のみのため、v0.25.2→**v0.25.3(PATCH)**とした。タグ`v0.25.3`をpush後、releasesページで内容が正しく反映されていることを`web_fetch`で確認した。
+
+### 3CG-5. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要・実機未検証**: 今回の主眼だったissue #19の修正が、実際にゲーム内でWキー長押しによる詳細表示・ツールチップ拡張を機能させているかは確認できていない。根拠はForge公式ドキュメントの記述+実ソース(`ScreenEvent.java`)の直接確認という、これまでのセッションより一段階強い裏付けだが、「ドキュメント通りに実装すれば直るはず」という推論であり、実際にプレイしての確認が必要。次回セッション、またはこんぺいとう氏本人からのフィードバックを待つこと。
+- `GuiKeyStateTracker`の`ScreenEvent.Closing`によるフェイルセーフリセットも未検証(通常のrelease経路が正しく機能する限り発火しないコードパスのため)。
+- issueのコメントを読む新手法(§3CG冒頭)は今回のセッションで初めて確立したもので、今後もgithub.com側のReactアプリ実装が変わればまた壊れる可能性がある(§3CFで`web_fetch`のapi.github.com到達性が不安定だったのと同種のリスク)。
+
+### 3CG-6. 議論したい論点・改善案
+
+- 【新規・最優先】issue #19の修正が実際に機能しているか、こんぺいとう氏に確認をお願いしたい。もし直っていなければ、`ScreenEvent.KeyPressed.Pre`が本当にAbstractContainerScreen使用中に発火しているかどうかから疑うこと(理論上は発火するはずだが、実機未検証)。
+- 【新規】issueのコメントを読む手法(`react-app.embeddedData`のJSONパース)を今後のissue対応の標準手順として定着させる価値がある。
+- 【継続】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち。
+- 【継続】Issue #20系(ポータル)の水破壊修正(v0.25.1)が実機で直っているかの確認待ち。
+- 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+- 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。
+- 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
+- 【継続】PROGRESS.mdの肥大化(4000行近く)。詳細ログと申し送りの分離は依然として未着手。
+
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(定期実行セッション#75、v0.25.2公開後)の最重要な新情報
+### 今回(定期実行セッション#76、v0.25.2公開後)の最重要な新情報
 
-- **【最優先・新規】GitHub Issue #25で、こんぺいとう氏から「軽微な変更でもマイナーバージョンを上げすぎ」というご指摘があった。README.mdに「バージョニング方針」セクションを新設し、PATCH/MINOR/MAJORの基準を明文化した(§3CF-1)。今回のリリース自体もPATCH(v0.25.1→v0.25.2)として、新方針に従った。次回以降のセッションも、リリース時に必ずこの基準に照らして判断すること。**
-- **【対応済み】Issue #25の「書き残したらクローズしてください」という指示について、`ISSUES_TO_CLOSE.json`リレー機構(既存、build-and-notify.yml参照)にコメント文とともに登録してpushした。次回GitHub Actions実行時にコメント投稿+クローズが行われるはず。次回セッション開始時、実際にIssue #25がクローズされたか確認すること。**
-- **【技術情報・要検証】api.github.comが今回`mcp__workspace__web_fetch`経由で到達できた(過去セッションでは`blocked-by-allowlist`と記録されていたのと矛盾)。ただし同セッション後半では同じエンドポイントが空レスポンスを返すようになり、不安定。次回セッションも試す価値はあるが、github.com本体の直接fetchも保険として併用すること。**
-- **【解決】specular map(_s.png)がPrismium Snare/Geyser/Pulverizer/Smelter/Compressor(+Stone/Deepstone/Alloy Block/Portal/Chronoflame)で未生成だった件を解消した(§3CF-2)。現在ブロックテクスチャー全種類にspecular mapが存在する。**
-- **【調査完了・修正不要と判断】v0.25.1のポータル水破壊バグと同種の`canBeReplaced`問題が他の`noCollission`ブロックに無いか監査した結果、修正不要と判断した(§3CF-3、理由は本文参照)。**
+- **【最優先・新規・実機フィードバック待ち】Issue #19(「Wを押しても詳細が表示されません」)の根本原因を特定し修正した(§3CG-1〜3CG-2)。原因はForge公式ドキュメントが明確に区別している「ゲーム内」向けのキー状態確認方法(`KeyMapping#isDown()`)を、実際には「GUI内」でしか動かない機能(`TooltipUsageHelper`/`ItemDetailsOverlay`)に使っていたこと。新設`GuiKeyStateTracker`が`ScreenEvent.KeyPressed.Pre`/`KeyReleased.Pre`を購読するドキュメント通りの方式に置き換えた。v0.25.3としてリリース済み。**次回セッション、実機確認の依頼・結果待ちを最優先で扱うこと。もしまだ直っていなければ、`ScreenEvent.KeyPressed.Pre`が本当にAbstractContainerScreen中に発火しているかどうかから疑うこと(§3CG-5)。**
+- **【対応済み】Issue #23(新ディメンションの生成アルゴリズムについて)を、既に対応済みだった内容(海面・海底調整+deepstone、境界ノイズ化)を再確認の上クローズした(§3CG-3)。**
+- **【新手法】issueのコメントスレッドを読む方法を確立した: `curl`でgithub.com本体のissueページHTMLを取得し、埋め込まれた`<script type="application/json" data-target="react-app.embeddedData">`をPythonでJSONパースして`body`/`bodyHTML`フィールドを検索する。`mcp__workspace__web_fetch`のテキスト抽出ではコメントスレッドが一切見えない(本文のみ)ことが今回判明したため、コメントの内容を確認する必要があるときは必ずこの方式を使うこと(§3CG冒頭)。**
 
 ### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.25.2(定期実行セッション#75、§3CF)。次回はここから1セッション目。**
-1. **【最優先・新規】README.mdの「バージョニング方針」に従い、次回以降のリリースでもPATCH/MINORの判断を誤らないこと(新規プレイヤー向けコンテンツが無ければPATCH)。判断根拠をPROGRESS.mdに明記すること。**
-2. 【継続】v0.25.1のポータル水破壊修正が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。
-3. 【継続】v0.25.0のセンチネル(弓AI)・ドリフター(遊泳AI)が実機で以前と遜色ない挙動か、こんぺいとう氏に確認を依頼すること。
-4. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。
-5. 【継続】Issue #19(詳細表示のバグ)の根本原因調査。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.25.3(定期実行セッション#76、§3CG)。次回はここから1セッション目。**
+1. **【最優先・新規】Issue #19の修正(v0.25.3)が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。直っていなければ§3CG-5の切り分け方針から着手すること。**
+2. 【継続】README.mdの「バージョニング方針」に従い、次回以降のリリースでもPATCH/MINORの判断を誤らないこと(新規プレイヤー向けコンテンツが無ければPATCH)。判断根拠をPROGRESS.mdに明記すること。
+3. 【継続】v0.25.1のポータル水破壊修正が実機で本当に直っているか、こんぺいとう氏に確認を依頼すること。
+4. 【継続】v0.25.0のセンチネル(弓AI)・ドリフター(遊泳AI)が実機で以前と遜色ない挙動か、こんぺいとう氏に確認を依頼すること。
+5. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。※issue #20自体は既にCLOSED状態だが、この2点が実際に解消されているかは別途要確認。
 6. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
 7. 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。
 8. 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
 9. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。`git config user.name`/`user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
 10. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
 11. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと。
-12. 【新規・全セッション必読】`ISSUES_TO_CLOSE.json`(Issueへのコメント+クローズをGitHub Actionsランナーに代行させる)と`PENDING_ISSUES.json`(Konpeitou24さん以外の投稿を保留してDiscord通知する)という2つのリレー機構が既に`.github/workflows/`に整備済み。api.github.comへの書き込みができないことを理由に「対応不可」と判断する前に、まずこの2ファイルが使えないか確認すること(§3CF-1)。
+12. 【継続・全セッション必読】`ISSUES_TO_CLOSE.json`(Issueへのコメント+クローズをGitHub Actionsランナーに代行させる)と`PENDING_ISSUES.json`(Konpeitou24さん以外の投稿を保留してDiscord通知する)という2つのリレー機構が既に`.github/workflows/`に整備済み。api.github.comへの書き込みができないことを理由に「対応不可」と判断する前に、まずこの2ファイルが使えないか確認すること。
+13. 【新規・全セッション必読】issueのコメントスレッドを読む必要がある場合は、`curl`でissueページHTMLを取得し`react-app.embeddedData`のJSONをパースする方式を使うこと(§3CG冒頭、§5冒頭)。`web_fetch`だけでは本文しか見えずコメントを見落とす。
 
 ### 議論したい論点・改善案
 
-- 【新規・最優先】Issue #25(バージョニング方針)への対応内容をこんぺいとう氏に確認いただき、問題なければクローズしていただきたい。
-- 【新規】api.github.comの`web_fetch`経由での到達性(§3CF-1)、次回も試す価値あり。
+- 【新規・最優先】Issue #19の修正が実際に機能しているか、こんぺいとう氏からのフィードバック待ち。
 - 【継続】ポータルフレームの専用ブロック化・6個セット化案。今後要望があれば着手を検討。
 - 【継続】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち。
 - 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
 - 【継続】3機械の共通基底クラス抽出、段階的アプローチ。
 - 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
-- 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手(今回も増加)。
+- 【継続】PROGRESS.mdの肥大化について、詳細ログと申し送りの完全分離は依然として未着手(今回も増加、4000行近く)。
 
 ### コミット/プッシュ状況
 
-今回(定期実行セッション#75)は以下をpush:
-1. `0e476e3` Generate missing specular maps for 11 blocks; document SemVer policy (issue #25)
-2. `b0c67de` Bump version to 0.25.2, add release notes、タグ`v0.25.2`
+今回(定期実行セッション#76)は以下をpush:
+1. `8e70ce7` Fix GitHub issue #19: item detail overlay/tooltip never appeared in GUI(+ issue #23をISSUES_TO_CLOSE.jsonに登録)
+2. `26b85d3` Bump version to 0.25.3, add release notes、タグ`v0.25.3`
 3. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
 
-push前に`git fetch`で並行セッション無しを確認、2回とも一発成功(1回目はプロキシ変数を空にする方式が逆に失敗し、素のプロキシ経由で成功した点に注意)。
+push前に`git fetch`で並行セッション無しを確認、2回とも一発成功(プロキシ回避策は不要だった)。
 
 ### 通知状況
 
