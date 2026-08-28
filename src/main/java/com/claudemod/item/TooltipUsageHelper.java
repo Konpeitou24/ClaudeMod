@@ -2,42 +2,27 @@ package com.claudemod.item;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
-import net.minecraftforge.api.distmarker.Dist;
-import net.minecraftforge.fml.loading.FMLEnvironment;
 
 /**
- * Session 60 (scheduled): centralizes the "hold {@link
+ * Session 60 (scheduled) originally added a "hold {@link
  * com.claudemod.client.ModKeyMappings#SHOW_ITEM_DETAILS} to reveal the
- * full usage hint" behaviour requested twice on Issue #7 (see that key
- * mapping's own javadoc for the full quote/reasoning).
+ * full usage hint inline in the tooltip" behaviour here, on top of the
+ * separate full-screen panel in {@link
+ * com.claudemod.client.overlay.ItemDetailsOverlay}. The repo owner later
+ * pointed out (direct chat, after issue #19's fix shipped in v0.25.3)
+ * that having both the tooltip line *and* the overlay panel react to the
+ * same key press reads as two redundant "detail" surfaces - one is
+ * enough. This class now only ever shows the short, static "hold W for
+ * details" prompt; {@link
+ * com.claudemod.client.overlay.ItemDetailsOverlay} is the sole surface
+ * that reveals the full {@code .usage}/{@code .details} text on a hold.
  *
  * <p>Every one of this mod's ~13 existing {@code *.usage} tooltip call
  * sites (across the various {@code Item}/{@code EnergyStorageBlockItem}
- * subclasses and {@code PrismiumGearTooltipHandler}) used the identical
- * one-line shape {@code Component.translatable(key + ".usage")
- * .withStyle(ChatFormatting.GRAY)}. Rather than duplicating the
- * "isDown()/short-prompt-fallback" logic at each of those sites, they now
- * all call {@link #usageLine(String)} instead, which mechanically
- * preserves each call site's existing {@code tooltip.add(...)} shape.
- *
- * <p><b>Client/server safety</b>: {@code Item#appendHoverText} and {@code
- * ItemTooltipEvent} are both, per {@code PrismiumGearTooltipHandler}'s
- * own research note (Forge javadoc, confirmed via WebSearch that
- * session), only ever invoked while a client is actually rendering a
- * tooltip - never on a dedicated server. This method still defensively
- * checks {@link FMLEnvironment#dist} before touching the client-only
- * {@code KeyMapping} class, so that even a hypothetical future
- * server-side call degrades to always showing the full line rather than
- * risking a {@code NoClassDefFoundError}, instead of relying purely on
- * "this is never called server-side" holding forever.
- *
- * <p><b>Unverified</b>: whether the short prompt line reads naturally
- * in-game, whether holding W while hovering a tooltip in an inventory
- * screen behaves as expected (no unwanted interaction with movement -
- * see {@code ModKeyMappings}'s javadoc for why this should be safe in
- * theory), and general tooltip line-wrapping/layout with the new short
- * line swapped in - this sandbox has no Minecraft client to check any of
- * that against, per PROGRESS.md's standing note.
+ * subclasses and {@code PrismiumGearTooltipHandler}) call {@link
+ * #usageLine(String)} instead of building this line inline, so this is
+ * still the single place to change if the prompt's wording/styling ever
+ * needs to change again.
  */
 public final class TooltipUsageHelper {
 
@@ -45,28 +30,17 @@ public final class TooltipUsageHelper {
     }
 
     /**
-     * Builds the one-line usage hint for the given item/block translation
-     * key (i.e. {@code getDescriptionId()}), showing the full hint text
-     * (from the existing {@code <key>.usage} lang entry) while the detail
-     * key is held, and a short, compact "hold W for details" prompt
-     * otherwise.
+     * Builds the one-line, always-short "hold W for details" prompt for
+     * the given item/block translation key (i.e. {@code
+     * getDescriptionId()}). The full description is shown exclusively by
+     * {@link com.claudemod.client.overlay.ItemDetailsOverlay} when the key
+     * is actually held - this line itself never expands, so this method no
+     * longer needs to read {@code descriptionId} at all, but keeps taking
+     * it so every existing call site's shape stays unchanged.
      */
     public static Component usageLine(String descriptionId) {
-        String usageKey = descriptionId + ".usage";
-        if (FMLEnvironment.dist != Dist.CLIENT || isDetailKeyDown()) {
-            return Component.translatable(usageKey).withStyle(ChatFormatting.GRAY);
-        }
         return Component.translatable("tooltip.claudemod.hold_for_details",
                         com.claudemod.client.ModKeyMappings.SHOW_ITEM_DETAILS.getTranslatedKeyMessage())
                 .withStyle(ChatFormatting.DARK_GRAY);
-    }
-
-    private static boolean isDetailKeyDown() {
-        // GitHub issue #19 fix (see com.claudemod.client.GuiKeyStateTracker's
-        // class javadoc for the full root-cause writeup): raw
-        // KeyMapping#isDown() is not reliably updated while a Screen (e.g.
-        // the inventory this tooltip is drawn inside) has input focus - use
-        // the mod's own GUI-context key tracker instead.
-        return com.claudemod.client.GuiKeyStateTracker.isShowItemDetailsHeld();
     }
 }

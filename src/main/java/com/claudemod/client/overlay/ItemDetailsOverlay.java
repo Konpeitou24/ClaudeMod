@@ -42,10 +42,16 @@ import java.util.List;
  * #59/#60):</b>
  * <ol>
  *   <li>Reuses the existing {@link ModKeyMappings#SHOW_ITEM_DETAILS}
- *   binding rather than adding a second key - one binding, two
- *   thresholds (a short hold already expands the tooltip via
- *   {@code TooltipUsageHelper}; holding past {@link #HOLD_THRESHOLD_TICKS}
- *   escalates to this overlay).</li>
+ *   binding rather than adding a second key. Originally this held key
+ *   also expanded the tooltip itself via {@code TooltipUsageHelper}
+ *   ("one binding, two thresholds"), but the repo owner asked for that
+ *   redundant second surface to be dropped (direct chat, after v0.25.3)
+ *   since seeing both the tooltip expand *and* this panel appear read as
+ *   two overlapping "detail" displays for the same press. {@code
+ *   TooltipUsageHelper} now only ever shows the static short prompt;
+ *   this overlay, appearing once the key is held past {@link
+ *   #HOLD_THRESHOLD_TICKS}, is the sole place the full description is
+ *   shown.</li>
  *   <li>This is a full-screen <em>overlay drawn on top of the current
  *   Screen</em> (via {@link ScreenEvent.Render.Post}), not a second
  *   {@code Minecraft#setScreen}-swapped {@code Screen}. Actually
@@ -114,10 +120,12 @@ public final class ItemDetailsOverlay {
     }
 
     /** Frames the key must be held, continuously over the same item,
-     * before this overlay appears - deliberately longer than the near-
-     * instant threshold {@code TooltipUsageHelper} uses for the plain
-     * tooltip expansion, so the two behaviours read as two distinct
-     * "steps" of the same long-press rather than firing simultaneously. */
+     * before this overlay appears. Originally kept deliberately long so
+     * this panel read as a distinct "second step" after {@code
+     * TooltipUsageHelper}'s (now-removed) instant tooltip expansion; left
+     * unchanged since this overlay is now the sole reveal mechanism and a
+     * short, non-instant hold still avoids the panel flashing in on a
+     * single accidental tap. */
     private static final int HOLD_THRESHOLD_TICKS = 25;
 
     /** Extra frames over which the panel finishes sliding into place
@@ -221,6 +229,35 @@ public final class ItemDetailsOverlay {
         int startY = -panelHeight - 4;
         int panelY = startY + Math.round((PANEL_TOP_Y - startY) * slideProgress);
 
+        // Repo owner-reported bug (direct chat, after v0.25.3): item icons
+        // and the vanilla tooltip box from the underlying container screen
+        // were rendering *on top of* this panel, even though this method
+        // only ever runs from ScreenEvent.Render.Post - i.e. strictly after
+        // the screen (including its tooltip) has already drawn. GuiGraphics
+        // batches draw calls per-RenderType rather than physically
+        // submitting them to the GPU in Java call order, so something
+        // queued earlier (e.g. renderItem's 3D-ish item render type, or the
+        // tooltip's own render type) can still end up flushed after - and
+        // therefore visually on top of - a plain fill()/drawString() call
+        // issued later in code but never explicitly flushed. See the
+        // "flush()"/"drawManaged()" guidance in GuiGraphics's own 1.20.x
+        // migration notes (docs.neoforged.net) and the Forge forums thread
+        // on exactly this "custom overlay ends up behind items" symptom -
+        // both point at the same two-part fix used here:
+        //   1. flush() *before* drawing, so every already-queued call from
+        //      the screen's own render (slots, items, tooltip) is actually
+        //      submitted to the GPU first, instead of possibly still
+        //      sitting in a buffer that gets flushed after ours.
+        //   2. Push the pose stack to GuiGraphics#MAX_GUI_Z (the same
+        //      "always in front" Z plane vanilla's own tooltip rendering
+        //      uses) before drawing, then pop it back afterward, so even
+        //      if GPU depth testing is still enabled from the screen's own
+        //      3D-ish item rendering, this panel cannot lose a depth test
+        //      against anything drawn at a lower Z.
+        guiGraphics.flush();
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0.0, 0.0, GuiGraphics.MAX_GUI_Z);
+
         guiGraphics.fill(panelX, panelY, panelX + panelWidth, panelY + panelHeight, PANEL_BACKGROUND);
         guiGraphics.fill(panelX, panelY, panelX + panelWidth, panelY + 1, PANEL_BORDER);
 
@@ -232,6 +269,12 @@ public final class ItemDetailsOverlay {
             guiGraphics.drawString(font, line, textX, textY, 0xC0C0C0, false);
             textY += font.lineHeight;
         }
+
+        // Flush our own draws immediately too (rather than leaving them to
+        // whatever flushes next), then restore the pose stack so this
+        // method never leaks a Z offset into anything rendered afterward.
+        guiGraphics.flush();
+        guiGraphics.pose().popPose();
     }
 
     /**
