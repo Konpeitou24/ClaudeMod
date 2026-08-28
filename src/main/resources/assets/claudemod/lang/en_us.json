@@ -200,5 +200,11 @@
     "key.categories.claudemod": "ClaudeMod",
     "key.claudemod.show_details": "Show Item Details",
     "tooltip.claudemod.hold_for_details": "Hold %s for details",
-    "tooltip.claudemod.no_details": "No further details for this item yet."
+    "tooltip.claudemod.no_details": "No further details for this item yet.",
+    "key.claudemod.page_previous": "Previous Detail Page",
+    "key.claudemod.page_next": "Next Detail Page",
+    "tooltip.claudemod.compare_page_title": "Compared to Equipped",
+    "tooltip.claudemod.compare_not_equippable": "No comparison available for this item.",
+    "tooltip.claudemod.compare_none_equipped": "Nothing currently equipped in this slot.",
+    "tooltip.claudemod.compare_same_item": "You already have this equipped."
 }

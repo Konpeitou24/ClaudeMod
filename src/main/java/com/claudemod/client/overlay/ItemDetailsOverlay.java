@@ -3,23 +3,37 @@ package com.claudemod.client.overlay;
 import com.claudemod.ClaudeMod;
 import com.claudemod.client.GuiKeyStateTracker;
 import com.claudemod.client.ModKeyMappings;
+import com.google.common.collect.Multimap;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
+import net.minecraft.client.gui.screens.inventory.tooltip.ClientTooltipComponent;
 import net.minecraft.client.resources.language.I18n;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.ai.attributes.Attribute;
+import net.minecraft.world.entity.ai.attributes.AttributeModifier;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.Slot;
+import net.minecraft.world.item.ArmorItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
 
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 
 /**
  * Issue #7's third/final comment (session 60 already handled the first two
@@ -51,7 +65,13 @@ import java.util.List;
  *   TooltipUsageHelper} now only ever shows the static short prompt;
  *   this overlay, appearing once the key is held past {@link
  *   #HOLD_THRESHOLD_TICKS}, is the sole place the full description is
- *   shown.</li>
+ *   shown. A follow-up request in the same conversation added a small
+ *   progress bar (drawn just under the vanilla tooltip while the key is
+ *   held but before the threshold - see {@link #onRenderTooltipPre}/
+ *   {@link #renderProgressBar}) and A/D page-turning once the panel is
+ *   visible (see {@link ItemDetailsPaging}), with page 2 showing a
+ *   comparison against whatever the player currently has equipped in the
+ *   relevant slot (see {@link #buildComparisonLines}).</li>
  *   <li>This is a full-screen <em>overlay drawn on top of the current
  *   Screen</em> (via {@link ScreenEvent.Render.Post}), not a second
  *   {@code Minecraft#setScreen}-swapped {@code Screen}. Actually
@@ -104,14 +124,27 @@ import java.util.List;
  * Font#split(FormattedText, int)} and the {@code GuiGraphics#drawString}
  * overload taking a {@code FormattedCharSequence} are long-stable vanilla
  * APIs confirmed unchanged from 1.17 through the 1.21.x NeoForge fork.
+ * {@code RenderTooltipEvent.Pre} (used by {@link #onRenderTooltipPre} for
+ * the progress bar's position) was likewise confirmed against Forge's
+ * {@code RenderTooltipEvent.java} source on the same branch: it exposes
+ * {@code getX()}/{@code getY()} (the tooltip box's own top-left) and
+ * {@code getComponents()} (the {@code ClientTooltipComponent} list used
+ * here to estimate the box's height, since no version of this event
+ * exposes a height directly).
  *
  * <p><b>Unverified</b> (no Minecraft client in this sandbox, per
  * PROGRESS.md's standing note): whether the frame-counted hold threshold
  * "feels" right at real framerates, whether the panel's fixed screen-top
  * position ever overlaps something important on any of the five existing
- * GUI screens, and whether {@code getSlotUnderMouse()} returns null
- * cleanly (rather than throwing) before a screen's first {@code init()}
- * repositions its slots - guarded defensively here regardless.
+ * GUI screens, whether {@code getSlotUnderMouse()} returns null cleanly
+ * (rather than throwing) before a screen's first {@code init()}
+ * repositions its slots - guarded defensively here regardless - and,
+ * newly this session, whether the progress bar lands visually just under
+ * the real tooltip (the height estimate in {@link #onRenderTooltipPre} is
+ * an approximation, not a byte-for-byte match of vanilla's own padding
+ * math) and whether the attribute-modifier comparison on page 2 reads as
+ * intended for this mod's actual gear (only a fixed, common subset of
+ * attributes is compared - see {@link #COMPARE_ATTRIBUTES}).
  */
 @Mod.EventBusSubscriber(modid = ClaudeMod.MOD_ID, value = Dist.CLIENT)
 public final class ItemDetailsOverlay {
@@ -138,8 +171,34 @@ public final class ItemDetailsOverlay {
     private static final int PANEL_BACKGROUND = 0xE8121218;
     private static final int PANEL_BORDER = 0xFF39E6D6;
 
+    private static final int PROGRESS_BAR_WIDTH = 60;
+    private static final int PROGRESS_BAR_HEIGHT = 3;
+    private static final int PROGRESS_BAR_GAP = 4;
+    private static final int PROGRESS_BAR_BACKGROUND = 0xFF2A2A2E;
+
+    /** Attributes compared on page 2 (see {@link #buildComparisonLines}).
+     * A fixed, deliberately small subset covering this mod's armor/tool/
+     * weapon gear rather than every vanilla {@link Attribute}, so the
+     * comparison page cannot balloon into a wall of zero-difference
+     * lines for attributes no ClaudeMod item ever touches. */
+    private static final Attribute[] COMPARE_ATTRIBUTES = {
+            Attributes.ATTACK_DAMAGE,
+            Attributes.ATTACK_SPEED,
+            Attributes.ARMOR,
+            Attributes.ARMOR_TOUGHNESS,
+            Attributes.KNOCKBACK_RESISTANCE,
+            Attributes.MOVEMENT_SPEED,
+    };
+
     private static int holdTicks = 0;
     private static Item lastHoveredItem = null;
+
+    /** Position/height of the vanilla tooltip most recently rendered this
+     * frame, captured by {@link #onRenderTooltipPre} so the progress bar
+     * in {@link #renderProgressBar} can be drawn just underneath it. -1
+     * means "no tooltip observed yet" (nothing should be drawn). */
+    private static int lastTooltipX = -1;
+    private static int lastTooltipBottomY = -1;
 
     /** GitHub issue #19 ("詳細表示のバグ" - holding the details key shows
      * nothing at all): root cause found and fixed this session - see
@@ -174,6 +233,36 @@ public final class ItemDetailsOverlay {
         }
     }
 
+    /**
+     * Captures the vanilla tooltip's box position/estimated height for
+     * {@link #renderProgressBar} to use. Fires for every tooltip in the
+     * game (this mod doesn't own the container screens it needs to read
+     * this from, so - same reasoning as {@code GuiKeyStateTracker}'s key
+     * events - a Forge event is the only way to see it), which is cheap
+     * enough to not bother filtering by "is the details key even held"
+     * here; {@link #renderProgressBar} is what actually gates on that.
+     */
+    @SubscribeEvent
+    public static void onRenderTooltipPre(RenderTooltipEvent.Pre event) {
+        List<ClientTooltipComponent> components = event.getComponents();
+        // Vanilla's own tooltip box adds a small fixed padding above/
+        // below the stacked component heights (see
+        // GuiGraphics#renderTooltipInternal) plus 2px of breathing room
+        // after the first line when there is more than one - this mirrors
+        // that shape closely enough for "roughly under the tooltip"
+        // without claiming byte-for-byte precision (no version of this
+        // event exposes a ready-made height).
+        int height = 6;
+        for (int i = 0; i < components.size(); i++) {
+            height += components.get(i).getHeight();
+            if (i == 0 && components.size() > 1) {
+                height += 2;
+            }
+        }
+        lastTooltipX = event.getX();
+        lastTooltipBottomY = event.getY() + height;
+    }
+
     private static void renderIfHeld(ScreenEvent.Render.Post event) {
         Screen screen = event.getScreen();
         if (!(screen instanceof AbstractContainerScreen<?> containerScreen)) {
@@ -195,9 +284,11 @@ public final class ItemDetailsOverlay {
         if (stack.getItem() != lastHoveredItem) {
             lastHoveredItem = stack.getItem();
             holdTicks = 0;
+            ItemDetailsPaging.resetPage();
         }
         holdTicks++;
         if (holdTicks < HOLD_THRESHOLD_TICKS) {
+            renderProgressBar(event.getGuiGraphics(), holdTicks);
             return;
         }
 
@@ -205,25 +296,64 @@ public final class ItemDetailsOverlay {
         renderPanel(event.getGuiGraphics(), screen, stack, slideProgress);
     }
 
+    /** Whether the full panel (as opposed to just the progress bar, or
+     * nothing) is currently being shown - {@link ItemDetailsPaging} only
+     * turns pages while this is true, so A/D can't advance a page that
+     * isn't visible yet. */
+    public static boolean isPanelVisible() {
+        return holdTicks >= HOLD_THRESHOLD_TICKS;
+    }
+
     private static void reset() {
         holdTicks = 0;
         lastHoveredItem = null;
+        lastTooltipX = -1;
+        lastTooltipBottomY = -1;
+        ItemDetailsPaging.resetPage();
+    }
+
+    private static void renderProgressBar(GuiGraphics guiGraphics, int ticks) {
+        if (lastTooltipX < 0 || lastTooltipBottomY < 0) {
+            // No tooltip observed this hover yet (e.g. the very first
+            // frame of a new hover, before onRenderTooltipPre has fired) -
+            // nothing sensible to draw under.
+            return;
+        }
+        float progress = Math.min(1f, ticks / (float) HOLD_THRESHOLD_TICKS);
+        int barX = lastTooltipX;
+        int barY = lastTooltipBottomY + PROGRESS_BAR_GAP;
+
+        guiGraphics.pose().pushPose();
+        guiGraphics.pose().translate(0.0F, 0.0F, 400.0F);
+        guiGraphics.fill(barX, barY, barX + PROGRESS_BAR_WIDTH, barY + PROGRESS_BAR_HEIGHT, PROGRESS_BAR_BACKGROUND);
+        int filledWidth = Math.round(PROGRESS_BAR_WIDTH * progress);
+        if (filledWidth > 0) {
+            guiGraphics.fill(barX, barY, barX + filledWidth, barY + PROGRESS_BAR_HEIGHT, PANEL_BORDER);
+        }
+        guiGraphics.pose().popPose();
     }
 
     private static void renderPanel(GuiGraphics guiGraphics, Screen screen, ItemStack stack, float slideProgress) {
         Minecraft minecraft = Minecraft.getInstance();
         Font font = minecraft.font;
 
+        int page = ItemDetailsPaging.currentPage();
         Component name = stack.getHoverName();
-        Component description = resolveDescription(stack);
-        List<FormattedCharSequence> descriptionLines = font.split(description, DESCRIPTION_WRAP_WIDTH);
+        List<FormattedCharSequence> bodyLines = new ArrayList<>();
+        if (page == 0) {
+            bodyLines.addAll(font.split(resolveDescription(stack), DESCRIPTION_WRAP_WIDTH));
+        } else {
+            for (Component line : buildComparisonLines(stack)) {
+                bodyLines.addAll(font.split(line, DESCRIPTION_WRAP_WIDTH));
+            }
+        }
 
         int contentWidth = font.width(name);
-        for (FormattedCharSequence line : descriptionLines) {
+        for (FormattedCharSequence line : bodyLines) {
             contentWidth = Math.max(contentWidth, font.width(line));
         }
         int panelWidth = contentWidth + PANEL_PADDING * 2;
-        int panelHeight = PANEL_PADDING * 2 + font.lineHeight + 4 + descriptionLines.size() * font.lineHeight;
+        int panelHeight = PANEL_PADDING * 2 + font.lineHeight + 4 + bodyLines.size() * font.lineHeight;
 
         int panelX = (screen.width - panelWidth) / 2;
         int startY = -panelHeight - 4;
@@ -257,9 +387,15 @@ public final class ItemDetailsOverlay {
         int textY = panelY + PANEL_PADDING;
         guiGraphics.drawString(font, name, textX, textY, 0xFFFFFF, false);
         textY += font.lineHeight + 4;
-        for (FormattedCharSequence line : descriptionLines) {
+        for (FormattedCharSequence line : bodyLines) {
             guiGraphics.drawString(font, line, textX, textY, 0xC0C0C0, false);
             textY += font.lineHeight;
+        }
+
+        if (ItemDetailsPaging.PAGE_COUNT > 1) {
+            String pageIndicator = (page + 1) + "/" + ItemDetailsPaging.PAGE_COUNT;
+            int indicatorX = panelX + panelWidth - PANEL_PADDING - font.width(pageIndicator);
+            guiGraphics.drawString(font, pageIndicator, indicatorX, panelY + PANEL_PADDING, 0x808080, false);
         }
 
         guiGraphics.pose().popPose();
@@ -284,5 +420,96 @@ public final class ItemDetailsOverlay {
             return Component.translatable(usageKey);
         }
         return Component.translatable("tooltip.claudemod.no_details");
+    }
+
+    /**
+     * Page 2 content (repo owner's own suggestion, direct chat): compares
+     * the hovered item's default attribute modifiers against whatever the
+     * player currently has equipped in the same slot. Armor uses {@link
+     * ArmorItem#getEquipmentSlot()}; anything else is treated as a
+     * mainhand item if - and only if - it actually carries mainhand
+     * attribute modifiers (covers this mod's weapons/tools generically,
+     * without hardcoding a list of item classes), otherwise there is
+     * nothing meaningful to compare and a fallback line is shown instead.
+     */
+    private static List<Component> buildComparisonLines(ItemStack stack) {
+        List<Component> lines = new ArrayList<>();
+        EquipmentSlot slot = resolveComparisonSlot(stack);
+        if (slot == null) {
+            lines.add(Component.translatable("tooltip.claudemod.compare_not_equippable")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            return lines;
+        }
+
+        Player player = Minecraft.getInstance().player;
+        if (player == null) {
+            lines.add(Component.translatable("tooltip.claudemod.compare_not_equippable")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            return lines;
+        }
+
+        ItemStack equipped = player.getItemBySlot(slot);
+        if (equipped.isEmpty()) {
+            lines.add(Component.translatable("tooltip.claudemod.compare_none_equipped")
+                    .withStyle(ChatFormatting.GRAY));
+            return lines;
+        }
+        if (ItemStack.isSameItem(equipped, stack)) {
+            lines.add(Component.translatable("tooltip.claudemod.compare_same_item")
+                    .withStyle(ChatFormatting.GRAY));
+            return lines;
+        }
+
+        Multimap<Attribute, AttributeModifier> hoveredMods = stack.getAttributeModifiers(slot);
+        Multimap<Attribute, AttributeModifier> equippedMods = equipped.getAttributeModifiers(slot);
+
+        Set<Attribute> attributesToShow = new LinkedHashSet<>();
+        for (Attribute attribute : COMPARE_ATTRIBUTES) {
+            if (hoveredMods.containsKey(attribute) || equippedMods.containsKey(attribute)) {
+                attributesToShow.add(attribute);
+            }
+        }
+        if (attributesToShow.isEmpty()) {
+            lines.add(Component.translatable("tooltip.claudemod.compare_not_equippable")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            return lines;
+        }
+
+        for (Attribute attribute : attributesToShow) {
+            double before = sumAmount(equippedMods, attribute);
+            double after = sumAmount(hoveredMods, attribute);
+            double diff = after - before;
+            ChatFormatting diffColor = diff > 0 ? ChatFormatting.GREEN
+                    : diff < 0 ? ChatFormatting.RED : ChatFormatting.GRAY;
+            String sign = diff > 0 ? "+" : "";
+            lines.add(Component.translatable(attribute.getDescriptionId())
+                    .append(Component.literal(": " + formatAmount(before) + " -> " + formatAmount(after) + " ("))
+                    .append(Component.literal(sign + formatAmount(diff)).withStyle(diffColor))
+                    .append(Component.literal(")"))
+                    .withStyle(ChatFormatting.WHITE));
+        }
+        return lines;
+    }
+
+    private static EquipmentSlot resolveComparisonSlot(ItemStack stack) {
+        if (stack.getItem() instanceof ArmorItem armorItem) {
+            return armorItem.getEquipmentSlot();
+        }
+        if (!stack.getAttributeModifiers(EquipmentSlot.MAINHAND).isEmpty()) {
+            return EquipmentSlot.MAINHAND;
+        }
+        return null;
+    }
+
+    private static double sumAmount(Multimap<Attribute, AttributeModifier> modifiers, Attribute attribute) {
+        double total = 0.0;
+        for (AttributeModifier modifier : modifiers.get(attribute)) {
+            total += modifier.getAmount();
+        }
+        return total;
+    }
+
+    private static String formatAmount(double value) {
+        return String.format(Locale.ROOT, "%.1f", value);
     }
 }

@@ -41,6 +41,16 @@ import org.lwjgl.glfw.GLFW;
  * {@code KeyMapping} construction (TerraFirmaCraft's
  * {@code TFCKeyBindings}, fetched this session) for the exact constructor
  * shape used below.
+ *
+ * <p><b>{@link #PAGE_PREVIOUS}/{@link #PAGE_NEXT}</b> (direct chat with
+ * the repo owner, after the issue #19 key-detection fix shipped): while
+ * holding {@link #SHOW_ITEM_DETAILS}, A/D turns between "pages" of the
+ * detail overlay (see {@code ItemDetailsOverlay}'s paging support). Like
+ * {@code SHOW_ITEM_DETAILS} these duplicate vanilla's strafe-left/right
+ * bindings by default, for the same reason and with the same safety
+ * argument: movement input is already suppressed by vanilla whenever a
+ * {@code Screen} is open, so this cannot make the player strafe while
+ * paging through the overlay.
  */
 public final class ModKeyMappings {
 
@@ -54,5 +64,19 @@ public final class ModKeyMappings {
             KeyConflictContext.UNIVERSAL,
             InputConstants.Type.KEYSYM,
             GLFW.GLFW_KEY_W,
+            CATEGORY);
+
+    public static final KeyMapping PAGE_PREVIOUS = new KeyMapping(
+            "key." + ClaudeMod.MOD_ID + ".page_previous",
+            KeyConflictContext.UNIVERSAL,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_A,
+            CATEGORY);
+
+    public static final KeyMapping PAGE_NEXT = new KeyMapping(
+            "key." + ClaudeMod.MOD_ID + ".page_next",
+            KeyConflictContext.UNIVERSAL,
+            InputConstants.Type.KEYSYM,
+            GLFW.GLFW_KEY_D,
             CATEGORY);
 }

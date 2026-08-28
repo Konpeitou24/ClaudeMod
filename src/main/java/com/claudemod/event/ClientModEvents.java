@@ -67,6 +67,11 @@ public class ClientModEvents {
         // WebSearch/github.com), matching the registerRenderers/
         // registerDimensionEffects pattern already used in this class.
         event.register(ModKeyMappings.SHOW_ITEM_DETAILS);
+        // Direct-chat follow-up (after issue #19's fix): A/D page-turn
+        // bindings for ItemDetailsOverlay's multi-page support, same
+        // registration call as SHOW_ITEM_DETAILS above.
+        event.register(ModKeyMappings.PAGE_PREVIOUS);
+        event.register(ModKeyMappings.PAGE_NEXT);
     }
 
     @SubscribeEvent

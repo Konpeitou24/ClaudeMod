@@ -200,5 +200,11 @@
     "key.categories.claudemod": "ClaudeMod",
     "key.claudemod.show_details": "アイテム詳細を表示",
     "tooltip.claudemod.hold_for_details": "%sを押しながら詳細を表示",
-    "tooltip.claudemod.no_details": "この項目についての詳しい説明はまだありません。"
+    "tooltip.claudemod.no_details": "この項目についての詳しい説明はまだありません。",
+    "key.claudemod.page_previous": "詳細ページ 前へ",
+    "key.claudemod.page_next": "詳細ページ 次へ",
+    "tooltip.claudemod.compare_page_title": "現在の装備との比較",
+    "tooltip.claudemod.compare_not_equippable": "このアイテムには比較情報がありません。",
+    "tooltip.claudemod.compare_none_equipped": "このスロットには何も装備していません。",
+    "tooltip.claudemod.compare_same_item": "これは現在装備中のアイテムと同じです。"
 }
