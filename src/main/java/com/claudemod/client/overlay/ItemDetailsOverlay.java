@@ -476,8 +476,32 @@ public final class ItemDetailsOverlay {
         }
 
         for (Attribute attribute : attributesToShow) {
-            double before = sumAmount(equippedMods, attribute);
-            double after = sumAmount(hoveredMods, attribute);
+            // Repo owner-reported bug (direct chat, screenshot): this page
+            // originally compared raw modifier sums only (e.g. a hoe's own
+            // -1.0 attack speed modifier), which didn't match the number
+            // shown in the vanilla tooltip's own "when held in main hand"
+            // section just below (e.g. 3.0). Checked vanilla's actual
+            // tooltip-building code (ItemStack#getTooltipLines,
+            // decompiled 1.20.1 source) to find why: it special-cases
+            // exactly two modifier IDs - Item.BASE_ATTACK_DAMAGE_UUID and
+            // Item.BASE_ATTACK_SPEED_UUID - adding the player's current
+            // LivingEntity#getAttributeBaseValue(Attribute) (1.0 attack
+            // damage / 4.0 attack speed by default) before display; every
+            // other attribute (armor, armor toughness, knockback
+            // resistance, movement speed) is shown as a plain modifier
+            // delta with no base value added, same as this page already
+            // did. So only ATTACK_DAMAGE/ATTACK_SPEED need the base value
+            // added here to match; the others are left as pure deltas,
+            // which was already correct. getAttributeBaseValue(Attribute)
+            // confirmed present on LivingEntity in the 1.20.1 line via
+            // WebSearch this session (Forge javadoc mirrors, adjacent
+            // 1.19.3/1.18.2 versions with the same signature; the
+            // Attribute-typed overload, not the later Holder<Attribute>
+            // one introduced after 1.20.1).
+            boolean showsAsTotal = attribute == Attributes.ATTACK_DAMAGE || attribute == Attributes.ATTACK_SPEED;
+            double base = showsAsTotal ? player.getAttributeBaseValue(attribute) : 0.0;
+            double before = base + sumAmount(equippedMods, attribute);
+            double after = base + sumAmount(hoveredMods, attribute);
             double diff = after - before;
             ChatFormatting diffColor = diff > 0 ? ChatFormatting.GREEN
                     : diff < 0 ? ChatFormatting.RED : ChatFormatting.GRAY;
