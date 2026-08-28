@@ -1,6 +1,7 @@
 package com.claudemod.client.overlay;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.client.GuiKeyStateTracker;
 import com.claudemod.client.ModKeyMappings;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -133,21 +134,22 @@ public final class ItemDetailsOverlay {
     private static Item lastHoveredItem = null;
 
     /** GitHub issue #19 ("詳細表示のバグ" - holding the details key shows
-     * nothing at all) follow-up: this session's code review (see
-     * PROGRESS.md) could not find a confirmed root cause for that report
-     * by reading alone - {@link ModKeyMappings#SHOW_ITEM_DETAILS}'s
-     * registration, this class's {@code AbstractContainerScreen} check,
-     * and {@code getSlotUnderMouse()}'s Forge-added accessor all read as
-     * correct against this class's own citations. Rather than guess at a
-     * fix blind, this listener body is now wrapped so that *if* some
-     * exception is actually being thrown here every frame (which would
-     * silently and completely disable the overlay with zero visible
-     * symptom besides "nothing happens" - exactly matching the report),
-     * it gets logged once instead of vanishing, giving the next session
-     * (or the repo owner, if they can share a log) a concrete stack
-     * trace to work from instead of another round of blind code review.
-     * Guarded by {@link #loggedFailure} so a real per-frame exception
-     * cannot spam the log. */
+     * nothing at all): root cause found and fixed this session - see
+     * {@link GuiKeyStateTracker}'s class javadoc for the full writeup.
+     * In short, this class was reading {@code
+     * ModKeyMappings#SHOW_ITEM_DETAILS.isDown()}, which Forge's own docs
+     * describe as the "within the game" mechanism, not the "inside a
+     * GUI" one this feature actually needs (this overlay only ever
+     * renders while an {@code AbstractContainerScreen} has input focus).
+     * {@link GuiKeyStateTracker#isShowItemDetailsHeld()} now backs this
+     * check instead. The exception-guard below predates that fix (added
+     * by an earlier session that could not find the cause by reading
+     * alone) and is kept regardless, on the general principle that a
+     * per-frame render listener silently swallowing exceptions is worth
+     * guarding against either way; it is no longer expected to be the
+     * source of the originally reported symptom. Guarded by {@link
+     * #loggedFailure} so a real per-frame exception cannot spam the
+     * log. */
     private static boolean loggedFailure = false;
 
     @SubscribeEvent
@@ -171,7 +173,12 @@ public final class ItemDetailsOverlay {
             return;
         }
         Slot hovered = containerScreen.getSlotUnderMouse();
-        if (hovered == null || !hovered.hasItem() || !ModKeyMappings.SHOW_ITEM_DETAILS.isDown()) {
+        // GitHub issue #19 fix: was ModKeyMappings.SHOW_ITEM_DETAILS.isDown(),
+        // which per Forge's own "Key Mappings" docs ("Within the Game" vs.
+        // "Inside a GUI" sections) is not the mechanism meant for detecting
+        // a key's state while a Screen has input focus - see
+        // GuiKeyStateTracker's class javadoc for the full investigation.
+        if (hovered == null || !hovered.hasItem() || !GuiKeyStateTracker.isShowItemDetailsHeld()) {
             reset();
             return;
         }

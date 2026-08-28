@@ -62,6 +62,11 @@ public final class TooltipUsageHelper {
     }
 
     private static boolean isDetailKeyDown() {
-        return com.claudemod.client.ModKeyMappings.SHOW_ITEM_DETAILS.isDown();
+        // GitHub issue #19 fix (see com.claudemod.client.GuiKeyStateTracker's
+        // class javadoc for the full root-cause writeup): raw
+        // KeyMapping#isDown() is not reliably updated while a Screen (e.g.
+        // the inventory this tooltip is drawn inside) has input focus - use
+        // the mod's own GUI-context key tracker instead.
+        return com.claudemod.client.GuiKeyStateTracker.isShowItemDetailsHeld();
     }
 }
