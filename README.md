@@ -31,7 +31,7 @@ Minecraft Forge (1.20.1) 向けの「てんこ盛り」コンテンツMOD。新�
 ### 資源・素材
 - **Prismium**: 鉱石・欠片・インゴットブロックからなる新資源ライン。MOD内の他コンテンツ全体の共通素材テーマ。
 - **Prismium Core**: ダイヤモンド以上のツールでしか採掘できない、常時発光する上位ブロック。Prismium Cellのクラフト素材にもなる。
-- **建築バリエーション**: Prismium Blockのスラブ・塀・階段・模様入りブロック(Chiseled)。
+- **建築バリエーション**: Prismium Block/Prismium Core/蒼白のプリズミウムブロック(Pale Prismium Block)のスラブ・塀・階段(Prismium Blockのみ模様入りブロック(Chiseled)も追加)。
 
 ### 道具・防具
 - Prismiumツール5種(ツルハシ・斧・シャベル・クワ・剣)。ツルハシは鉱石の追加ドロップ、斧・シャベル・クワ・剣にもそれぞれ固有ギミックあり。
