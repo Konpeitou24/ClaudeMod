@@ -1,0 +1,17 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "building",
+    "pattern": [
+        "###",
+        "###"
+    ],
+    "key": {
+        "#": {
+            "item": "claudemod:pale_prismium_block"
+        }
+    },
+    "result": {
+        "item": "claudemod:pale_prismium_block_wall",
+        "count": 6
+    }
+}

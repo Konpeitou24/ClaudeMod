@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:block/template_wall_post",
+    "textures": {
+        "wall": "claudemod:block/pale_prismium_block"
+    }
+}

@@ -414,6 +414,37 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 8)));
 
+    // Pale Prismium Block Slab/Wall/Stairs (session 78): building
+    // variants for the pale block, mirroring the PRISMIUM_BLOCK_SLAB/
+    // WALL/STAIRS precedent (session 34) exactly - vanilla SlabBlock/
+    // WallBlock/StairBlock, no custom subclass, same stats as the base
+    // block (minus lightLevel, matching how PRISMIUM_BLOCK's own
+    // variants deliberately drop it), and reusing the base block's own
+    // texture rather than a new one. Addresses a continued backlog item
+    // from PROGRESS.md session 77 ("蒼白のプリズミウムブロックにスラブ・
+    // 塀・階段などの建築バリエーションを追加するかどうか").
+    public static final RegistryObject<Block> PALE_PRISMIUM_BLOCK_SLAB = BLOCKS.register("pale_prismium_block_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PALE_PRISMIUM_BLOCK_WALL = BLOCKS.register("pale_prismium_block_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PALE_PRISMIUM_BLOCK_STAIRS = BLOCKS.register("pale_prismium_block_stairs",
+            () -> new StairBlock(() -> PALE_PRISMIUM_BLOCK.get().defaultBlockState(),
+                    BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
     // Chiseled Prismium Block (session 34): the mod's first purely
     // decorative masonry variant - no new mechanics, just a second look
     // for Prismium Block so builders/explorers have a detail block to

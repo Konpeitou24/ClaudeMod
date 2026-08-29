@@ -28,6 +28,9 @@
         "claudemod:prismium_smelter",
         "claudemod:prismium_compressor",
         "claudemod:prismium_alloy_block",
-        "claudemod:pale_prismium_block"
+        "claudemod:pale_prismium_block",
+        "claudemod:pale_prismium_block_slab",
+        "claudemod:pale_prismium_block_wall",
+        "claudemod:pale_prismium_block_stairs"
     ]
 }

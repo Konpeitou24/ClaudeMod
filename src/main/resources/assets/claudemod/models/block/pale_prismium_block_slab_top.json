@@ -1,0 +1,8 @@
+{
+    "parent": "minecraft:block/slab_top",
+    "textures": {
+        "bottom": "claudemod:block/pale_prismium_block",
+        "top": "claudemod:block/pale_prismium_block",
+        "side": "claudemod:block/pale_prismium_block"
+    }
+}
