@@ -445,6 +445,27 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)));
 
+    // Pale Prismium Lantern (session #79, scheduled): the Pale Prismium
+    // family's own exploration light source, mirroring PRISMIUM_LANTERN
+    // (session 4) exactly in role and stats - a cheap, non-tool-gated
+    // block meant to be crafted in bulk and placed liberally to light up
+    // builds/caves, distinct from PALE_PRISMIUM_BLOCK's tool-gated
+    // decorative-masonry stats. No requiresCorrectToolForDrops(): like
+    // vanilla Lantern and PRISMIUM_LANTERN, it always drops itself
+    // regardless of what broke it. Max light level (15), same as
+    // PRISMIUM_LANTERN - both are dedicated "exploration light" blocks,
+    // just in different color families, so there's no reason to make one
+    // dimmer than the other. See gen_pale_prismium_lantern.py for the
+    // art (same dark-cage-over-glow technique as gen_prismium_lantern.py,
+    // reskinned in the PALE_* icy palette).
+    // Unverified: not play-tested in a running client (see PROGRESS.md).
+    public static final RegistryObject<Block> PALE_PRISMIUM_LANTERN = BLOCKS.register("pale_prismium_lantern",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .strength(3.5f, 3.5f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 15)));
+
     // Chiseled Prismium Block (session 34): the mod's first purely
     // decorative masonry variant - no new mechanics, just a second look
     // for Prismium Block so builders/explorers have a detail block to

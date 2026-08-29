@@ -114,6 +114,11 @@ public class ModItems {
     public static final RegistryObject<Item> PALE_PRISMIUM_BLOCK_STAIRS_ITEM = ITEMS.register("pale_prismium_block_stairs",
             () -> new BlockItem(ModBlocks.PALE_PRISMIUM_BLOCK_STAIRS.get(), new Item.Properties()));
 
+    // Pale Prismium Lantern (session #79, scheduled). See
+    // ModBlocks.PALE_PRISMIUM_LANTERN.
+    public static final RegistryObject<Item> PALE_PRISMIUM_LANTERN_ITEM = ITEMS.register("pale_prismium_lantern",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_LANTERN.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_CORE_ITEM = ITEMS.register("prismium_core",
             () -> new BlockItem(ModBlocks.PRISMIUM_CORE.get(), new Item.Properties()));
 

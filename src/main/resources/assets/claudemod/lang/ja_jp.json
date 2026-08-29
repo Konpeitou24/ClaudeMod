@@ -201,6 +201,8 @@
     "block.claudemod.pale_prismium_block_slab": "蒼白のプリズミウムブロックのハーフブロック",
     "block.claudemod.pale_prismium_block_wall": "蒼白のプリズミウムブロックの塀",
     "block.claudemod.pale_prismium_block_stairs": "蒼白のプリズミウムブロックの階段",
+    "block.claudemod.pale_prismium_lantern": "蒼白のプリズミウムランタン",
+    "block.claudemod.pale_prismium_lantern.details": "蒼白のプリズミウムブロックと松明から作られる、安価で明るい探索用の光源。プリズミウムランタンの蒼白ファミリー版。",
     "message.claudemod.prismium_chronoflame.cooldown": "クロノフレイムはあと%1$s秒操作できません",
     "key.categories.claudemod": "ClaudeMod",
     "key.claudemod.show_details": "アイテム詳細を表示",

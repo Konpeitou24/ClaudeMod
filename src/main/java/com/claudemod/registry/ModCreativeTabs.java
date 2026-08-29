@@ -38,6 +38,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PALE_PRISMIUM_BLOCK_SLAB_ITEM.get()); // session #78
                         output.accept(ModItems.PALE_PRISMIUM_BLOCK_WALL_ITEM.get()); // session #78
                         output.accept(ModItems.PALE_PRISMIUM_BLOCK_STAIRS_ITEM.get()); // session #78
+                        output.accept(ModItems.PALE_PRISMIUM_LANTERN_ITEM.get()); // session #79
                         output.accept(ModItems.PRISMIUM_CORE_ITEM.get());
                         output.accept(ModItems.CHISELED_PRISMIUM_BLOCK_ITEM.get());
                         output.accept(ModItems.PRISMIUM_BLOCK_SLAB_ITEM.get());

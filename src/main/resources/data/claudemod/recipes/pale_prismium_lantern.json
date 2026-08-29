@@ -1,0 +1,12 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "claudemod:pale_prismium_block" },
+        { "item": "minecraft:torch" }
+    ],
+    "result": {
+        "item": "claudemod:pale_prismium_lantern",
+        "count": 1
+    }
+}

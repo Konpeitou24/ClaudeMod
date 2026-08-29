@@ -201,6 +201,8 @@
     "block.claudemod.pale_prismium_block_slab": "Pale Prismium Block Slab",
     "block.claudemod.pale_prismium_block_wall": "Pale Prismium Block Wall",
     "block.claudemod.pale_prismium_block_stairs": "Pale Prismium Block Stairs",
+    "block.claudemod.pale_prismium_lantern": "Pale Prismium Lantern",
+    "block.claudemod.pale_prismium_lantern.details": "A cheap, bright light source for exploration, crafted from a Pale Prismium Block and a torch - the Pale family's counterpart to Prismium Lantern.",
     "message.claudemod.prismium_chronoflame.cooldown": "Chronoflame can't be used again for %1$s more second(s)",
     "key.categories.claudemod": "ClaudeMod",
     "key.claudemod.show_details": "Show Item Details",
