@@ -396,6 +396,24 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 6)));
 
+    // Pale Prismium Block (session #77, scheduled): the mod's first
+    // genuinely pale blue-white ("青白い") decorative block, answering a
+    // direct user request that had been sitting in PROGRESS.md's
+    // continued backlog for several sessions. Deliberately a plain
+    // Block (no BlockEntity/ticker) with its own new icy palette - see
+    // scripts/textures/gen_pale_prismium_block.py for why this is NOT
+    // just a lighter tint of PRISMIUM_BASE. Stats mirror PRISMIUM_BLOCK/
+    // PRISMIUM_ALLOY_BLOCK (this mod's other simple decorative full
+    // blocks) rather than inventing new numbers with no grounding.
+    // Unverified: not play-tested in a running client (see PROGRESS.md).
+    public static final RegistryObject<Block> PALE_PRISMIUM_BLOCK = BLOCKS.register("pale_prismium_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 8)));
+
     // Chiseled Prismium Block (session 34): the mod's first purely
     // decorative masonry variant - no new mechanics, just a second look
     // for Prismium Block so builders/explorers have a detail block to

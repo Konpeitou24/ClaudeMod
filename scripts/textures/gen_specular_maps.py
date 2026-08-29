@@ -58,6 +58,7 @@ LIGHT_LEVELS = {
     "prismium_portal.png": 11,
     "prismium_chronoflame.png": 14,
     "prismium_chronoflame_top.png": 14,
+    "pale_prismium_block.png": 8,
 }
 
 

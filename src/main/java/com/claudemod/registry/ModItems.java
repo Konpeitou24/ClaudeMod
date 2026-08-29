@@ -98,6 +98,11 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_ITEM = ITEMS.register("prismium_alloy_block",
             () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK.get(), new Item.Properties()));
 
+    // BlockItem for Pale Prismium Block (session #77, scheduled). See
+    // ModBlocks.PALE_PRISMIUM_BLOCK.
+    public static final RegistryObject<Item> PALE_PRISMIUM_BLOCK_ITEM = ITEMS.register("pale_prismium_block",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_BLOCK.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_CORE_ITEM = ITEMS.register("prismium_core",
             () -> new BlockItem(ModBlocks.PRISMIUM_CORE.get(), new Item.Properties()));
 

@@ -27,6 +27,7 @@
         "claudemod:prismium_pulverizer",
         "claudemod:prismium_smelter",
         "claudemod:prismium_compressor",
-        "claudemod:prismium_alloy_block"
+        "claudemod:prismium_alloy_block",
+        "claudemod:pale_prismium_block"
     ]
 }

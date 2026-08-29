@@ -196,6 +196,8 @@
     "item.claudemod.prismium_alloy_ingot.details": "プリズミウム圧縮機がプリズミウムのインゴットから作り出す、より緻密な金属インゴット。プリズミウム合金ブロックの素材として使われる。",
     "block.claudemod.prismium_alloy_block": "プリズミウム合金ブロック",
     "block.claudemod.prismium_alloy_block.details": "プリズミウム合金インゴットの圧縮保管用ブロック。プリズミウムブロックがプリズミウムのかけらに対して持つのと同じ役割。",
+    "block.claudemod.pale_prismium_block": "蒼白のプリズミウムブロック",
+    "block.claudemod.pale_prismium_block.details": "青白く凍てついたような見た目の装飾ブロック。プリズミウムのかけらと石英ブロックから作られる。",
     "message.claudemod.prismium_chronoflame.cooldown": "クロノフレイムはあと%1$s秒操作できません",
     "key.categories.claudemod": "ClaudeMod",
     "key.claudemod.show_details": "アイテム詳細を表示",

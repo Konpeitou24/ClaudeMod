@@ -34,6 +34,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_DEEPSTONE_ITEM.get()); // session 72
                         output.accept(ModItems.PRISMIUM_BLOCK_ITEM.get());
                         output.accept(ModItems.PRISMIUM_ALLOY_BLOCK_ITEM.get()); // session 70
+                        output.accept(ModItems.PALE_PRISMIUM_BLOCK_ITEM.get()); // session #77
                         output.accept(ModItems.PRISMIUM_CORE_ITEM.get());
                         output.accept(ModItems.CHISELED_PRISMIUM_BLOCK_ITEM.get());
                         output.accept(ModItems.PRISMIUM_BLOCK_SLAB_ITEM.get());
