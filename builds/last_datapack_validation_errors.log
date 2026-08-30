@@ -1,21 +1,21 @@
-3691:[13:05:14] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from forge-1.20.1-47.4.0_mapped_official_1.20.1.jar, it does not contain dependency information.
-3692:[13:05:14] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from , it does not contain dependency information.
-3693:[13:05:14] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from curios-forge-5.14.1+1.20.1_mapped_official_1.20.1.jar, it does not contain dependency information.
-3694:[13:05:14] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from main, it does not contain dependency information.
-3695:[13:05:14] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from mclanguage-1.20.1-47.4.0.jar, it does not contain dependency information.
-3696:[13:05:14] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from javafmllanguage-1.20.1-47.4.0.jar, it does not contain dependency information.
-3697:[13:05:14] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from fmlcore-1.20.1-47.4.0.jar, it does not contain dependency information.
-3698:[13:05:14] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from lowcodelanguage-1.20.1-47.4.0.jar, it does not contain dependency information.
-3812:[13:05:15] [main/DEBUG] [mixin/]: Error cleaning class output directory: .mixin.out
+3691:[13:11:16] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from forge-1.20.1-47.4.0_mapped_official_1.20.1.jar, it does not contain dependency information.
+3692:[13:11:16] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from , it does not contain dependency information.
+3693:[13:11:16] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from curios-forge-5.14.1+1.20.1_mapped_official_1.20.1.jar, it does not contain dependency information.
+3694:[13:11:16] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from main, it does not contain dependency information.
+3695:[13:11:16] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from mclanguage-1.20.1-47.4.0.jar, it does not contain dependency information.
+3696:[13:11:16] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from javafmllanguage-1.20.1-47.4.0.jar, it does not contain dependency information.
+3697:[13:11:16] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from fmlcore-1.20.1-47.4.0.jar, it does not contain dependency information.
+3698:[13:11:16] [main/DEBUG] [ne.mi.fm.lo.mo.AbstractJarFileDependencyLocator/]: Failed to load resource META-INF/jarjar/metadata.json from lowcodelanguage-1.20.1-47.4.0.jar, it does not contain dependency information.
+3812:[13:11:18] [main/DEBUG] [mixin/]: Error cleaning class output directory: .mixin.out
 3927:java.lang.UnsupportedOperationException: Reflective setAccessible(true) disabled
 3958:java.lang.IllegalAccessException: class io.netty.util.internal.PlatformDependent0$7 (in module io.netty.common) cannot access class jdk.internal.misc.Unsafe (in module java.base) because module java.base does not export jdk.internal.misc to module io.netty.common
 3959:	at jdk.internal.reflect.Reflection.newIllegalAccessException(Reflection.java:392) ~[?:?] {}
-4376:[13:05:24] [main/ERROR] [minecraft/Settings]: Failed to load properties from file: server.properties
-4377:java.nio.file.NoSuchFileException: server.properties
-4378:	at sun.nio.fs.UnixException.translateToIOException(UnixException.java:92) ~[?:?] {}
-4379:	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106) ~[?:?] {}
-4380:	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111) ~[?:?] {}
-4427:[13:05:26] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.removeErroringBlockEntities was corrected from null to its default, false. 
-4428:[13:05:26] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.removeErroringBlockEntities does not match the spec. This may create a backup.
-4429:[13:05:26] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.removeErroringEntities was corrected from null to its default, false. 
-4430:[13:05:26] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.removeErroringEntities does not match the spec. This may create a backup.
+4375:[13:11:26] [main/ERROR] [minecraft/Settings]: Failed to load properties from file: server.properties
+4376:java.nio.file.NoSuchFileException: server.properties
+4377:	at sun.nio.fs.UnixException.translateToIOException(UnixException.java:92) ~[?:?] {}
+4378:	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:106) ~[?:?] {}
+4379:	at sun.nio.fs.UnixException.rethrowAsIOException(UnixException.java:111) ~[?:?] {}
+4442:[13:11:28] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.removeErroringBlockEntities was corrected from null to its default, false. 
+4443:[13:11:28] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.removeErroringBlockEntities does not match the spec. This may create a backup.
+4444:[13:11:28] [Server thread/WARN] [ne.mi.co.ForgeConfigSpec/CORE]: Incorrect key server.removeErroringEntities was corrected from null to its default, false. 
+4445:[13:11:28] [Server thread/DEBUG] [ne.mi.co.ForgeConfigSpec/CORE]: The comment on key server.removeErroringEntities does not match the spec. This may create a backup.
