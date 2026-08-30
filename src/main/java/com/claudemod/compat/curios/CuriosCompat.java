@@ -83,14 +83,25 @@ import java.util.Optional;
  * {@code data/curios/tags/items/charm.json}) rather than a
  * ClaudeMod-specific slot type. {@code charm} is one of Curios's
  * documented "Frequently Used Slots" (wiki: "miscellaneous items",
- * already used by many other mods, e.g. Botania/Artifacts/Cyclic), and
- * - confirmed by reading Curios's own {@code SlotType} / {@code
- * CuriosSlotManager} source (1.20.x branch) - a slot type with no
- * explicit {@code size} in any contributing mod's datapack JSON defaults
- * to size 1 in {@code SlotType.Builder#build()}. Curios's own {@code
- * data/curios/curios/slots/charm.json} does not set a size, so players
- * get exactly one usable {@code charm} slot out of the box with only
- * Curios + ClaudeMod installed, no third mod required.
+ * already used by many other mods, e.g. Botania/Artifacts/Cyclic).
+ *
+ * <p><b>Correction (direct chat, after v0.30.1 shipped)</b>: v0.30.0's
+ * original javadoc here incorrectly claimed that tagging items into
+ * {@code charm} plus that slot type's default size of 1 (confirmed via
+ * {@code SlotType.Builder#build()}) was sufficient for players to
+ * actually have a usable {@code charm} slot. This was wrong, and
+ * こんぺいとう氏 caught it by actually testing with only Curios
+ * installed: a registered slot type is NOT automatically granted to any
+ * entity. Confirmed this session against Curios's actual {@code
+ * CuriosEntityManager} source (1.20.x branch, reads {@code
+ * data/(namespace)/curios/entities/*.json}) and the current dev docs
+ * ("Entity Slot Types" page: "Registered slot types will all be
+ * available for use but will not appear in-game until they are added to
+ * one or more entities."): a slot type must be separately granted to an
+ * entity type via that datapack file. ClaudeMod now ships {@code
+ * data/claudemod/curios/entities/player.json} granting {@code charm} to
+ * {@code player}, which is what actually gives players the slot - the
+ * size-1 default only matters once a slot is granted at all.
  *
  * <p><b>Unverified</b> (no in-game client in this sandbox, and Curios
  * itself cannot be downloaded here to test against - see PROGRESS.md
