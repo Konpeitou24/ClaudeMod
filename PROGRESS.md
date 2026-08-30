@@ -379,54 +379,122 @@ Issue対応: 今回対応すべき新規Issueは無かった(#18・#21はOPENの
 - 【新規】PROGRESS_ARCHIVE.mdへの分離運用が今後も機能するか(次回以降のセッションが正しく`PROGRESS.md`だけを読んで状況を把握できるか、逆に`PROGRESS_ARCHIVE.md`を参照すべき場面を見落とさないか)を数セッション後に振り返りたい。
 
 
+## 3CL. セッション#80(定期実行)で実装した内容: Issue #18(CuriosAPI対応)+ CI改善 + v0.30.0リリース
+
+作業開始時、`mktemp -d /tmp/cm_run_XXXX`でユニークな作業ディレクトリ(`/tmp/cm_run_yFyw`)にclone。`git config user.name/user.email`を規定値に設定。`api.github.com`への直接curlアクセスは今回も`HTTP:000`(到達不可)だったため、`builds/last_datapack_validation_summary.txt`(`status=ok`、commit=`ed7c2da`)で前回(セッション#79、v0.29.0)のビルド成功を確認した。続けてissue #18・#19・#21の直接アクセス(HTTP 200)、#19はCLOSED/COMPLETED、#18・#21はOPENのまま、#26以降は404で新規issue無しを確認した。
+
+今回はセッション#77以来ずっと申し送られ続けていたIssue #18(CuriosAPI対応)に初めて着手した。issue本文を読み直すと「チャーム類をCuriosAPIに対応したスロットを付けてほしい。ただし前提MODとして要求されるのは環境として用意するのが大変なので、存在する場合のみ、という限定を付けてもらって構いません」とあり、ちょうど本MODには既に「チャーム」を名乗る/準ずるアイテムが複数存在する(`PrismiumGuardianCharmItem`・`PrismiumPulseCharmItem`・`PrismiumMagnetCharmItem`、および「お守り」系の`PrismiumFeatherstoneItem`・`PrismiumEmberguardItem`・`PrismiumVitastoneItem`)ことが分かったため、新規アイテムを作るのではなく既存アイテムにCurios対応を追加する方針にした。
+
+### 3CL-1. CuriosAPI仕様の調査(WebSearch不可のためbrowserツールでGitHub直接調査)
+
+このサンドボックスの`bash`からは`maven.theillusivec4.top`・`raw.githubusercontent.com`・`api.github.com`等に到達できない(`github.com`本体のみ到達可、既知の制約)ため、今回はブラウザツール(`mcp__Claude_Browser__*`)を使ってCurios本体のGitHubリポジトリ(`TheIllusiveC4/Curios`、1.20.1相当のブランチは`1.20.x`)のソース・wiki・公式maven(`maven.theillusivec4.top`、ブラウザ経由では到達可能)を直接読んで裏取りした。分かったこと:
+
+- 現行の1.20.1向け最新版は`5.14.1+1.20.1`(`top.theillusivec4.curios:curios-forge:5.14.1+1.20.1`、mavenは`https://maven.theillusivec4.top/`、`:api`クラシファイアがコンパイル専用の軽量jar)。
+- スロット種別は`data/<namespace>/curios/slots/<id>.json`というデータパックJSONで登録する(IMCベースの`SlotTypePreset`は非推奨・将来削除予定)。Curios自身が`charm`という「その他アイテム全般」向けの汎用スロットを最初から同梱しており(Botania/Artifacts/Cyclic等多数のMODが採用する「Frequently Used Slots」の1つ)、しかもCurios本体の`data/curios/curios/slots/charm.json`は`size`を明示していないため、`SlotType.Builder#build()`のデフォルト(`size`未指定なら1)によりCurios単体でも`charm`スロットは自動的にサイズ1になる(Curiosの実ソース`common/data/CuriosSlotManager.java`・`common/slottype/SlotType.java`を直接読んで確認)。よって**新しいスロット種別を自分のMODで登録する必要は無く**、既存の`charm`にタグ登録するだけで済むと判断した。
+- アイテムをスロット種別に対応させるには`data/curios/tags/items/<identifier>.json`(namespaceは自分のMODではなく必ず`curios`)にアイテムIDを列挙するだけでよい(Curios devwiki「How to Use: Developers」で確認)。
+- 装備中かどうかの判定は`CuriosApi.getCuriosInventory(LivingEntity)`(`LazyOptional<ICuriosItemHandler>`を返す)経由で`ICuriosItemHandler#isEquipped(Item)`を呼ぶだけで良く、`ICurio`/`ICurioItem`capabilityの実装は不要(今回対象の4アイテムはもともと装備スロットの概念を持たない「インベントリのどこかに持っているだけで効く」設計のため)。
+
+### 3CL-2. 実装: 軟依存(soft dependency)ブリッジ`CuriosCompat`+4ハンドラの拡張
+
+- `build.gradle`/`gradle.properties`: `maven.theillusivec4.top`リポジトリと`compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")`/`runtimeOnly fg.deobf("...")`を追加(`curios_version=5.14.1+1.20.1`)。`mods.toml`に`mandatory=false`の`curios`依存エントリを追加。
+- 新設`com.claudemod.compat.curios.CuriosCompat`が、MOD内で唯一Curios APIの型を直接importするクラス。呼び出し側(4つの`*Handler`)は必ず`net.minecraftforge.fml.ModList.get().isLoaded("curios")`を先にチェックしてから`CuriosCompat`のstaticメソッドを呼ぶ、という「遅延クラスロード」方式の軟依存パターンを採用(JVMはクラスを実際に使う瞬間まで解決を遅延するため、`isLoaded`がfalseならこのクラス・ひいては`curios-forge`jar自体に一切触れない=Curios未導入環境でも問題なく動作する)。
+- `PrismiumFeatherstoneHandler`/`PrismiumEmberguardHandler`/`PrismiumVitastoneHandler`/`PrismiumMagnetCharmHandler`の`hasXxx(Player)`判定を、既存のインベントリ走査に加えて「Curios導入時はCurioスロット内も見る」よう拡張(`|| (ModList.get().isLoaded("curios") && CuriosCompat.isEquippedInCurioSlot(player, ModItems.XXX.get()))`)。
+- `data/curios/tags/items/charm.json`を新設し、上記4アイテムを登録。
+- **意図的に対象外にした2アイテム**: `PrismiumGuardianCharmItem`(「手に持つ」ことが前提の一撃死回避アイテムで、Curiosは「手に持っている」状態をCurioスロットへ転送しない)と`PrismiumPulseCharmItem`(右クリックで能動的に使うアイテムで、受動的に「持っているだけ」の他4種とは性質が異なる)。理由は`CuriosCompat`のjavadocとPROGRESS.md双方に明記。
+- lang(en_us/ja_jp)の該当4アイテムの`.details`キーに「Curios導入時はcharmスロットに入れても同じ効果」という一文を追記(既存の「装備不要」という説明と矛盾しないよう、そちらは変更せず追記のみ)。文字列置換方式(全体再整形なし)を継続。
+
+### 3CL-3. CIで発覚した問題: Curios導入時に`runGameTestServer`がクラッシュ
+
+上記をpushしたところ、`builds/last_datapack_validation_summary.txt`が`status=other_failure`・`builds/last_ore_verification.txt`が`NO_REGION_FILES`(ワールドが全く生成されずサーバーが起動できなかったことを意味する)に変わった。これは**望ましくない結果だが、同時に有益な発見でもあった**: `runtimeOnly`依存として追加したCuriosの本体jarが、CIの`gameTestServer`実行時にForgeの通常のMod探索によって実際にロードされ、Curios自身のMixin(`curios.mixins.json:AccessorEntity`、バニラ`Entity`クラスの`firstTick`フィールド(SRG名`f_19803_`)へのアクセサ)の適用が`InvalidAccessorException`で失敗し、サーバー起動そのものがクラッシュしていた。
+
+原因調査のため、まずGitHub Actionsの実行ログをブラウザで確認しようとしたが、ログの全文表示は未ログイン状態では「Sign in to view logs」で閲覧不可だった。代わりにリポジトリに毎回コミットされる`builds/last_datapack_validation_errors.log`(CIのスクリプトがログから抽出してコミットしている抜粋)を`git show origin/main:...`で直接読み、上記のスタックトレースを特定した。
+
+このエラーメッセージそのもの(`f_19803_`が見つからない)をヒントに、サブエージェント(`Agent`ツール、web検索主体の調査タスクとして委譲)へ「これはForgeGradleのdev環境特有の既知の制約か、実際のプレイ環境にも影響するものか」を調べさせた。結果、Curios自身のGitHub Issue #502(同じ`InvalidAccessorException`)・Discussion #504(全く同一のスタックトレース)・`SpongePowered/Mixin#462`から、**これはForgeGradleのuserdev環境が抱える既知のMixin refmapリマップの制約であり、実際の本番Forge環境(エンドユーザーの実機)には影響しない**ことを確認した。原因は、ForgeGradleのdev環境ではMinecraft本体クラスは「official」名にリマップされる一方、依存modのjarはSRG名のままになるという二重マッピング構造にあり、依存modのMixin(`@Accessor`/`@Shadow`)がSRG名で書かれたターゲットを解決する際に、そのリマップ処理(`mixin.env.remapRefMap`)を明示的に有効化しないと解決に失敗する、というもの。本番環境では全MODのjarが単一の一貫したマッピングで動作するため、この不整合自体が原理的に発生しない。
+
+対処として、`build.gradle`の`runs.gameTestServer`ブロックに以下の2プロパティを追加した(Curios公式のclient/server実行設定テンプレートには同様の設定があるが、`gameTestServer`向けの設定はCurios自身のテンプレートにも無く、今回が初めての適用):
+
+```
+property 'mixin.env.remapRefMap', 'true'
+property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+```
+
+pushして再度CIを確認したところ、`status=ok`に回復し、かつ`last_datapack_validation_errors.log`からCurios関連のFATAL/ERRORが消え、ore生成検証も従来通り成功することを確認した。**結果として、今回のCI改善により「Curiosを実際にロードした状態でMOD全体が正常にデータパック検証を通過する」という、通常の「未検証」より一段強い検証シグナルが得られた**(ただし後述の通り、GUIでの実際のスロット装備操作そのものはまだ未検証)。
+
+### 3CL-4. push・ビルド確認・リリース: v0.30.0
+
+3コミットに分けてpush: (1) CuriosAPI対応本体、(2) `gameTestServer`のmixin refmap修正、(3) バージョンbump+リリースノート。いずれも`git fetch`で並行セッション無しを確認し、必要に応じて`git rebase origin/main`してからpush(CIが生成する`ci: update built jar`等のコミットが毎回入るため、pushのたびにrebaseが必要だった)。プロキシ回避策は今回も不要だった。
+
+(1)のpush直後は前述の通り`status=other_failure`だったため、(2)を追加でpushして`status=ok`への回復を確認してから(3)に進んだ。README.mdのバージョニング方針に照らし、Curios対応は「後方互換な新規機能の追加」にあたるためv0.29.0→**v0.30.0(MINOR)**とした。タグ`v0.30.0`をpush後、`web_fetch`でreleasesページを確認し、アセット3件が添付された状態で正しく公開されていることを確認した。
+
+Issue対応: issue #18は今回で機能自体は実装したが、**実機での動作(Curiosの実際のGUIでスロットにドラッグ&ドロップできるか、装備した状態で本当に効果が発動するか)は依然として一切確認できていない**ため、クローズはせず、`ISSUES_TO_CLOSE.json`への登録も行わなかった。issue #21(JEI互換性)は今回も未着手。`PENDING_ISSUES.json`への新規登録も無し。
+
+### 3CL-5. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要・実機未検証**: Curios導入時にissue #18対応の4アイテムが実際にCurios GUIのcharmスロットへドラッグ&ドロップで装備できるか、装備した状態で各アイテムの効果(落下ダメージ軽減・火/溶岩ダメージ軽減・アイテム吸着・回復量増幅)が実際に発動するかは未確認。今回のCI改善で「Curiosを実際にロードしてもサーバーがクラッシュしない」ことまでは確認できたが、これはプレイヤーが実際にスロットを操作する場面までは検証していない。
+- `CuriosApi.getCuriosInventory(entity).map(handler -> handler.isEquipped(item))`という実装が、Curiosの実際のランタイム動作(Mixinで実装が差し込まれる`CuriosApi`クラスの各staticメソッド)に対して意図通り動くかどうかも、上記と同様に実機確認待ち。
+- `mixin.env.refMapRemappingFile`に指定した`${projectDir}/build/createSrgToMcp/output.srg`というパスは、Curios公式のclient/server実行設定テンプレートからの流用であり、このプロジェクト(`mapping_channel=official`、Forge 47.4.0)のGradleビルドが実際にこの正確なパスにファイルを生成しているかをローカルで直接確認する手段が無い(JDK/Gradle実行不可のサンドボックス制約)。ただしCIの`runGameTestServer`が実際に`status=ok`に回復したという結果自体が、このパス指定が機能していることの動作証拠にはなっている。
+- Guardian CharmとPulse Charmの2アイテムは意図的にCurios対応の対象外としたが、こんぺいとう氏がこの2つも含めた対応を期待していた場合は、方針についての追加相談が必要になる可能性がある。
+
+### 3CL-6. 議論したい論点・改善案
+
+- 【最優先・新規】Issue #18対応(4アイテムのCurios charm対応)が実機で意図通り動作しているか、こんぺいとう氏にCurios導入環境での確認をお願いしたい。特にCurios GUIでのスロット表示・ドラッグ&ドロップ・装備中の効果発動の3点。
+- 【新規】Guardian Charm・Pulse Charmを対象外にした判断への同意が得られるか、あるいは別のアプローチ(例えばPulse Charmを右クリックでなくCurios経由の常時発動効果に作り替える等)を検討すべきか、意見を伺いたい。
+- 【継続】Issue #21(JEI互換性)への着手方針検討。レシピカテゴリ・レンダリング処理を含み、このサンドボックスでの検証手段が特に乏しい点に留意。
+- 【継続】§3CJ-6・§3CK-5であげた複数の実機フィードバック待ち事項(Pale Prismium系、3機械リファクタリング、§3CHの4件、v0.25.x系の修正群)。まとめて確認いただけると効率的。
+- 【継続・未着手】ユーザー直接要望「Prism Realm巨大山岳地帯+ボス」の着手タイミング。
+- 【新規】今回のCI改善(`gameTestServer`でのmixin refmapリマップ有効化)は、今後Curios以外のMixinベースの依存MOD(あるいはJEI、issue #21で検討中)を追加する際にも同様に必要になる可能性がある教訓として残す価値がある。
+
 ## 5. 次回セッションへの申し送り
 
-### 今回(セッション#79、定期実行、v0.28.0公開後→v0.29.0公開)の最重要な新情報
+### 今回(セッション#80、定期実行、v0.29.0公開後→v0.30.0公開)の最重要な新情報
 
-- **【対応済み】PROGRESS.mdの肥大化を解消した(§3CK-1)。セッション#3〜#76の詳細ログを`PROGRESS_ARCHIVE.md`に分離し、`PROGRESS.md`は運用ルール・構想・環境制約・既知の不具合・直近3セッション(§3CH〜§3CJ)・本セクション以降のみになった。過去の経緯を調べたい場合は`PROGRESS_ARCHIVE.md`も確認すること。**
-- **【対応済み・未検証】新規ブロック「蒼白のプリズミウムランタン」(Pale Prismium Lantern)を追加した(§3CK-2)。プリズミウムランタンと同じ役割・ステータスの光源ブロックで、蒼白のプリズミウムブロック1個+松明1個で作れる。実機での見た目・発光具合・レシピバランスは未確認。**
-- **【リリース済み】上記をv0.29.0としてリリースした(§3CK-3)。新規ブロック追加のためMINORとした。**
-- **【確認済み・変化無し】Issue #18(CuriosAPI対応)・#21(JEI互換性)は引き続きOPENで未着手。#26以降の新規issueは無い。**
+- **【対応済み・実機未検証】Issue #18(CuriosAPI対応)に初めて着手した(§3CL-1〜§3CL-2)。既存の受動的なお守り4種(Featherstone/Emberguard/Vitastone/Magnet Charm)が、Curios導入時はCurios自身の`charm`スロットに装備しても効果を発揮するようにした(軟依存、Curios未導入でも影響無し)。Guardian CharmとPulse Charmは意図的に対象外(理由は§3CL-2・`CuriosCompat`のjavadoc参照)。**
+- **【重要・CI改善】上記の過程で、Curiosを実際にCIの`runGameTestServer`にロードさせるとサーバーがクラッシュする問題が発覚し、原因(ForgeGradle dev環境特有のMixin refmapリマップの制約、本番環境には無関係)を特定して修正した(§3CL-3)。今後Mixinベースの依存MODを追加する際は同じ対処(`mixin.env.remapRefMap`/`mixin.env.refMapRemappingFile`を該当runブロックに追加)が必要になる可能性がある。**
+- **【リリース済み】上記をv0.30.0としてリリースした(§3CL-4)。新機能追加のためMINORとした。**
+- **【継続・クローズせず】Issue #18はクローズしていない。実機での動作(Curios GUIでの実際のスロット操作・効果発動)が未確認なため。**
+- **【確認済み・変化無し】Issue #21(JEI互換性)は引き続きOPENで未着手。#26以降の新規issueは無い。**
 
 ### すぐやるべきこと(優先度順)
 
-0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.29.0(定期実行セッション#79、§3CK)。次回はここから1セッション目。**
-1. **【最優先・新規】§3CK-2(蒼白のプリズミウムランタン)が実機で意図通り動作しているか、こんぺいとう氏に確認を依頼すること。**
-2. 【継続】§3CJ-3(Pale Prismium Blockの建築バリエーション)が実機で意図通り動作しているか、特に塀の接続を優先的に確認してほしい。
-3. 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。CuriosAPIは「存在する場合のみ対応」という限定付きの要望なので、`compileOnly`での軟依存+実行時のMOD存在チェックという設計になる見込み。JEIはレシピカテゴリ・レンダリング処理を含み、このサンドボックスでの検証手段が特に乏しい点に留意すること。
-4. 【継続】§3CI-1(3機械の基底クラス抽出)・§3CI-2(蒼白のプリズミウムブロック本体、v0.27.0)が実機で意図通り動作しているか、引き続き確認が得られていない。
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.30.0(定期実行セッション#80、§3CL)。次回はここから1セッション目。**
+1. **【最優先・新規】Issue #18対応(§3CL-2、4アイテムのCurios charm対応)が実機で意図通り動作しているか、こんぺいとう氏にCurios導入環境での確認をお願いすること。特にCurios GUIでのスロット表示・ドラッグ&ドロップ・装備中の効果発動の3点。**
+2. 【新規】Guardian Charm・Pulse Charmを対象外にした判断(§3CL-2)への同意が得られるか確認し、必要なら追加対応を検討する。
+3. 【継続】Issue #21(JEI互換性)への着手方針検討。レシピカテゴリ・レンダリング処理を含み、このサンドボックスでの検証手段が特に乏しい点に留意。着手する場合、今回学んだ「Mixinベース依存MODはgameTestServerのrunブロックにmixin.env.remapRefMap設定が必要になりうる」という教訓(§3CL-3)を思い出すこと。
+4. 【継続】§3CJ-3(Pale Prismium Blockの建築バリエーション)・§3CK-2(蒼白のプリズミウムランタン)・§3CI-1/2(3機械リファクタリング・蒼白のプリズミウムブロック本体)が実機で意図通り動作しているか、引き続き確認が得られていない。
 5. 【継続】§3CHで対応した4件(詳細表示の一段階化、オーバーレイ最前面表示Z=400方式、進捗バー/ページめくり、比較ページの数値)が実機で意図通り動作しているか、引き続き確認が得られていない。
 6. 【継続】v0.25.1のポータル水破壊修正、v0.25.0のセンチネル(弓AI)・ドリフター(遊泳AI)が実機で問題ないか、確認が得られていない。
 7. 【継続】Issue #20の残り2点(サバイバルで破壊アニメーションが出る・発光しない)。issue自体はCLOSED済みだが、この2点が実際に解消されているかは別途要確認。
 8. 【継続・未着手】ユーザー直接要望「Prism Realm巨大山岳地帯+ボス」の着手タイミング・分割方針の検討。
-9. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと(今回は`/tmp/cm_run_XXXX`パターンを使用)。`git config user.name/user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
+9. 【最優先・継続・全セッション必読】作業ディレクトリは必ず`mktemp -d`等で完全にユニークなパスを使うこと。今回`/tmp`に前回セッション以前の作業ディレクトリの残骸(`cm_run_r9j2`等)が複数残っていることに気づいた -`/tmp/cm_run_*`のようなワイルドカードでの`cd`は複数マッチして失敗しうるので、必ず`mktemp`が返した正確なパスを変数に保存して使うこと(今回この失敗を一度やらかした)。`git config user.name/user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
 10. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
 11. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと(今回も文字列置換方式を使用)。
 12. 【継続・全セッション必読】`ISSUES_TO_CLOSE.json`と`PENDING_ISSUES.json`という2つのリレー機構が`.github/workflows/`に整備済み。
 13. 【継続・全セッション必読】issueのコメントスレッドを読む必要がある場合は、`curl`でissueページHTMLを取得し`react-app.embeddedData`のJSON(`data['payload']['preloadedQueries'][0]['result']['data']['repository']['issue']`のパス)をパースする方式を使うこと。
-14. 【継続・全セッション必読】`api.github.com`への直接curlアクセスは今回も`HTTP:000`で不可だった。`builds/`配下の`last_datapack_validation_summary.txt`/`last_ore_verification.txt`で代替確認すること。
-15. 【継続・全セッション必読】Write/Edit/Readの各ツールは、Linuxサンドボックス内のgit作業ディレクトリに対して「root-or drive-relative path」エラーで使用できない。ファイル編集は全て`mcp__workspace__bash`経由のpython/sed/catで行うこと。ただし、生成したテクスチャーの目視確認のためのReadは、画像をいったんoutputsディレクトリ(マウント済みパス)にコピーしてから行えば可能(今回`pale_prismium_lantern_preview.png`をこの方式で確認した)。
-16. 【新規】`PROGRESS_ARCHIVE.md`が新設された。今回のセッションで「過去の経緯を詳しく知りたい」場面が生じたら、`PROGRESS.md`だけでなくこちらも確認すること。
+14. 【継続・全セッション必読】`api.github.com`への直接curlアクセスは今回も`HTTP:000`で不可だった。`builds/`配下の`last_datapack_validation_summary.txt`/`last_ore_verification.txt`/`last_datapack_validation_errors.log`で代替確認すること。今回は後者(`errors.log`)がCIクラッシュの原因調査に非常に役立った。
+15. 【継続・全セッション必読】Write/Edit/Readの各ツールは、Linuxサンドボックス内のgit作業ディレクトリに対して「root-or drive-relative path」エラーで使用できない。ファイル編集は全て`mcp__workspace__bash`経由のpython/sed/catで行うこと。
+16. 【継続】`PROGRESS_ARCHIVE.md`(セッション#3〜#76の詳細ログ)が存在する。過去の経緯を詳しく知りたい場面では`PROGRESS.md`だけでなくこちらも確認すること。
+17. 【新規】外部MOD(Curios等)のAPIやMixin構成を調査する必要がある場合、このサンドボックスの`bash`からは`github.com`以外の多くのホスト(`raw.githubusercontent.com`・`maven.*`・`api.github.com`等)に到達できないが、`mcp__Claude_Browser__*`ツール(ブラウザペイン)経由なら`raw.githubusercontent.com`や外部Mavenリポジトリにも到達できることが今回判明した。今後同様の外部API調査が必要な場合はbrowserツールを優先的に使うこと。ただしGitHub Actionsの実行ログ全文は未ログイン状態では閲覧できない(「Sign in to view logs」)ため、詳細なCIエラーの特定にはリポジトリにコミットされる`builds/*.log`のような要約ファイルに頼る必要がある。
+18. 【新規】Mixinベースの依存MOD(Curios等)を`compileOnly`/`runtimeOnly`で追加すると、CIの`runGameTestServer`で実際にそのMODがロードされ、Mixin適用に失敗するとサーバーごとクラッシュしうる(§3CL-3)。これは通常ForgeGradle dev環境特有の問題で本番には影響しないが、CIを壊さないためには該当runブロック(`gameTestServer`等)に`mixin.env.remapRefMap`/`mixin.env.refMapRemappingFile`プロパティの追加が必要になる場合がある。今後別のMixinベース依存MOD(JEI等、issue #21)を追加する際はこの教訓を思い出すこと。
 
 ### 議論したい論点・改善案
 
-- 【最優先・新規】§3CK-2(蒼白のプリズミウムランタン)が実機で機能しているか、こんぺいとう氏からのフィードバック待ち。
-- 【継続】Issue #18・#21への着手方針(軟依存の設計方針)をこんぺいとう氏と相談できると着手しやすい。
-- 【継続】§3CH・§3CI・§3CJ・issue #19修正など、これまで蓄積してきた複数の実機フィードバック待ち事項。まとめて一度に確認いただけると効率的かもしれない。
+- 【最優先・新規】Issue #18対応(4アイテムのCurios charm対応)が実機で機能しているか、こんぺいとう氏からのフィードバック待ち。
+- 【新規】Guardian Charm・Pulse Charmを対象外にした判断への同意、あるいは代替アプローチの検討。
+- 【継続】Issue #21(JEI互換性)への着手方針検討。
+- 【継続】§3CH・§3CI・§3CJ・§3CKであげた複数の実機フィードバック待ち事項。まとめて一度に確認いただけると効率的かもしれない。
 - 【継続】ポータルフレームの専用ブロック化・6個セット化案。今後要望があれば着手を検討。
 - 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
 - 【継続・未着手】ユーザー直接要望「Prism Realm巨大山岳地帯+ボス」の着手タイミング。
-- 【新規】PROGRESS_ARCHIVE.mdへの分離運用が今後も実際に機能しているか、数セッション後に振り返りたい。
 
 ### コミット/プッシュ状況
 
-今回(セッション#79、定期実行)は以下をpush:
-1. `8931e0f` Split PROGRESS.md: archive sessions #3-#76 into PROGRESS_ARCHIVE.md(§3CK-1)
-2. `be549e3` Add Pale Prismium Lantern(§3CK-2)
-3. `ad93430` Release v0.29.0(バージョンbump+リリースノート)、タグ`v0.29.0`
+今回(セッション#80、定期実行)は以下をpush:
+1. `0d12818` Add optional CuriosAPI support for 4 passive charm items (issue #18)(§3CL-2)
+2. `e34442b` Fix runGameTestServer crash caused by Curios mixin refmap mismatch(§3CL-3)
+3. `a976e28` Release v0.30.0(バージョンbump+リリースノート)、タグ`v0.30.0`
 4. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
 
-push前に`git fetch`で並行セッション無しを確認、すべて一発成功(プロキシ回避策は不要だった)。
+push前に毎回`git fetch`で並行セッション・CIの自動コミットの有無を確認し、必要な際は`git rebase origin/main`してからpush。プロキシ回避策は今回も不要だった。
 
 ### 通知状況
 
