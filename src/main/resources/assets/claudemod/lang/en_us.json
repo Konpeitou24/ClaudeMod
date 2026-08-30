@@ -114,6 +114,8 @@
     "item.claudemod.prismium_sentinel_spawn_egg": "Prismium Sentinel Spawn Egg",
     "entity.claudemod.prismium_drifter": "Prismium Drifter",
     "item.claudemod.prismium_drifter_spawn_egg": "Prismium Drifter Spawn Egg",
+    "entity.claudemod.prismium_crawler": "Prismium Crawler",
+    "item.claudemod.prismium_crawler_spawn_egg": "Prismium Crawler Spawn Egg",
     "block.claudemod.prismium_stone": "Prismium Stone",
     "block.claudemod.prismium_deepstone": "Prismium Deepstone",
     "item.claudemod.prismium_rift_anchor": "Prismium Rift Anchor",
