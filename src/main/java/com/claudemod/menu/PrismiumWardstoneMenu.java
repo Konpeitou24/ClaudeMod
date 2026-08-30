@@ -54,10 +54,42 @@ public class PrismiumWardstoneMenu extends AbstractContainerMenu {
         addDataSlots(data);
     }
 
+    /** Client-side {@link ContainerData} for the GUI-open packet's menu
+     * factory. <b>Deliberately always a fresh {@link SimpleContainerData}
+     * (session #84 bugfix)</b> - a previous version of this method tried
+     * to be clever and look up the client's own (locally mirrored) block
+     * entity at {@code pos} and reuse its real {@code ContainerData}
+     * instance directly, on the theory that this would let the GUI show
+     * correct values immediately instead of waiting a tick for the first
+     * sync packet. This was wrong and caused every GUI in this mod to
+     * appear to "freeze" (energy/progress bars never move, even though
+     * the block is actually processing/charging server-side): the real
+     * {@code ContainerData}'s {@code set(index, value)} is a deliberate
+     * no-op (see that class's own doc - {@code get()} always reads the
+     * live authoritative fields directly, which is correct and required
+     * for the *server* instance that {@code broadcastChanges()} reads
+     * from every tick, but is fatal for the *client* instance: the only
+     * way the client ever learns about a changed value is via {@link
+     * net.minecraft.network.protocol.game.ClientboundContainerSetDataPacket},
+     * which calls {@code AbstractContainerMenu#setData} ->
+     * {@code DataSlot#set} -> this very {@code ContainerData#set} - a
+     * no-op there means the incoming synced value is silently discarded
+     * every time, and {@code get()} keeps returning whatever the client's
+     * mirrored block entity's fields happened to start at (typically 0,
+     * since this mod never overrides {@code getUpdatePacket()}/{@code
+     * onDataPacket()} for NBT-based mirroring either). Forge's own 1.20.1
+     * "Menus" doc is explicit that the client menu constructor "should
+     * always supply" a fresh {@code SimpleContainerData} - a real,
+     * independent {@code int[]}-backed instance whose {@code set()}
+     * actually stores the value {@code get()} later returns - which is
+     * exactly what makes the normal per-tick sync packets work at all.
+     * (Note: {@code resolveInventory} below does *not* have this bug and
+     * is intentionally left alone - {@code Slot}/{@code SlotItemHandler}
+     * sync writes item stacks with a real {@code set(ItemStack)}, not a
+     * no-op, so reusing the client's mirrored block entity's inventory
+     * there is harmless and even lets slot contents already known to the
+     * client render one tick sooner.) */
     private static ContainerData resolveData(Inventory inv, BlockPos pos) {
-        if (inv.player.level().getBlockEntity(pos) instanceof PrismiumWardstoneBlockEntity wardstone) {
-            return wardstone.getContainerData();
-        }
         return new SimpleContainerData(3);
     }
 

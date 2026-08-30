@@ -113,8 +113,13 @@ public abstract class AbstractPrismiumMachineBlockEntity extends BlockEntity imp
 
         @Override
         public void set(int index, int value) {
-            // Read-only from the screen's perspective - same convention
-            // every machine's ContainerData in this mod follows.
+            // Deliberately a no-op - correct now that the client-side
+            // menu constructor (PrismiumPulverizerMenu/SmelterMenu/
+            // CompressorMenu) never reuses this real instance to receive
+            // synced values, always using a fresh SimpleContainerData
+            // instead (session #84 bugfix, see those classes' resolveData
+            // doc for the full explanation of why this method being a
+            // no-op used to freeze every GUI in the mod).
         }
 
         @Override

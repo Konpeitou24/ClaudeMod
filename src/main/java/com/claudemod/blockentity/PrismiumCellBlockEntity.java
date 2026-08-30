@@ -93,7 +93,11 @@ public class PrismiumCellBlockEntity extends BlockEntity implements MenuProvider
 
         @Override
         public void set(int index, int value) {
-            // Read-only from the screen's perspective, see field doc.
+            // Deliberately a no-op - correct now that this block's Menu
+            // class's client-side constructor never reuses this real
+            // instance to receive synced values (session #84 bugfix: it
+            // used to, which silently discarded every synced update and
+            // froze this GUI's bars - see that Menu's resolveData doc).
         }
 
         @Override
