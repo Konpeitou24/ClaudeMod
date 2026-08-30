@@ -62,6 +62,10 @@ public class ModEntityEvents {
         // requirement as every prior mob, a registered AttributeSupplier
         // is needed before this LivingEntity subtype can be constructed.
         event.put(ModEntities.PRISMIUM_DRIFTER.get(), com.claudemod.entity.PrismiumDrifterEntity.createAttributes().build());
+        // Fifth mob (see PrismiumCrawlerEntity's javadoc) - same
+        // requirement as every prior mob, a registered AttributeSupplier
+        // is needed before this LivingEntity subtype can be constructed.
+        event.put(ModEntities.PRISMIUM_CRAWLER.get(), com.claudemod.entity.PrismiumCrawlerEntity.createAttributes().build());
     }
 
     @SubscribeEvent
@@ -92,6 +96,22 @@ public class ModEntityEvents {
                 (type, level, spawnType, pos, random) ->
                         level.getFluidState(pos).is(FluidTags.WATER)
                                 && level.getFluidState(pos.above()).is(FluidTags.WATER),
+                SpawnPlacementRegisterEvent.Operation.REPLACE);
+        // Fifth mob (see PrismiumCrawlerEntity's javadoc): first
+        // AMBIENT-category spawn placement this mod has ever registered.
+        // Deliberately a minimal self-contained predicate (only requires
+        // solid ground underfoot) rather than reusing Animal::checkAnimalSpawnRules
+        // or Monster::checkMonsterSpawnRules - neither vanilla helper's exact
+        // behaviour (light-level gating, block tag requirements) was
+        // confirmed against this mob's intended "scurries in daylight too"
+        // design, so - same reasoning as PrismiumDrifterEntity's inline water
+        // predicate above - a simple, self-contained check was chosen over an
+        // assumed-correct vanilla helper. Actual placement (Prism Realm only)
+        // is handled data-driven, via
+        // data/claudemod/forge/biome_modifier/add_prismium_crawler_spawn_realm.json.
+        event.register(ModEntities.PRISMIUM_CRAWLER.get(), SpawnPlacements.Type.ON_GROUND,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (type, level, spawnType, pos, random) -> !level.getBlockState(pos.below()).isAir(),
                 SpawnPlacementRegisterEvent.Operation.REPLACE);
     }
 }

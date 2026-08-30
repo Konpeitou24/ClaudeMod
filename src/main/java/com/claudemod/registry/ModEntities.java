@@ -2,6 +2,7 @@ package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.entity.PrismiumDeepWraithEntity;
+import com.claudemod.entity.PrismiumCrawlerEntity;
 import com.claudemod.entity.PrismiumDrifterEntity;
 import com.claudemod.entity.PrismiumSentinelEntity;
 import com.claudemod.entity.PrismiumWraithEntity;
@@ -71,6 +72,20 @@ public class ModEntities {
                             .sized(0.8F, 0.8F)
                             .clientTrackingRange(8)
                             .build("prismium_drifter"));
+
+    // Fifth mob, first purely ambient *land* creature (see
+    // PrismiumCrawlerEntity's javadoc). MobCategory.AMBIENT (rather than
+    // CREATURE) matches vanilla Bat's own registration - a small,
+    // harmless background critter that shouldn't compete with real
+    // "farmable" animal spawn caps. Size (0.4x0.3) matches vanilla
+    // Silverfish's own hitbox, since the renderer borrows
+    // SilverfishModel's geometry wholesale (see PrismiumCrawlerRenderer).
+    public static final RegistryObject<EntityType<PrismiumCrawlerEntity>> PRISMIUM_CRAWLER =
+            ENTITY_TYPES.register("prismium_crawler",
+                    () -> EntityType.Builder.of(PrismiumCrawlerEntity::new, MobCategory.AMBIENT)
+                            .sized(0.4F, 0.3F)
+                            .clientTrackingRange(6)
+                            .build("prismium_crawler"));
 
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);

@@ -11,6 +11,7 @@ import com.claudemod.client.screen.PrismiumSmelterScreen;
 import com.claudemod.client.screen.PrismiumPylonScreen;
 import com.claudemod.client.screen.PrismiumRestorerScreen;
 import com.claudemod.client.screen.PrismiumWardstoneScreen;
+import com.claudemod.entity.client.PrismiumCrawlerRenderer;
 import com.claudemod.entity.client.PrismiumDeepWraithRenderer;
 import com.claudemod.entity.client.PrismiumDrifterRenderer;
 import com.claudemod.entity.client.PrismiumSentinelRenderer;
@@ -55,6 +56,8 @@ public class ClientModEvents {
         // Fourth mob, first non-combat/environmental entity (see
         // PrismiumDrifterEntity's javadoc) - same registration pattern.
         event.registerEntityRenderer(ModEntities.PRISMIUM_DRIFTER.get(), PrismiumDrifterRenderer::new);
+        // Fifth mob (see PrismiumCrawlerEntity's javadoc).
+        event.registerEntityRenderer(ModEntities.PRISMIUM_CRAWLER.get(), PrismiumCrawlerRenderer::new);
     }
 
     @SubscribeEvent

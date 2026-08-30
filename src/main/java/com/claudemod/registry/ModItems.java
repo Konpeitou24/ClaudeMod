@@ -345,6 +345,15 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_DRIFTER_SPAWN_EGG = ITEMS.register("prismium_drifter_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_DRIFTER, 0x2b1033, 0x39e6d6, new Item.Properties()));
 
+    // Fifth mob (see PrismiumCrawlerEntity's javadoc): dark indigo base
+    // (same "casing" family as the other four eggs) with a magenta/pink
+    // accent - deliberately not the teal PRISMIUM_ACCENT the other four
+    // eggs already use, so this new ambient-land mob's egg reads as its
+    // own distinct sub-family at a glance (echoing the magenta gem used
+    // by Prismium Core/Chiseled Prismium Core, per RELEASE_NOTES.md).
+    public static final RegistryObject<Item> PRISMIUM_CRAWLER_SPAWN_EGG = ITEMS.register("prismium_crawler_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_CRAWLER, 0x241246, 0xff4fd8, new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));
 
