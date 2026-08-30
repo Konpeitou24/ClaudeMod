@@ -3717,3 +3717,501 @@ README.mdのバージョニング方針(§3CF)に照らし、今回の変更は�
 - 【継続】PROGRESS.mdの肥大化(4000行近く)。詳細ログと申し送りの分離は依然として未着手。
 
 
+
+---
+
+## 【セッション#83(こんぺいとう氏との直接チャット)で追加移動】PROGRESS.md肥大化の再整理: §4(既知の不具合・未完了事項、旧版)〜§3CH〜§3CPの詳細実装ログ・旧§5(次回セッションへの申し送り)一式
+
+こんぺいとう氏より「PROGRESS.mdが『今順次追加』という運用でセッションごとに肥大化している。1) 約束や決まり事 2) TODO(優先度順) 3) 問題点の箇条書き 4) その他 5) MOD構想/ロードマップ、の構成に整理してほしい」との直接依頼を受けた。旧PROGRESS.mdのうち、セッションごとの詳細な実装経緯を長文で記録した部分(旧§4・旧§3CH〜§3CP・旧§5)を、要点を新PROGRESS.mdの5分類に抽出した上で、詳細本文はそのままこのアーカイブファイルに以下から移動した。以後の参照はこのセクション以下を参照すること。
+
+## 4. 既知の不具合・未完了事項(正直に書く)
+
+**セッション#75で整理**: このセクションは元々60項目・約260行あり、その大半が「(ブロック/アイテム名)は実プレイでの検証ができていない」という同じ趣旨の記述の繰り返しだった(こんぺいとう氏からの指摘を受けて統合)。個別の詳細な経緯は各セッションの記録(3A〜)にそのまま残っているので、そちらを参照すること。ここには「まだ解消していない、具体的で個別の課題・教訓」だけを残す。
+
+### 4-1. 全体に共通する大前提(個別ブロックごとに繰り返し書かない)
+
+このサンドボックスは実機(ゲームクライアント)を起動できない(§2-1)。そのため、**MOD内のほぼ全てのコンテンツは「CIビルドが通ること」以上の検証が一切できていない**。具体的には以下がまるごと未検証:
+
+- 全ブロック/アイテムのバランス数値(FE容量・攻撃力・防御力・生成密度・クールダウン等)はすべて初期見積もりのまま
+- 装着時テクスチャー・インベントリ表示・GUI表示など、実際の描画結果
+- FE配電経路(発電→ケーブル→消費ブロック)が実際に繋がって動くか
+- 全MOB(Wraith/Deep Wraith/Sentinel/Drifter)の自然スポーン頻度・AIの実際の挙動
+- worldgen装飾ブロック(Bloom/Spike/Lily/Bramble/Vine等)がPrism Realm/オーバーワールド双方で意図通り生成されるか
+- 全GUI(Cell/Generator/Pylon/Restorer/Wardstone/Pulverizer/Smelter/Compressor)が実際に開き、表示が崩れないか
+- サウンド・パーティクル演出のタイミング・音量感(このサンドボックスでは音・映像を確認する手段が無い)
+
+次に新しいコンテンツを追加するセッションは、上記に当てはまるだけの「未検証」をここに書き足さないこと。**個別に書く価値があるのは、この一般則では説明できない、具体的で特殊な課題だけ**(下記4-2以降)。
+
+### 4-2. 今も残っている個別の課題・教訓
+
+- Prismium Lanternはバニラの吊り下げ形状(hanging lantern model)ではなく単純な立方体(`cube_all`)のまま(session 4から未着手)。
+- `ArmorSetBonusHandler`は`TickEvent.PlayerTickEvent`を毎tick・全プレイヤー分処理する。サーバー側限定ガードはあるが、プレイヤー数が多いサーバーでの負荷は未計測。
+- **新ブロック追加時、タグ登録(`mineable/pickaxe`・`walls`等)を1つ入れ忘れるミスが過去に2回(Prismium Cell、Prismium Core Wall)発生している。** 新しいブロックを追加するたびに、関連タグへの登録漏れが無いか確認すること。
+- `minecraft:simple_block` worldgen feature typeは配置時に`canSurvive()`を参照しない。地形に追従させたい地表装飾ブロックは、Javaコード側の`canSurvive()`だけでなく、placed_feature側に`minecraft:block_predicate_filter`(predicate type `minecraft:would_survive`)を必ずセットで追加すること(Bloom/Spike以降のパターン)。
+- `Monster`クラス限定でMobを走査する実装(Prismium Wardstone等)は`Slime`/`MagmaCube`(`Mob`は継承するが`Monster`は継承しない)を取りこぼす。より広い判定(`Enemy`インターフェース等)への切り替えを将来検討する価値がある。
+- Forge/Minecraft APIをWeb検索で調べる際、「昔からある有名なAPI」ほど古いバージョン(1.9〜1.12時代)のドキュメントが検索結果の大半を占め、1.20.1では既に置き換えられている場合があると分かった(§3C-4の教訓)。バージョン番号をクエリに含めると見落としを減らせる。
+- 同様に、別マイナーバージョン(例: NeoForge 1.20.6)のjavadocでメソッドシグネチャを裏取りする際、メソッド名・引数・戻り値の型は信頼できるが、アクセス修飾子(public/protected)はバージョンによって異なりうる(v0.25.1、§3CE-3の教訓)。
+- `ResourceLocation`/`FMLJavaModLoadingContext`の非推奨API警告は、1.20.1では有効な置き換え先が無いと判明済み(session 16調査済み)。**今後このタスクを申し送りに書かないこと**(1.21系に上げない限り対応不能)。
+
+
+## 3CH. 対話セッション(定期実行ではなく本人との直接チャット、v0.25.3公開後): 詳細表示の一段階化 + オーバーレイ最前面表示修正 + 進捗バー/ページめくり機能追加 + 比較ページ数値修正 + v0.26.0リリース
+
+定期実行セッション#76(v0.25.3、issue #19修正)の直後、こんぺいとう氏本人とチャットで直接やり取りしながら対応した一連の作業。今回は各ステップごとに「まずは提案し、明示的な許可(「はい」「OK」「どうぞ」等)を得てから実装する」という進め方を徹底した。また、こんぺいとう氏からの明示的な指示「ビルド結果はまだリリースせずに私にこのチャットで直接いただければ助かります」に従い、途中の各修正はバージョンを上げず`main`へのpushのみ(CIビルドのみ確認)で対応し、最後にまとめて「もうリリース切っていいですよ」との許可を得てからv0.26.0としてリリースした。作業は`/sessions/.../repo2`という2つ目のclone(定期実行セッションの`repo`とは別)で行い、pushにはトークン埋め込みのremote URLへの張り替えが必要だった(元のclone URLにトークンが含まれていなかったため)。
+
+### 3CH-1. 詳細表示を一段階(オーバーレイのみ)に変更
+
+こんぺいとう氏から、Wキー長押しで「画面上部のオーバーレイ」と「ツールチップ自体の拡張」の2種類の詳細表示が出ることについて質問があり、他MODの影響ではなくClaudeMod自身の意図した二段階仕様であることを説明した。その上で「別にオーバーレイが出るだけでいいんじゃないでしょうか?」との要望を受け、`TooltipUsageHelper#usageLine()`を、キー状態に関わらず常に短い固定プロンプト(「Wキーで詳細表示」相当)のみを返すよう書き換えた。ツールチップの拡張表示自体を削除したため、`isDetailKeyDown()`メソッドと、それに伴う`FMLEnvironment`/`Dist`のimportも不要になり削除した。
+
+### 3CH-2. オーバーレイパネルがアイテムアイコン・ツールチップの背後に隠れる不具合の修正(2回の試行)
+
+こんぺいとう氏からスクリーンショット付きで、オーバーレイパネルの背後に背景のアイテムアイコンや文字が透けて表示される不具合の報告があった。
+
+1回目の修正案として、`GuiGraphics`が描画をRenderType単位でバッチ処理するため呼び出し順通りに描画されない可能性を疑い(Forgeフォーラム・NeoForge移行ガイドの記述を根拠にWebSearchで確認)、`flush()`呼び出し+Zを`GuiGraphics.MAX_GUI_Z`(10000)に変更する案を実装しpushした。ところがこの修正はオーバーレイ自体が完全に非表示になるregressionを引き起こし、こんぺいとう氏から「今度はオーバーレイが表示されなくなりました」との報告があった。
+
+原因切り分けのため、バニラ自身のツールチップが「常に最前面」をどう実現しているかを、Forgeの1.20.xブランチの`GuiGraphics.java.patch`実ソース(github.com)を直接取得して確認した。バニラの`renderTooltipInternal`は`flush()`を一切呼ばず、`pose.translate(0.0F, 0.0F, 400.0F)`のみで最前面表示を実現していることが分かった。10000という極端な値がこの画面の直交投影のfar clip planeを超え、描画順の問題ではなくGPU側のクリッピングによって完全に不可視になっていたと考えられる。`flush()`呼び出しを削除し、Z値をバニラと同じ`400.0F`に変更する2回目の修正をpushし、CIビルド成功を確認した(実機での再確認は本人に依頼中のまま次の要望に進んだ)。
+
+### 3CH-3. 進捗バー・W+A/Dページめくり機能の追加(2ページ目=装備比較)
+
+こんぺいとう氏から2つの新機能の提案があった: (1) ツールチップの下に、オーバーレイが表示されるまでの時間を表す進捗バー、(2) Wを押しながらA/Dでオーバーレイの内容をページめくりでき、本をめくる効果音を鳴らす機能。まず賛否のみを同一ターンで回答するよう求められたため、両方に賛成する旨を返答し、ページング機能はページ2以降に表示するコンテンツの設計判断が必要な点を指摘した。こんぺいとう氏から「文字やアニメーションを2ページ目などに表示するようにしたらいいんじゃないでしょうか。例えば現在の装備との比較とか?」との具体案を得て実装した。
+
+- `ModKeyMappings`に`PAGE_PREVIOUS`(デフォルトA)/`PAGE_NEXT`(デフォルトD)を追加し、`ClientModEvents`で登録。
+- `ItemDetailsOverlay`に`RenderTooltipEvent.Pre`のリスナー(`onRenderTooltipPre`)を追加し、バニラツールチップの位置・推定高さ(`ClientTooltipComponent#getHeight()`の合計+バニラの行間ルールの近似)を記録。これを使い、Wキー保持中(オーバーレイ出現前)にツールチップ直下へ進捗バー(`renderProgressBar`)を描画するようにした。
+- 新設`ItemDetailsPaging`が、`GuiKeyStateTracker`と同じ「GUI内キー状態」パターン(`ScreenEvent.KeyPressed.Pre`)でA/Dキーを検知し、オーバーレイパネルが実際に表示されている間(`ItemDetailsOverlay.isPanelVisible()`)のみページを切り替える。切り替え時は`SoundEvents.BOOK_PAGE_TURN`を`SimpleSoundInstance.forUI`経由で再生。
+- `ItemDetailsOverlay#renderPanel`を、`ItemDetailsPaging.currentPage()`に応じて1ページ目(従来の名前+説明)/2ページ目(`buildComparisonLines`による装備比較)を出し分けるよう修正し、右上にページ番号(「1/2」等)を表示するようにした。
+- `buildComparisonLines`は、防具は`ArmorItem#getEquipmentSlot()`、それ以外は`EquipmentSlot.MAINHAND`用の属性修飾子を持つ場合のみメインハンド武器として扱い(該当しなければ「比較不可」表示)、プレイヤーの現在装備との属性差分(攻撃力・攻撃速度・防御力・防具靭性・ノックバック耐性・移動速度)を色分け(増加=緑/減少=赤)して表示する。
+
+### 3CH-4. 比較ページの攻撃力/攻撃速度がツールチップ本体と食い違う不具合の修正
+
+上記3CH-3をpushしCIビルド成功・jarを本人に共有した後、こんぺいとう氏からスクリーンショット付きで「プリズミウムのクワ」の比較ページが「攻撃力: 0.0 -> 1.5」「攻撃速度: 0.0 -> -1.0」と表示される一方、ツールチップ本体の「利き手に持ったとき」欄は「2.5 攻撃力」「3 攻撃速度」と表示されており数値が食い違う、との報告があった。
+
+バニラの実際のツールチップ生成コード(`ItemStack#getTooltipLines`、1.20.1デコンパイル済みソース)を確認したところ、`Item.BASE_ATTACK_DAMAGE_UUID`/`Item.BASE_ATTACK_SPEED_UUID`という2つの特定の修飾子IDに限り、`LivingEntity#getAttributeBaseValue(Attribute)`(デフォルトでは攻撃力1.0/攻撃速度4.0)を加算してから表示する特別扱いがされており、それ以外の属性(防御力・防具靭性・ノックバック耐性・移動速度)は修飾子の差分のみを表示することが分かった(`getAttributeBaseValue(Attribute)`のシグネチャはWebSearchで1.20.1系列での存在を確認)。
+
+`buildComparisonLines`を、攻撃力・攻撃速度の2属性についてのみプレイヤーの現在の基礎値を加算し、それ以外は従来通り修飾子の差分のみを表示するよう修正した。
+
+### 3CH-5. push・ビルド確認・リリース: v0.26.0
+
+3CH-1〜3CH-3をまとめた1コミット、3CH-4を別コミットとして、いずれもバージョンを上げず`main`にpushし、都度`git fetch`のポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`まで到達したことを確認してから、ビルド済みjarをこんぺいとう氏に直接手渡した(GitHubリリースは作成せず)。
+
+3CH-4の修正確認後、こんぺいとう氏から「もうリリース切っていいですよ おおむねこの機能は完成です」との許可を得たため、ここで初めてリリース作業を行った。README.mdのバージョニング方針(§3CF)に照らし、今回はプレイヤーが新しく触れる要素(進捗バー・ページめくり・比較ページ)が増えているため**v0.25.3→v0.26.0(MINOR)**とした。`gradle.properties`のバージョン更新+`RELEASE_NOTES.md`への新セクション追加をコミットし、タグ`v0.26.0`をpush。`release.yml`ワークフローが発火し、releasesページに`v0.26.0`が公開され、アセット2件(jar含む)が添付されていることを`web_fetch`で確認した。
+
+### 3CH-6. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要・実機未検証**: 3CH-4の攻撃力/攻撃速度の数値修正、および3CH-3の進捗バー・ページめくり機能自体(A/Dキー検知・効果音再生を含む)は、CIビルド成功以外の確認ができていない。特にページめくりの効果音(`SoundEvents.BOOK_PAGE_TURN`)・進捗バーの位置(ツールチップ直下という想定通りに表示されるか)は未検証。
+- 3CH-2のオーバーレイ最前面表示修正(Z=400)についても、2回目の修正をpushした後、本人からの動作確認の返信を待たずに次の要望(進捗バー・ページング)の実装に進んだため、明示的な「直った」確認はまだ得られていない。次回、動作報告があれば優先して対応すること。
+- 比較ページの属性一覧(`COMPARE_ATTRIBUTES`)は攻撃力・攻撃速度・防御力・防具靭性・ノックバック耐性・移動速度の6種類に固定しており、ClaudeMod独自のアイテムがこれ以外の属性(例えばMOD独自属性)を持つ場合は比較ページに表示されない。
+- `Attribute#getDescriptionId()`によるバニラ属性名の翻訳キー使用は、これまでこのMODで使ったことがない箇所だったため、実際にゲーム内で正しい表示名(日本語locale含む)になっているかは未確認。
+
+### 3CH-7. 議論したい論点・改善案
+
+- 【最優先・新規】3CH-2(オーバーレイ最前面表示)・3CH-3(進捗バー/ページめくり)・3CH-4(比較ページ数値)がすべて実機で意図通り動作しているか、こんぺいとう氏に確認をお願いしたい。
+- 【継続】issue #19の修正(v0.25.3)が実機で直っているかの確認も依然として明示的には得られていない(3CHの一連のやり取りの中で暗黙的に「詳細表示自体は出ている」ことは前提になっているように見えるが、明示的な確認コメントはまだ無い)。
+- 【継続】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち。
+- 【継続】Issue #20系(ポータル)の水破壊修正(v0.25.1)が実機で直っているかの確認待ち。
+- 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+- 【継続】3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出。
+- 【継続】ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)の着手タイミング。
+- 【継続】PROGRESS.mdの肥大化(4000行超)。詳細ログと申し送りの分離は依然として未着手。
+
+## 3CI. セッション#77(定期実行)で実装した内容: 3機械の共通基底クラス抽出 + 新規ブロック「蒼白のプリズミウムブロック」追加 + v0.27.0リリース
+
+v0.26.0(§3CH、直接チャットセッション)公開後、初めての定期実行セッション。作業開始時にまず`git tag --list --sort=-creatordate`で直近リリースがv0.26.0であることを確認し、続けて前回pushしたコミット(`0cb09c4`、PROGRESS.md更新)に対するGitHub Actionsの結果を`builds/`配下の記録ファイル経由で確認したところ(`api.github.com`への直接アクセスはこのセッションのサンドボックスからはプロキシallowlistでブロックされていたため、タスク説明にある`curl`での確認方法は使えず、代わりにリポジトリにコミットされている`builds/last_datapack_validation_summary.txt`等を参照する方式に切り替えた)、`status=ok`でビルド・データパック検証・鉱石生成検証のいずれも成功していることを確認した。
+
+今回はPROGRESS.mdの申し送り事項のうち、こんぺいとう氏本人からの実機フィードバックが必要な項目(§3CHの4件の動作確認待ちなど)は自動実行セッションでは対応できないため後回しにし、フィードバック不要で着手できる継続項目のうち優先度が高かった以下2件に取り組んだ。
+
+### 3CI-1. 3機械(Pulverizer/Smelter/Compressor)の共通基底クラス抽出
+
+セッション70から申し送り続きだった項目。3つのBlockEntity(`PrismiumPulverizerBlockEntity`/`PrismiumSmelterBlockEntity`/`PrismiumCompressorBlockEntity`)を実際に読み比べたところ、エネルギー貯蔵(`PrismiumEnergyStorage`、容量20,000/最大受電2,000/取出不可)・2スロットの`ItemStackHandler`(スロット0=入力・レシピ判定あり、スロット1=出力・外部挿入拒否)・4値の`ContainerData`(FE現在値/最大値/進捗/稼働中フラグ)・NBT保存復元(`Energy`/`Progress`/`Inventory`キー)・Capability公開(`ForgeCapabilities.ENERGY`/`ITEM_HANDLER`)が3クラスとも完全に同一の実装だった(Smelter/Compressorはフィールド名すら`ingot`/`alloyIngot`が違うだけでロジックはコピペ)。
+
+新設`AbstractPrismiumMachineBlockEntity`にこれらすべてを移動し、3クラスの唯一の実質的な違い(Pulverizerは1入力->複数出力の「粉砕」比率、Smelter/Compressorは複数入力->1出力の「精錬」比率)を、デフォルト1を返すオーバーライド可能メソッド`inputCountPerOperation()`に切り出した。各サブクラスは、独自のレシピテーブル(`recipeFor`のオーバーライド)・メニュークラス・翻訳キーだけを持つようになった。`serverTick`静的メソッド自体は各サブクラスに残し(`BaseEntityBlock#createTickerHelper`のメソッド参照ターゲットの型を変えないため、Block側クラスの変更は不要)、中身は共通の`AbstractPrismiumMachineBlockEntity.tick(...)`に委譲するだけにした。
+
+意図した挙動変更は無い純粋なリファクタリング。移行前後で各サブクラスのMenu側から参照されている静的フィールド/メソッド(`PROCESS_TIME_TICKS`、`SHARD_CHARGE_AMOUNT`、`isValidInput`など)は、Javaの「サブクラス名経由での継承静的メンバーアクセス」がそのまま効くため、Menu側のコードは一切変更していない。Block側の`getTicker`のメソッド参照(`PrismiumPulverizerBlockEntity::serverTick`等)も、各サブクラスが同名・同シグネチャの`serverTick`静的メソッドを保持し続けているため無変更で動く。
+
+**未検証**: このサンドボックスはJDK 17でのコンパイル・クライアント起動ができない(JRE 11のみ、`javac`無し、かつMaven/Forge依存へのネットワークアクセスも無い)ため、変更前の3クラスの実装と1行ずつ突き合わせて目視レビューした上でのpushとなった。CIビルド成功(後述)は確認したが、実機での3機械の挙動(エネルギー消費ペース、出力スタッキング、LIT点灯切り替え、GUIの進捗バー/エネルギーバー)が以前と完全に同じかどうかまでは、ビルド成功だけでは確認できていない。
+
+### 3CI-2. 新規ブロック「蒼白のプリズミウムブロック」(Pale Prismium Block)を追加
+
+PROGRESS.mdに継続項目として残っていた「ユーザー直接要望2件(青白いブロック、Prism Realm巨大山岳地帯+ボス)」のうち、スコープが小さく1セッションで完結できる前者に着手した(後者の「Prism Realm巨大山岳地帯+ボス」は明らかに複数セッションを要する規模のため、今回は見送り、次回以降への申し送りとした)。
+
+要望は「青白いブロック」とだけ記録されており、それ以上の仕様の指定は無かったため、以下の判断を自分で行った上で実装した:
+- MOD全体の共通パレット(`scripts/textures/gen_prismium.py`のPRISMIUM_*定数、テイル・シアン系)を薄めた色にするのではなく、意図的に新しい「氷を思わせる淡い青白」パレット(`PALE_*`定数)を新設した。既存のプリズミウム(テイル・シアン)の単なる明度違いにすると「青白い」という要望の意図(既存素材とは違う、氷のような見た目)を汲み取れないと判断したため。
+- ブロックの役割は`PrismiumBloomBlock`のような専用サブクラスを必要としない単純な装飾用フルブロックと判断し、`Block`をそのまま使用(BlockEntity/ticker無し)。ステータス(硬度5.0/爆発耐性6.0/AMETHYSTサウンド/要ツール採掘)は既存の`PRISMIUM_BLOCK`/`PRISMIUM_ALLOY_BLOCK`と同一にし、根拠のない新しい数値を発明しないようにした。光レベルは8とした(既存の発光ブロック群の中間程度)。
+- レシピはプリズミウムのかけら2個+石英ブロック1個のシェイプレス。素材消費のバランスは実際にプレイして確認できていないため未検証。
+
+テクスチャーはPython(Pillow)で新規スクリプト`scripts/textures/gen_pale_prismium_block.py`を書いて自作した(既存の`make_prismium_block()`と同じ「対角線バンドグラデーション+ファセット輪郭線+ハイライト散布+外枠」という技法を踏襲しつつ、パレットのみ新規)。生成後、16倍拡大した画像を実際に`Read`で目視確認し、視認性(遠目でもシルエットが崩れない)・意図しないノイズの有無・MOD内の既存ブロックとのスタイルの統一感(ドット感・限定パレット・くっきりした輪郭)を確認した上で採用した。
+
+specular map(`_s.png`)は、既存の共通パイプライン`scripts/textures/gen_specular_maps.py`の`LIGHT_LEVELS`辞書に`"pale_prismium_block.png": 8`を追加した上でスクリプトを再実行して生成した(このスクリプトは全ブロックテクスチャーを毎回再生成する仕様だが、`pbr_common.py`のロジック自体は変更していないため、既存の`_s.png`ファイルには差分が出ていないことを`git status`で確認済み)。
+
+アセット一式(blockstate、block/itemモデル、ロストテーブル、`mineable/pickaxe`タグへの追加、en_us/ja_jp langの`.details`キー込みのエントリ、クリエイティブタブへの追加)も同時に整備した。lang JSONの編集は、PROGRESS.md継続注意事項の通り`json.load`+`json.dump`による全体再整形は行わず、既存エントリの直後に新規行を文字列置換で挿入する方式にした(`git diff`で該当2行の追加のみになっていることを確認済み)。
+
+**未検証**: 実機でのブロックの見た目・発光具合・クラフトレシピのバランスはいずれも確認できていない。
+
+### 3CI-3. push・ビルド確認・リリース: v0.27.0
+
+意味のある単位で2コミット(`6a78f82` 基底クラス抽出、`3e145bd` 新規ブロック追加)に分けてpushした。pushはいずれもプロキシ回避策無しで一発成功した(このセッションでは`https_proxy`等の環境変数を空にする対応は不要だった)。push前に`git fetch`で並行セッションが無いことを確認済み。
+
+`git fetch`のポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`まで到達したことを確認し、CIビルドが成功したことを確認した。
+
+README.mdの「バージョニング方針」に照らし判断: 3CI-1(基底クラス抽出)はプレイヤーが新しく触れる要素を増やさないためPATCH相当だが、3CI-2(新規ブロック追加)は新しいブロック・レシピという新規コンテンツにあたるためMINOR相当。両方を1つのリリースにまとめる際は、含まれる変更のうち最も重い区分に合わせるという方針(過去のセッションでも踏襲されている暗黙のルール)に従い、v0.26.0→**v0.27.0(MINOR)**とした。`gradle.properties`のバージョン更新+`RELEASE_NOTES.md`への新セクション追加をコミット(`cd09760`)し、タグ`v0.27.0`をpush。`release.yml`ワークフローが発火し、releasesページに`v0.27.0`が公開され、アセット2件が添付されていることを`web_fetch`で確認した。
+
+Issue対応: `ISSUES_TO_CLOSE.json`/`PENDING_ISSUES.json`は両方とも空配列のままで、今回対応すべき新規Issueコメントは無かった(Issue一覧の詳細な棚卸しまでは今回時間の都合で行っていない、念のため次回も確認を推奨)。
+
+## 3CJ. セッション#78(定期実行)で実装した内容: Pale Prismium Blockの建築バリエーション追加 + Issue #19クローズ + v0.28.0リリース
+
+作業開始時、`mktemp -d`でユニークな作業ディレクトリ(`/tmp/cm_run_r9j2`)にclone。`api.github.com`は今回も`mcp__workspace__bash`のcurl(プロキシ経由)からは到達不可(`000`)だったが、`builds/last_datapack_validation_summary.txt`/`builds/last_ore_verification.txt`(リポジトリにコミット済みのCI結果記録ファイル)で直近ビルド(v0.27.0、commit `260554d`)が`status=ok`で成功していることを確認した。続けてIssue一覧の棚卸し(セッション#77が時間の都合で省略した項目)を行った。
+
+### 3CJ-1. Issue一覧の棚卸し手法の確認と実施
+
+`mcp__workspace__web_fetch`でのissue一覧取得(`issues?q=...`)は空レスポンスが返り使えなかった。代わりに`bash`の`curl`(github.com本体、プロキシ経由で到達可能)で個別issue番号への直接アクセスを行い、既知番号(#18,19,20,21,23,25)のHTTPステータス+`react-app.embeddedData`のJSONパース(セッション#76で確立した手法、`data['payload']['preloadedQueries'][0]['result']['data']['repository']['issue']`のパス)でstate/stateReasonを取得、さらに#26への直接アクセスで404を確認し新規issueが無いことを確認した。結果:
+- #18 CuriosAPI対応: OPEN(未着手)
+- #19 詳細表示のバグ: OPEN(ただしコメント上は前回セッション#76の修正後、こんぺいとう氏からの直接の「直った」確認コメントはまだ無かった)
+- #20 プリズミウムゲートの仕様について: CLOSED
+- #21 JEI互換性について: OPEN(未着手)
+- #23 新ディメンションの生成アルゴリズムについて: CLOSED
+- #25 バージョニングについて: CLOSED(セッション#75のISSUES_TO_CLOSEリレーが機能し、こんぺいとう氏側でクローズ済みと判明)
+- #26以降: 存在しない(404)、新規issue無し
+
+### 3CJ-2. Issue #19クローズ
+
+issue #19のコメント(こんぺいとう氏「0.20.0を確認しましたが治ってません」、2026-08-26付、v0.25.3リリース以前の時点のコメント)を確認した上で、PROGRESS.md §3CH(v0.26.0開発、直接チャットセッション)の記述を読み返したところ、v0.25.3での修正(GuiKeyStateTracker、§3CG参照)後に行われたv0.26.0の一連のやり取りで、こんぺいとう氏本人がオーバーレイパネルのスクリーンショットを複数回送ってきている(オーバーレイの重なり方の指摘、進捗バー・ページめくり機能への要望など)ことから、**Wキー長押しでの詳細表示自体は実際に機能していることが間接的だが確実に確認できる**と判断した。明示的な「直りました」というコメントこそ無いものの、修正後に本人がその機能の見た目について複数回具体的なフィードバックをしていること自体が、機能していることの動かぬ証拠だと考えた。
+
+`ISSUES_TO_CLOSE.json`に、この経緯を説明するコメント付きでissue #19を登録してpush。CIの`Close flagged issues`ステップが処理し、`ci: clear processed ISSUES_TO_CLOSE entries`コミットが実際に生成されたこと、および`web_fetch`でissue #19ページを再取得し`state=CLOSED, stateReason=COMPLETED`になっていることを確認した(セッション終了前に確定した数少ない「実際に確認が取れた」項目)。
+
+### 3CJ-3. Pale Prismium Block建築バリエーション(スラブ・塀・階段)の追加
+
+セッション#77の「議論したい論点」に新規として挙がっていた「蒼白のプリズミウムブロックに、スラブ・塀・階段などの建築バリエーションを追加するかどうか」に対応した。ユーザーからの明示的な追加要望ではなく前回セッション自身が残した検討事項だが、既存のPrismium Block/Prismium Coreに全く同じ建築バリエーション3種が既にあり(セッション34/36)、Pale Prismium Blockだけこれが欠けている状態は一貫性を欠くと判断し、着手した。
+
+実装は`Explore`系のサブエージェントに、既存のPRISMIUM_BLOCK_SLAB/WALL/STAIRSの実装パターン(Java登録・アセット・データパック・タグ全て)を1行残らず調査させ、その報告に基づいて全ファイルをsed/pythonでの機械的な文字列置換(`prismium_block` → `pale_prismium_block`)で生成した。既存の`prismium_block`という文字列がこの3ファイル群の中で他の意味(`prismium_core`等)と衝突しないことを事前に確認した上での一括置換であり、目視でも生成後の主要ファイル(blockstate、レシピ)の中身を確認済み。
+
+- `ModBlocks.java`: `PALE_PRISMIUM_BLOCK_SLAB`(SlabBlock)/`PALE_PRISMIUM_BLOCK_WALL`(WallBlock)/`PALE_PRISMIUM_BLOCK_STAIRS`(StairBlock、`PALE_PRISMIUM_BLOCK.get().defaultBlockState()`をベース状態として参照)を追加。ステータスは基本ブロックと同じ(`MapColor.ICE`、`requiresCorrectToolForDrops()`、`strength(5.0f, 6.0f)`、`SoundType.AMETHYST`)だが、Prismium Blockの変種と同じ慣習に倣い`lightLevel`は変種側には付けていない(基本ブロックのみ光レベル8)。
+- `ModItems.java`にBlockItem3つ、`ModCreativeTabs.java`に表示エントリ3つを追加(基本ブロックの直後に配置、既存の並び順の慣習を踏襲)。
+- アセット: blockstate 3種(スラブは`type=bottom/top/double`、塀はmultipart、階段は40エントリのfacing×half×shape全網羅)、ブロックモデル8種(slab/slab_top/stairs/stairs_inner/stairs_outer/wall_post/wall_side/wall_side_tall)、アイテムモデル3種。**新規テクスチャーは一切作成していない** - 全モデルが基本ブロックの既存テクスチャー(`claudemod:block/pale_prismium_block`)をそのまま参照する、バニラの`oak_planks`/`oak_slab`と同じ「変種は親ブロックのテクスチャーを流用する」設計(Prismium Block/Coreの変種も同じ)。
+- データパック: ロストテーブル3種(スラブのみ`type=double`判定で2個ドロップの`minecraft:alternatives`、塀・階段は単純な1個ドロップ)、シェイプドレシピ3種(基本ブロックのみを材料に、スラブ×6・塀×6・階段×4、既存Prismium Blockの変種レシピと同じ形・個数)。
+- タグ: `data/minecraft/tags/blocks/mineable/pickaxe.json`に3エントリ追加。**`data/minecraft/tags/blocks/walls.json`に`pale_prismium_block_wall`を追加**(これを忘れると、セッション35でPrismium Block Wallに発生した「壁同士が接続しない」バグ(`WallBlock#connectsTo()`が`minecraft:walls`タグ未登録のブロックを繋げない)が今回も再発するため、最初から対応した)。
+- lang(en_us/ja_jp): 3ブロック分のブロック名エントリを追加。基本ブロックにはある`.details`キーは、Prismium Block本体の変種側に前例が無いことを確認した上で、変種側には付けていない(一貫性を優先)。
+- 実装後、`git diff`で全変更を確認し、`ModBlocks.java`/`ModItems.java`/`ModCreativeTabs.java`の括弧・波括弧の対応数が変更前後で一致していることをpython(`content.count('(')`等)で機械的に検証した(このサンドボックスにはjavacが無いため、せめてもの構文チェック)。JSONファイル群は全て`json.load`でパース検証済み。
+
+**未検証**: 実機でのスラブ/塀/階段の設置・見た目・塀の接続・階段の各shape(inner/outer)が意図通り描画されるかは、このサンドボックスでは確認できていない。
+
+### 3CJ-4. push・ビルド確認・リリース: v0.28.0
+
+2コミット(`399194b` 建築バリエーション追加+Issue #19クローズ登録、`620247a` バージョンbump+リリースノート)をpush。いずれも`git fetch`で並行セッション無しを確認後、プロキシ回避策無しで一発成功。
+
+`git fetch`ポーリングで両コミットともそれぞれ`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`(`prismium_ore`/`deepslate_prismium_ore`とも生成チャンク検出)まで到達したことを確認し、CIビルド成功を確認した。また1コミット目のpush直後に`ci: clear processed ISSUES_TO_CLOSE entries`コミットが生成され、issue #19が実際にCLOSEDになったことも`web_fetch`で確認済み(§3CJ-2)。
+
+README.mdのバージョニング方針に照らし判断: 新規ブロック3種+新規レシピという新規コンテンツの追加にあたるため、v0.27.0→**v0.28.0(MINOR)**とした。タグ`v0.28.0`をpush後、releasesページを`web_fetch`で確認し、アセット3件が添付された状態でリリースが正しく公開されていることを確認した。
+
+### 3CJ-5. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要・実機未検証**: 今回追加したPale Prismium Blockのスラブ・塀・階段が、実際にゲーム内で正しく設置・描画されるか(特に塀の接続、階段の8方向×inner/outer形状)は未確認。CIビルドの成功は「コンパイルとデータパック検証が通った」ことの確認に留まる。
+- Issue #19のクローズは、v0.26.0開発時のスクリーンショットからの間接的な推論に基づく。こんぺいとう氏本人から明示的な「直りました」という言葉での確認は最後まで得られなかった。もし実際にはまだ何か別の不具合が残っている場合、再度issueとして報告いただく形になる。
+- 今回時間の関係で、issue #18(CuriosAPI対応)・#21(JEI互換性)には着手しなかった。どちらも他modとの連携が絡む中規模〜大規模の機能で、実装前にAPI仕様の入念な裏取りが必要(特にJEIはレンダリング処理を含むため、このサンドボックスでの「未検証」リスクが他の変更より大きい)。
+- 「Prism Realm巨大山岳地帯+ボス」も今回は見送り(規模が大きく、地形生成とボスMOBに分割しての段階的着手が引き続き必要)。
+
+### 3CJ-6. 議論したい論点・改善案
+
+- 【最優先・新規】今回追加したPale Prismium Blockの建築バリエーション3種が実機で正しく機能しているか(特に塀の接続)、こんぺいとう氏に確認いただきたい。
+- 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。いずれも他modとの連携が絡むため、着手前に前提modの有無をどう扱うか(compileOnly依存、リフレクションでの存在確認等)を含めた設計方針をこんぺいとう氏と相談できると着手しやすい。
+- 【継続】センチネルの弓AI・ドリフターの遊泳AIの実機フィードバック待ち。
+- 【継続】3機械リファクタリング(v0.27.0)・蒼白のプリズミウムブロック本体(v0.27.0)の実機フィードバック待ち。
+- 【継続・未着手】ユーザー直接要望「Prism Realm巨大山岳地帯+ボス」の着手タイミング。
+- 【継続】PROGRESS.mdの肥大化(4000行超)。詳細ログと申し送りの分離は依然として未着手。今回もこのファイルはさらに増加した。次回以降、そろそろ古いセッションログ(§3A〜§3CB台など)を`PROGRESS_ARCHIVE.md`のような別ファイルに切り出すことを本格的に検討すべき時期だと思われる。
+
+## 3CK. セッション#79(定期実行)で実装した内容: PROGRESS.mdの肥大化解消 + 新規ブロック「蒼白のプリズミウムランタン」追加 + v0.29.0リリース
+
+作業開始時、`git tag --list --sort=-creatordate`で直近リリースがv0.28.0であることを確認。続けて`api.github.com`へのcurlアクセスを試したが今回も`HTTP:000`で到達不可(セッション#77・#78と同様)だったため、リポジトリにコミット済みの`builds/last_datapack_validation_summary.txt`(`status=ok`、commit=直前pushのPROGRESS.md更新コミット`7bf981c`相当)で前回ビルドの成功を確認した。続けてissue #18/#19/#21の直接アクセス(HTTP 200、いずれもOPENのまま)と、#26〜#30への直接アクセス(すべてHTTP 404)で新規issueが無いことを確認した。
+
+今回は、こんぺいとう氏本人からの実機フィードバックが必要な項目(§3CJ-6であげた複数の確認待ち事項)は自動実行セッションでは対応できないため、フィードバック不要で着手できる継続項目に取り組んだ。
+
+### 3CK-1. PROGRESS.mdの肥大化解消: PROGRESS_ARCHIVE.mdへの分離
+
+セッション#74あたりから継続的に申し送られていた「PROGRESS.mdの肥大化(4000行超)」に、今回初めて着手した。ファイル全体を確認したところ、セクション0(運用ルール)・1(構想)・2(環境制約)・4(既知の不具合、セッション#75で既に一度統合済み)は現在も参照価値が高い一方、セクション3〜3CG(セッション#3〜#76の個別実装ログ、約3700行)は「経緯を後から調べたいときの参照用」の性格が強く、毎回の状況確認では読む必要がないと判断した。
+
+新設`PROGRESS_ARCHIVE.md`にセクション3〜3CG(セッション#3〜#76分)をそのまま(内容を要約・改変せず)切り出し、`PROGRESS.md`にはセクション0・1・2・4と、直近3セッション分のログ(§3CH〜§3CJ、v0.26.0〜v0.28.0)、そして本セクション以降を残す形にした。作業はPythonでの行範囲抽出(`readlines()`のスライス)で行い、意図しない行の欠落・重複が無いことをセクション見出し(`grep -n "^## "`)の一覧と、両ファイルの継ぎ目(§4の直後・§3CHの直前)の実テキストを目視確認して検証した。
+
+**結果**: `PROGRESS.md`は4086行→約380行(本セクション追記後も400行台の見込み)に縮小。`PROGRESS_ARCHIVE.md`は3712行の新規ファイルとして追加。過去の経緯を調べる必要が生じた場合は今後`PROGRESS_ARCHIVE.md`も参照すること。
+
+### 3CK-2. 新規ブロック「蒼白のプリズミウムランタン」(Pale Prismium Lantern)を追加
+
+セッション#77で新設した蒼白のプリズミウムブロック(Pale Prismium Block)ファミリーに、まだ「光源」の役割を持つブロックが無かった(セッション#78で追加したのは建築バリエーション3種のみ)。MOD既存の「プリズミウムランタン」(session 4、`PRISMIUM_LANTERN`)が担っている「ツール不要・安価・最大光レベルの探索用光源」という役割を、蒼白ファミリーにも一つ用意することにした。ユーザーからの直接要望ではなく自発的な判断だが、MODコンセプト(てんこ盛り・探索の楽しさ)にも、蒼白ファミリーの一貫性にも合致すると判断した。
+
+- `ModBlocks.java`に`PALE_PRISMIUM_LANTERN`を追加。`PRISMIUM_LANTERN`と全く同じステータス(硬度/爆発耐性3.5、`AMETHYST`サウンド、`requiresCorrectToolForDrops()`無し、最大光レベル15)を踏襲した。蒼白ブロック本体(`PALE_PRISMIUM_BLOCK`、光レベル8・ツール要)とは明確に役割が異なる(装飾用 vs 光源用)ため、既存のプリズミウム側の役割分担(Prismium Block=装飾/ツール要、Prismium Lantern=光源/ツール不要)をそのまま蒼白側にも適用した形。
+- レシピは蒼白のプリズミウムブロック1個+松明1個のシェイプレス(オリジナルのプリズミウムランタンが「プリズミウムのかけら4個+松明」だったのに対し、蒼白ファミリーには対応する「かけら」的な中間素材が存在しないため、本体ブロックをそのまま消費する形にした。バランスの妥当性は未検証)。
+- テクスチャーは新規スクリプト`scripts/textures/gen_pale_prismium_lantern.py`で自作。既存の`gen_prismium_lantern.py`と同じ技法(Chebyshev距離によるバンド状の同心グロー+3x3の暗い金属格子+リベット+控えめなアクセントの光る粒+外枠)を踏襲しつつ、色パレットのみ`gen_pale_prismium_block.py`のPALE_*定数に差し替え、格子の色も蒼白の淡いグローに対して十分なコントラストが出るよう専用の寒色系(紺~濃青)に調整した。生成後、16倍拡大画像を`Read`で目視確認し、シルエットの視認性・意図しないノイズの有無・蒼白ファミリー内でのスタイルの統一感を確認した上で採用した。
+- specular map(`_s.png`)は`gen_specular_maps.py`の`LIGHT_LEVELS`辞書に`"pale_prismium_lantern.png": 15`を追加した上で全体再生成し、既存の`_s.png`ファイル群に内容差分が無いことを`git diff --shortstat`で確認済み。
+- アセット一式(blockstate、block/itemモデル(`cube_all`、プリズミウムランタンと同型)、ロストテーブル、`mineable/pickaxe`タグへの追加、en_us/ja_jpのlang(name+`.details`キー)、クリエイティブタブへの追加)を整備。lang JSONの編集は引き続き`json.load`+`json.dump`による全体再整形ではなく文字列置換方式を使用。
+
+**未検証**: 実機での見た目・発光具合・クラフトレシピのバランス(本体ブロック1個を光源1個に変換する消費量が妥当か)はいずれも確認できていない。
+
+### 3CK-3. push・ビルド確認・リリース: v0.29.0
+
+意味のある単位で2コミット(`8931e0f` PROGRESS.md分離、`be549e3` 蒼白のプリズミウムランタン追加)に分けてpush。いずれも`git fetch`で並行セッション無しを確認後、プロキシ回避策無しで一発成功した。
+
+`git fetch`のポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`まで到達したことを確認し、CIビルドが成功したことを確認した。
+
+README.mdのバージョニング方針に照らし判断: PROGRESS.mdの分離はプレイヤー向けの変更が無いためバージョンには影響しないが、蒼白のプリズミウムランタンの追加は新規コンテンツにあたるためMINOR相当。よってv0.28.0→**v0.29.0(MINOR)**とした。`gradle.properties`のバージョン更新+`RELEASE_NOTES.md`への新セクション追加をコミット(`ad93430`)し、タグ`v0.29.0`をpush。`release.yml`ワークフローが発火し、`curl`で`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.29.0`がHTTP 200かつページ内に`v0.29.0`の記載があることを確認した(アセット添付の詳細は今回`web_fetch`ではなく`curl`での確認に留まり、個々のアセットファイル名までは検証していない)。
+
+Issue対応: 今回対応すべき新規Issueは無かった(#18・#21はOPENのまま未着手、#26以降は存在しない)。`ISSUES_TO_CLOSE.json`/`PENDING_ISSUES.json`への新規登録も無し。
+
+### 3CK-4. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要・実機未検証**: 蒼白のプリズミウムランタンの見た目・発光具合・クラフトバランスは未確認。
+- リリースページのアセット添付確認が、過去セッションで使っていた`web_fetch`ではなく`curl`での簡易確認(タグ名の文字列一致のみ)に留まった。アセットファイル名(jar含む)までの厳密な確認はできていない。
+- PROGRESS_ARCHIVE.mdへの分離は初めての試みであり、今後さらに何セッションか経てから「本当に必要な情報が古いログ側に埋もれて参照されなくなっていないか」を振り返る価値がある。
+
+### 3CK-5. 議論したい論点・改善案
+
+- 【最優先・新規】今回追加した蒼白のプリズミウムランタンが実機で意図通り動作しているか、こんぺいとう氏に確認いただきたい。
+- 【継続】§3CJ-6であげた複数の実機フィードバック待ち事項(Pale Prismium Blockの建築バリエーション、3機械リファクタリング、蒼白のプリズミウムブロック本体、§3CHの4件、v0.25.x系の修正群)。まとめて確認いただけると効率的。
+- 【継続】Issue #18(CuriosAPI対応)・#21(JEI互換性)への着手方針検討。
+- 【継続・未着手】ユーザー直接要望「Prism Realm巨大山岳地帯+ボス」の着手タイミング。
+- 【新規】PROGRESS_ARCHIVE.mdへの分離運用が今後も機能するか(次回以降のセッションが正しく`PROGRESS.md`だけを読んで状況を把握できるか、逆に`PROGRESS_ARCHIVE.md`を参照すべき場面を見落とさないか)を数セッション後に振り返りたい。
+
+
+## 3CL. セッション#80(定期実行)で実装した内容: Issue #18(CuriosAPI対応)+ CI改善 + v0.30.0リリース
+
+作業開始時、`mktemp -d /tmp/cm_run_XXXX`でユニークな作業ディレクトリ(`/tmp/cm_run_yFyw`)にclone。`git config user.name/user.email`を規定値に設定。`api.github.com`への直接curlアクセスは今回も`HTTP:000`(到達不可)だったため、`builds/last_datapack_validation_summary.txt`(`status=ok`、commit=`ed7c2da`)で前回(セッション#79、v0.29.0)のビルド成功を確認した。続けてissue #18・#19・#21の直接アクセス(HTTP 200)、#19はCLOSED/COMPLETED、#18・#21はOPENのまま、#26以降は404で新規issue無しを確認した。
+
+今回はセッション#77以来ずっと申し送られ続けていたIssue #18(CuriosAPI対応)に初めて着手した。issue本文を読み直すと「チャーム類をCuriosAPIに対応したスロットを付けてほしい。ただし前提MODとして要求されるのは環境として用意するのが大変なので、存在する場合のみ、という限定を付けてもらって構いません」とあり、ちょうど本MODには既に「チャーム」を名乗る/準ずるアイテムが複数存在する(`PrismiumGuardianCharmItem`・`PrismiumPulseCharmItem`・`PrismiumMagnetCharmItem`、および「お守り」系の`PrismiumFeatherstoneItem`・`PrismiumEmberguardItem`・`PrismiumVitastoneItem`)ことが分かったため、新規アイテムを作るのではなく既存アイテムにCurios対応を追加する方針にした。
+
+### 3CL-1. CuriosAPI仕様の調査(WebSearch不可のためbrowserツールでGitHub直接調査)
+
+このサンドボックスの`bash`からは`maven.theillusivec4.top`・`raw.githubusercontent.com`・`api.github.com`等に到達できない(`github.com`本体のみ到達可、既知の制約)ため、今回はブラウザツール(`mcp__Claude_Browser__*`)を使ってCurios本体のGitHubリポジトリ(`TheIllusiveC4/Curios`、1.20.1相当のブランチは`1.20.x`)のソース・wiki・公式maven(`maven.theillusivec4.top`、ブラウザ経由では到達可能)を直接読んで裏取りした。分かったこと:
+
+- 現行の1.20.1向け最新版は`5.14.1+1.20.1`(`top.theillusivec4.curios:curios-forge:5.14.1+1.20.1`、mavenは`https://maven.theillusivec4.top/`、`:api`クラシファイアがコンパイル専用の軽量jar)。
+- スロット種別は`data/<namespace>/curios/slots/<id>.json`というデータパックJSONで登録する(IMCベースの`SlotTypePreset`は非推奨・将来削除予定)。Curios自身が`charm`という「その他アイテム全般」向けの汎用スロットを最初から同梱しており(Botania/Artifacts/Cyclic等多数のMODが採用する「Frequently Used Slots」の1つ)、しかもCurios本体の`data/curios/curios/slots/charm.json`は`size`を明示していないため、`SlotType.Builder#build()`のデフォルト(`size`未指定なら1)によりCurios単体でも`charm`スロットは自動的にサイズ1になる(Curiosの実ソース`common/data/CuriosSlotManager.java`・`common/slottype/SlotType.java`を直接読んで確認)。よって**新しいスロット種別を自分のMODで登録する必要は無く**、既存の`charm`にタグ登録するだけで済むと判断した。
+- アイテムをスロット種別に対応させるには`data/curios/tags/items/<identifier>.json`(namespaceは自分のMODではなく必ず`curios`)にアイテムIDを列挙するだけでよい(Curios devwiki「How to Use: Developers」で確認)。
+- 装備中かどうかの判定は`CuriosApi.getCuriosInventory(LivingEntity)`(`LazyOptional<ICuriosItemHandler>`を返す)経由で`ICuriosItemHandler#isEquipped(Item)`を呼ぶだけで良く、`ICurio`/`ICurioItem`capabilityの実装は不要(今回対象の4アイテムはもともと装備スロットの概念を持たない「インベントリのどこかに持っているだけで効く」設計のため)。
+
+### 3CL-2. 実装: 軟依存(soft dependency)ブリッジ`CuriosCompat`+4ハンドラの拡張
+
+- `build.gradle`/`gradle.properties`: `maven.theillusivec4.top`リポジトリと`compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")`/`runtimeOnly fg.deobf("...")`を追加(`curios_version=5.14.1+1.20.1`)。`mods.toml`に`mandatory=false`の`curios`依存エントリを追加。
+- 新設`com.claudemod.compat.curios.CuriosCompat`が、MOD内で唯一Curios APIの型を直接importするクラス。呼び出し側(4つの`*Handler`)は必ず`net.minecraftforge.fml.ModList.get().isLoaded("curios")`を先にチェックしてから`CuriosCompat`のstaticメソッドを呼ぶ、という「遅延クラスロード」方式の軟依存パターンを採用(JVMはクラスを実際に使う瞬間まで解決を遅延するため、`isLoaded`がfalseならこのクラス・ひいては`curios-forge`jar自体に一切触れない=Curios未導入環境でも問題なく動作する)。
+- `PrismiumFeatherstoneHandler`/`PrismiumEmberguardHandler`/`PrismiumVitastoneHandler`/`PrismiumMagnetCharmHandler`の`hasXxx(Player)`判定を、既存のインベントリ走査に加えて「Curios導入時はCurioスロット内も見る」よう拡張(`|| (ModList.get().isLoaded("curios") && CuriosCompat.isEquippedInCurioSlot(player, ModItems.XXX.get()))`)。
+- `data/curios/tags/items/charm.json`を新設し、上記4アイテムを登録。
+- **意図的に対象外にした2アイテム**: `PrismiumGuardianCharmItem`(「手に持つ」ことが前提の一撃死回避アイテムで、Curiosは「手に持っている」状態をCurioスロットへ転送しない)と`PrismiumPulseCharmItem`(右クリックで能動的に使うアイテムで、受動的に「持っているだけ」の他4種とは性質が異なる)。理由は`CuriosCompat`のjavadocとPROGRESS.md双方に明記。
+- lang(en_us/ja_jp)の該当4アイテムの`.details`キーに「Curios導入時はcharmスロットに入れても同じ効果」という一文を追記(既存の「装備不要」という説明と矛盾しないよう、そちらは変更せず追記のみ)。文字列置換方式(全体再整形なし)を継続。
+
+### 3CL-3. CIで発覚した問題: Curios導入時に`runGameTestServer`がクラッシュ
+
+上記をpushしたところ、`builds/last_datapack_validation_summary.txt`が`status=other_failure`・`builds/last_ore_verification.txt`が`NO_REGION_FILES`(ワールドが全く生成されずサーバーが起動できなかったことを意味する)に変わった。これは**望ましくない結果だが、同時に有益な発見でもあった**: `runtimeOnly`依存として追加したCuriosの本体jarが、CIの`gameTestServer`実行時にForgeの通常のMod探索によって実際にロードされ、Curios自身のMixin(`curios.mixins.json:AccessorEntity`、バニラ`Entity`クラスの`firstTick`フィールド(SRG名`f_19803_`)へのアクセサ)の適用が`InvalidAccessorException`で失敗し、サーバー起動そのものがクラッシュしていた。
+
+原因調査のため、まずGitHub Actionsの実行ログをブラウザで確認しようとしたが、ログの全文表示は未ログイン状態では「Sign in to view logs」で閲覧不可だった。代わりにリポジトリに毎回コミットされる`builds/last_datapack_validation_errors.log`(CIのスクリプトがログから抽出してコミットしている抜粋)を`git show origin/main:...`で直接読み、上記のスタックトレースを特定した。
+
+このエラーメッセージそのもの(`f_19803_`が見つからない)をヒントに、サブエージェント(`Agent`ツール、web検索主体の調査タスクとして委譲)へ「これはForgeGradleのdev環境特有の既知の制約か、実際のプレイ環境にも影響するものか」を調べさせた。結果、Curios自身のGitHub Issue #502(同じ`InvalidAccessorException`)・Discussion #504(全く同一のスタックトレース)・`SpongePowered/Mixin#462`から、**これはForgeGradleのuserdev環境が抱える既知のMixin refmapリマップの制約であり、実際の本番Forge環境(エンドユーザーの実機)には影響しない**ことを確認した。原因は、ForgeGradleのdev環境ではMinecraft本体クラスは「official」名にリマップされる一方、依存modのjarはSRG名のままになるという二重マッピング構造にあり、依存modのMixin(`@Accessor`/`@Shadow`)がSRG名で書かれたターゲットを解決する際に、そのリマップ処理(`mixin.env.remapRefMap`)を明示的に有効化しないと解決に失敗する、というもの。本番環境では全MODのjarが単一の一貫したマッピングで動作するため、この不整合自体が原理的に発生しない。
+
+対処として、`build.gradle`の`runs.gameTestServer`ブロックに以下の2プロパティを追加した(Curios公式のclient/server実行設定テンプレートには同様の設定があるが、`gameTestServer`向けの設定はCurios自身のテンプレートにも無く、今回が初めての適用):
+
+```
+property 'mixin.env.remapRefMap', 'true'
+property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+```
+
+pushして再度CIを確認したところ、`status=ok`に回復し、かつ`last_datapack_validation_errors.log`からCurios関連のFATAL/ERRORが消え、ore生成検証も従来通り成功することを確認した。**結果として、今回のCI改善により「Curiosを実際にロードした状態でMOD全体が正常にデータパック検証を通過する」という、通常の「未検証」より一段強い検証シグナルが得られた**(ただし後述の通り、GUIでの実際のスロット装備操作そのものはまだ未検証)。
+
+### 3CL-4. push・ビルド確認・リリース: v0.30.0
+
+3コミットに分けてpush: (1) CuriosAPI対応本体、(2) `gameTestServer`のmixin refmap修正、(3) バージョンbump+リリースノート。いずれも`git fetch`で並行セッション無しを確認し、必要に応じて`git rebase origin/main`してからpush(CIが生成する`ci: update built jar`等のコミットが毎回入るため、pushのたびにrebaseが必要だった)。プロキシ回避策は今回も不要だった。
+
+(1)のpush直後は前述の通り`status=other_failure`だったため、(2)を追加でpushして`status=ok`への回復を確認してから(3)に進んだ。README.mdのバージョニング方針に照らし、Curios対応は「後方互換な新規機能の追加」にあたるためv0.29.0→**v0.30.0(MINOR)**とした。タグ`v0.30.0`をpush後、`web_fetch`でreleasesページを確認し、アセット3件が添付された状態で正しく公開されていることを確認した。
+
+Issue対応: issue #18は今回で機能自体は実装したが、**実機での動作(Curiosの実際のGUIでスロットにドラッグ&ドロップできるか、装備した状態で本当に効果が発動するか)は依然として一切確認できていない**ため、クローズはせず、`ISSUES_TO_CLOSE.json`への登録も行わなかった。issue #21(JEI互換性)は今回も未着手。`PENDING_ISSUES.json`への新規登録も無し。
+
+### 3CL-5. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要・実機未検証**: Curios導入時にissue #18対応の4アイテムが実際にCurios GUIのcharmスロットへドラッグ&ドロップで装備できるか、装備した状態で各アイテムの効果(落下ダメージ軽減・火/溶岩ダメージ軽減・アイテム吸着・回復量増幅)が実際に発動するかは未確認。今回のCI改善で「Curiosを実際にロードしてもサーバーがクラッシュしない」ことまでは確認できたが、これはプレイヤーが実際にスロットを操作する場面までは検証していない。
+- `CuriosApi.getCuriosInventory(entity).map(handler -> handler.isEquipped(item))`という実装が、Curiosの実際のランタイム動作(Mixinで実装が差し込まれる`CuriosApi`クラスの各staticメソッド)に対して意図通り動くかどうかも、上記と同様に実機確認待ち。
+- `mixin.env.refMapRemappingFile`に指定した`${projectDir}/build/createSrgToMcp/output.srg`というパスは、Curios公式のclient/server実行設定テンプレートからの流用であり、このプロジェクト(`mapping_channel=official`、Forge 47.4.0)のGradleビルドが実際にこの正確なパスにファイルを生成しているかをローカルで直接確認する手段が無い(JDK/Gradle実行不可のサンドボックス制約)。ただしCIの`runGameTestServer`が実際に`status=ok`に回復したという結果自体が、このパス指定が機能していることの動作証拠にはなっている。
+- Guardian CharmとPulse Charmの2アイテムは意図的にCurios対応の対象外としたが、こんぺいとう氏がこの2つも含めた対応を期待していた場合は、方針についての追加相談が必要になる可能性がある。
+
+### 3CL-6. 議論したい論点・改善案
+
+- 【最優先・新規】Issue #18対応(4アイテムのCurios charm対応)が実機で意図通り動作しているか、こんぺいとう氏にCurios導入環境での確認をお願いしたい。特にCurios GUIでのスロット表示・ドラッグ&ドロップ・装備中の効果発動の3点。
+- 【新規】Guardian Charm・Pulse Charmを対象外にした判断への同意が得られるか、あるいは別のアプローチ(例えばPulse Charmを右クリックでなくCurios経由の常時発動効果に作り替える等)を検討すべきか、意見を伺いたい。
+- 【継続】Issue #21(JEI互換性)への着手方針検討。レシピカテゴリ・レンダリング処理を含み、このサンドボックスでの検証手段が特に乏しい点に留意。
+- 【継続】§3CJ-6・§3CK-5であげた複数の実機フィードバック待ち事項(Pale Prismium系、3機械リファクタリング、§3CHの4件、v0.25.x系の修正群)。まとめて確認いただけると効率的。
+- 【継続・未着手】ユーザー直接要望「Prism Realm巨大山岳地帯+ボス」の着手タイミング。
+- 【新規】今回のCI改善(`gameTestServer`でのmixin refmapリマップ有効化)は、今後Curios以外のMixinベースの依存MOD(あるいはJEI、issue #21で検討中)を追加する際にも同様に必要になる可能性がある教訓として残す価値がある。
+
+## 3CM. セッション#81(定期実行、前回未記録)で実装された内容: Curios統合の拡張(Guardian Charm curio-slot対応+右クリック装備) + v0.30.1リリース
+
+**このセクションは今回のセッション(#82)がgit履歴から遡って記録したものです。** 前回セッション(#81)はコード実装・push・v0.30.1リリースまでは完了していましたが、PROGRESS.mdの更新(作業フロー手順5)を行う前にセッションが終了してしまい、申し送りが記録されないまま次回(今回)が起動しました。今回の冒頭で`git log`を確認して気づいたため、コミット内容から可能な範囲で内容を復元し、ここに記録します。
+
+### 3CM-1. 実装内容(コミット`ec95957`・`8a1e624`より復元)
+
+こんぺいとう氏との直接チャット(§3CLで一部着手したIssue #18の続き)を受け、v0.30.0で対応した5アイテムのうち対象外にしていた「プリズミウムの護符」(Guardian Charm、一撃死回避アイテム)についても、Curios対応を拡張しました。
+
+- `PrismiumGuardianCharmHandler`が、Curiosのアクセサリスロットに入れた状態でも発動するように変更(`CuriosCompat.findEquippedCurioStack()`が実際のcurioスロット内`ItemStack`を返し、手持ちと同様にその場で消費できるようにした)。`curios:charm`タグにも追加登録。
+- 「タグ登録するだけではCurios自身の右クリック装備機能は有効にならない」ことが判明したため(`CuriosEventHandler#curioRightClick`のソースを読んで確認: 実際の`ICurio` capabilityと`canEquipFromUse`が必要)、新設`CuriosSetupEvents`(mod-busの`FMLCommonSetupEvent`リスナー、`ModList.isLoaded`でガード)が`CuriosCompat.enableRightClickEquip()`経由で最小限の`ICurioItem`を5アイテム全てに付与し、右クリックでcharmスロットに装備できるようにしました。プリズミウムの脈動の護符(能動アイテム、右クリックは既存の索敵機能で使用中)のみ対象外。
+- en/ja langに右クリック装備についての説明を追記。
+
+**発覚したコンパイルエラーとその修正(`8a1e624`)**: 初回push後のCIで、`net.minecraftforge.event.lifecycle.FMLCommonSetupEvent`というimportパスがForge 1.20.1には存在しないというコンパイルエラーが発生しました(正しくは`net.minecraftforge.fml.event.lifecycle`、既存の`ClientModEvents`の`FMLClientSetupEvent`importと同じパッケージ)。1行のimport修正で解消し、再pushで`status=ok`に回復しています。
+
+### 3CM-2. リリース: v0.31.0…ではなく v0.30.1(コミット`3a37886`より復元)
+
+`gradle.properties`のバージョンを0.30.0→**0.30.1(PATCH)**とし、タグ`v0.30.1`をpush。コミットメッセージ自身に「PATCH: v0.30.0で追加したCurios統合の拡張・改善であり、新規コンテンツの追加ではないため」との判断理由が明記されていました。README.mdのバージョニング方針(新規コンテンツの追加でなければPATCH)に合致する判断です。
+
+今回(セッション#82)の冒頭で確認した限り、CI(`builds/last_datapack_validation_summary.txt`、commit=`3a37886`)は`status=ok`、ore生成検証も両鉱石で成功しており、リリースページ(`v0.30.1`)もHTTP 200で存在を確認できています。ビルド・データパック検証は正常だったと判断できます。
+
+### 3CM-3. 今回判明した既知の限界・未検証事項(セッション#81のコミットメッセージより)
+
+- **実機未検証**: Guardian CharmのCurioスロット対応・右クリック装備・`findFirstCurio()`から取得した`ItemStack`を減算する操作が実際のcurioスロットに反映されるかは、いずれも実機のCurios環境での確認が取れていません。
+- セッション#81は前述の通りPROGRESS.mdを更新せずに終了しているため、セッション#81自身が「今回の既知の限界」「議論したい論点」としてどのような所感を持っていたかは、コミットメッセージ以上の情報が残っていません。
+
+### 3CM-4. 教訓(全セッション必読への追加候補)
+
+セッションが何らかの理由(タイムアウト等)でPROGRESS.md更新前に終了する可能性があることが今回はっきりしました。git履歴(コミットメッセージ)は復元の頼りになりますが、セッションの「所感」「悩んだ点」までは残りません。次回以降のセッションも、もし今回のように前回のPROGRESS.md更新が欠けていることに気づいた場合は、同様にgit履歴から可能な範囲で復元してから自分の作業に進むこと。
+
+## 3CN. セッション#82(定期実行)で実装した内容: 新規MOB「プリズミウム・クローラー」(Prismium Crawler)追加 + v0.31.0リリース
+
+作業開始時、`api.github.com`への直接curlアクセスは今回も`HTTP 000`(プロキシのallowlistで`blocked-by-allowlist`、セッション#77以降と同様の制約)で到達不可だったため、`builds/last_datapack_validation_summary.txt`(`status=ok`、commit=`3a37886`相当、v0.30.1)で前回ビルドの成功を確認した。続けてissue #18・#19・#21(直接アクセス、HTTP 200、#18/#21はOPEN、#19はCLOSED、変化無し)、および#22〜#30の存在確認(#22〜25はいずれもKonpeitou24氏本人による投稿でCLOSED済み、#26以降は404で新規issue無し)を行った。
+
+上記の過程で、前回セッション(#81)がv0.30.1リリースまで完了させていたにもかかわらずPROGRESS.mdを更新せずに終了していたことに気づき、§3CMとしてgit履歴から内容を遡って記録した(詳細は§3CM参照)。
+
+### 3CN-1. 新規MOB「プリズミウム・クローラー」を追加
+
+PROGRESS.mdの申し送り(§3CL-6等)に挙げられていた項目(Issue #18・#21、Prism Realm巨大山岳地帯+ボス)はいずれも実機フィードバック待ちか大規模すぎて自動実行セッション向きでなかったため、今回は自発的に、MODコンセプト(§1、「新しいMOB」「探索が楽しくなるギミック」)に沿った新規コンテンツ追加に着手した。
+
+このMODの既存4MOB(プリズミウム・レイス/深淵レイス/センチネル/ドリフター)は、3種が戦闘用モンスター、1種(ドリフター)が水中の非戦闘MOBで、**「地上を歩き回る純粋にアンビエントな(無害な)MOB」がこれまで一体も存在しない**というカテゴリの空白に気づいた。探索時の「世界が生きている感」を底上げする狙いで、Prism Realmの地表を無害に徘徊する小さな結晶生物「プリズミウム・クローラー」(`PrismiumCrawlerEntity`)を新設した。
+
+- `PathfinderMob`を直接継承(`AbstractPrismiumMonster`は使わない、既存の`PrismiumDrifterEntity`と同じ判断根拠)。AIはターゲット選択ゴール無しの完全受動型: `PanicGoal`(被弾時に逃走)+`RandomStrollGoal`(汎用徘徊、ドリフターの`RandomSwimmingGoal`の地上版)+`LookAtPlayerGoal`+`RandomLookAroundGoal`。
+- クライアントモデルはバニラの`SilverfishModel`形状をそのまま流用し、テクスチャーのみ差し替え(ドリフターが`SquidModel`を流用したのと同じ手法)。`SilverfishModel<T extends Entity>`が特定エンティティ型に固定されないジェネリッククラスであることは、このサンドボックスの`bash`から到達できない`mappings.dev`を(ブラウザツール経由ではなく)`mcp__workspace__web_fetch`で直接fetchして確認した(1.20.1 mojmap javadoc、`SilverfishModel(ModelPart root)`コンストラクタと`ModelLayers.SILVERFISH`フィールドの両方の存在を確認済み)。
+- `MobCategory.AMBIENT`(バニラのコウモリと同じカテゴリ)を採用。動物のスポーン上限を消費しない背景装飾という位置付けのため。
+- 鳴き声はバニラSilverfishの虫っぽい音ではなく、アメジストの反響音(`AMETHYST_BLOCK_CHIME`/`_HIT`/`_BREAK`)を採用。MOD既存の「プリズミウム系ブロックはAMETHYSTサウンドタイプ」という慣習をMOBにも初めて拡張した形。
+- ドロップはプリズミウムの欠片(8%の低確率、ドリフターの希少ドロップに準拠)。スポーンはPrism Realmバイオームのみ、2〜4体の小さな群れ(weight 14)。
+- スポーンエッグ(`ForgeSpawnEggItem`)・アイテムモデル・クリエイティブタブ登録・en_us/ja_jp langも一式整備。エッグの配色は、MOD既存4体が共通で使うティール系(`PRISMIUM_ACCENT` 0x39e6d6)ではなく、あえて新規のマゼンタ/ピンク系(0xff4fd8、Prismium Core/Chiseled Prismium Coreのマゼンタ宝石カラーを踏襲)を採用し、クリエイティブインベントリで既存4体のエッグと視覚的に区別できるようにした。
+
+### 3CN-2. テクスチャー: `scripts/textures/gen_prismium_crawler.py`
+
+64x32キャンバスを想定(`SilverfishModel`の実UVレイアウトはこのサンドボックスから確認不能なため、`gen_prismium_drifter.py`が確立した「キャンバス全体を継続的なグラデーション+散りばめたグロー粒で塗る」手法をそのまま踏襲し、UV境界がどこであっても不自然な継ぎ目が出ないようにした)。配色は紺色(`#241246`系、既存MOBの「暗いケーシング」ファミリーと近い色調で family cohesion を保ちつつ)からマゼンタ/ピンクの結晶グロー(`#D93FC9`〜`#FFD6F7`)へのグラデーション。生成後、16/8/4/1倍のチェッカーボード付きプレビューを`build/preview_prismium_crawler.png`に出力し、作業フォルダにコピーした上で`Read`ツールにより目視確認した(グラデーションのシルエット・グロー粒の分布に不自然なノイズや透過崩れは無し、アルファ値は0/255のみであることも確認済み)。既存のドリフター/レイス系のダークバイオレット系テクスチャーとも違和感のない配色になっていることを確認した。
+
+### 3CN-3. push・ビルド確認・リリース: v0.31.0
+
+意味のある単位で2コミット(`39d489e` エンティティ本体・登録コード、`763a5b7` テクスチャー・データアセット)に分けてpush。いずれも`git fetch`で並行セッション無しを確認後、プロキシ回避策無しで一発成功した。`git fetch`のポーリングで`ci: update built jar`→`ci: update datapack validation results`(`status=ok`)→`ci: update ore generation verification results`(両鉱石とも生成チャンク検出)まで到達したことを確認し、CIビルド成功(新規MOBの登録コード・データパックを含めたコンパイル・検証)を確認した。
+
+README.mdのバージョニング方針に照らし、新規MOBの追加は新規コンテンツにあたるためv0.30.1→**v0.31.0(MINOR)**とした。`gradle.properties`のバージョン更新+`RELEASE_NOTES.md`への新セクション追加をコミット(`6475ea8`)し、タグ`v0.31.0`をpush。CIビルド成功(`status=ok`、ore検証も成功)を確認後、`curl`で`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.31.0`がHTTP 200かつページ内に`v0.31.0`の記載があることを確認した(アセット個々のファイル名までの厳密確認は今回も`curl`の文字列一致確認に留まる)。
+
+Issue対応: 今回対応すべき新規Issueは無かった(#18・#21はOPENのまま未着手、#22〜#25はいずれもCLOSED済み、#26以降は存在しない)。`ISSUES_TO_CLOSE.json`/`PENDING_ISSUES.json`への新規登録も無し。
+
+### 3CN-4. 今回の既知の限界・未検証事項(正直な記録)
+
+- **最重要・実機未検証**: プリズミウム・クローラーの見た目(借用した`SilverfishModel`形状に自作テクスチャーが実際どう乗るか)、自然スポーンの様子(Prism Realmでの出現頻度・群れの見た目)、アメジスト系鳴き声の実際の聞こえ方は、いずれもこのサンドボックスでは確認できていません。CIビルドの成功は「コンパイルとデータパック検証(ロストテーブル・バイオームモディファイア・エンティティ登録含む)が通った」ことの確認に留まります。
+- `SilverfishModel`がジェネリッククラスであることは公開mojmap javadocで確認しましたが、その内部UV座標(各セグメントがテクスチャーのどの矩形を参照するか)までは確認できていません。テクスチャー生成スクリプトは意図的にUV非依存の全面グラデーション手法を採っているため、多少ズレていても致命的な破綻(透明ピクセルの露出等)は起きないはずですが、「セグメントごとに異なる意図した塗り分け」は今回できていません。
+- §3CM(セッション#81の遡及記録)で挙げた、Guardian CharmのCurios対応拡張(curio-slot対応・右クリック装備)も引き続き実機未検証です。
+
+### 3CN-5. 議論したい論点・改善案
+
+- 【最優先・新規】プリズミウム・クローラーが実機で意図通り動作しているか(見た目・自然スポーン・鳴き声)、こんぺいとう氏に確認いただきたい。
+- 【継続】§3CM-2で復元した、Guardian CharmのCurios対応拡張(curio-slot対応・右クリック装備、v0.30.1)が実機で意図通り動作しているか、引き続き確認が得られていない。
+- 【継続】Issue #21(JEI互換性)への着手方針検討。レシピカテゴリ・レンダリング処理を含み、このサンドボックスでの検証手段が特に乏しい点に留意。
+- 【継続・未着手】ユーザー直接要望「Prism Realm巨大山岳地帯+ボス」の着手タイミング・分割方針の検討。
+- 【新規】今回、MODの5体目のMOBにして初めて「純粋にアンビエントな地上MOB」というカテゴリを追加した。今後さらにMOBを増やす場合、「戦闘」「水中非戦闘」「地上アンビエント」に続く新しいカテゴリ(例: 飛行するアンビエントMOB、プレイヤーに追従する使い魔的MOB等)を検討する余地がある。
+- 【新規・教訓】セッションがPROGRESS.md更新前に終了する可能性がある(§3CM参照)。次回以降も、作業開始時のgit履歴確認で「pushされているのにPROGRESS.mdに記録が無いコミット」がないか毎回注意すること。
+
+## 3CO. 対話セッション(定期実行ではなく本人との直接チャット、v0.31.0公開後): 蒼白のプリズミウムブロックのテクスチャを合作で更新 → v0.31.1リリース
+
+こんぺいとう氏がチャット上で現在の`pale_prismium_block.png`(16x16)を確認した上で、四隅にマゼンタのアクセントドットを加えた改変版を自ら描いて提出。「これをそのまま反映してPUSHしてください、合作としてリリースノートに記載してください」という直接指示のもと、以下を実施した。
+
+### 3CO-1. 実施内容
+
+- 提出された16x16 PNG(RGB)をRGBAに変換し、`src/main/resources/assets/claudemod/textures/block/pale_prismium_block.png`にそのまま上書き(自動生成し直さず、ユーザー原案をそのまま採用)。
+- ベーステクスチャの変更に伴い、LabPBR specular map(`pale_prismium_block_s.png`)を`scripts/textures/gen_specular_maps.py`で再生成(他のブロックの specular map は差分なし、確認済み)。
+- `RELEASE_NOTES.md`に新セクション追加、`gradle.properties`のバージョンをv0.31.0→**v0.31.1(PATCH)**に更新(新機能ではなく既存ブロックのテクスチャ差し替えのため)。
+- コミット2件(`970d0e5` テクスチャ本体、`b208ea4` リリース関連)をpush、タグ`v0.31.1`をpush。いずれもプロキシ回避策無しで一発成功。
+- このセッションの実行環境からは`api.github.com`に到達不可(`HTTP:000`)だったため、CIビルド結果・リリース公開の確認は次回(定期実行)セッションに引き継ぐ。
+
+### 3CO-2. 未検証事項(正直な記録)
+
+- **最重要・実機未検証**: 新テクスチャがゲームクライアント上でブロックとして実際にどう見えるか(遠目での視認性、既存のPale Prismium系ブロック群との統一感)は未確認。
+- 今回のpush後のCIビルド成功・v0.31.1リリースページの公開そのものも、このセッションからは確認できていない(次回セッション冒頭の恒例チェックで確認すること)。
+
+## 3CP. 対話セッション(定期実行ではなく本人との直接チャット、v0.31.0公開中に並行して発生): Curios「charmスロットが誰にも配布されていない」不具合の修正
+
+Issue #18対応(v0.30.0/v0.30.1)の直後、こんぺいとう氏が実際にCurios単体を導入して試したところ、「もともとCurios APIにはスロットが存在しないので、Curiosだけ入れてもダメ、みたいな感じになってます」という報告があった。
+
+### 3CP-1. 原因調査
+
+Curiosの実ソース(`common/data/CuriosEntityManager.java`、1.20.xブランチ)と現行devドキュメント("Entity Slot Types"ページ)を確認したところ、v0.30.0時点の理解に重大な誤りがあったことが判明した。「`charm`スロット種別がCurios本体で`size`未指定→デフォルトでsize 1になる」という理解自体は正しかったが、**スロット種別を登録・タグ付けするだけでは、どのエンティティにもそのスロットは一切配布されない**という別の必須ステップを完全に見落としていた。devドキュメント原文: "Registered slot types will all be available for use but will not appear in-game until they are added to one or more entities."
+
+スロットを実際にエンティティ(通常はプレイヤー)に配布するには、`data/(namespace)/curios/entities/*.json`というデータパックファイルで明示的に「このエンティティにこのスロットを渡す」と宣言する必要がある。ClaudeMod側はこのファイルを一度も用意していなかったため、v0.30.0リリース以降、Curiosを導入してもcharmスロット自体がプレイヤーに一切表示されない状態が続いていた(タグ登録・右クリック装備の実装自体は正しかったが、そもそも装備先のスロットが存在しなかった)。
+
+### 3CP-2. 対応
+
+- `data/claudemod/curios/entities/player.json`を新設し、`{"entities": ["player"], "slots": ["charm"]}`でプレイヤーにcharmスロットを配布するようにした。
+- `CuriosCompat`のjavadocにあった誤った記述(「size 1のデフォルトだけで自動的に配布される」という趣旨)を訂正し、今回判明した正しい仕組み(エンティティへの明示的な配布が別途必要)を明記した。
+- コミット`f2a3d99`としてpush。CIのビルド・データパック検証は成功(`status=ok`)。
+
+### 3CP-3. リリースノート反映の欠落(重要、次回セッション必読)
+
+このコミット(`f2a3d99`)は、セッション#82(v0.31.0、新規MOB追加)の**後**、次の直接チャットセッション(§3CO、v0.31.1のテクスチャ更新)の**前**というタイミングでpushされた。git履歴上は**v0.31.1に含まれている**(`git merge-base --is-ancestor f2a3d99 <v0.31.1のコミット>`で確認済み)が、v0.31.0のリリースノートにもv0.31.1のリリースノート(§3CO、テクスチャ更新の話のみ)にも、この修正については一切触れられていない。
+
+こんぺいとう氏へは「次のリリースノートに追記することを保存しておいて」との指示を受けた。**次回セッション(どのセッションでも良い)は、次にリリースノートを書く際に「charmスロットがプレイヤーに配布されていなかった不具合の修正は、実はv0.31.1から既に含まれていました」という趣旨の一文を追記すること。** GitHub Releasesの過去のノート自体を事後編集する手段はこのセッションには無い(gitトークンはContents/Workflows専用でReleases APIの直接編集は想定されていない)ため、次のリリースノートへの追記という形で対応する。
+
+### 3CP-4. 今回の教訓(次回セッション必読)
+
+- **Curiosのようなスロットベースのアクセサリシステムに新規対応する際は、「スロット種別への登録・タグ付け」と「エンティティへのスロット配布」が別々の必須ステップであることを忘れないこと。** 今回はこの区別を完全に見落とし、実機テストが行われるまで気づけなかった。今後同種の外部MOD連携(スロット・インベントリ拡張系)を実装する際は、「登録」と「実際に使えるようにする配布/権限付与」が別ステップになっていないか、必ず両方のドキュメントを確認すること。
+- 直接チャットセッションが定期実行セッションと時間的に並行して走ると、pushの前後関係やリリースへの含有関係が分かりにくくなる。今回のように「あるコミットがどのバージョンから含まれているか」を確認したい場合は、`git merge-base --is-ancestor <commit> <tag>`で機械的に確認できる。
+
+## 5. 次回セッションへの申し送り
+
+### 今回(対話セッション、v0.31.0公開後→v0.31.1公開)の最重要な新情報
+
+- **【対応済み・実機未検証】こんぺいとう氏との直接チャットで、蒼白のプリズミウムブロックのテクスチャを合作で更新した(§3CO)。ユーザー原案をそのまま採用し、specular mapも再生成。v0.31.1としてリリース(PATCH)。CIビルド結果はこのセッションでは確認できていないため、次回セッション冒頭で必ず確認すること。**
+- **【最優先・要リリースノート追記・次回セッション必読】こんぺいとう氏の実機テストで発覚した「Curiosのcharmスロットが誰にも配布されていない」不具合を修正した(§3CP、コミット`f2a3d99`)。このコミットはv0.31.1に既に含まれている(`git merge-base --is-ancestor f2a3d99 <v0.31.1>`で確認済み)が、v0.31.0・v0.31.1どちらのリリースノートにも一切記載されていない。こんぺいとう氏から「次のリリースノートに追記することを保存しておいて」と明示的に指示された。次にリリースノート(RELEASE_NOTES.mdおよびGitHub Release説明文)を書く機会があれば、バージョン番号に関わらず必ず一文追記すること。文面例:「護符(charm)用Curiosスロットがプレイヤーに配布されていなかった不具合の修正は、実はv0.31.1から既に含まれていました。」**
+
+### 前回(セッション#82、定期実行、v0.30.1公開後→v0.31.0公開)の最重要な新情報
+
+- **【対応済み・実機未検証】新規MOB「プリズミウム・クローラー」(5体目、初のアンビエント地上MOB)を追加した(§3CN-1〜§3CN-2)。完全受動・地上徘徊、SilverfishModelの形状を流用、独自のマゼンタ系テクスチャー、アメジスト系の鳴き声。Prism Realmにのみ自然スポーン。**
+- **【リリース済み】上記をv0.31.0としてリリースした(§3CN-3)。新規MOB追加のためMINORとした。**
+- **【遡及記録・重要】前回セッション(#81)はv0.30.1(Guardian CharmのCurios対応拡張)まで完了していたが、PROGRESS.md更新前に終了していたことが今回判明し、§3CMとしてgit履歴から遡って記録した。今後も同様の欠落がないか、作業開始時に毎回確認すること。**
+- **【確認済み・変化無し】Issue #18・#21は引き続きOPENで未着手(#18はv0.30.0/v0.30.1で部分対応済みだが実機確認待ちのためクローズしていない)。#22〜#25はいずれもKonpeitou24氏投稿でCLOSED済み。#26以降の新規issueは無い。**
+
+### すぐやるべきこと(優先度順)
+
+0-A. **【超最優先・次回のリリースノート作成時に必ず対応・§3CP参照】次にリリースノートを書く際(次回リリースがPATCHでもMINORでも関係なく)、charmスロット配布漏れ修正(`f2a3d99`、v0.31.1に既に含まれ済み・未記載)についての一文を追記すること。追記が完了したら、このPROGRESS.mdの本項目と§3CPの該当記述を「対応済み」に更新すること。**
+0. **【超最優先・全セッション必読・リリースポリシー】作業開始時に必ず`git tag --list --sort=-creatordate`等で直近のリリースタグとそこからの経過を確認すること。直近のリリースはv0.31.0(定期実行セッション#82、§3CN)。次回はここから1セッション目。**
+1. **【新規・全セッション必読】セッションがPROGRESS.md更新前に終了する可能性がある(§3CM)。作業開始時、`git log`で直近のリリースタグ以降のコミットを確認し、pushされているのにPROGRESS.mdに記録が無い変更が無いか必ずチェックすること。あれば今回のように遡って記録すること。**
+2. 【最優先・新規】プリズミウム・クローラー(§3CN-1)が実機で意図通り動作しているか(見た目・自然スポーン・鳴き声)、こんぺいとう氏に確認いただきたい。
+3. 【継続】Guardian CharmのCurios対応拡張(§3CM-1〜2、v0.30.1)・issue #18対応の元の4アイテム(v0.30.0)が実機で意図通り動作しているか、引き続き確認が得られていない。特にCurios GUIでのスロット表示・ドラッグ&ドロップ・右クリック装備・装備中の効果発動の4点。
+4. 【継続】Issue #21(JEI互換性)への着手方針検討。レシピカテゴリ・レンダリング処理を含み、このサンドボックスでの検証手段が特に乏しい点に留意。着手する場合、Curios対応時に学んだ「Mixinベース依存MODはgameTestServerのrunブロックにmixin.env.remapRefMap設定が必要になりうる」という教訓(§3CL-3、PROGRESS_ARCHIVE.md参照)を思い出すこと。
+5. 【継続】§3CJ・§3CKであげた複数の実機フィードバック待ち事項(Pale Prismium系建築バリエーション・蒼白のプリズミウムランタン、3機械リファクタリング、蒼白のプリズミウムブロック本体)が実機で意図通り動作しているか、引き続き確認が得られていない。
+6. 【継続・未着手】ユーザー直接要望「Prism Realm巨大山岳地帯+ボス」の着手タイミング・分割方針の検討。
+7. 【新規】プリズミウム・クローラーの追加で、MODのMOBが「戦闘」「水中非戦闘」「地上アンビエント」の3カテゴリを揃えた。次にMOBを増やすなら新しいカテゴリ(飛行アンビエント、使い魔的MOB等)を検討する余地がある(§3CN-5)。
+8. 【最優先・継続・全セッション必読】作業ディレクトリは必ず完全にユニークなパスを使うこと(`mktemp -d`が使える場合はそれを使う。このサンドボックスでは`/sessions/<session-id>/`が既にユニークなセッション専用ディレクトリなので、その配下にcloneすれば追加のmktempは不要)。`git config user.name/user.email`を必ず`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定すること。
+9. 【最優先・継続・全セッション必読】Issue対応ポリシー: 投稿者が`Konpeitou24`かどうかで判断、それ以外は`PENDING_ISSUES.json`に登録して保留。
+10. 【継続】lang(en_us.json/ja_jp.json)のような整形済みJSONファイルを一部だけ編集する際は、`json.load`+`json.dump`による全体再整形をしないこと(今回も文字列置換方式を使用)。
+11. 【継続・全セッション必読】`ISSUES_TO_CLOSE.json`と`PENDING_ISSUES.json`という2つのリレー機構が`.github/workflows/`に整備済み。
+12. 【継続・全セッション必読】issueのコメントスレッドを読む必要がある場合は、`curl`でissueページHTMLを取得し`react-app.embeddedData`のJSON(`data['payload']['preloadedQueries'][0]['result']['data']['repository']['issue']`のパス)をパースする方式を使うこと。
+13. 【継続・全セッション必読】`api.github.com`への直接curlアクセスは今回も`HTTP:000`/`403 blocked-by-allowlist`で不可だった。`builds/`配下の`last_datapack_validation_summary.txt`/`last_ore_verification.txt`/`last_datapack_validation_errors.log`で代替確認すること。
+14. 【継続・全セッション必読】Write/Edit/Readの各ツールは、Linuxサンドボックス内のgit作業ディレクトリに対して「root-or drive-relative path」エラーで使用できない。ファイル編集は全て`mcp__workspace__bash`経由のpython/sed/catで行うこと。ただし画像の目視確認は、生成したPNG(またはプレビュー画像)を一旦Windows側にマウントされた作業フォルダにコピーしてから`Read`ツールで開けば可能(今回この方法でプリズミウム・クローラーのテクスチャーを確認した)。
+15. 【継続】`PROGRESS_ARCHIVE.md`(セッション#3〜#76の詳細ログ)が存在する。過去の経緯を詳しく知りたい場面では`PROGRESS.md`だけでなくこちらも確認すること。
+16. 【継続】外部MOD(Curios等)のAPIやMixin構成、あるいはMinecraft本体の未確認API(今回のSilverfishModel等)を調査する必要がある場合、`mcp__workspace__web_fetch`で`mappings.dev`(1.20.1 mojmapのjavadoc)に直接アクセスできることが今回確認できた(bashのcurlでは到達不能な場合でも、web_fetchツール経由なら到達できるケースがある)。`mcp__Claude_Browser__*`ツール経由でも`raw.githubusercontent.com`や外部Mavenリポジトリに到達できることが判明済み(§3CL-1)。今後同様のAPI調査が必要な場合はまず`mcp__workspace__web_fetch`を試し、ダメなら`mcp__Claude_Browser__*`を使うこと。
+17. 【継続】Mixinベースの依存MOD(Curios等)を`compileOnly`/`runtimeOnly`で追加すると、CIの`runGameTestServer`で実際にそのMODがロードされ、Mixin適用に失敗するとサーバーごとクラッシュしうる(PROGRESS_ARCHIVE.md参照)。今後別のMixinベース依存MOD(JEI等、issue #21)を追加する際はこの教訓を思い出すこと。
+
+### 議論したい論点・改善案
+
+- 【最優先・新規】プリズミウム・クローラーが実機で機能しているか、こんぺいとう氏からのフィードバック待ち。
+- 【継続】Guardian Charmのcurio-slot対応・右クリック装備(v0.30.1)を含む、issue #18対応全体が実機で機能しているか、フィードバック待ち。
+- 【継続】Issue #21(JEI互換性)への着手方針検討。
+- 【継続】§3CH〜§3CLであげた複数の実機フィードバック待ち事項。まとめて一度に確認いただけると効率的かもしれない。
+- 【継続】ポータルフレームの専用ブロック化・6個セット化案。今後要望があれば着手を検討。
+- 【継続】Prismium Ingot/Alloy Ingotのスミシングアップグレード経路の再検討。
+- 【継続・未着手】ユーザー直接要望「Prism Realm巨大山岳地帯+ボス」の着手タイミング。
+- 【新規】MOBのカテゴリ拡充(戦闘/水中非戦闘/地上アンビエントに続く新カテゴリ)の検討。
+
+### コミット/プッシュ状況
+
+今回(対話セッション)は以下をpush:
+1. `970d0e5` Update Pale Prismium Block texture (collab with Konpeitou24)(§3CO-1)
+2. `b208ea4` Release v0.31.1(バージョンbump+リリースノート)、タグ`v0.31.1`
+3. (このPROGRESS.md更新コミットは本セクション末尾として追ってpushする)
+
+push前に`git fetch`で並行セッション・CIの自動コミットの有無を確認し、いずれも並行セッション無し・プロキシ回避策無しで一発成功した。
+
+前回(セッション#82、定期実行)は以下をpush:
+1. `39d489e` Add Prismium Crawler: 5th mob, first ambient land creature(§3CN-1)
+2. `763a5b7` Prismium Crawler: assets (texture, spawn/loot data, lang)(§3CN-2)
+3. `6475ea8` Release v0.31.0(バージョンbump+リリースノート)、タグ`v0.31.0`
+
+### 通知状況
+
+Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`・`release.yml`)がpush/タグに対応する通知を送信済みのはず(Secret設定済み前提)。
