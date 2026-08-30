@@ -2,7 +2,7 @@ package com.claudemod.compat.curios;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModItems;
-import net.minecraftforge.event.lifecycle.FMLCommonSetupEvent;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
