@@ -4215,3 +4215,34 @@ push前に`git fetch`で並行セッション・CIの自動コミットの有無
 ### 通知状況
 
 Discord Webhookへの送信はサンドボックスから引き続き到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`・`release.yml`)がpush/タグに対応する通知を送信済みのはず(Secret設定済み前提)。
+
+## 3CQ. セッション#84(定期実行)で実装した内容: 全GUIブロックの画面固まりバグの根本原因特定・修正 + v0.31.2リリース
+
+前回セッションのHANDOFF.mdで最優先扱いだった「粉砕機/精錬機/圧縮機のGUIが開いても中身が固まって動作しない」バグ(こんぺいとう氏の実機テストで確認済み)の調査から着手した。PROGRESS.mdの仮説は「v0.27.0(セッション#77)の3機械共通基底クラス化`AbstractPrismiumMachineBlockEntity`でContainerData同期が壊れた」だったが、そのコミット(`6a78f82`)の差分をリファクタリング前後で1行ずつ突き合わせた結果、ロジックは完全に等価であり、この仮説は誤りだと判明した。
+
+### 3CQ-1. 本当の原因の特定
+
+`AbstractPrismiumMachineBlockEntity`のContainerData実装は、`get(index)`が常にエネルギー/進捗/稼働状態の生きたフィールドを直接読む一方、`set(index, value)`は意図的にno-op(「画面からは読み取り専用」という設計判断)になっていた。この設計自体は、Cell/Generator/Pylon/Restorer/Wardstoneを含むこのMODの**GUI付きブロック全て(セッション23の最初のGUI実装から)**が採用している共通パターンだった。
+
+問題は各Menuクラスのクライアント側コンストラクタ(`resolveData(inv, pos)`)が、「その位置にある本物のブロックエンティティが見つかればそのContainerDataインスタンスをそのまま使う」実装になっていたこと。Forge公式ドキュメント(https://docs.minecraftforge.net/en/1.20.1/gui/menus/、このセッションで`mcp__workspace__web_fetch`により直接内容を確認)は「クライアント側のMenuコンストラクタは常に新規のダミー`SimpleContainerData`を使うべき」と明記しており、その理由も判明した: `DataSlot`によるサーバー→クライアント同期は、クライアント側で`ContainerData#set(index, value)`が呼ばれることで初めて反映される仕組みだが、この呼び出しは`ClientboundContainerSetDataPacket`受信時にしか発生しない。本物のブロックエンティティのContainerDataをクライアント側で使い回すと、その`set()`がno-opであるため同期パケットの値が毎回握りつぶされ、`get()`はクライアント側で(NBT経由の同期も`getUpdatePacket()`未実装のため行われていない)初期値のまま変化しない生きたフィールドを読み続ける。これが「GUIは開くがバーが固まって見える」症状の正体で、粉砕機/精錬機/圧縮機だけでなくCell/Generator/Pylon/Restorer/Wardstoneも含めた**8ブロック全てに共通する設計ミス**だった。
+
+なお、同じクラスの`resolveInventory`(アイテムスロット用ItemStackHandlerの解決)は同じ「本物を使い回す」パターンだが、こちらは`Slot`/`SlotItemHandler`の`set(ItemStack)`がno-opではなく実際に書き込みを行うため無害であり、意図的に変更していない。
+
+### 3CQ-2. 対応
+
+- Cell/Generator/Pylon/Restorer/Wardstone/Pulverizer/Smelter/Compressorの全8 Menuクラスの`resolveData()`を、本物のブロックエンティティを探しに行かず常に新規`SimpleContainerData(n)`を返すように統一。
+- 各ブロックエンティティ側のContainerDataの`set()`(no-op)のjavadocも、なぜno-opのままで正しいのか(クライアント側Menuがもう本物を参照しないため)を明記するように更新。
+- コミット`defad01`(コード修正)・`492718b`(バージョンbump+リリースノート)をpush、タグ`v0.31.2`をpush。CIビルド成功(`status=ok`)、GitHub Releaseページ(v0.31.2)の公開もHTTP 200で確認済み。
+
+### 3CQ-3. 未検証事項(正直な記録)
+
+- **最重要**: このサンドボックスはゲームクライアントを起動できないため、今回の修正が実際にこんぺいとう氏の環境でGUIのバー表示を正常化させたかどうかは未確認。仮説はコードレビューとForge公式ドキュメントの記述に基づく強い根拠があるが、万が一直っていなければ「クライアント側Menuコンストラクタの本物ContainerData使い回し」という原因特定自体が誤りだった可能性があるため、その場合は振り出しに戻って再調査が必要(PROGRESS.md TODO1参照)。
+- 今回の教訓を踏まえ、GameTestでContainerData同期を自動検証する仕組みの追加をTODOの優先度を上げて残した(PROGRESS.md TODO2)。CIビルド成功だけでは今回のような「見た目上の動作」に関わるバグを検知できないことが実例で示されたため。
+
+## 5. 次回セッションへの申し送り
+
+### 今回(セッション#84、定期実行)の最重要な新情報
+
+- **【修正済み・実機未検証】前回セッションが最優先扱いにしていた「機械GUIが固まる」バグの根本原因を特定し、v0.31.2として修正・リリースした(§3CQ)。原因は3機械共通基底クラス化ではなく、セッション23以来の全GUIブロック共通の設計ミス(クライアント側Menuコンストラクタが本物のContainerDataを使い回していたため、`set()`がno-opでサーバーからの同期値を握りつぶしていた)。Cell/Generator/Pylon/Restorer/Wardstoneも含む8ブロック全てを修正済み。**
+- **【最優先・次回必読】この修正が実際にこんぺいとう氏の実機で直っているか確認をお願いすること。直っていない場合は原因特定からやり直しが必要。**
+- 【新規】上記の教訓から、GameTestによるContainerData同期の自動検証をTODOの優先度上位に追加した。
