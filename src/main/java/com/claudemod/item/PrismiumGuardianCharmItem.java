@@ -41,6 +41,16 @@ import javax.annotation.Nullable;
  * Locator) rather than a bulk-craftable consumable - though unlike those
  * two this one *is* consumed (shrunk by 1) on activation, same as the
  * vanilla item it parallels.
+ *
+ * <p><b>Direct-chat session (after v0.30.0) update</b>: {@link
+ * com.claudemod.event.PrismiumGuardianCharmHandler} now also accepts this
+ * charm from a Curios accessory slot (soft dependency, see {@link
+ * com.claudemod.compat.curios.CuriosCompat}), not just held in hand -
+ * "held in hand" above described the only option available before Curios
+ * support existed, not a hard requirement of the death-save mechanism
+ * itself (it was always just "is this charm somewhere {@code
+ * LivingDeathEvent} can find it", and the hand check was simply the only
+ * such place at the time).
  */
 public class PrismiumGuardianCharmItem extends Item {
 
@@ -52,7 +62,7 @@ public class PrismiumGuardianCharmItem extends Item {
     public void appendHoverText(ItemStack stack, @Nullable Level level,
                                  java.util.List<Component> tooltip, net.minecraft.world.item.TooltipFlag flag) {
         super.appendHoverText(stack, level, tooltip, flag);
-        // GitHub issue #7 (scheduled session): unlike the other three, this one requires being held in hand and is consumed on use - the hint text says so explicitly.
+        // GitHub issue #7 (scheduled session): unlike the other three, this one is consumed on use - the hint text says so explicitly. Can also be equipped in a Curios charm slot instead of held (added in a direct-chat session after v0.30.0) - see PrismiumGuardianCharmHandler.
         tooltip.add(TooltipUsageHelper.usageLine(this.getDescriptionId()));
     }
 }

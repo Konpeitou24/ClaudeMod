@@ -2,6 +2,7 @@ package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModItems;
+import com.claudemod.compat.curios.CuriosCompat;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -15,6 +16,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingDeathEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 
 /**
@@ -88,6 +90,14 @@ public class PrismiumGuardianCharmHandler {
                 charm = stack;
                 break;
             }
+        }
+
+        // Direct-chat session (after v0.30.0, follow-up to issue #18): also accept
+        // the charm from a Curios accessory slot, when Curios is
+        // installed - previously this required holding it in hand.
+        if (charm.isEmpty() && ModList.get().isLoaded("curios")) {
+            charm = CuriosCompat.findEquippedCurioStack(entity, ModItems.PRISMIUM_GUARDIAN_CHARM.get())
+                    .orElse(ItemStack.EMPTY);
         }
 
         if (charm.isEmpty()) {
