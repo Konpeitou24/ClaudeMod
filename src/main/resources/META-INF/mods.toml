@@ -23,3 +23,17 @@ description = '''${mod_description}'''
     versionRange = "${minecraft_version_range}"
     ordering = "NONE"
     side = "BOTH"
+
+# Optional/soft dependency (session #80, scheduled - issue #18): Curios
+# is not required to play ClaudeMod. When it IS present, four existing
+# passive charm items (Prismium Featherstone/Emberguard/Vitastone/Magnet
+# Charm) can also be worn in a Curios "charm" slot instead of just
+# carried in the inventory - see CuriosCompat and
+# data/curios/tags/items/charm.json. mandatory=false so the mod loads
+# fine with Curios completely absent.
+[[dependencies.${mod_id}]]
+    modId = "curios"
+    mandatory = false
+    versionRange = "[5.0,)"
+    ordering = "NONE"
+    side = "BOTH"

@@ -2,6 +2,8 @@ package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModItems;
+import com.claudemod.compat.curios.CuriosCompat;
+import net.minecraftforge.fml.ModList;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
@@ -159,9 +161,17 @@ public class PrismiumFeatherstoneHandler {
 
     private static boolean hasFeatherstone(Player player) {
         Inventory inventory = player.getInventory();
-        return containsFeatherstone(inventory.items)
+        if (containsFeatherstone(inventory.items)
                 || containsFeatherstone(inventory.armor)
-                || containsFeatherstone(inventory.offhand);
+                || containsFeatherstone(inventory.offhand)) {
+            return true;
+        }
+        // Session #80 (scheduled, issue #18): also count the charm as
+        // "carried" if it is equipped in a Curios accessory slot, when
+        // Curios is installed - see CuriosCompat's javadoc for why the
+        // ModList guard must live here rather than inside CuriosCompat.
+        return ModList.get().isLoaded("curios")
+                && CuriosCompat.isEquippedInCurioSlot(player, ModItems.PRISMIUM_FEATHERSTONE.get());
     }
 
     private static boolean containsFeatherstone(Iterable<ItemStack> stacks) {

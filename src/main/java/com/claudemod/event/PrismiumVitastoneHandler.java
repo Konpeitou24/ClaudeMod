@@ -2,6 +2,8 @@ package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModItems;
+import com.claudemod.compat.curios.CuriosCompat;
+import net.minecraftforge.fml.ModList;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.sounds.SoundEvents;
@@ -114,9 +116,17 @@ public class PrismiumVitastoneHandler {
 
     private static boolean hasVitastone(Player player) {
         Inventory inventory = player.getInventory();
-        return containsVitastone(inventory.items)
+        if (containsVitastone(inventory.items)
                 || containsVitastone(inventory.armor)
-                || containsVitastone(inventory.offhand);
+                || containsVitastone(inventory.offhand)) {
+            return true;
+        }
+        // Session #80 (scheduled, issue #18): also count the charm as
+        // "carried" if it is equipped in a Curios accessory slot, when
+        // Curios is installed - see CuriosCompat's javadoc for why the
+        // ModList guard must live here rather than inside CuriosCompat.
+        return ModList.get().isLoaded("curios")
+                && CuriosCompat.isEquippedInCurioSlot(player, ModItems.PRISMIUM_VITASTONE.get());
     }
 
     private static boolean containsVitastone(Iterable<ItemStack> stacks) {

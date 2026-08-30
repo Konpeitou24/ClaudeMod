@@ -2,6 +2,8 @@ package com.claudemod.event;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModItems;
+import com.claudemod.compat.curios.CuriosCompat;
+import net.minecraftforge.fml.ModList;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -129,9 +131,17 @@ public class PrismiumMagnetCharmHandler {
 
     private static boolean hasMagnetCharm(Player player) {
         Inventory inventory = player.getInventory();
-        return containsCharm(inventory.items)
+        if (containsCharm(inventory.items)
                 || containsCharm(inventory.armor)
-                || containsCharm(inventory.offhand);
+                || containsCharm(inventory.offhand)) {
+            return true;
+        }
+        // Session #80 (scheduled, issue #18): also count the charm as
+        // "carried" if it is equipped in a Curios accessory slot, when
+        // Curios is installed - see CuriosCompat's javadoc for why the
+        // ModList guard must live here rather than inside CuriosCompat.
+        return ModList.get().isLoaded("curios")
+                && CuriosCompat.isEquippedInCurioSlot(player, ModItems.PRISMIUM_MAGNET_CHARM.get());
     }
 
     private static boolean containsCharm(Iterable<ItemStack> stacks) {

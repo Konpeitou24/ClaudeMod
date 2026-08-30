@@ -82,10 +82,30 @@ sourceSets.main.resources { srcDir 'src/generated/resources' }
 
 repositories {
     mavenCentral()
+    maven {
+        // Curios API (session #80, scheduled): hosts CuriosAPI's own
+        // release jars for Forge/MC 1.20.1. Curios is an optional/soft
+        // dependency (see mods.toml) - this repo and the two
+        // dependencies below only affect compile/runtime classpath
+        // availability of the API, not whether the mod is present on a
+        // given install. See issue #18 and CuriosCompat's javadoc for
+        // the soft-dependency design.
+        name = "Illusive Soulworks maven"
+        url = "https://maven.theillusivec4.top/"
+    }
 }
 
 dependencies {
     minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    // Compile against only the Curios API artifact (stable, public
+    // surface only - see Curios's own dev docs, "Setting Up the
+    // Development Environment", for why the "-api" classifier is
+    // preferred over the full jar at compile time). The full jar is
+    // still needed at runtime for local testing (this sandbox cannot
+    // run a client, but CI's own gameTestServer smoke test can).
+    compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
+    runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
 }
 
 tasks.withType(JavaCompile).configureEach {
