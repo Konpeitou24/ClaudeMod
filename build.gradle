@@ -55,6 +55,27 @@ minecraft {
             property 'forge.logging.console.level', 'debug'
             property 'forge.enabledGameTestNamespaces', mod_id
 
+            // Session #80 (scheduled): required for any mixin-based mod
+            // dependency (e.g. Curios, added this session as a soft
+            // dependency - see the "curios-forge" dependency above) to
+            // actually apply its mixins in this dev/test run. Without
+            // these two properties, ForgeGradle's userdev environment
+            // never remaps the dependency's Mixin refmap (SRG field/
+            // method names -> this project's "official" mappings), so
+            // any @Accessor/@Shadow mixin in the dependency fails with
+            // InvalidAccessorException and crashes the whole GameTest
+            // server before it generates a world - confirmed this
+            // session against Curios's own AccessorEntity mixin
+            // (targets Entity's long-standing "firstTick" field, SRG
+            // name f_19803_). This is purely a dev-environment/userdev
+            // quirk (see Curios issue #502 and SpongePowered/Mixin#462)
+            // - a real production Forge install uses one consistent
+            // runtime mapping for every mod's jar, so this mismatch
+            // cannot occur there; this property pair only affects how
+            // *this Gradle test run* resolves the dependency's mixins.
+            property 'mixin.env.remapRefMap', 'true'
+            property 'mixin.env.refMapRemappingFile', "${projectDir}/build/createSrgToMcp/output.srg"
+
             mods {
                 "${mod_id}" {
                     source sourceSets.main
