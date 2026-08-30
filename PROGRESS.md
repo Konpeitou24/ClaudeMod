@@ -32,7 +32,7 @@
 9. **作業ディレクトリは必ずユニークなパスを使う**(`mktemp -d`、またはセッション専用ディレクトリ配下)。`git config user.name/user.email`は`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定する。
 10. **lang(en_us.json/ja_jp.json)等の整形済みJSONを部分編集する際は、`json.load`+`json.dump`による全体再整形をしない**。既存エントリの直後に新規行を文字列置換で挿入する方式を使うこと。
 11. **新ブロック追加時は関連タグ(`mineable/pickaxe`、`walls`等)への登録漏れに注意する**(過去に2回発生済み)。
-12. **テクスチャーは既存素材をコピーせずPython(Pillow)で自作し、生成後は必ず拡大画像を目視確認する**。このセッション環境のRead/Write/Editツールはリポジトリのgit作業ディレクトリ(Linuxサンドボックス内パス)に直接使えないことが多いため、確認したい画像はいったんWindows側マウントの作業フォルダ(outputs)にコピーしてから`Read`ツールで開くこと。ファイル編集自体は`mcp__workspace__bash`経由のpython/sed/catで行う。
+12. **テクスチャーは第三者の作品をコピーしないこと。** Python(Pillow)でゼロから自作するのが基本だが、それだけに限らず、こんぺいとう氏本人が作成・提供したテクスチャー(例: 蒼白のプリズミウムブロックの合作、2026-08-30)や、Minecraft本体に元からあるバニラテクスチャーを土台にして色・模様を調整する形で作る工夫もしてよい(2026-08-30追記)。いずれの手法でも、生成・改変後は必ず拡大画像を目視確認する。このセッション環境のRead/Write/Editツールはリポジトリのgit作業ディレクトリ(Linuxサンドボックス内パス)に直接使えないことが多いため、確認したい画像はいったんWindows側マウントの作業フォルダ(outputs)にコピーしてから`Read`ツールで開くこと。ファイル編集自体は`mcp__workspace__bash`経由のpython/sed/catで行う。
 13. **外部API・Minecraft本体の未確認仕様を調べる際は`WebSearch`/`mcp__workspace__web_fetch`を積極的に使う**。`minecraft.wiki`・`mappings.dev`(1.20.1 mojmap javadoc)等の一般サイトには到達できる(bashの`curl`は`api.github.com`等の主要ホストがプロキシで塞がれていて到達不可)。それでも足りなければ`mcp__Claude_Browser__*`ツールで直接リポジトリ・公式mavenを読むこと。
 14. **Mixinベースの外部依存MOD(Curios等)を`compileOnly`/`runtimeOnly`で追加する場合、CIの`runGameTestServer`で実際にロードされクラッシュしうる**。`build.gradle`の該当runブロックに`mixin.env.remapRefMap` / `mixin.env.refMapRemappingFile`の設定が必要になる場合がある。
 15. **外部MODのスロット/インベントリ拡張機能に対応する際は、「スロット種別への登録・タグ付け」と「エンティティへのスロット配布」が別々の必須ステップであることを確認する**(Curios対応で一度見落とし、実機テストで発覚し後日修正した実例あり)。
