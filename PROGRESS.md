@@ -21,24 +21,40 @@
 
 ## 1. 約束や決まり事(必ず遵守)
 
-1. **Discord通知にコミット要約を含める**: `.github/workflows/build-and-notify.yml`のNotify Discordステップは、直近1コミットの件名だけでなく、そのpushに含まれる全コミットの件名(自動コミットは除く)を箇条書きにして送る仕様になっている。ワークフローを触る際もこの挙動を壊さないこと。
-2. **毎回の状況確認にGitHub Issueの確認を含める**: 公開リポジトリなので`https://github.com/Konpeitou24/ClaudeMod/issues`や個別issueページ(`https://github.com/<owner>/<repo>/issues/<番号>`)を非ログインで`curl`取得すれば見える。取得結果はプロキシキャッシュの影響を受けるため、キャッシュバスティング用クエリ(`?nocache=$(date +%s%N)`)を付けること。コメント本文は`react-app.embeddedData`のJSON(`data['payload']['preloadedQueries'][0]['result']['data']['repository']['issue']`のパス)をパースして読む。このgitトークンにはIssueへのコメント投稿・クローズ権限が無いため、`ISSUES_TO_CLOSE.json`/`PENDING_ISSUES.json`のリレー機構(`.github/workflows/`に整備済み)を使う。
-3. **Issue対応ポリシー**: 投稿者が`Konpeitou24`本人ならその場で対応してよい。それ以外の投稿者のIssueは`PENDING_ISSUES.json`に登録して保留する。
-4. **音声(サウンド)方針**: バニラの`SoundEvent`を複数レイヤーする(音量・ピッチを変えて`playSound`を複数回呼ぶ)ことを常に第一候補とする。Python合成(numpy等でのサイン波合成)は、バニラに近い音が本当に存在しない場合に限る最終手段。単一のサイン波(ピッチスイープ)はDSPを足してもコミカルな効果音にしかならないという実例があるため、安易に手を出さない。
-5. **ローカルビルドは実行不可**: `./gradlew build`はこのサンドボックス内では必ず失敗する(プロキシのallowlist制限で`maven.minecraftforge.net`等に到達不可)。ビルド確認はGitHub Actions経由のみ。`api.github.com`への直接アクセスも不可なため、リポジトリにコミットされる`builds/last_datapack_validation_summary.txt`/`last_ore_verification.txt`/`last_datapack_validation_errors.log`で結果を確認すること。
-6. **Discord Webhookへの直接送信もサンドボックスから不可**。通知はGitHub Actions側(`build-and-notify.yml`/`release.yml`)に任せ、無駄なリトライをしないこと。
-7. **`git push`はまず素の状態(プロキシ環境変数に手を加えない)で試す**。「access denied by the git proxy」等で失敗した場合にのみ、`https_proxy="" HTTPS_PROXY="" http_proxy="" HTTP_PROXY=""`を付けて再試行する(順序を逆にしない)。
-8. **複数セッション同時実行に備え、push前に必ず`git fetch origin main`し、差分があれば`git rebase origin/main`する**。
-9. **作業ディレクトリは必ずユニークなパスを使う**(`mktemp -d`、またはセッション専用ディレクトリ配下)。`git config user.name/user.email`は`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定する。
-10. **lang(en_us.json/ja_jp.json)等の整形済みJSONを部分編集する際は、`json.load`+`json.dump`による全体再整形をしない**。既存エントリの直後に新規行を文字列置換で挿入する方式を使うこと。
-11. **新ブロック追加時は関連タグ(`mineable/pickaxe`、`walls`等)への登録漏れに注意する**(過去に2回発生済み)。
-12. **テクスチャーは第三者の作品をコピーしないこと。** Python(Pillow)でゼロから自作するのが基本だが、それだけに限らず、こんぺいとう氏本人が作成・提供したテクスチャー(例: 蒼白のプリズミウムブロックの合作、2026-08-30)や、Minecraft本体に元からあるバニラテクスチャーを土台にして色・模様を調整する形で作る工夫もしてよい(2026-08-30追記)。いずれの手法でも、生成・改変後は必ず拡大画像を目視確認する。このセッション環境のRead/Write/Editツールはリポジトリのgit作業ディレクトリ(Linuxサンドボックス内パス)に直接使えないことが多いため、確認したい画像はいったんWindows側マウントの作業フォルダ(outputs)にコピーしてから`Read`ツールで開くこと。ファイル編集自体は`mcp__workspace__bash`経由のpython/sed/catで行う。
-13. **外部API・Minecraft本体の未確認仕様を調べる際は`WebSearch`/`mcp__workspace__web_fetch`を積極的に使う**。`minecraft.wiki`・`mappings.dev`(1.20.1 mojmap javadoc)等の一般サイトには到達できる(bashの`curl`は`api.github.com`等の主要ホストがプロキシで塞がれていて到達不可)。それでも足りなければ`mcp__Claude_Browser__*`ツールで直接リポジトリ・公式mavenを読むこと。
-14. **Mixinベースの外部依存MOD(Curios等)を`compileOnly`/`runtimeOnly`で追加する場合、CIの`runGameTestServer`で実際にロードされクラッシュしうる**。`build.gradle`の該当runブロックに`mixin.env.remapRefMap` / `mixin.env.refMapRemappingFile`の設定が必要になる場合がある。
-15. **外部MODのスロット/インベントリ拡張機能に対応する際は、「スロット種別への登録・タグ付け」と「エンティティへのスロット配布」が別々の必須ステップであることを確認する**(Curios対応で一度見落とし、実機テストで発覚し後日修正した実例あり)。
-16. **セッションがPROGRESS.md更新前に終了する可能性がある**。作業開始時、直近リリースタグ以降のコミットを`git log`で確認し、記録漏れが無いかチェックすること。あれば遡って記録する。
-17. `PROGRESS_ARCHIVE.md`に全セッション(#3〜#83)の詳細な実装ログがある。経緯を詳しく調べたい場合はそちらを参照すること。
-18. **【2026-08-30、こんぺいとう氏の指摘で発覚】PROGRESS.mdの記述、特に「5. MOD構想・ロードマップ」の技術的な説明は、実装が変わった後も更新されず古いまま残ることがある。** 実例: Prism Realmの地形は初期実装(session 14)ではバニラのオーバーワールド設定+固定バイオームcherry_groveを流用していたが、「オーバーワールドとほぼ同じに見える」というユーザー指摘を受けて`minecraft:flat`型の水没ワールド+専用バイオーム`claudemod:prism_realm`+自作Perlin/Fractalノイズ(`PrismiumStoneTransitionFeature`)による境界のまだら化、へと既に作り直し済み(session 30台、PROGRESS_ARCHIVE.md参照)だったにもかかわらず、PROGRESS.mdの構想セクションは古い記述のまま残っていた。**ディメンション・worldgenなど「今どうなっているか」が重要な話題では、PROGRESS.mdの記述を鵜呑みにせず、実際のデータパックJSON(`src/main/resources/data/claudemod/dimension/`等)やJavaソースを確認してから発言・実装すること。**
+* **Git / push運用**
+  * 作業ディレクトリは必ずユニークなパスを使う(`mktemp -d`、またはセッション専用ディレクトリ配下)。`git config user.name/user.email`は`ClaudeMod Session Agent <claudemod-agent@users.noreply.github.com>`に設定する。
+  * `git push`はまず素の状態(プロキシ環境変数に手を加えない)で試す。「access denied by the git proxy」等で失敗した場合にのみ`https_proxy="" HTTPS_PROXY="" http_proxy="" HTTP_PROXY=""`を付けて再試行する(順序を逆にしない)。
+  * 複数セッション同時実行に備え、push前に必ず`git fetch origin main`し、差分があれば`git rebase origin/main`する。
+
+* **ビルド・CI確認 / 通知**
+  * ローカルビルド(`./gradlew build`)はサンドボックス内では必ず失敗する(プロキシのallowlist制限)。ビルド確認はGitHub Actions経由のみ。
+  * `api.github.com`への直接アクセスも不可なため、リポジトリにコミットされる`builds/last_datapack_validation_summary.txt`/`last_ore_verification.txt`/`last_datapack_validation_errors.log`で結果を確認する。
+  * Discord Webhookへの直接送信もサンドボックスから不可。通知はGitHub Actions側(`build-and-notify.yml`/`release.yml`)に任せ、無駄なリトライをしない。
+  * `.github/workflows/build-and-notify.yml`のNotify Discordステップは、pushに含まれる全コミットの件名(自動コミット除く)を箇条書きで送る仕様。ワークフローを触る際もこの挙動を壊さないこと。
+
+* **GitHub Issue対応**
+  * 毎回の状況確認にGitHub Issueの確認を含める。`https://github.com/Konpeitou24/ClaudeMod/issues`や個別issueページを非ログインで`curl`取得(キャッシュバスティング用クエリ`?nocache=$(date +%s%N)`を付ける)。コメント本文は`react-app.embeddedData`のJSON(`data['payload']['preloadedQueries'][0]['result']['data']['repository']['issue']`のパス)をパースして読む。
+  * このgitトークンにはIssueへのコメント投稿・クローズ権限が無いため、`ISSUES_TO_CLOSE.json`/`PENDING_ISSUES.json`のリレー機構(`.github/workflows/`に整備済み)を使う。
+  * 投稿者が`Konpeitou24`本人ならその場で対応してよい。それ以外の投稿者のIssueは`PENDING_ISSUES.json`に登録して保留する。
+
+* **コンテンツ制作(テクスチャー・音)**
+  * テクスチャーは第三者の作品をコピーしないこと。Python(Pillow)でゼロから自作するのが基本だが、こんぺいとう氏本人が作成・提供したテクスチャー(例: 蒼白のプリズミウムブロックの合作、2026-08-30)や、Minecraft本体のバニラテクスチャーを土台に調整する手法も選択肢にしてよい(2026-08-30追記)。いずれの手法でも生成・改変後は必ず拡大画像を目視確認する。
+  * 音声(サウンド)方針: バニラの`SoundEvent`を複数レイヤーする(音量・ピッチを変えて`playSound`を複数回呼ぶ)ことを常に第一候補とする。Python合成(numpy等)は、バニラに近い音が本当に存在しない場合に限る最終手段。
+  * 新ブロック追加時は関連タグ(`mineable/pickaxe`、`walls`等)への登録漏れに注意する(過去に2回発生済み)。
+
+* **コード・ファイル編集の制約**
+  * lang(en_us.json/ja_jp.json)等の整形済みJSONを部分編集する際は、`json.load`+`json.dump`による全体再整形をしない。既存エントリの直後に新規行を文字列置換で挿入する方式を使う。
+  * このセッション環境のRead/Write/Editツールはリポジトリのgit作業ディレクトリ(Linuxサンドボックス内パス)に直接使えないことが多い。ファイル編集は`mcp__workspace__bash`経由のpython/sed/catで行い、画像確認だけはWindows側マウントの作業フォルダ(outputs)にコピーしてから`Read`ツールで開く。
+  * 外部API・Minecraft本体の未確認仕様を調べる際は`WebSearch`/`mcp__workspace__web_fetch`を積極的に使う。`minecraft.wiki`・`mappings.dev`(1.20.1 mojmap javadoc)等には到達できる(bashの`curl`は`api.github.com`等の主要ホストが到達不可)。それでも足りなければ`mcp__Claude_Browser__*`で直接リポジトリ・公式mavenを読む。
+
+* **外部MOD連携**
+  * Mixinベースの外部依存MOD(Curios等)を`compileOnly`/`runtimeOnly`で追加する場合、CIの`runGameTestServer`で実際にロードされクラッシュしうる。`build.gradle`の該当runブロックに`mixin.env.remapRefMap` / `mixin.env.refMapRemappingFile`の設定が必要になる場合がある。
+  * 外部MODのスロット/インベントリ拡張機能に対応する際は、「スロット種別への登録・タグ付け」と「エンティティへのスロット配布」が別々の必須ステップであることを確認する(Curios対応で一度見落とし、実機テストで発覚し後日修正した実例あり)。
+
+* **ドキュメント運用(このファイル自体の扱い)**
+  * セッションがPROGRESS.md更新前に終了する可能性がある。作業開始時、直近リリースタグ以降のコミットを`git log`で確認し、記録漏れが無いかチェックする。あれば遡って記録する。
+  * `PROGRESS_ARCHIVE.md`に全セッション(#3〜#83)の詳細な実装ログがある。経緯を詳しく調べたい場合はそちらを参照すること。
+  * **【2026-08-30、こんぺいとう氏の指摘で発覚】PROGRESS.mdの記述、特に「5. MOD構想・ロードマップ」の技術的な説明は、実装が変わった後も更新されず古いまま残ることがある。** 実例: Prism Realmの地形は初期実装(session 14)ではバニラのオーバーワールド設定+固定バイオームcherry_groveを流用していたが、ユーザー指摘を受けて`minecraft:flat`型の水没ワールド+専用バイオーム`claudemod:prism_realm`+自作Perlin/Fractalノイズによる境界のまだら化、へと既に作り直し済み(session 30台)だったにもかかわらず、記述が古いまま残っていた。**ディメンション・worldgenなど「今どうなっているか」が重要な話題では、記述を鵜呑みにせず実際のデータパックJSON・Javaソースを確認してから発言・実装すること。**
 
 ---
 
