@@ -34,7 +34,6 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.SwordItem;
-import net.minecraft.world.item.WrittenBookItem;
 import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -492,17 +491,21 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_MAGNET_CHARM = ITEMS.register("prismium_magnet_charm",
             () -> new PrismiumMagnetCharmItem(new Item.Properties()));
 
-    // Prismium Compendium (scheduled session, GitHub issue #7 follow-up):
-    // the mod's first in-game guide/manual, a plain vanilla
-    // WrittenBookItem (not a custom subclass - nothing about this item's
-    // behavior needs to differ from a normal written book, only its
-    // pre-filled NBT content does, which lives in
-    // PrismiumCompendiumFactory rather than here). stacksTo(16) matches
-    // vanilla written_book's own stack size. See
+    // Prismium Compendium (scheduled session, GitHub issue #7 follow-up).
+    // 2026-08-31 direct-chat feedback (PROGRESS.md TODO3): right-click did
+    // not open the book at all. Root cause: a bare WrittenBookItem relies
+    // on vanilla Player#openItemGui, which gates opening BookViewScreen on
+    // stack.is(Items.WRITTEN_BOOK) - an identity check against the vanilla
+    // item, not an instanceof check, so it never fired for this mod's own
+    // separately-registered item. Now uses the dedicated
+    // com.claudemod.item.PrismiumCompendiumItem subclass, which opens the
+    // book screen itself instead of relying on that vanilla gate - see its
+    // class doc for the full root-cause writeup. stacksTo(16) still
+    // matches vanilla written_book's own stack size. See
     // PrismiumCompendiumFactory's class doc and PrismiumCompendiumHandler
     // (the first-login auto-give listener) for the rest of this feature.
     public static final RegistryObject<Item> PRISMIUM_COMPENDIUM = ITEMS.register("prismium_compendium",
-            () -> new WrittenBookItem(new Item.Properties().stacksTo(16)));
+            () -> new com.claudemod.item.PrismiumCompendiumItem(new Item.Properties().stacksTo(16)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
