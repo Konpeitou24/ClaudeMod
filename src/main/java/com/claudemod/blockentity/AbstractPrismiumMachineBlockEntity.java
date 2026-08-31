@@ -64,11 +64,24 @@ import javax.annotation.Nullable;
  */
 public abstract class AbstractPrismiumMachineBlockEntity extends BlockEntity implements MenuProvider {
 
-    /** Total FE capacity - identical across all three machines. */
-    public static final int CAPACITY = 20_000;
-    /** Max FE accepted per {@code receiveEnergy} call. */
+    /** Total FE capacity - identical across all three machines. 2026-08-31
+     * direct-chat feedback (PROGRESS.md TODO6): lowered from 20,000 - at
+     * the old size these three machines could out-store Prismium Cell's
+     * whole purpose as the dedicated "bulk battery" block, and combined
+     * with the old direct-shard-charge path (removed the same session,
+     * see e.g. {@code PrismiumSmelterBlock#use}) made Prismium Generator
+     * pointless. Still comfortably above one full processing operation's
+     * cost (see {@link #PROCESS_TIME_TICKS}/{@link #ENERGY_PER_TICK}
+     * below, 100 * 20 = 2,000 FE) and above Prismium Generator's own
+     * per-tick push cap, just no longer big enough to functionally
+     * replace a Cell. */
+    public static final int CAPACITY = 4_000;
+    /** Max FE accepted per {@code receiveEnergy} call (i.e. per
+     * cable-network push). */
     public static final int MAX_RECEIVE = 2_000;
-    /** FE added per Prismium Shard via the manual charge interaction. */
+    /** No longer used since 2026-08-31 (PROGRESS.md TODO6): none of the
+     * three machines using this base class accept a Prismium Shard by
+     * hand anymore - see e.g. {@code PrismiumSmelterBlock#use}. */
     public static final int SHARD_CHARGE_AMOUNT = 2_000;
     /** Ticks to fully process one operation once a valid recipe is
      * queued and energy keeps flowing. */

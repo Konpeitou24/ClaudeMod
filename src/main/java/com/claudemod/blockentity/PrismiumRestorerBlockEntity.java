@@ -59,13 +59,17 @@ import javax.annotation.Nullable;
  */
 public class PrismiumRestorerBlockEntity extends BlockEntity implements MenuProvider {
 
-    /** Total FE capacity. */
-    public static final int CAPACITY = 30_000;
-    /** Max FE this block will accept per {@code receiveEnergy} call, both
-     * from the capability (a Cable pushing in) and the manual shard
-     * charge below. */
+    /** Total FE capacity. 2026-08-31 direct-chat feedback (PROGRESS.md
+     * TODO6): lowered from 30,000 for the same reason as
+     * {@code PrismiumPylonBlockEntity#CAPACITY} - see that field's doc. */
+    public static final int CAPACITY = 4_000;
+    /** Max FE this block will accept per {@code receiveEnergy} call (i.e.
+     * per cable-network push). Well above Prismium Generator's own
+     * per-tick push cap, so never the throughput bottleneck. */
     public static final int MAX_RECEIVE = 2_000;
-    /** FE added per Prismium Shard via the manual charge interaction. */
+    /** No longer used since 2026-08-31 (PROGRESS.md TODO6): this block no
+     * longer accepts a Prismium Shard by hand - see
+     * {@link com.claudemod.block.PrismiumRestorerBlock#use}. */
     public static final int SHARD_CHARGE_AMOUNT = 2_000;
     /** FE spent per point of durability restored. */
     public static final int FE_PER_DURABILITY = 25;

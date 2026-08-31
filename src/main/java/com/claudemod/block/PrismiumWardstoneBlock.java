@@ -1,7 +1,6 @@
 package com.claudemod.block;
 
 import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
-import com.claudemod.energy.PrismiumEnergyStorage;
 import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
@@ -46,8 +45,10 @@ import javax.annotation.Nullable;
  * (session 25) and {@code PrismiumRestorerBlock#use} (session 26). With
  * this change every energy block in the mod (Cell, Generator, Pylon,
  * Restorer, Wardstone) now opens a GUI instead of printing a status
- * message. Right-click holding a Prismium Shard: manually add
- * {@link PrismiumWardstoneBlockEntity#SHARD_CHARGE_AMOUNT} FE, same shape
+ * message. 2026-08-31 direct-chat feedback (PROGRESS.md TODO6):
+ * right-click holding a Prismium Shard used to manually add
+ * {@link PrismiumWardstoneBlockEntity#SHARD_CHARGE_AMOUNT} FE directly,
+ * same shape
  * as Cell/Generator/Pylon/Restorer's manual charge - lets a player use a
  * Wardstone standalone before building out a full Generator/Cable
  * network. This action stays outside the GUI, same call made for every
@@ -99,21 +100,17 @@ public class PrismiumWardstoneBlock extends BaseEntityBlock {
         Item prismiumShard = ModItems.PRISMIUM_SHARD.get();
 
         if (held.is(prismiumShard)) {
-            PrismiumEnergyStorage storage = wardstone.getEnergyStorage();
-            int accepted = storage.receiveEnergy(PrismiumWardstoneBlockEntity.SHARD_CHARGE_AMOUNT, true);
-            if (accepted <= 0) {
-                player.displayClientMessage(
-                        Component.translatable("message.claudemod.prismium_wardstone.full"), true);
-                return InteractionResult.CONSUME;
-            }
-            storage.receiveEnergy(accepted, false);
-            if (!player.getAbilities().instabuild) {
-                held.shrink(1);
-            }
-            wardstone.setChanged();
+            // 2026-08-31 direct-chat feedback (PROGRESS.md TODO6): direct
+            // hand-charging let a player skip Prismium Generator entirely
+            // ("Generatorが死にアイテム化している"), so this consumer no
+            // longer accepts a shard by hand at all - FE now only arrives
+            // through the Generator -> Cable network (see
+            // EnergyPushHelper#pushThroughNetwork), restoring the intended
+            // Generator/Cable/consumer role split. The shard itself is
+            // intentionally left unconsumed (unlike the old branch this
+            // replaces) since no energy actually changes hands here.
             player.displayClientMessage(
-                    Component.translatable("message.claudemod.prismium_wardstone.charged",
-                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+                    Component.translatable("message.claudemod.prismium_wardstone.no_direct_charge"), true);
             return InteractionResult.CONSUME;
         }
 

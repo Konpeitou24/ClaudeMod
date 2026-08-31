@@ -84,13 +84,17 @@ import java.util.List;
  */
 public class PrismiumWardstoneBlockEntity extends BlockEntity implements MenuProvider {
 
-    /** Total FE capacity. */
-    public static final int CAPACITY = 20_000;
-    /** Max FE this block will accept per {@code receiveEnergy} call, both
-     * from the capability (e.g. a Cable pushing in) and the manual shard
-     * charge below. */
+    /** Total FE capacity. 2026-08-31 direct-chat feedback (PROGRESS.md
+     * TODO6): lowered from 20,000 for the same reason as
+     * {@code PrismiumPylonBlockEntity#CAPACITY} - see that field's doc. */
+    public static final int CAPACITY = 4_000;
+    /** Max FE this block will accept per {@code receiveEnergy} call (i.e.
+     * per cable-network push). Well above Prismium Generator's own
+     * per-tick push cap, so never the throughput bottleneck. */
     public static final int MAX_RECEIVE = 2_000;
-    /** FE added per Prismium Shard via the manual charge interaction. */
+    /** No longer used since 2026-08-31 (PROGRESS.md TODO6): this block no
+     * longer accepts a Prismium Shard by hand - see
+     * {@link com.claudemod.block.PrismiumWardstoneBlock#use}. */
     public static final int SHARD_CHARGE_AMOUNT = 2_000;
     /** Radius (blocks) hostile mobs are scanned within, each pulse -
      * deliberately wider than Pylon's 6, since a defensive "ward" reads

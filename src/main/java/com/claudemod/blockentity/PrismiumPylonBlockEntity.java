@@ -76,14 +76,27 @@ import java.util.List;
  */
 public class PrismiumPylonBlockEntity extends BlockEntity implements MenuProvider {
 
-    /** Total FE capacity. */
-    public static final int CAPACITY = 20_000;
-    /** Max FE this block will accept per {@code receiveEnergy} call, both
-     * from the capability (e.g. a Cable pushing in) and the manual shard
-     * charge below. Deliberately set comfortably above both so neither
-     * path is silently short-changed by the cap. */
+    /** Total FE capacity. 2026-08-31 direct-chat feedback (PROGRESS.md
+     * TODO6): lowered from 20,000 - at the old size, a lone Pylon could
+     * out-store Prismium Cell's whole purpose as the dedicated "bulk
+     * battery" block, and combined with the old direct-shard-charge path
+     * (removed the same session, see {@link com.claudemod.block.PrismiumPylonBlock#use})
+     * made Prismium Generator pointless. Still comfortably above what one
+     * cable network delivers per tick (see {@link #MAX_RECEIVE}), just no
+     * longer big enough to functionally replace a Cell. */
+    public static final int CAPACITY = 4_000;
+    /** Max FE this block will accept per {@code receiveEnergy} call (i.e.
+     * per cable-network push - see {@code EnergyPushHelper#pushThroughNetwork}).
+     * Deliberately kept well above Prismium Generator's own per-tick push
+     * cap (200 FE/tick, see {@code PrismiumGeneratorBlockEntity#MAX_EXTRACT})
+     * so this was never the throughput bottleneck even before the
+     * 2026-08-31 capacity reduction above. */
     public static final int MAX_RECEIVE = 2_000;
-    /** FE added per Prismium Shard via the manual charge interaction. */
+    /** No longer used since 2026-08-31 (PROGRESS.md TODO6): this block no
+     * longer accepts a Prismium Shard by hand at all - see
+     * {@link com.claudemod.block.PrismiumPylonBlock#use}. Left defined
+     * (rather than deleted) only because removing it is a needless extra
+     * diff; nothing references it anymore. */
     public static final int SHARD_CHARGE_AMOUNT = 2_000;
     /** Radius (blocks) players are scanned within, each pulse. */
     public static final double RADIUS = 6.0;

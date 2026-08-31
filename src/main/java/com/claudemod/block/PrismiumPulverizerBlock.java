@@ -1,7 +1,6 @@
 package com.claudemod.block;
 
 import com.claudemod.blockentity.PrismiumPulverizerBlockEntity;
-import com.claudemod.energy.PrismiumEnergyStorage;
 import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
@@ -38,8 +37,10 @@ import javax.annotation.Nullable;
  * {@link com.claudemod.menu.PrismiumPulverizerMenu}), where items are
  * dropped into the input slot and shards collected from the output slot -
  * same {@code NetworkHooks.openScreen} pattern every other energy block
- * in this mod uses. Right-click holding a Prismium Shard: manually add
- * {@link PrismiumPulverizerBlockEntity#SHARD_CHARGE_AMOUNT} FE, identical
+ * in this mod uses. 2026-08-31 direct-chat feedback (PROGRESS.md TODO6):
+ * right-click holding a Prismium Shard used to manually add
+ * {@link PrismiumPulverizerBlockEntity#SHARD_CHARGE_AMOUNT} FE directly,
+ * identical
  * shape to Wardstone/Restorer/Pylon's manual charge interaction - lets a
  * player bootstrap the machine by hand before building cable/generator
  * infrastructure.
@@ -90,21 +91,17 @@ public class PrismiumPulverizerBlock extends BaseEntityBlock {
         Item prismiumShard = ModItems.PRISMIUM_SHARD.get();
 
         if (held.is(prismiumShard)) {
-            PrismiumEnergyStorage storage = pulverizer.getEnergyStorage();
-            int accepted = storage.receiveEnergy(PrismiumPulverizerBlockEntity.SHARD_CHARGE_AMOUNT, true);
-            if (accepted <= 0) {
-                player.displayClientMessage(
-                        Component.translatable("message.claudemod.prismium_pulverizer.full"), true);
-                return InteractionResult.CONSUME;
-            }
-            storage.receiveEnergy(accepted, false);
-            if (!player.getAbilities().instabuild) {
-                held.shrink(1);
-            }
-            pulverizer.setChanged();
+            // 2026-08-31 direct-chat feedback (PROGRESS.md TODO6): direct
+            // hand-charging let a player skip Prismium Generator entirely
+            // ("Generatorが死にアイテム化している"), so this consumer no
+            // longer accepts a shard by hand at all - FE now only arrives
+            // through the Generator -> Cable network (see
+            // EnergyPushHelper#pushThroughNetwork), restoring the intended
+            // Generator/Cable/consumer role split. The shard itself is
+            // intentionally left unconsumed (unlike the old branch this
+            // replaces) since no energy actually changes hands here.
             player.displayClientMessage(
-                    Component.translatable("message.claudemod.prismium_pulverizer.charged",
-                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+                    Component.translatable("message.claudemod.prismium_pulverizer.no_direct_charge"), true);
             return InteractionResult.CONSUME;
         }
 

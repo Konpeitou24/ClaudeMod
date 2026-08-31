@@ -1,7 +1,6 @@
 package com.claudemod.block;
 
 import com.claudemod.blockentity.PrismiumPylonBlockEntity;
-import com.claudemod.energy.PrismiumEnergyStorage;
 import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
@@ -40,10 +39,13 @@ import javax.annotation.Nullable;
  * current/max FE and whether the pylon is actively radiating - previously
  * (sessions 19-24) this was an action-bar status message only, same as
  * every un-GUI'd Prismium Energy block still is.
- * Right-click holding a Prismium Shard: manually add
- * {@link PrismiumPylonBlockEntity#SHARD_CHARGE_AMOUNT} FE, same shape as
- * {@link PrismiumCellBlock}'s manual charge - lets a player use a Pylon
- * standalone before building out a full Generator/Cable network.
+ * 2026-08-31 direct-chat feedback (PROGRESS.md TODO6): right-click
+ * holding a Prismium Shard used to manually add
+ * {@link PrismiumPylonBlockEntity#SHARD_CHARGE_AMOUNT} FE directly (the
+ * same shape as {@link PrismiumCellBlock}'s manual charge), which let a
+ * player skip a Generator/Cable network entirely - now shows an
+ * informational message instead and does not consume the shard; see
+ * {@link #use}.
  */
 public class PrismiumPylonBlock extends BaseEntityBlock {
 
@@ -91,21 +93,17 @@ public class PrismiumPylonBlock extends BaseEntityBlock {
         Item prismiumShard = ModItems.PRISMIUM_SHARD.get();
 
         if (held.is(prismiumShard)) {
-            PrismiumEnergyStorage storage = pylon.getEnergyStorage();
-            int accepted = storage.receiveEnergy(PrismiumPylonBlockEntity.SHARD_CHARGE_AMOUNT, true);
-            if (accepted <= 0) {
-                player.displayClientMessage(
-                        Component.translatable("message.claudemod.prismium_pylon.full"), true);
-                return InteractionResult.CONSUME;
-            }
-            storage.receiveEnergy(accepted, false);
-            if (!player.getAbilities().instabuild) {
-                held.shrink(1);
-            }
-            pylon.setChanged();
+            // 2026-08-31 direct-chat feedback (PROGRESS.md TODO6): direct
+            // hand-charging let a player skip Prismium Generator entirely
+            // ("Generatorが死にアイテム化している"), so this consumer no
+            // longer accepts a shard by hand at all - FE now only arrives
+            // through the Generator -> Cable network (see
+            // EnergyPushHelper#pushThroughNetwork), restoring the intended
+            // Generator/Cable/consumer role split. The shard itself is
+            // intentionally left unconsumed (unlike the old branch this
+            // replaces) since no energy actually changes hands here.
             player.displayClientMessage(
-                    Component.translatable("message.claudemod.prismium_pylon.charged",
-                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+                    Component.translatable("message.claudemod.prismium_pylon.no_direct_charge"), true);
             return InteractionResult.CONSUME;
         }
 

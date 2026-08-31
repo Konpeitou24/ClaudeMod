@@ -78,20 +78,17 @@ public class PrismiumRestorerBlock extends BaseEntityBlock {
         PrismiumEnergyStorage storage = restorer.getEnergyStorage();
 
         if (held.is(prismiumShard)) {
-            int accepted = storage.receiveEnergy(PrismiumRestorerBlockEntity.SHARD_CHARGE_AMOUNT, true);
-            if (accepted <= 0) {
-                player.displayClientMessage(
-                        Component.translatable("message.claudemod.prismium_restorer.full"), true);
-                return InteractionResult.CONSUME;
-            }
-            storage.receiveEnergy(accepted, false);
-            if (!player.getAbilities().instabuild) {
-                held.shrink(1);
-            }
-            restorer.setChanged();
+            // 2026-08-31 direct-chat feedback (PROGRESS.md TODO6): direct
+            // hand-charging let a player skip Prismium Generator entirely
+            // ("Generatorが死にアイテム化している"), so this consumer no
+            // longer accepts a shard by hand at all - FE now only arrives
+            // through the Generator -> Cable network (see
+            // EnergyPushHelper#pushThroughNetwork), restoring the intended
+            // Generator/Cable/consumer role split. The shard itself is
+            // intentionally left unconsumed (unlike the old branch this
+            // replaces) since no energy actually changes hands here.
             player.displayClientMessage(
-                    Component.translatable("message.claudemod.prismium_restorer.charged",
-                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+                    Component.translatable("message.claudemod.prismium_restorer.no_direct_charge"), true);
             return InteractionResult.CONSUME;
         }
 

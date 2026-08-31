@@ -1,7 +1,6 @@
 package com.claudemod.block;
 
 import com.claudemod.blockentity.PrismiumSmelterBlockEntity;
-import com.claudemod.energy.PrismiumEnergyStorage;
 import com.claudemod.registry.ModBlockEntities;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
@@ -33,8 +32,9 @@ import javax.annotation.Nullable;
  * class is the block shell, copied structurally from {@link
  * PrismiumPulverizerBlock} (session 67) - same {@code BaseEntityBlock} +
  * {@code BlockStateProperties.LIT} skeleton, same right-click contract
- * (empty hand opens the GUI, a Prismium Shard in hand manually charges
- * FE). Second machine in the mod's item-processing chain: Prismium Ore
+ * (empty hand opens the GUI; a Prismium Shard in hand no longer
+ * manually charges FE as of 2026-08-31 direct-chat feedback -
+ * PROGRESS.md TODO6 - see {@link #use}). Second machine in the mod's item-processing chain: Prismium Ore
  * -[Silk Touch + Pulverizer]-> Prismium Shard -[this block]-> Prismium
  * Ingot (see {@link PrismiumSmelterBlockEntity}'s class doc for the
  * recipe/energy numbers).
@@ -85,21 +85,17 @@ public class PrismiumSmelterBlock extends BaseEntityBlock {
         Item prismiumShard = ModItems.PRISMIUM_SHARD.get();
 
         if (held.is(prismiumShard)) {
-            PrismiumEnergyStorage storage = smelter.getEnergyStorage();
-            int accepted = storage.receiveEnergy(PrismiumSmelterBlockEntity.SHARD_CHARGE_AMOUNT, true);
-            if (accepted <= 0) {
-                player.displayClientMessage(
-                        Component.translatable("message.claudemod.prismium_smelter.full"), true);
-                return InteractionResult.CONSUME;
-            }
-            storage.receiveEnergy(accepted, false);
-            if (!player.getAbilities().instabuild) {
-                held.shrink(1);
-            }
-            smelter.setChanged();
+            // 2026-08-31 direct-chat feedback (PROGRESS.md TODO6): direct
+            // hand-charging let a player skip Prismium Generator entirely
+            // ("Generatorが死にアイテム化している"), so this consumer no
+            // longer accepts a shard by hand at all - FE now only arrives
+            // through the Generator -> Cable network (see
+            // EnergyPushHelper#pushThroughNetwork), restoring the intended
+            // Generator/Cable/consumer role split. The shard itself is
+            // intentionally left unconsumed (unlike the old branch this
+            // replaces) since no energy actually changes hands here.
             player.displayClientMessage(
-                    Component.translatable("message.claudemod.prismium_smelter.charged",
-                            storage.getEnergyStored(), storage.getMaxEnergyStored()), true);
+                    Component.translatable("message.claudemod.prismium_smelter.no_direct_charge"), true);
             return InteractionResult.CONSUME;
         }
 
