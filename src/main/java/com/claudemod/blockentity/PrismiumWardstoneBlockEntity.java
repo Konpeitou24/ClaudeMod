@@ -10,6 +10,8 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.world.MenuProvider;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -63,16 +65,22 @@ import java.util.List;
  * shape (energy, max energy, active-flag) since Wardstone shares Pylon's
  * ticking active/idle state, unlike Restorer which has none.
  *
+ * <p><b>Fixed (2026-08-31, PROGRESS.md "3. 問題点" bug sweep):</b> this
+ * used to scan only {@link Monster}, which misses {@code Slime}/
+ * {@code MagmaCube} - both extend {@code Mob} but implement the
+ * {@code Enemy} marker interface directly rather than extending
+ * {@code Monster} (confirmed against 1.20.1 mappings: "class Slime
+ * extends Mob implements Enemy"). {@link #serverTick} now scans
+ * {@code Mob.class} filtered by {@code instanceof Enemy}, which covers
+ * both and anything else implementing {@code Enemy} without extending
+ * {@code Monster}.
+ *
  * <p><b>Unverified</b> (see PROGRESS.md): whether the radius/cost/effect
- * numbers feel good in play, whether hostile mobs are actually visibly
- * slowed/weakened, whether the LIT swap renders correctly, whether
- * scanning for {@link Monster} (as opposed to a narrower/broader class)
- * misses anything a player would expect to be affected - note in
- * particular that {@code Slime}/{@code MagmaCube} extend {@code Mob} but
- * NOT {@code Monster}, so they are deliberately (if perhaps surprisingly)
- * excluded by this scan; flagged in PROGRESS.md as worth reconsidering -
- * and now also whether the new GUI opens/renders correctly in-game
- * (zero playtesting, same as every other GUI in this mod so far).
+ * numbers feel good in play, whether hostile mobs (including Slime/
+ * MagmaCube now that they're included) are actually visibly
+ * slowed/weakened, whether the LIT swap renders correctly, and whether
+ * the new GUI opens/renders correctly in-game (zero playtesting, same as
+ * every other GUI in this mod so far).
  */
 public class PrismiumWardstoneBlockEntity extends BlockEntity implements MenuProvider {
 
@@ -180,14 +188,24 @@ public class PrismiumWardstoneBlockEntity extends BlockEntity implements MenuPro
         }
         wardstone.pulseTimer = 0;
 
-        List<Monster> nearby = level.getEntitiesOfClass(Monster.class, new AABB(pos).inflate(RADIUS));
+        // Known bug (PROGRESS.md "3. 問題点"): scanning only
+        // Monster.class missed Slime/MagmaCube, which extend Mob and
+        // implement the Enemy marker interface directly rather than
+        // extending Monster (confirmed against 1.20.1 mappings.dev: "public
+        // class Slime extends Mob implements Enemy"). Enemy is an
+        // interface, not an Entity subtype, so getEntitiesOfClass can't take
+        // it directly as the class bound - scan Mob.class and filter by
+        // `instanceof Enemy` instead, which now also catches Slime/MagmaCube
+        // (and anything else implementing Enemy without extending Monster).
+        List<Mob> nearby = level.getEntitiesOfClass(Mob.class, new AABB(pos).inflate(RADIUS),
+                mob -> mob instanceof Enemy);
 
         boolean nowActive = false;
         if (!nearby.isEmpty()) {
             int cost = COST_PER_MOB_PER_PULSE * nearby.size();
             if (wardstone.energyStorage.getEnergyStored() >= cost) {
                 wardstone.energyStorage.setEnergy(wardstone.energyStorage.getEnergyStored() - cost);
-                for (Monster mob : nearby) {
+                for (Mob mob : nearby) {
                     mob.addEffect(new MobEffectInstance(
                             MobEffects.WEAKNESS, EFFECT_DURATION_TICKS, EFFECT_AMPLIFIER,
                             true, false, false));

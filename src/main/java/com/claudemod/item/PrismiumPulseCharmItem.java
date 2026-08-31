@@ -11,6 +11,8 @@ import net.minecraft.world.InteractionResultHolder;
 import net.minecraft.world.effect.MobEffectInstance;
 import net.minecraft.world.effect.MobEffects;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.Enemy;
 import net.minecraft.world.entity.monster.Monster;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
@@ -47,17 +49,22 @@ import java.util.List;
  * "well-established API, no new vocabulary" risk tier as the Locator's
  * own block-scan.
  *
- * <p><b>Design choice - {@code Monster}, not a hand-picked class list</b>:
- * {@code Monster} is the same base class {@code ModEntityEvents} already
- * relies on for this mod's own hostiles' spawn-rule registration (see
- * PROGRESS.md sessions 12/59, "{@code Monster::checkMonsterSpawnRules}"),
- * so reusing it here for detection keeps one consistent "what counts as
- * hostile" definition across the mod instead of introducing a second,
- * possibly-diverging one. This automatically covers every vanilla
- * hostile (zombies, skeletons, creepers, etc.) too, and just as
- * automatically excludes the mod's own non-hostile Prismium Drifter
- * (session 61, a {@code Squid}/{@code WaterAnimal} subclass, not a
- * {@code Monster}).
+ * <p><b>Design choice - {@code Enemy}, not a hand-picked class list</b>:
+ * originally scanned {@code Monster} (the same base class
+ * {@code ModEntityEvents} relies on for this mod's own hostiles'
+ * spawn-rule registration, PROGRESS.md sessions 12/59) for one consistent
+ * "what counts as hostile" definition across the mod - but that missed
+ * vanilla {@code Slime}/{@code MagmaCube}, which extend {@code Mob} and
+ * implement the {@code Enemy} marker interface directly rather than
+ * extending {@code Monster} (bug fix, 2026-08-31, PROGRESS.md "3. 問題点";
+ * confirmed against 1.20.1 mappings). Switched to scanning
+ * {@code Mob.class} filtered by {@code instanceof Enemy}, a strict
+ * superset of {@code Monster} that still covers every vanilla hostile
+ * (zombies, skeletons, creepers, slimes, etc.) plus this mod's own
+ * (Wraith/Deep Wraith/Sentinel), and still automatically excludes the
+ * mod's own non-hostile Prismium Drifter (session 61, a
+ * {@code Squid}/{@code WaterAnimal} subclass - neither {@code Monster}
+ * nor {@code Enemy}).
  *
  * <p><b>Design choice - Glowing, not a message</b>: the Locator reports a
  * single nearest match via action-bar text because a block position is a
@@ -118,7 +125,16 @@ public class PrismiumPulseCharmItem extends Item {
         player.awardStat(Stats.ITEM_USED.get(this));
 
         AABB scanBox = player.getBoundingBox().inflate(SEARCH_RADIUS);
-        List<Monster> threats = level.getEntitiesOfClass(Monster.class, scanBox, LivingEntity::isAlive);
+        // Bug fix (2026-08-31, PROGRESS.md "3. 問題点"): Monster.class
+        // alone misses Slime/MagmaCube, which extend Mob and implement the
+        // Enemy marker interface directly (confirmed via 1.20.1 mappings) -
+        // a player standing near slimes got no glow warning at all. Scanning
+        // Mob.class filtered by `instanceof Enemy` (and still alive) keeps
+        // the mod's "what counts as hostile" definition intact (Enemy is a
+        // superset that includes every Monster too) while also catching
+        // Slime/MagmaCube.
+        List<Mob> threats = level.getEntitiesOfClass(Mob.class, scanBox,
+                mob -> mob instanceof Enemy && mob.isAlive());
 
         if (threats.isEmpty()) {
             level.playSound(null, player.blockPosition(), SoundEvents.BEACON_DEACTIVATE,
@@ -128,7 +144,7 @@ public class PrismiumPulseCharmItem extends Item {
             return InteractionResultHolder.success(stack);
         }
 
-        for (Monster threat : threats) {
+        for (Mob threat : threats) {
             threat.addEffect(new MobEffectInstance(
                     MobEffects.GLOWING, GLOW_DURATION_TICKS, 0, false, true, false));
         }

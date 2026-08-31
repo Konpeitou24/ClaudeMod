@@ -7,6 +7,7 @@ import net.minecraftforge.fml.ModList;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.util.Mth;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.LivingEntity;
@@ -94,7 +95,30 @@ public class PrismiumFeatherstoneHandler {
             return;
         }
 
-        event.setDamageMultiplier(event.getDamageMultiplier() * DAMAGE_MULTIPLIER);
+        // Issue #17 follow-up (2026-08-31): the previous implementation fired
+        // the particle/sound cue and the action-bar message on *every* landing,
+        // including ordinary jumps (LivingFallEvent fires for any fall distance
+        // > 0, not just damaging ones). The reporter explicitly asked for this
+        // to only activate "when damage is actually taken" - so first compute
+        // whether this fall would deal any damage at all using the same
+        // formula LivingEntity#calculateFallDamage uses server-side
+        // (Mth.ceil((distance - safeFallDistance) * damageMultiplier)), using
+        // the *pre-reduction* multiplier/distance. Only when that is > 0 do we
+        // apply the reduction and show feedback; harmless short falls now stay
+        // silent, matching the report.
+        float preReductionMultiplier = event.getDamageMultiplier();
+        // LivingEntity#calculateFallDamage hardcodes a 3.0-block safe fall
+        // distance before any damage formula applies (confirmed via 1.20.1
+        // mappings - no public getSafeFallDistance() accessor exists in this
+        // version, so the vanilla constant is duplicated here rather than
+        // called).
+        final float SAFE_FALL_DISTANCE = 3.0F;
+        int wouldBeDamage = Mth.ceil((event.getDistance() - SAFE_FALL_DISTANCE) * preReductionMultiplier);
+        if (wouldBeDamage <= 0) {
+            return;
+        }
+
+        event.setDamageMultiplier(preReductionMultiplier * DAMAGE_MULTIPLIER);
         playFeedback(player);
         announceReduction(player);
     }
