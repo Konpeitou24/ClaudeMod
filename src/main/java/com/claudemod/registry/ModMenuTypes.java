@@ -2,6 +2,7 @@ package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.menu.PrismiumCellMenu;
+import com.claudemod.menu.PrismiumChronoflameMenu;
 import com.claudemod.menu.PrismiumCompressorMenu;
 import com.claudemod.menu.PrismiumGeneratorMenu;
 import com.claudemod.menu.PrismiumPulverizerMenu;
@@ -120,6 +121,17 @@ public class ModMenuTypes {
             MENU_TYPES.register("prismium_compressor", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
                 BlockPos pos = extraData.readBlockPos();
                 return new PrismiumCompressorMenu(windowId, inv, pos);
+            }));
+
+    /** Scheduled session, direct feedback from こんぺいとう氏: the mod's
+     * ninth GUI, see {@link PrismiumChronoflameMenu} for why this one is
+     * unlike every earlier menu here (no BlockEntity backing it, and the
+     * first to use {@code clickMenuButton} instead of being a pure status
+     * display). */
+    public static final RegistryObject<MenuType<PrismiumChronoflameMenu>> PRISMIUM_CHRONOFLAME_MENU =
+            MENU_TYPES.register("prismium_chronoflame", () -> IForgeMenuType.create((windowId, inv, extraData) -> {
+                BlockPos pos = extraData.readBlockPos();
+                return new PrismiumChronoflameMenu(windowId, inv, pos);
             }));
 
     public static void register(IEventBus eventBus) {

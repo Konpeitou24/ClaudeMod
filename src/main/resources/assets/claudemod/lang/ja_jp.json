@@ -122,7 +122,7 @@
     "item.claudemod.prismium_rift_anchor.usage": "右クリックで現在地(どの次元でも可)にリスポーン地点を設定します。使用すると消費されます。",
     "item.claudemod.prismium_rift_anchor.details": "リフトシャードの使い切り版。プリズムレルムへの片道の乗車券のようなもので、リフトシャードと違い使用すると消費される。",
     "block.claudemod.prismium_chronoflame": "プリズミウム・クロノフレイム",
-    "block.claudemod.prismium_chronoflame.usage": "時計を持って右クリックすると現在の次元の時刻を6時間進めます。時計を持ってしゃがみ+右クリックで6時間戻します。時計を持っていない状態でクリックしても何も起きません(誤操作防止)。クールダウン中は残り秒数が表示されます。破壊してもアイテムはドロップしません。",
+    "block.claudemod.prismium_chronoflame.usage": "右クリックで操作画面を開き、「進める」または「戻す」ボタンを押すと現在の次元の時刻が6時間変化します。画面を開くだけでは何も変化しません(ボタンを押した時だけ発動)。クールダウン中は両方のボタンが灰色になり、残り秒数が表示されます。破壊してもアイテムはドロップしません。",
     "biome.claudemod.prism_realm": "プリズムレルム",
     "item.claudemod.prismium_pickaxe.usage": "プリズミウム鉱石を採掘すると25%の確率でプリズミウムの欠片を追加でドロップする。",
     "item.claudemod.prismium_pickaxe.details": "プリズミウムで鍛えられたツルハシ。採掘レベルと耐久度でダイヤモンドを上回り、プリズミウムコアを正しく採掘できる唯一のツール階級。",
@@ -227,5 +227,9 @@
     "book.claudemod.compendium.page8": "お守りアイテム(常時効果)\n\nフェザーストーン(落下ダメージ軽減)・エンバーガード・ヴァイタストーン・マグネットチャームは、持っているだけで効果が発動します。効果発動時はアクションバーに詳細が表示されます。",
     "book.claudemod.compendium.page9": "ガーディアンチャーム・パルスチャーム\n\nガーディアンチャームは致死ダメージを受けた瞬間に一度だけ身を守ってくれます。パルスチャームは右クリックで能動的に発動する効果です。",
     "book.claudemod.compendium.page10": "プリズムの領域(Prism Realm)\n\nプリズミウム・リフトシャードを使うと専用の次元「プリズムの領域」へ移動できます。プリズミウム鉱石が濃く分布しています。同じ欠片でもう一度使えば元の場所に戻れます。",
-    "book.claudemod.compendium.page11": "モンスターと便利道具\n\nプリズムレイスや深淵レイス、セントネル、ドリフター、クローラーなどプリズミウム由来のモンスターに注意してください。ロケーターやグラップリングフックも探索の助けになります。"
+    "book.claudemod.compendium.page11": "モンスターと便利道具\n\nプリズムレイスや深淵レイス、セントネル、ドリフター、クローラーなどプリズミウム由来のモンスターに注意してください。ロケーターやグラップリングフックも探索の助けになります。",
+    "gui.claudemod.prismium_chronoflame.advance": "進める +6時間",
+    "gui.claudemod.prismium_chronoflame.rewind": "戻す -6時間",
+    "gui.claudemod.prismium_chronoflame.ready": "準備完了",
+    "gui.claudemod.prismium_chronoflame.cooldown": "クールダウン: 残り%1$s秒"
 }

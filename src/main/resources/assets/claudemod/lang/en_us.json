@@ -122,7 +122,7 @@
     "item.claudemod.prismium_rift_anchor.usage": "Right-click to set your respawn point at your current location, in any dimension. Consumed on use.",
     "item.claudemod.prismium_rift_anchor.details": "A one-shot variant of the Rift Shard: a single-use ticket to or from the Prism Realm, consumed on activation rather than reusable.",
     "block.claudemod.prismium_chronoflame": "Prismium Chronoflame",
-    "block.claudemod.prismium_chronoflame.usage": "Hold a Clock and right-click to advance the current dimension's time by 6 hours; hold a Clock and sneak + right-click to rewind it by 6 hours. Clicking without a Clock in hand does nothing (prevents accidental triggers). Shows the remaining seconds while on cooldown. Does not drop itself when broken.",
+    "block.claudemod.prismium_chronoflame.usage": "Right-click to open its screen, then press Advance or Rewind to shift the current dimension's time by 6 hours. Opening the screen never changes anything by itself - only clicking a button does. Both buttons gray out and show a countdown while on cooldown. Does not drop itself when broken.",
     "biome.claudemod.prism_realm": "Prism Realm",
     "item.claudemod.prismium_pickaxe.usage": "Mining Prismium Ore has a 25% chance to drop an extra Prismium Shard.",
     "item.claudemod.prismium_pickaxe.details": "A pickaxe forged from Prismium, sitting above diamond in mining tier and durability - the only tool tier that can correctly harvest Prismium Core.",
@@ -227,5 +227,9 @@
     "book.claudemod.compendium.page8": "Passive Charms\n\nFeatherstone (fall damage reduction), Emberguard, Vitastone, and Magnet Charm all work just by being carried in your inventory - no need to equip or use them. Their effect details show on the action bar when triggered.",
     "book.claudemod.compendium.page9": "Guardian Charm & Pulse Charm\n\nThe Guardian Charm saves you once from an otherwise fatal hit. The Pulse Charm instead triggers its effect actively - right-click it to use.",
     "book.claudemod.compendium.page10": "Prism Realm\n\nUse a Prismium Rift Shard to travel to the Prism Realm, a dedicated dimension rich in Prismium Ore. Use the same shard again while there to return to right where you left.",
-    "book.claudemod.compendium.page11": "Hostiles & Handy Tools\n\nWatch out for Prismium-born hostiles like the Wraith, Deep Wraith, Sentinel, Drifter, and Crawler. The Locator and Grappling Hook are handy tools to help you explore safely."
+    "book.claudemod.compendium.page11": "Hostiles & Handy Tools\n\nWatch out for Prismium-born hostiles like the Wraith, Deep Wraith, Sentinel, Drifter, and Crawler. The Locator and Grappling Hook are handy tools to help you explore safely.",
+    "gui.claudemod.prismium_chronoflame.advance": "Advance +6h",
+    "gui.claudemod.prismium_chronoflame.rewind": "Rewind -6h",
+    "gui.claudemod.prismium_chronoflame.ready": "Ready",
+    "gui.claudemod.prismium_chronoflame.cooldown": "Cooldown: %1$ss"
 }

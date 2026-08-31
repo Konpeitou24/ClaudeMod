@@ -4,6 +4,7 @@ import com.claudemod.ClaudeMod;
 import com.claudemod.client.ModKeyMappings;
 import com.claudemod.client.render.PrismRealmEffects;
 import com.claudemod.client.screen.PrismiumCellScreen;
+import com.claudemod.client.screen.PrismiumChronoflameScreen;
 import com.claudemod.client.screen.PrismiumCompressorScreen;
 import com.claudemod.client.screen.PrismiumGeneratorScreen;
 import com.claudemod.client.screen.PrismiumPulverizerScreen;
@@ -113,6 +114,9 @@ public class ClientModEvents {
             // Session 70 (scheduled): eighth screen registration, same
             // call - all three item-processing machines now have a GUI.
             MenuScreens.register(ModMenuTypes.PRISMIUM_COMPRESSOR_MENU.get(), PrismiumCompressorScreen::new);
+            // Scheduled session, direct feedback from こんぺいとう氏:
+            // the mod's ninth GUI (Chronoflame) - see PrismiumChronoflameMenu.
+            MenuScreens.register(ModMenuTypes.PRISMIUM_CHRONOFLAME_MENU.get(), PrismiumChronoflameScreen::new);
 
             // Session 29: "pull"/"pulling" item-model property overrides
             // for Prismium Bow, mirroring vanilla's own registration for
