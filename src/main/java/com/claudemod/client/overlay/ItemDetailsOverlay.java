@@ -265,22 +265,54 @@ public final class ItemDetailsOverlay {
 
     private static void renderIfHeld(ScreenEvent.Render.Post event) {
         Screen screen = event.getScreen();
-        if (!(screen instanceof AbstractContainerScreen<?> containerScreen)) {
-            reset();
-            return;
+        ItemStack stack;
+        if (screen instanceof AbstractContainerScreen<?> containerScreen) {
+            Slot hovered = containerScreen.getSlotUnderMouse();
+            if (hovered == null || !hovered.hasItem()) {
+                reset();
+                return;
+            }
+            stack = hovered.getItem();
+        } else {
+            // 2026-08-31 direct-chat feedback (PROGRESS.md TODO4): "JEIの
+            // レシピ画面上でWキー長押しの詳細表示が効かない". Root cause:
+            // JEI's recipe-view Screen (and any other non-inventory Screen
+            // a compat mod might open) is a plain Screen, not an
+            // AbstractContainerScreen - getSlotUnderMouse() only exists on
+            // the latter, so this whole overlay previously bailed out
+            // unconditionally the instant such a screen had focus,
+            // regardless of the key state. Properly identifying "which
+            // ingredient is under the mouse" inside a foreign mod's own
+            // Screen would need a compileOnly dependency on JEI's plugin
+            // API, which this mod does not have yet (see PROGRESS.md "4.
+            // その他"). As a first, dependency-free step this falls back
+            // to the player's own held (main hand) item instead of
+            // whatever is under the cursor, so the key at least does
+            // *something* useful on these screens rather than silently
+            // nothing - not a full fix (still doesn't inspect the
+            // specific recipe ingredient the cursor is over), left as a
+            // follow-up (PROGRESS.md "3. 問題点").
+            Minecraft minecraftInstance = Minecraft.getInstance();
+            if (minecraftInstance.player == null) {
+                reset();
+                return;
+            }
+            stack = minecraftInstance.player.getMainHandItem();
+            if (stack.isEmpty()) {
+                reset();
+                return;
+            }
         }
-        Slot hovered = containerScreen.getSlotUnderMouse();
         // GitHub issue #19 fix: was ModKeyMappings.SHOW_ITEM_DETAILS.isDown(),
         // which per Forge's own "Key Mappings" docs ("Within the Game" vs.
         // "Inside a GUI" sections) is not the mechanism meant for detecting
         // a key's state while a Screen has input focus - see
         // GuiKeyStateTracker's class javadoc for the full investigation.
-        if (hovered == null || !hovered.hasItem() || !GuiKeyStateTracker.isShowItemDetailsHeld()) {
+        if (!GuiKeyStateTracker.isShowItemDetailsHeld()) {
             reset();
             return;
         }
 
-        ItemStack stack = hovered.getItem();
         if (stack.getItem() != lastHoveredItem) {
             lastHoveredItem = stack.getItem();
             holdTicks = 0;
