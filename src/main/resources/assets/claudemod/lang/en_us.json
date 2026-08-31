@@ -215,5 +215,17 @@
     "tooltip.claudemod.compare_page_title": "Compared to Equipped",
     "tooltip.claudemod.compare_not_equippable": "No comparison available for this item.",
     "tooltip.claudemod.compare_none_equipped": "Nothing currently equipped in this slot.",
-    "tooltip.claudemod.compare_same_item": "You already have this equipped."
+    "tooltip.claudemod.compare_same_item": "You already have this equipped.",
+    "item.claudemod.prismium_compendium": "Prismium Compendium",
+    "book.claudemod.compendium.page1": "Prismium Compendium\n\nWelcome! This book is a quick guide to ClaudeMod's main features - Prismium (the mod's crystal resource), its energy system, machines, gear, and a brand-new dimension.",
+    "book.claudemod.compendium.page2": "Prismium Resources\n\nMine Prismium Ore (found both near the surface and deep underground) to get Prismium Shards. Smelt them into Ingots, then process further into Alloy Ingots - the main material behind this mod's gear and machines.",
+    "book.claudemod.compendium.page3": "Prismium Energy\n\nAn FE (Forge Energy) based power system. Generators burn Prismium Shards for power, Cells store it, and Cables carry it to your machines. The next pages cover each block.",
+    "book.claudemod.compendium.page4": "Generator & Cell\n\nFeed a Prismium Shard into the Generator (right-click, or its fuel slot) to start it burning. A Cell placed nearby - or connected via Cable - stores that power. Both have a GUI showing their current charge.",
+    "book.claudemod.compendium.page5": "Prismium Cable\n\nChain Cables together to deliver power to machines far from your Generator. The whole connected run acts as one network, so long cable runs work fine.",
+    "book.claudemod.compendium.page6": "Processing Machines\n\nThe Pulverizer, Smelter, and Compressor each consume FE to process items. Put material in the input slot; with power connected, it processes automatically and the result appears in the output slot.",
+    "book.claudemod.compendium.page7": "Equipment\n\nA full Prismium tool/weapon/armor lineup is available (sword, warhammer, rapier, bow, and more). Wearing the full armor set grants Night Vision plus Water Breathing.",
+    "book.claudemod.compendium.page8": "Passive Charms\n\nFeatherstone (fall damage reduction), Emberguard, Vitastone, and Magnet Charm all work just by being carried in your inventory - no need to equip or use them. Their effect details show on the action bar when triggered.",
+    "book.claudemod.compendium.page9": "Guardian Charm & Pulse Charm\n\nThe Guardian Charm saves you once from an otherwise fatal hit. The Pulse Charm instead triggers its effect actively - right-click it to use.",
+    "book.claudemod.compendium.page10": "Prism Realm\n\nUse a Prismium Rift Shard to travel to the Prism Realm, a dedicated dimension rich in Prismium Ore. Use the same shard again while there to return to right where you left.",
+    "book.claudemod.compendium.page11": "Hostiles & Handy Tools\n\nWatch out for Prismium-born hostiles like the Wraith, Deep Wraith, Sentinel, Drifter, and Crawler. The Locator and Grappling Hook are handy tools to help you explore safely."
 }

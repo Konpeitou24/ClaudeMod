@@ -34,6 +34,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.PickaxeItem;
 import net.minecraft.world.item.ShovelItem;
 import net.minecraft.world.item.SwordItem;
+import net.minecraft.world.item.WrittenBookItem;
 import net.minecraftforge.common.ForgeSpawnEggItem;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.registries.DeferredRegister;
@@ -490,6 +491,18 @@ public class ModItems {
     // treatment as Featherstone/Emberguard/Vitastone.
     public static final RegistryObject<Item> PRISMIUM_MAGNET_CHARM = ITEMS.register("prismium_magnet_charm",
             () -> new PrismiumMagnetCharmItem(new Item.Properties()));
+
+    // Prismium Compendium (scheduled session, GitHub issue #7 follow-up):
+    // the mod's first in-game guide/manual, a plain vanilla
+    // WrittenBookItem (not a custom subclass - nothing about this item's
+    // behavior needs to differ from a normal written book, only its
+    // pre-filled NBT content does, which lives in
+    // PrismiumCompendiumFactory rather than here). stacksTo(16) matches
+    // vanilla written_book's own stack size. See
+    // PrismiumCompendiumFactory's class doc and PrismiumCompendiumHandler
+    // (the first-login auto-give listener) for the rest of this feature.
+    public static final RegistryObject<Item> PRISMIUM_COMPENDIUM = ITEMS.register("prismium_compendium",
+            () -> new WrittenBookItem(new Item.Properties().stacksTo(16)));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
