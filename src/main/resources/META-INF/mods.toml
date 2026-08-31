@@ -37,3 +37,20 @@ description = '''${mod_description}'''
     versionRange = "[5.0,)"
     ordering = "NONE"
     side = "BOTH"
+
+# Optional/soft dependency (2026-08-31 direct-chat session, TODO3/TODO4
+# follow-up - issue reported: "JEIのレシピ画面上でWキー長押しの詳細表示が
+# 効かない"). JEI is not required to play ClaudeMod. When it IS present,
+# the item-details overlay (hold W) can also show details for whatever
+# ingredient JEI itself reports under the mouse on JEI's own screens
+# (recipe view, ingredient list, bookmarks), not just for the slot under
+# the mouse in this mod's own container screens - see
+# com.claudemod.compat.jei.ClaudeModJeiPlugin. mandatory=false so the mod
+# loads fine with JEI completely absent. side="CLIENT" since JEI itself
+# is a client-only mod.
+[[dependencies.${mod_id}]]
+    modId = "jei"
+    mandatory = false
+    versionRange = "[15.0,)"
+    ordering = "NONE"
+    side = "CLIENT"

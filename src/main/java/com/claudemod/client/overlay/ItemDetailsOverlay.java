@@ -27,12 +27,14 @@ import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RenderTooltipEvent;
 import net.minecraftforge.client.event.ScreenEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
 import net.minecraftforge.fml.common.Mod;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -207,7 +209,10 @@ public final class ItemDetailsOverlay {
      * ModKeyMappings#SHOW_ITEM_DETAILS.isDown()}, which Forge's own docs
      * describe as the "within the game" mechanism, not the "inside a
      * GUI" one this feature actually needs (this overlay only ever
-     * renders while an {@code AbstractContainerScreen} has input focus).
+     * renders while some {@code Screen} has input focus - originally
+     * only ever an {@code AbstractContainerScreen}, since 2026-08-31
+     * also JEI's own screens via {@code com.claudemod.compat.jei.JeiCompat},
+     * see {@link #renderIfHeld}).
      * {@link GuiKeyStateTracker#isShowItemDetailsHeld()} now backs this
      * check instead. The exception-guard below predates that fix (added
      * by an earlier session that could not find the cause by reading
@@ -281,27 +286,34 @@ public final class ItemDetailsOverlay {
             // AbstractContainerScreen - getSlotUnderMouse() only exists on
             // the latter, so this whole overlay previously bailed out
             // unconditionally the instant such a screen had focus,
-            // regardless of the key state. Properly identifying "which
-            // ingredient is under the mouse" inside a foreign mod's own
-            // Screen would need a compileOnly dependency on JEI's plugin
-            // API, which this mod does not have yet (see PROGRESS.md "4.
-            // その他"). As a first, dependency-free step this falls back
-            // to the player's own held (main hand) item instead of
-            // whatever is under the cursor, so the key at least does
-            // *something* useful on these screens rather than silently
-            // nothing - not a full fix (still doesn't inspect the
-            // specific recipe ingredient the cursor is over), left as a
-            // follow-up (PROGRESS.md "3. 問題点").
-            Minecraft minecraftInstance = Minecraft.getInstance();
-            if (minecraftInstance.player == null) {
+            // regardless of the key state.
+            //
+            // 2026-08-31 follow-up (same day, repo owner: "ＪＥＩの修正は
+            // 混乱を招くからちゃんと修正してくれ"): an earlier pass at this
+            // fix fell back to showing the player's held (main hand) item
+            // on any non-container screen, which the repo owner correctly
+            // called out as actively misleading (it shows unrelated info
+            // while browsing JEI, not the thing the player is actually
+            // looking at) rather than a real fix. This now asks JEI itself
+            // what ingredient is under the mouse via
+            // com.claudemod.compat.jei.JeiCompat (a proper JEI plugin
+            // integration added this session - see that class's javadoc
+            // for the API citation), gated behind a ModList check so this
+            // mod still loads and behaves correctly with JEI completely
+            // absent (same soft-dependency pattern as CuriosCompat). If
+            // JEI is not installed, or is installed but reports nothing
+            // under the mouse on this particular screen, the overlay
+            // correctly shows nothing at all rather than guessing.
+            if (!ModList.get().isLoaded("jei")) {
                 reset();
                 return;
             }
-            stack = minecraftInstance.player.getMainHandItem();
-            if (stack.isEmpty()) {
+            Optional<ItemStack> hovered = com.claudemod.compat.jei.JeiCompat.getHoveredItemStackAtMouse(screen);
+            if (hovered.isEmpty()) {
                 reset();
                 return;
             }
+            stack = hovered.get();
         }
         // GitHub issue #19 fix: was ModKeyMappings.SHOW_ITEM_DETAILS.isDown(),
         // which per Forge's own "Key Mappings" docs ("Within the Game" vs.

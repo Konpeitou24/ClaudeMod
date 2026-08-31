@@ -114,6 +114,19 @@ repositories {
         name = "Illusive Soulworks maven"
         url = "https://maven.theillusivec4.top/"
     }
+    maven {
+        // JEI (2026-08-31 direct-chat session, TODO3/TODO4 follow-up):
+        // hosts JEI's own release jars for Forge/MC 1.20.1 since January
+        // 2023 (per JEI's own "Getting Started" wiki page). JEI is an
+        // optional/soft dependency exactly like Curios above (see
+        // mods.toml) - this repo and the dependencies below only affect
+        // compile/runtime classpath availability of the API, not
+        // whether JEI is present on a given player's install. See
+        // com.claudemod.compat.jei's javadoc for the soft-dependency
+        // design (mirrors CuriosCompat's).
+        name = "Jared's maven"
+        url = "https://maven.blamejared.com/"
+    }
 }
 
 dependencies {
@@ -127,6 +140,17 @@ dependencies {
     // run a client, but CI's own gameTestServer smoke test can).
     compileOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}:api")
     runtimeOnly fg.deobf("top.theillusivec4.curios:curios-forge:${curios_version}")
+
+    // Compile against only JEI's stable API artifacts (forge-api +
+    // common-api, per JEI's own "Getting Started [Minecraft 1.18.2 to
+    // 1.20.1]" wiki page), same "-api"-classifier-first reasoning as
+    // Curios above. The full jar is only needed at runtime (local
+    // testing/CI's gameTestServer smoke test) - a player without JEI
+    // installed never needs runtimeOnly's jar at all, since it is never
+    // packaged into this mod's own jar (no jarJar/shading here).
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}")
+    compileOnly fg.deobf("mezz.jei:jei-${minecraft_version}-common-api:${jei_version}")
+    runtimeOnly fg.deobf("mezz.jei:jei-${minecraft_version}-forge:${jei_version}")
 }
 
 tasks.withType(JavaCompile).configureEach {
