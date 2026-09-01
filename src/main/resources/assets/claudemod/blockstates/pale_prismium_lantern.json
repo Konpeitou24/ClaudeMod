@@ -1,5 +1,6 @@
 {
     "variants": {
-        "": { "model": "claudemod:block/pale_prismium_lantern" }
+        "hanging=false": { "model": "claudemod:block/pale_prismium_lantern" },
+        "hanging=true": { "model": "claudemod:block/pale_prismium_lantern_hanging" }
     }
 }

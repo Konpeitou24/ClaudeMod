@@ -11,6 +11,7 @@ import com.claudemod.block.PrismiumCompressorBlock;
 import com.claudemod.block.PrismiumChronoflameBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
 import com.claudemod.block.PrismiumGeyserBlock;
+import com.claudemod.block.PrismiumLanternBlock;
 import com.claudemod.block.PrismiumPortalBlock;
 import com.claudemod.block.PrismiumPulverizerBlock;
 import com.claudemod.block.PrismiumPylonBlock;
@@ -143,11 +144,17 @@ public class ModBlocks {
     // it from Prismium Block (6) and Prismium Core (10). No
     // requiresCorrectToolForDrops(): like vanilla Lantern, it always drops
     // itself regardless of what (if anything) broke it.
+    // 2026-09-01: rebuilt from a plain Block/cube_all into
+    // com.claudemod.block.PrismiumLanternBlock, a proper hanging-lantern
+    // shape (HANGING/WATERLOGGED state, vanilla-exact hitbox, standing or
+    // hung-from-ceiling placement) - see that class's doc for the full
+    // rationale and PROGRESS.md TODO history. Stats unchanged.
     public static final RegistryObject<Block> PRISMIUM_LANTERN = BLOCKS.register("prismium_lantern",
-            () -> new Block(BlockBehaviour.Properties.of()
+            () -> new PrismiumLanternBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.COLOR_CYAN)
                     .strength(3.5f, 3.5f)
                     .sound(SoundType.AMETHYST)
+                    .noOcclusion()
                     .lightLevel(state -> 15)));
 
     // Prismium Cell (session 8): the mod's first block entity, and the
@@ -459,11 +466,15 @@ public class ModBlocks {
     // art (same dark-cage-over-glow technique as gen_prismium_lantern.py,
     // reskinned in the PALE_* icy palette).
     // Unverified: not play-tested in a running client (see PROGRESS.md).
+    // 2026-09-01: rebuilt onto the same com.claudemod.block.PrismiumLanternBlock
+    // as PRISMIUM_LANTERN (see that registration's comment above and the
+    // class doc for the full rationale). Stats unchanged.
     public static final RegistryObject<Block> PALE_PRISMIUM_LANTERN = BLOCKS.register("pale_prismium_lantern",
-            () -> new Block(BlockBehaviour.Properties.of()
+            () -> new PrismiumLanternBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.ICE)
                     .strength(3.5f, 3.5f)
                     .sound(SoundType.AMETHYST)
+                    .noOcclusion()
                     .lightLevel(state -> 15)));
 
     // Chiseled Prismium Block (session 34): the mod's first purely

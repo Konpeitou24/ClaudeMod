@@ -1,25 +1,32 @@
 #!/usr/bin/env python3
-"""Generate the texture for Prismium Lantern (session 4's first purely
-utility exploration block - see ModBlocks.PRISMIUM_LANTERN / PROGRESS.md).
+"""Generate the texture for Prismium Lantern.
 
-Unlike prismium_block.png / prismium_core.png (smooth diagonal-gradient
-crystal faces), this one introduces a new visual language for the family:
-a dark metal cage/lattice (evoking a lantern frame) laid over the same
-Prismium glow palette, brightest at the center to read as "light source"
-at a glance even at small size. Kept the cage bars sparse (3 verticals x 3
-horizontals, 1px each) and the accent flecks restrained after comparing
-against a denser first pass that read as visual noise on small-scale
-preview - same lesson as gen_prismium_core.py's self-review note in
-PROGRESS.md (session 3): when in doubt, simplify back toward a clear
-silhouette. Deterministic (fixed seed). Run from repo root:
+PROGRESS.md TODO/section-5 item ("Prismium Lantern / Pale Prismium
+Lanternの形状が...単純な立方体(cube_all)のまま"): the block itself was
+rebuilt (2026-09-01) into a proper hanging-lantern shape by parenting its
+models onto vanilla's own `minecraft:block/template_lantern` /
+`minecraft:block/template_hanging_lantern` (see
+com.claudemod.block.PrismiumLanternBlock and the model JSONs under
+assets/claudemod/models/block/). Those templates use a specific UV
+"unwrap" layout (single 16x16 texture, several differently-shaped regions
+for the cage body, the top grille, the small hoop lip, and the vertical
+handle/chain strip - see the template JSON comments in
+PrismiumLanternBlock's class doc for the exact rectangles), which is a
+different layout than the old cube_all texture this script used to
+generate (one flat repeating face pattern). This version draws directly
+into each of those UV rectangles so the new 3D shape actually looks right
+instead of showing stretched/misaligned fragments of a cube-only design.
+
+Reuses the family's existing "dark metal cage over Prismium glow" visual
+language (same palette as gen_prismium_core.py/gen_prismium_block.py)
+rather than inventing a new look, just recomposed to fit the lantern
+unwrap. Deterministic (fixed seed). Run from repo root:
 python3 scripts/textures/gen_prismium_lantern.py
 """
-import random
 from pathlib import Path
 
 from PIL import Image
 
-SEED = 20260817
 SIZE = 16
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -33,12 +40,12 @@ PRISMIUM_HILITE = "#CAFDF9"
 PRISMIUM_CORE_WHITE = "#EFFFFC"
 PRISMIUM_ACCENT = "#FF7CFC"
 
-# Dark cage frame color: distinct from PRISMIUM_OUTLINE (which is a very
-# dark teal used as a thin silhouette border on every texture in the
-# family) - this one is closer to neutral dark slate so the cage reads as
-# "metal", not "crystal edge".
+# Dark cage frame color: distinct from PRISMIUM_OUTLINE (a very dark teal
+# used as a thin silhouette border elsewhere in the family) - closer to
+# neutral dark slate so the cage reads as "metal", not "crystal edge".
 CAGE_DARK = "#26302E"
 CAGE_MID = "#3B4A47"
+CAGE_HILITE = "#57706B"
 
 
 def hexrgb(h):
@@ -50,73 +57,104 @@ def new_img():
     return Image.new("RGBA", (SIZE, SIZE), (0, 0, 0, 0))
 
 
-def make_prismium_lantern():
-    rng = random.Random(SEED + 41)
-    img = new_img()
-    px = img.load()
-    outline = hexrgb(PRISMIUM_OUTLINE)
-    shadow = hexrgb(PRISMIUM_SHADOW)
-    base = hexrgb(PRISMIUM_BASE)
-    mid = hexrgb(PRISMIUM_MID)
-    hilite = hexrgb(PRISMIUM_HILITE)
-    core_white = hexrgb(PRISMIUM_CORE_WHITE)
-    accent = hexrgb(PRISMIUM_ACCENT)
+def glow_color(d, palette):
+    outline, shadow, base, mid, hilite, core_white = palette
+    if d < 1.0:
+        return core_white
+    elif d < 2.0:
+        return hilite
+    elif d < 3.2:
+        return mid
+    elif d < 4.2:
+        return base
+    else:
+        return shadow
+
+
+def draw_cage_window(px, x0, y0, w, h, palette, accent, put_accent):
+    """Fills a w x h rectangle at (x0, y0) with a 1px dark-cage border and
+    a Prismium glow interior - the "window into the lantern's light"
+    look shared by the body-side and top/bottom-grille UV regions."""
+    outline, shadow, base, mid, hilite, core_white = palette
     cage_dark = hexrgb(CAGE_DARK)
     cage_mid = hexrgb(CAGE_MID)
-
-    # Radial-ish glow: brightest near the center, cooling toward the edges.
-    # Uses Chebyshev distance (not true Euclidean) to stay in flat concentric
-    # bands rather than a smooth AA circle, matching the rest of the mod's
-    # "flat bands, no gradients" pixel-art style.
-    cx, cy = 7.5, 7.5
-    for y in range(SIZE):
-        for x in range(SIZE):
-            d = max(abs(x - cx), abs(y - cy))
-            if d < 2:
-                c = core_white
-            elif d < 3.5:
-                c = hilite
-            elif d < 5.5:
-                c = mid
-            elif d < 7:
-                c = base
+    cx, cy = x0 + (w - 1) / 2.0, y0 + (h - 1) / 2.0
+    for yy in range(y0, y0 + h):
+        for xx in range(x0, x0 + w):
+            on_border = xx in (x0, x0 + w - 1) or yy in (y0, y0 + h - 1)
+            if on_border:
+                px[xx, yy] = (*cage_dark, 255)
             else:
-                c = shadow
-            px[x, y] = (*c, 255)
+                d = max(abs(xx - cx), abs(yy - cy))
+                px[xx, yy] = (*hexrgb(glow_color(d, palette)), 255)
+    # A lighter highlight tick on the top-left border corner so the frame
+    # doesn't read as flat black, matching the rest of the family.
+    px[x0, y0] = (*cage_mid, 255)
+    if put_accent and w >= 4 and h >= 5:
+        px[x0 + 2, y0 + 2] = (*hexrgb(accent), 255)
 
-    # Cage lattice: 3 vertical + 3 horizontal 1px bars (dark metal), leaving
-    # the glow visible in the "window" cells between them.
-    bar_positions = (3, 7, 11)
-    for i in bar_positions:
-        for t in range(SIZE):
-            px[i, t] = (*cage_dark, 255)
-            px[t, i] = (*cage_dark, 255)
-    # Lighter highlight pixel on the sunward (top-left) edge of every bar
-    # segment so the cage doesn't read as flat black lines.
-    for i in bar_positions:
-        for t in range(0, SIZE, 4):
-            if t > 0:
-                px[i, t - 1] = (*cage_mid, 255)
-                px[t - 1, i] = (*cage_mid, 255)
 
-    # Small rivet dots at every bar intersection, for a "framed" read.
-    for i in bar_positions:
-        for j in bar_positions:
-            px[i, j] = (*cage_dark, 255)
+def draw_hoop_strip(px, x0, y0, w, h):
+    """Fills a small strip with an alternating dark/mid metal pattern -
+    used for the lantern's short top-cage lip regions, which are too
+    small to show any glow and read best as plain metal."""
+    cage_dark = hexrgb(CAGE_DARK)
+    cage_mid = hexrgb(CAGE_MID)
+    for yy in range(y0, y0 + h):
+        for xx in range(x0, x0 + w):
+            c = cage_mid if (xx + yy) % 2 == 0 else cage_dark
+            px[xx, yy] = (*c, 255)
 
-    # A few sparse violet energy flecks in two of the open windows only
-    # (kept restrained - see module docstring).
-    for (x, y) in [(5, 5), (9, 9), (5, 9)]:
-        px[x, y] = (*accent, 255)
 
-    # Crisp 1px border for a clean block silhouette, matching prismium_block
-    # / prismium_core.
-    for x in range(SIZE):
-        px[x, 0] = (*outline, 255)
-        px[x, SIZE - 1] = (*outline, 255)
-    for y in range(SIZE):
-        px[0, y] = (*outline, 255)
-        px[SIZE - 1, y] = (*outline, 255)
+def draw_handle_column(px, x0, y0, w, h):
+    """Fills the vertical handle/chain strip sampled by both the standing
+    (short) and hanging (tall) model variants: a repeating link pattern
+    so it looks correct regardless of how much of the column height each
+    variant actually samples."""
+    cage_dark = hexrgb(CAGE_DARK)
+    cage_mid = hexrgb(CAGE_MID)
+    cage_hi = hexrgb(CAGE_HILITE)
+    for yy in range(y0, y0 + h):
+        link_phase = yy % 3
+        for xx in range(x0, x0 + w):
+            edge = xx in (x0, x0 + w - 1)
+            if link_phase == 0:
+                c = cage_dark
+            elif edge:
+                c = cage_mid
+            else:
+                c = cage_hi
+            px[xx, yy] = (*c, 255)
+
+
+def make_lantern_texture(outline, shadow, base, mid, hilite, core_white, accent):
+    palette = (outline, shadow, base, mid, hilite, core_white)
+    img = new_img()
+    px = img.load()
+
+    # Safe background fill first (nothing in the template UV layout should
+    # ever sample outside the regions drawn below, but this keeps stray
+    # pixels from ever showing up as transparent/magenta if a future model
+    # tweak samples slightly outside what's currently used).
+    cage_dark = hexrgb(CAGE_DARK)
+    for yy in range(SIZE):
+        for xx in range(SIZE):
+            px[xx, yy] = (*cage_dark, 255)
+
+    # Body sides: uv (0,2)-(6,9), sampled on all four vertical faces.
+    draw_cage_window(px, 0, 2, 6, 7, palette, accent, put_accent=True)
+    # Body top/bottom grille: uv (0,9)-(6,15).
+    draw_cage_window(px, 0, 9, 6, 6, palette, accent, put_accent=True)
+
+    # Top-cage lip, sides: uv (1,0)-(5,2).
+    draw_hoop_strip(px, 1, 0, 4, 2)
+    # Top-cage lip, top/bottom: uv (1,10)-(5,14).
+    draw_hoop_strip(px, 1, 10, 4, 4)
+
+    # Vertical handle/chain column: covers every UV row either model
+    # variant samples from x=11-14 (standing: y1-3 & y10-12, hanging:
+    # y1-5 & y6-12), so fill the whole y=0-13 span once.
+    draw_handle_column(px, 11, 0, 3, 13)
 
     return img
 
@@ -129,4 +167,7 @@ def save(img, rel_path):
 
 
 if __name__ == "__main__":
-    save(make_prismium_lantern(), "block/prismium_lantern.png")
+    img = make_lantern_texture(
+        PRISMIUM_OUTLINE, PRISMIUM_SHADOW, PRISMIUM_BASE, PRISMIUM_MID,
+        PRISMIUM_HILITE, PRISMIUM_CORE_WHITE, PRISMIUM_ACCENT)
+    save(img, "block/prismium_lantern.png")
