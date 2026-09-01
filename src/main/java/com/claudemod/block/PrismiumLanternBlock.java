@@ -118,12 +118,17 @@ public class PrismiumLanternBlock extends Block implements SimpleWaterloggedBloc
         return state.getValue(HANGING) ? canHangFrom(level, pos) : canStandOn(level, pos);
     }
 
-    @Override
-    public boolean canPlace(BlockPlaceContext context) {
-        LevelReader level = context.getLevel();
-        BlockPos pos = context.getClickedPos();
-        return canStandOn(level, pos) || canHangFrom(level, pos);
-    }
+    // NOTE (2026-09-01 build-fix): this class used to also override a
+    // canPlace(BlockPlaceContext) method here, modeled on the mistaken
+    // assumption that Block exposes a hook like that for "should placement
+    // be allowed at all". It does not exist on 1.20.1's Block class ("method
+    // does not override or implement a method from a supertype" - caught by
+    // CI, see PROGRESS.md problem list) and was removed. No behavior is
+    // lost: BlockItem's own placement logic already computes the state via
+    // getStateForPlacement below and then checks that state's canSurvive()
+    // before actually placing, so a position where neither canStandOn() nor
+    // canHangFrom() is true still correctly fails to place without this
+    // method existing.
 
     @Override
     public BlockState getStateForPlacement(BlockPlaceContext context) {
