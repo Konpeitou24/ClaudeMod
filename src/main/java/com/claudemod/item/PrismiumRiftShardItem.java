@@ -62,7 +62,21 @@ import javax.annotation.Nullable;
  */
 public class PrismiumRiftShardItem extends Item {
 
-    private static final int COOLDOWN_TICKS = 100;
+    // Session (PROGRESS.md TODO4(c)): raised from 100 ticks (5s) to
+    // 1200 ticks (60s). GitHub-adjacent design note (repo owner via
+    // PROGRESS.md): an unlimited-use, near-instant teleport item made
+    // building {@link com.claudemod.block.PrismiumPortalBlock}'s
+    // multi-block frame (which has no cooldown at all, works for any
+    // number of players/mobs, and needs no item in hand once built) feel
+    // pointless - there was no situation where the frame was actually
+    // better than just spamming this item. A one-minute cooldown keeps
+    // this item viable as the "quick emergency backup" role described in
+    // the class doc above (rare, occasional use), while making frequent
+    // back-and-forth traffic between the Overworld and Prism Realm
+    // meaningfully faster through a built portal instead. Purely a
+    // balance-tuning number, not a mechanics change - easy to revert or
+    // retune further based on actual playtesting feedback.
+    private static final int COOLDOWN_TICKS = 1200;
 
     public PrismiumRiftShardItem(Item.Properties properties) {
         super(properties);

@@ -123,7 +123,7 @@
     "block.claudemod.prismium_deepstone": "Prismium Deepstone",
     "item.claudemod.prismium_rift_anchor": "Prismium Rift Anchor",
     "item.claudemod.prismium_rift_anchor.usage": "Right-click to set your respawn point at your current location, in any dimension. Consumed on use.",
-    "item.claudemod.prismium_rift_anchor.details": "A one-shot variant of the Rift Shard: a single-use ticket to or from the Prism Realm, consumed on activation rather than reusable.",
+    "item.claudemod.prismium_rift_anchor.details": "A single-use respawn point setter that works in any dimension, unlike a bed or respawn anchor which are tied to a block. Unrelated to the Rift Shard - it does not teleport you anywhere.",
     "block.claudemod.prismium_chronoflame": "Prismium Chronoflame",
     "block.claudemod.prismium_chronoflame.usage": "Right-click to open its screen, then press Advance or Rewind to shift the current dimension's time by 6 hours. Opening the screen never changes anything by itself - only clicking a button does. Both buttons gray out and show a countdown while on cooldown. Does not drop itself when broken.",
     "biome.claudemod.prism_realm": "Prism Realm",

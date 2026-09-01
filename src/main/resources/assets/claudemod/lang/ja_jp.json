@@ -123,7 +123,7 @@
     "block.claudemod.prismium_deepstone": "プリズミウム深層岩",
     "item.claudemod.prismium_rift_anchor": "プリズミウム・リフトアンカー",
     "item.claudemod.prismium_rift_anchor.usage": "右クリックで現在地(どの次元でも可)にリスポーン地点を設定します。使用すると消費されます。",
-    "item.claudemod.prismium_rift_anchor.details": "リフトシャードの使い切り版。プリズムレルムへの片道の乗車券のようなもので、リフトシャードと違い使用すると消費される。",
+    "item.claudemod.prismium_rift_anchor.details": "ベッドや復活の輪とは違い、ブロックに縛られずどの次元でも使える使い切りのリスポーン地点登録アイテム。リフトシャードとは別物で、次元をまたいで転移する機能は無い。",
     "block.claudemod.prismium_chronoflame": "プリズミウム・クロノフレイム",
     "block.claudemod.prismium_chronoflame.usage": "右クリックで操作画面を開き、「進める」または「戻す」ボタンを押すと現在の次元の時刻が6時間変化します。画面を開くだけでは何も変化しません(ボタンを押した時だけ発動)。クールダウン中は両方のボタンが灰色になり、残り秒数が表示されます。破壊してもアイテムはドロップしません。",
     "biome.claudemod.prism_realm": "プリズムレルム",

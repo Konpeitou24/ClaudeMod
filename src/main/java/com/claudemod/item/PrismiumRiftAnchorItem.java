@@ -43,6 +43,25 @@ import java.util.List;
  * setRespawnPosition} so vanilla's own "Respawn point set" toast fires
  * automatically - no custom message needed.
  *
+ * <p><b>Session (PROGRESS.md TODO4) correction:</b> despite the class
+ * name's "Rift" prefix pairing it visually with {@link
+ * PrismiumRiftShardItem}, this item has never actually shared any
+ * teleport logic with that class - it only ever set a respawn point, as
+ * the code above (unchanged since session 48) shows. What *was* wrong
+ * was the item's own in-game description text
+ * ({@code item.claudemod.prismium_rift_anchor.details} in both lang
+ * files), which called this "a single-use ticket to/from the Prism
+ * Realm" - describing the Rift Shard's dimension-teleport behavior, not
+ * this item's actual respawn-point behavior. That text has been
+ * corrected this session. The crafting recipe was also changed to no
+ * longer consume a {@link PrismiumRiftShardItem}: the Shard is an
+ * unlimited, reusable teleport, so spending one to craft a limited,
+ * single-use *different-purpose* item gave a player no reason to ever
+ * do so - see {@code data/claudemod/recipes/prismium_rift_anchor.json}
+ * (now Ender Eye + Compass + 3 Prismium Shards, both new ingredients
+ * chosen for their "locate/mark a point" vanilla theming rather than any
+ * connection to the Shard).
+ *
  * <p>API note (verified this session via WebSearch against the 1.19.3
  * Forge-mapped javadoc, the closest version mirror reachable from this
  * sandbox - see PROGRESS.md section 2-9 for why {@code api.github.com}/

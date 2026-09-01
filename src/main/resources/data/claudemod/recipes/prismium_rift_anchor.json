@@ -2,8 +2,9 @@
     "type": "minecraft:crafting_shapeless",
     "category": "misc",
     "ingredients": [
-        { "item": "claudemod:prismium_rift_shard" },
         { "item": "minecraft:ender_eye" },
+        { "item": "minecraft:compass" },
+        { "item": "claudemod:prismium_shard" },
         { "item": "claudemod:prismium_shard" },
         { "item": "claudemod:prismium_shard" }
     ],
