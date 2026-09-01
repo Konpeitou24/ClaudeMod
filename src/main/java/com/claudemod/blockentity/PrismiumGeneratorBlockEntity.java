@@ -187,25 +187,49 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
     /** GitHub issue #15 comment (session 58): "発電機がインベントリを
      * 持たない" - read as a request for a real fuel slot instead of the
      * shard-right-click-only interaction {@link com.claudemod.block.PrismiumGeneratorBlock#use}
-     * has had since session 9. Single-slot handler restricted to
-     * Prismium Shards via {@link ItemStackHandler#isItemValid}, exposed
-     * through {@code ForgeCapabilities.ITEM_HANDLER} below (side is
-     * ignored, same choice already made for {@link #energyOptional} -
-     * this is a one-slot internal buffer, not a multi-face automation
-     * target with per-side rules) so hoppers/other automation can also
-     * feed it, not just direct player right-click. Deliberately additive:
-     * {@link com.claudemod.block.PrismiumGeneratorBlock#use}'s existing
-     * "right-click with a shard in hand" instant-fuel path is left
-     * completely unchanged (still calls {@link #addFuel()} directly) so
-     * this new slot cannot regress that already-working interaction; the
-     * two paths simply both feed the same {@link #burnTime} counter.
-     * Auto-consumption from this slot happens in {@link #serverTick} and
+     * has had since session 9. Handler restricted to Prismium Shards via
+     * {@link ItemStackHandler#isItemValid} (now {@link #isValidFuel}, see
+     * that method), exposed through {@code ForgeCapabilities.ITEM_HANDLER}
+     * below (side is ignored, same choice already made for
+     * {@link #energyOptional} - this is a small internal buffer, not a
+     * multi-face automation target with per-side rules) so hoppers/other
+     * automation can also feed it, not just direct player right-click.
+     * Deliberately additive: {@link com.claudemod.block.PrismiumGeneratorBlock#use}'s
+     * existing "right-click with a shard in hand" instant-fuel path is
+     * left completely unchanged (still calls {@link #addFuel()} directly)
+     * so this slot handler cannot regress that already-working
+     * interaction; both paths simply feed the same {@link #burnTime}
+     * counter. Auto-consumption happens in {@link #serverTick} and
      * mirrors vanilla furnace's "pull one fuel item only once burnTime
      * hits zero" pacing, not "drain the whole stack instantly" - see that
-     * method for why. **Untested in-game (this session has no way to
-     * launch the client), see PROGRESS.md.**
+     * method for why.
+     *
+     * <p><b>Session (TODO6 followup):</b> started as a single slot
+     * (session 58), but a lone slot combined with the menu never adding
+     * any player-inventory {@code Slot}s meant the player's own inventory
+     * wasn't even clickable while the GUI was open (see {@link
+     * com.claudemod.menu.PrismiumGeneratorMenu}'s doc), making bulk
+     * fuel-loading impractical. This session raised the slot count to
+     * {@link #FUEL_SLOT_COUNT} (a short horizontal row in the GUI, see
+     * {@link com.claudemod.menu.PrismiumGeneratorMenu#FUEL_SLOT_POS}) and
+     * added the player-inventory grid, so shift-clicking a stack of
+     * shards now has four destinations to fan out across instead of one.
+     * **Still untested in-game (this session has no way to launch the
+     * client), see PROGRESS.md.**
      */
-    private final ItemStackHandler fuelInventory = new ItemStackHandler(1) {
+    public static final int FUEL_SLOT_COUNT = 4;
+
+    /** Whether the given stack is acceptable fuel - shared by {@link
+     * #fuelInventory}'s {@code isItemValid} and {@link
+     * com.claudemod.menu.PrismiumGeneratorMenu#quickMoveStack}'s
+     * shift-click routing, same split {@link
+     * PrismiumPulverizerBlockEntity#isValidInput} already established for
+     * that machine's menu. */
+    public static boolean isValidFuel(ItemStack stack) {
+        return stack.is(ModItems.PRISMIUM_SHARD.get());
+    }
+
+    private final ItemStackHandler fuelInventory = new ItemStackHandler(FUEL_SLOT_COUNT) {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
@@ -213,7 +237,7 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
 
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
-            return stack.is(ModItems.PRISMIUM_SHARD.get());
+            return isValidFuel(stack);
         }
     };
     private final LazyOptional<IItemHandler> itemOptional = LazyOptional.of(() -> fuelInventory);
@@ -336,16 +360,29 @@ public class PrismiumGeneratorBlockEntity extends BlockEntity implements MenuPro
         // needed. Reuses addFuel() so this stacks with burn time added
         // by the existing direct-right-click path identically to how two
         // right-clicks would stack.
-        if (generator.burnTime <= 0 && !generator.fuelInventory.getStackInSlot(0).isEmpty()) {
-            // extractItem (not a direct shrink() on the returned stack)
-            // so ItemStackHandler's own onContentsChanged/validity plumbing
-            // stays in charge of the slot's internal state, same as any
-            // other caller of this capability (e.g. a hopper) would go
-            // through - this block entity gets no special direct-mutation
-            // shortcut just because it also owns the handler.
-            generator.fuelInventory.extractItem(0, 1, false);
-            generator.addFuel();
-            changed = true;
+        // Session (TODO6 followup): now scans all FUEL_SLOT_COUNT slots for
+        // the first non-empty one instead of assuming slot 0 - see
+        // FUEL_SLOT_COUNT's doc for why there are multiple slots now.
+        // Still only ever pulls one shard per empty-burnTime moment (same
+        // vanilla-furnace-style pacing as before), just no longer tied to
+        // a single fixed slot index.
+        if (generator.burnTime <= 0) {
+            for (int slot = 0; slot < FUEL_SLOT_COUNT; slot++) {
+                if (!generator.fuelInventory.getStackInSlot(slot).isEmpty()) {
+                    // extractItem (not a direct shrink() on the returned
+                    // stack) so ItemStackHandler's own
+                    // onContentsChanged/validity plumbing stays in charge
+                    // of the slot's internal state, same as any other
+                    // caller of this capability (e.g. a hopper) would go
+                    // through - this block entity gets no special
+                    // direct-mutation shortcut just because it also owns
+                    // the handler.
+                    generator.fuelInventory.extractItem(slot, 1, false);
+                    generator.addFuel();
+                    changed = true;
+                    break;
+                }
+            }
         }
 
         int generatedThisTick = 0;

@@ -9,6 +9,7 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.inventory.SimpleContainerData;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.items.ItemStackHandler;
@@ -21,14 +22,25 @@ import net.minecraftforge.items.SlotItemHandler;
  * originally followed almost verbatim: zero {@link net.minecraft.world.inventory.Slot}s,
  * a pure status display, fuel added only by right-clicking the block with
  * a Prismium Shard - see {@link com.claudemod.block.PrismiumGeneratorBlock#use}).
+ *
  * <b>Session 58 update:</b> a single real {@code Slot} (backed by
- * {@code SlotItemHandler}) was added for a fuel-input item, the mod's
- * first Slot-bearing menu - see the fuel-slot constructor below and
- * {@code PrismiumGeneratorBlockEntity#fuelInventory}'s doc for why. The
+ * {@code SlotItemHandler}) was added for a fuel-input item. The
  * right-click-to-fuel path described above still works unchanged; the
- * slot is a second, additive way to fuel the same block. Every *other*
- * GUI in the mod (Cell, Wardstone, Pylon) is still a zero-Slot pure
- * status display as originally described.
+ * slot is a second, additive way to fuel the same block.
+ *
+ * <b>Session (TODO6 followup) update:</b> the single fuel slot from
+ * session 58, combined with this menu never adding any player-inventory
+ * {@code Slot}s, made bulk fuel-loading impractical - with no player
+ * slots registered here, the player's own inventory/hotbar was not even
+ * clickable while this GUI was open (see {@code AbstractContainerScreen}:
+ * it only draws/hit-tests the {@code Slot}s a menu actually registers),
+ * so shift-click had nothing to do and manual placement was the only
+ * option. This session adds {@link PrismiumGeneratorBlockEntity#FUEL_SLOT_COUNT}
+ * (4) fuel slots plus the standard 27+9 player inventory/hotbar grid,
+ * following the exact pattern {@link PrismiumPulverizerMenu} established
+ * for the mod's first player-inventory-bearing menu (session 67) -
+ * see that class's doc for the shift-click index-range reasoning this
+ * class's {@link #quickMoveStack} now mirrors.
  *
  * The interesting difference from Cell, and the reason Generator was
  * picked as the second GUI target (see PROGRESS.md session 23 handoff,
@@ -44,7 +56,7 @@ import net.minecraftforge.items.SlotItemHandler;
  *
  * Unlike Cell, no {@code ENERGY_SYNC_DIVISOR} is needed for the energy
  * values here: {@link PrismiumGeneratorBlockEntity#CAPACITY} is only
- * 8,000, comfortably inside {@code Short.MAX_VALUE} (32,767) on its own.
+ * 16,000, comfortably inside {@code Short.MAX_VALUE} (32,767) on its own.
  * Burn time, however, is *not* capped by anything else in the block
  * entity (see {@link PrismiumGeneratorBlockEntity#BURN_TIME_SYNC_CAP}'s
  * doc for why it still needed its own short-safety clamp) - a smaller,
@@ -53,6 +65,26 @@ import net.minecraftforge.items.SlotItemHandler;
  * this menu.
  */
 public class PrismiumGeneratorMenu extends AbstractContainerMenu {
+
+    private static final int FUEL_SLOT_COUNT = PrismiumGeneratorBlockEntity.FUEL_SLOT_COUNT;
+    private static final int INVENTORY_START = FUEL_SLOT_COUNT; // 4
+    private static final int INVENTORY_END = INVENTORY_START + 27; // exclusive, 31
+    private static final int HOTBAR_END = INVENTORY_END + 9; // exclusive, 40
+
+    // Fuel slot socket coordinates: a single horizontal row, centered,
+    // sitting in its own band between the FE-amount text and the player
+    // inventory grid (see PrismiumGeneratorScreen's matching sockets
+    // baked into gen_prismium_generator_gui.py at these same
+    // coordinates). Deliberately its own row rather than tucked next to
+    // the flame gauge/status text - that top area's status/burn/rate
+    // text lines can run wide enough (see PrismiumGeneratorScreen's
+    // status/burn/rate text at x=30) to have risked overlapping a
+    // top-right slot cluster; a dedicated row below the energy bar has
+    // no such risk and reads more clearly as "this is where fuel goes"
+    // besides.
+    private static final int[][] FUEL_SLOT_POS = {
+            {52, 102}, {70, 102}, {88, 102}, {106, 102},
+    };
 
     private final ContainerData data;
     private final ContainerLevelAccess access;
@@ -67,17 +99,18 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
     /** Server-side constructor, used directly by
      * {@link PrismiumGeneratorBlockEntity#createMenu}. */
     public PrismiumGeneratorMenu(int windowId, Inventory inv, ContainerData data, ContainerLevelAccess access) {
-        this(windowId, inv, data, access, new ItemStackHandler(1));
+        this(windowId, inv, data, access, new ItemStackHandler(FUEL_SLOT_COUNT));
     }
 
     /** Full server-side constructor including the real fuel-slot handler
-     * (session 58, see {@code PrismiumGeneratorBlockEntity#fuelInventory}'s
-     * doc). {@link PrismiumGeneratorBlockEntity#createMenu} calls this
-     * overload directly with its actual handler; the shorter overload
-     * above exists only so callers that don't care about the fuel slot
-     * (there are none left in this codebase, but keeping the narrower
-     * signature avoids a needless call-site update) still compile against
-     * a harmless throwaway handler. */
+     * (session 58, expanded to {@link PrismiumGeneratorBlockEntity#FUEL_SLOT_COUNT}
+     * slots plus a player inventory grid in the TODO6 followup session -
+     * see class doc). {@link PrismiumGeneratorBlockEntity#createMenu}
+     * calls this overload directly with its actual handler; the shorter
+     * overload above exists only so callers that don't care about the
+     * fuel slots (there are none left in this codebase, but keeping the
+     * narrower signature avoids a needless call-site update) still
+     * compile against a harmless throwaway handler. */
     public PrismiumGeneratorMenu(int windowId, Inventory inv, ContainerData data, ContainerLevelAccess access,
                                   ItemStackHandler fuelInventory) {
         super(ModMenuTypes.PRISMIUM_GENERATOR_MENU.get(), windowId);
@@ -85,18 +118,25 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
         this.data = data;
         this.access = access;
         addDataSlots(data);
-        // Session 58: top-right corner of the 176x110 panel (see
-        // PrismiumGeneratorScreen - clear of the flame gauge, energy bar,
-        // and status/burn-time labels, matching the recessed slot artwork
-        // baked into gen_prismium_generator_gui.py at the same
-        // coordinates). This is the mod's first ever Slot-bearing menu -
-        // every earlier GUI (Cell, Wardstone, Pylon, this one until now)
-        // was a pure ContainerData status display with zero Slots, see
-        // this class's own doc above (now partially stale - left in place
-        // rather than rewritten, since the "zero slots, pure status
-        // display" framing is still accurate for every *other* GUI in the
-        // mod and is useful context for why this is a notable first).
-        this.addSlot(new SlotItemHandler(fuelInventory, 0, 152, 8));
+
+        for (int i = 0; i < FUEL_SLOT_COUNT; i++) {
+            this.addSlot(new SlotItemHandler(fuelInventory, i, FUEL_SLOT_POS[i][0], FUEL_SLOT_POS[i][1]));
+        }
+
+        // Player main inventory (3x9) and hotbar - standard vanilla
+        // furnace-family geometry, matching PrismiumGeneratorScreen's
+        // taller (TODO6 followup) panel. See PrismiumPulverizerMenu's doc
+        // for why this mod treats adding these as more than cosmetic (the
+        // SWAP hotbar-number-key case in AbstractContainerMenu#doClick
+        // indexes into the last 9 slots assuming a hotbar is present).
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 9; col++) {
+                this.addSlot(new Slot(inv, col + row * 9 + 9, 8 + col * 18, 128 + row * 18));
+            }
+        }
+        for (int col = 0; col < 9; col++) {
+            this.addSlot(new Slot(inv, col, 8 + col * 18, 190));
+        }
     }
 
     /** Client-side {@link ContainerData} for the GUI-open packet's menu
@@ -128,8 +168,8 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
      * independent {@code int[]}-backed instance whose {@code set()}
      * actually stores the value {@code get()} later returns - which is
      * exactly what makes the normal per-tick sync packets work at all.
-     * (Note: {@code resolveInventory} below does *not* have this bug and
-     * is intentionally left alone - {@code Slot}/{@code SlotItemHandler}
+     * (Note: {@code resolveFuelInventory} below does *not* have this bug
+     * and is intentionally left alone - {@code Slot}/{@code SlotItemHandler}
      * sync writes item stacks with a real {@code set(ItemStack)}, not a
      * no-op, so reusing the client's mirrored block entity's inventory
      * there is harmless and even lets slot contents already known to the
@@ -147,7 +187,7 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
         if (inv.player.level().getBlockEntity(pos) instanceof PrismiumGeneratorBlockEntity generator) {
             return generator.getFuelInventory();
         }
-        return new ItemStackHandler(1);
+        return new ItemStackHandler(FUEL_SLOT_COUNT);
     }
 
     public int getEnergy() {
@@ -219,9 +259,58 @@ public class PrismiumGeneratorMenu extends AbstractContainerMenu {
         return getBurnTime() > 0 && getEnergy() < getMaxEnergy();
     }
 
+    /**
+     * Standard three-band shift-click routing (fuel slots <-> player
+     * inventory <-> hotbar), following {@link PrismiumPulverizerMenu#quickMoveStack}'s
+     * shape (itself modeled on vanilla {@code FurnaceMenu#quickMoveStack})
+     * almost exactly, adapted for a *range* of interchangeable fuel slots
+     * instead of one fixed input slot: shift-clicking a Prismium Shard in
+     * the player's own inventory routes it into the first fuel slot with
+     * room ({@link #moveItemStackTo} already searches the whole
+     * [0, FUEL_SLOT_COUNT) range for one), and shift-clicking any fuel
+     * slot sends its contents back to the player's inventory/hotbar. The
+     * mod's first working implementation of this method for this menu -
+     * every earlier version just returned {@code ItemStack.EMPTY} (see
+     * class doc history above).
+     */
     @Override
     public ItemStack quickMoveStack(Player player, int index) {
-        return ItemStack.EMPTY;
+        ItemStack newStack = ItemStack.EMPTY;
+        Slot slot = this.slots.get(index);
+        if (slot != null && slot.hasItem()) {
+            ItemStack stackInSlot = slot.getItem();
+            newStack = stackInSlot.copy();
+
+            if (index < INVENTORY_START) {
+                if (!this.moveItemStackTo(stackInSlot, INVENTORY_START, HOTBAR_END, true)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (PrismiumGeneratorBlockEntity.isValidFuel(stackInSlot)) {
+                if (!this.moveItemStackTo(stackInSlot, 0, INVENTORY_START, false)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (index < INVENTORY_END) {
+                if (!this.moveItemStackTo(stackInSlot, INVENTORY_END, HOTBAR_END, false)) {
+                    return ItemStack.EMPTY;
+                }
+            } else if (index < HOTBAR_END) {
+                if (!this.moveItemStackTo(stackInSlot, INVENTORY_START, INVENTORY_END, false)) {
+                    return ItemStack.EMPTY;
+                }
+            }
+
+            if (stackInSlot.isEmpty()) {
+                slot.set(ItemStack.EMPTY);
+            } else {
+                slot.setChanged();
+            }
+
+            if (stackInSlot.getCount() == newStack.getCount()) {
+                return ItemStack.EMPTY;
+            }
+            slot.onTake(player, stackInSlot);
+        }
+        return newStack;
     }
 
     @Override

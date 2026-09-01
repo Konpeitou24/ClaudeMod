@@ -14,15 +14,21 @@ import net.minecraft.world.entity.player.Inventory;
  * Generator was picked as the mod's second GUI target.
  *
  * Structurally the same approach as
- * {@link PrismiumCellScreen} (compact panel, no player-inventory slot
- * grid, proportional fills drawn in code rather than baked into the
- * texture as gauge sprites) but taller (176x110 vs Cell's 176x90) to fit
- * a second, vertically-oriented gauge above the horizontal energy bar:
- * a "flame" column that fills bottom-to-top, echoing the warm ember
- * palette already established by the block's own lit-state texture
+ * {@link PrismiumCellScreen} (proportional fills drawn in code rather
+ * than baked into the texture as gauge sprites) with a second,
+ * vertically-oriented gauge above the horizontal energy bar: a "flame"
+ * column that fills bottom-to-top, echoing the warm ember palette
+ * already established by the block's own lit-state texture
  * (scripts/textures/gen_prismium_generator.py's EMBER_LIT_* colors) so
  * the GUI reads as belonging to the same block rather than introducing a
  * third unrelated color language.
+ *
+ * <p>Session (TODO6 followup): grown to 176x214 (was 176x110) to add the
+ * standard player-inventory + hotbar grid below the gauges, following
+ * {@link PrismiumPulverizerScreen}'s established pattern for this mod's
+ * first player-inventory-bearing screen (session 67) - see
+ * {@link PrismiumGeneratorMenu}'s doc for why a lone fuel slot with no
+ * visible/clickable player inventory made bulk fuel-loading impractical.
  */
 public class PrismiumGeneratorScreen extends AbstractContainerScreen<PrismiumGeneratorMenu> {
 
@@ -68,7 +74,14 @@ public class PrismiumGeneratorScreen extends AbstractContainerScreen<PrismiumGen
     public PrismiumGeneratorScreen(PrismiumGeneratorMenu menu, Inventory playerInventory, Component title) {
         super(menu, playerInventory, title);
         this.imageWidth = 176;
-        this.imageHeight = 110;
+        // Session (TODO6 followup): grown from 110 to 186 to make room for
+        // the player inventory + hotbar grid PrismiumGeneratorMenu now
+        // registers below the machine's own gauges (was a pure
+        // status/gauge panel with no player-inventory slots at all before
+        // this session - see that class's doc). Top gauge/status layout
+        // (flame gauge, energy bar, labels) is otherwise unchanged from
+        // session 24/58.
+        this.imageHeight = 214;
     }
 
     @Override
@@ -149,10 +162,19 @@ public class PrismiumGeneratorScreen extends AbstractContainerScreen<PrismiumGen
                 menu.getLastGenerated(), menu.getLastPushed());
         guiGraphics.drawString(font, rateText, FLAME_X + FLAME_WIDTH + 8, FLAME_Y + FLAME_HEIGHT / 2 - 4 + 10, 0x707070, false);
 
+        // Session (TODO6 followup): moved from a bottom-anchored
+        // (imageHeight - 12) position to a fixed row just below the
+        // separator line, since imageHeight now includes ~76px of player
+        // inventory grid below this text that the old bottom-relative
+        // formula would have collided with.
         Component energyText = Component.translatable("gui.claudemod.fe_amount",
                 menu.getEnergy(), menu.getMaxEnergy());
         int textWidth = font.width(energyText);
-        guiGraphics.drawString(font, energyText, (imageWidth - textWidth) / 2, imageHeight - 12, 0xFFFFFF, false);
+        guiGraphics.drawString(font, energyText, (imageWidth - textWidth) / 2, 88, 0xFFFFFF, false);
+        // Deliberately no "Inventory" label for the player grid below -
+        // see PrismiumPulverizerScreen's identical comment; this mod's
+        // other screens never show one either, and the grid's position is
+        // self-explanatory.
     }
 
     @Override

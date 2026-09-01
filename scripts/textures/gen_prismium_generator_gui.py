@@ -8,9 +8,11 @@ approach established by scripts/textures/gen_prismium_cell_gui.py
 (session 23): a full 256x256 canvas (required by AbstractContainerScreen's
 7-int `blit` overload, which always normalizes against an assumed
 256x256 source - see that script's docstring for the full explanation),
-artwork only in the top-left imageWidth x imageHeight corner (176x110
-here - taller than Cell's 176x90 to fit a second gauge, see
-PrismiumGeneratorScreen's class doc), everything else left transparent.
+artwork only in the top-left imageWidth x imageHeight corner (176x186
+here - see PrismiumGeneratorScreen's class doc: originally 176x110,
+grown in a later session to make room for a player-inventory grid, the
+same reason gen_prismium_pulverizer_gui.py's panel is taller than a
+pure-gauge screen's), everything else left transparent.
 
 Reuses the same casing palette as Prismium Generator's own block texture
 (scripts/textures/gen_prismium_generator.py: CASING_DARK/CASING_MID +
@@ -29,6 +31,10 @@ frame, not here - same split responsibility as Cell's energy bar):
 Session 58 addition: a recessed 18x18 fuel-slot socket at (152, 8),
 the panel's first-ever item slot (see PrismiumGeneratorMenu's matching
 SlotItemHandler position and PrismiumGeneratorBlockEntity.fuelInventory).
+A later session (TODO6 followup) grew this to a 2x2 block of four such
+sockets and added the player-inventory grid below (not baked into this
+texture - see gen_prismium_pulverizer_gui.py's docstring for why player
+inventory tiles are never baked in across this mod's GUI textures).
 
 Deterministic, no randomness. Run from repo root:
 python3 scripts/textures/gen_prismium_generator_gui.py
@@ -42,7 +48,7 @@ OUT_PATH = REPO_ROOT / "src/main/resources/assets/claudemod/textures/gui/contain
 
 CANVAS_SIZE = 256
 PANEL_W = 176
-PANEL_H = 110
+PANEL_H = 214
 
 PRISMIUM_OUTLINE = "#024D4B"
 CASING_DARK = "#4A5A58"
@@ -112,15 +118,23 @@ def build_panel():
     # already establishes (see the two draw.line calls right after the
     # outline loop above), just inverted since a *recessed* slot is dark
     # on the side facing the light and bright on the side away from it.
-    slot_x, slot_y, slot_size = 152, 8, 18
-    draw.rectangle([slot_x, slot_y, slot_x + slot_size - 1, slot_y + slot_size - 1],
-                    fill=hexrgb(CASING_DARK) + (255,))
-    draw.line([(slot_x, slot_y), (slot_x + slot_size - 1, slot_y)], fill=hexrgb(TRACK_DARK) + (255,))
-    draw.line([(slot_x, slot_y), (slot_x, slot_y + slot_size - 1)], fill=hexrgb(TRACK_DARK) + (255,))
-    draw.line([(slot_x + slot_size - 1, slot_y), (slot_x + slot_size - 1, slot_y + slot_size - 1)],
-               fill=hexrgb(CASING_HILITE) + (255,))
-    draw.line([(slot_x, slot_y + slot_size - 1), (slot_x + slot_size - 1, slot_y + slot_size - 1)],
-               fill=hexrgb(CASING_HILITE) + (255,))
+    # Session (TODO6 followup): grown from a single slot at (152, 8) to a
+    # centered horizontal row of four (matches
+    # PrismiumGeneratorBlockEntity.FUEL_SLOT_COUNT and
+    # PrismiumGeneratorMenu.FUEL_SLOT_POS exactly) so bulk fuel-loading has
+    # somewhere to land - see that class's doc for why this is its own row
+    # below the energy bar rather than tucked next to the flame gauge/
+    # status text.
+    for slot_x, slot_y in [(52, 102), (70, 102), (88, 102), (106, 102)]:
+        slot_size = 18
+        draw.rectangle([slot_x, slot_y, slot_x + slot_size - 1, slot_y + slot_size - 1],
+                        fill=hexrgb(CASING_DARK) + (255,))
+        draw.line([(slot_x, slot_y), (slot_x + slot_size - 1, slot_y)], fill=hexrgb(TRACK_DARK) + (255,))
+        draw.line([(slot_x, slot_y), (slot_x, slot_y + slot_size - 1)], fill=hexrgb(TRACK_DARK) + (255,))
+        draw.line([(slot_x + slot_size - 1, slot_y), (slot_x + slot_size - 1, slot_y + slot_size - 1)],
+                   fill=hexrgb(CASING_HILITE) + (255,))
+        draw.line([(slot_x, slot_y + slot_size - 1), (slot_x + slot_size - 1, slot_y + slot_size - 1)],
+                   fill=hexrgb(CASING_HILITE) + (255,))
 
     return img
 
