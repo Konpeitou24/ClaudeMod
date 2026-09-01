@@ -1,0 +1,8 @@
+{
+    "feature": "claudemod:prismium_seafloor",
+    "placement": [
+        {
+            "type": "minecraft:biome"
+        }
+    ]
+}
