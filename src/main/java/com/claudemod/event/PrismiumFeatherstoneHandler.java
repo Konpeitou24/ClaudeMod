@@ -3,10 +3,12 @@ package com.claudemod.event;
 import com.claudemod.ClaudeMod;
 import com.claudemod.registry.ModItems;
 import com.claudemod.compat.curios.CuriosCompat;
+import com.claudemod.network.ClaudeModNetwork;
+import com.claudemod.network.FeatherstoneReductionMessage;
 import net.minecraftforge.fml.ModList;
 import net.minecraft.core.particles.ParticleTypes;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.Mth;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -17,6 +19,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.event.entity.living.LivingFallEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.network.PacketDistributor;
 
 /**
  * Session 31: server-side {@link LivingFallEvent} listener implementing
@@ -156,31 +159,45 @@ public class PrismiumFeatherstoneHandler {
      * a particle/sound cue that *something* happened, but per the report
      * that still leaves the actual magnitude invisible - a player cannot
      * tell a 75% reduction from, say, a 10% one just from a puff of cloud
-     * particles. This adds a one-line action-bar message (the same
-     * {@code displayClientMessage(component, true)} pattern already used
-     * elsewhere in this mod, e.g. {@code PrismiumGeneratorBlock#use}'s
-     * fuel message) stating the fixed reduction percentage in plain
-     * terms. Deliberately a static percentage rather than a computed
+     * particles.
+     *
+     * <p>Session update (this session, same issue's still-open request:
+     * "HP表示に何か工夫を入れた上" - add some improvement to the HP
+     * display): this previously sent a plain vanilla action-bar line via
+     * {@code Player#displayClientMessage(component, true)}. That satisfied
+     * "show the number" but not "improve the HP display" specifically, and
+     * risked reading as the same kind of generic chat/status notification
+     * the reporter's very first comment on this issue already said was
+     * unwelcome. This now instead sends {@link FeatherstoneReductionMessage}
+     * to the triggering player over {@link ClaudeModNetwork#CHANNEL} - see
+     * {@link com.claudemod.client.overlay.FeatherstoneReductionOverlay} for
+     * the small HUD panel this drives, anchored directly next to the
+     * player's own health/armor stack instead of the shared action-bar
+     * slot. Deliberately a static percentage rather than a computed
      * before/after damage number: {@link net.minecraft.world.entity.LivingEntity#causeFallDamage}
      * derives the actual health delta from this event's multiplier
      * *after* this listener returns, taking armor/enchantments/other mods'
      * own {@code LivingFallEvent} listeners into account, so this
      * handler cannot know the final applied damage at the point it runs -
-     * showing the guaranteed, always-true "75%" figure is honest, whereas
-     * guessing a final HP number here could easily be wrong. **Unverified
-     * in-game** (no Minecraft client in this sandbox, per PROGRESS.md's
-     * standing note): whether an action-bar message reads clearly at the
-     * exact moment of landing (players are typically looking at the
-     * ground/GUI, not the action bar, right after a fall) is a real
-     * design question a future session may want to revisit, e.g. by
-     * moving this to a short-lived on-screen HUD element instead if
-     * player feedback says the action bar gets missed.
+     * sending the guaranteed, always-true "75%" figure is honest, whereas
+     * guessing a final HP number here could easily be wrong.
+     *
+     * <p>Only sent when {@code player} is actually a {@link ServerPlayer}
+     * (true for every real client connection; a defensive guard against
+     * fake/bot players some other mod might feed through the same {@link
+     * LivingFallEvent} path, which cannot receive packets at all) - the
+     * fall-damage reduction itself and {@link #playFeedback}'s
+     * particle/sound cue still apply unconditionally either way, so a fake
+     * player is never denied the actual gameplay effect, only this
+     * client-only visual.
      */
     private static void announceReduction(Player player) {
+        if (!(player instanceof ServerPlayer serverPlayer)) {
+            return;
+        }
         int reductionPercent = Math.round((1.0F - DAMAGE_MULTIPLIER) * 100.0F);
-        player.displayClientMessage(
-                Component.translatable("message.claudemod.prismium_featherstone.reduced", reductionPercent),
-                true);
+        ClaudeModNetwork.CHANNEL.send(PacketDistributor.PLAYER.with(() -> serverPlayer),
+                new FeatherstoneReductionMessage(reductionPercent));
     }
 
     private static boolean hasFeatherstone(Player player) {
