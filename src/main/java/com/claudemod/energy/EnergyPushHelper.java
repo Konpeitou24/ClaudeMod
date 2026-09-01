@@ -5,7 +5,6 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.util.RandomSource;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraftforge.common.capabilities.ForgeCapabilities;
@@ -243,8 +242,31 @@ public final class EnergyPushHelper {
      * along a network get a particle spawned per call - a long run of
      * cable does not need a particle at every single block to read as
      * "energy is flowing here", and capping this keeps the packet count
-     * bounded regardless of network size. */
+     * bounded regardless of network size.
+     *
+     * @deprecated no longer used now that {@link #visualizeFlow} animates a
+     * single traveling pulse (bounded by {@link #PULSE_TRAIL_LENGTH}
+     * instead) rather than sampling random positions; kept only so any
+     * external reference/tuning note pointing at this constant's old value
+     * doesn't silently disappear. */
+    @Deprecated
     private static final int MAX_FLOW_PARTICLE_POSITIONS = 6;
+
+    /** How many game ticks the pulse head spends at each cable-path index
+     * before advancing to the next one - i.e. its speed. Smaller = faster
+     * travel. Must divide evenly into how often {@link #visualizeFlow} is
+     * actually invoked ({@link #FLOW_PARTICLE_INTERVAL_TICKS}, gated by the
+     * caller) to avoid the head appearing to skip steps unevenly; 5 means
+     * the head advances 2 path-positions between each throttled call at
+     * the default 10-tick interval. */
+    private static final int PULSE_STEP_TICKS = 5;
+
+    /** How many trailing positions behind the pulse head still show a
+     * (dimmer) particle, giving the pulse a visible length/tail instead of
+     * a single point. Also used as the head's "wind-up" distance before
+     * the path start, so the pulse appears to emerge from the source
+     * rather than popping in already mid-network. */
+    private static final int PULSE_TRAIL_LENGTH = 3;
 
     /**
      * Purely cosmetic companion to {@link #pushThroughNetwork}: walks the
@@ -280,11 +302,32 @@ public final class EnergyPushHelper {
      * {@code PrismiumVitastoneHandler}/{@code PrismiumGuardianCharmHandler}
      * elsewhere in this mod).
      *
+     * <p><b>2026-09-01 update (PROGRESS.md TODO/section-5 item: "ケーブルの
+     * エネルギーフロー視覚化が不十分"):</b> the original implementation
+     * spawned a handful of {@link ParticleTypes#ELECTRIC_SPARK} bursts at
+     * random positions sampled from the cable run every call, which reads
+     * as "energy is present somewhere in this network" but not as flow -
+     * nothing conveyed direction or speed. This method now instead
+     * animates a single traveling pulse: the ordered {@code cablePath}
+     * list already reflects BFS hop-distance from {@code startPos} (the
+     * source), so it doubles as a "how far along the network" ordering.
+     * A pulse head position is derived deterministically from
+     * {@link Level#getGameTime()} (so every client/observer sees the same
+     * animation without any extra networking) and walks that list from
+     * index -{@link #PULSE_TRAIL_LENGTH} (just before the first cable, i.e.
+     * emerging from the source) up to {@code cablePath.size() - 1} (the far
+     * end of the network) before looping back to start a new pulse. A
+     * bright {@link ParticleTypes#ELECTRIC_SPARK} marks the head and a
+     * short trail of dimmer {@link ParticleTypes#GLOW} particles follows
+     * behind it, so a player watching a cable run sees a spark visibly
+     * travel from the generator outward rather than a static sprinkle.
+     *
      * <p><b>Not yet verified in-game</b> (no local build available in this
-     * sandbox - see PROGRESS.md): the particle type
-     * ({@link ParticleTypes#ELECTRIC_SPARK}), spawn density, and whether
-     * ten-tick throttling still reads as "continuous flow" rather than
-     * "flickering" are all first-guess values.
+     * sandbox - see PROGRESS.md): the particle types, pulse speed
+     * ({@link #PULSE_STEP_TICKS}), and whether calling this once every
+     * {@link #FLOW_PARTICLE_INTERVAL_TICKS} ticks still reads as smooth
+     * continuous travel rather than a series of visible jumps are all
+     * first-guess values.
      */
     /** Convenience overload using the same hop cap as {@link #pushThroughNetwork(Level, BlockPos, PrismiumEnergyStorage, int)}'s default, so callers don't have to duplicate that magic number. */
     public static void visualizeFlow(Level level, BlockPos startPos) {
@@ -323,13 +366,35 @@ public final class EnergyPushHelper {
             return;
         }
 
-        RandomSource random = level.getRandom();
-        int sampleCount = Math.min(MAX_FLOW_PARTICLE_POSITIONS, cablePath.size());
-        for (int i = 0; i < sampleCount; i++) {
-            BlockPos p = cablePath.get(random.nextInt(cablePath.size()));
-            serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK,
-                    p.getX() + 0.5, p.getY() + 0.5, p.getZ() + 0.5,
-                    1, 0.2, 0.2, 0.2, 0.01);
+        // Deterministic traveling pulse: head index ranges from
+        // -PULSE_TRAIL_LENGTH (just before the source end of the path, so
+        // the pulse visibly "emerges" from the generator) to
+        // cablePath.size() - 1 (the far end), then wraps to start a new
+        // pulse. Using getGameTime() directly (rather than a stored/random
+        // offset) keeps this fully server-authoritative and consistent
+        // across repeated calls with no extra state to track.
+        int totalSteps = cablePath.size() + PULSE_TRAIL_LENGTH;
+        long step = level.getGameTime() / PULSE_STEP_TICKS;
+        int headIndex = (int) (step % totalSteps) - PULSE_TRAIL_LENGTH;
+
+        for (int offset = 0; offset <= PULSE_TRAIL_LENGTH; offset++) {
+            int idx = headIndex - offset;
+            if (idx < 0 || idx >= cablePath.size()) {
+                continue;
+            }
+            BlockPos p = cablePath.get(idx);
+            double px = p.getX() + 0.5;
+            double py = p.getY() + 0.5;
+            double pz = p.getZ() + 0.5;
+            if (offset == 0) {
+                // Bright head of the pulse.
+                serverLevel.sendParticles(ParticleTypes.ELECTRIC_SPARK,
+                        px, py, pz, 2, 0.15, 0.15, 0.15, 0.01);
+            } else {
+                // Dimmer trailing glow, sparser the further back it is.
+                serverLevel.sendParticles(ParticleTypes.GLOW,
+                        px, py, pz, 1, 0.1, 0.1, 0.1, 0.0);
+            }
         }
     }
 }
