@@ -1,27 +1,27 @@
 # HANDOFF.md (直前セッションからの申し送り、直近1回分のみ)
 
-## 今回やったこと(2026-09-01、定期実行セッション、v0.37.0リリース)
+## 今回やったこと(2026-09-01、定期実行セッション#2、v0.38.0リリース)
 
-前回(v0.36.0)のCIビルドはstatus=ok確認済み。GitHub Issueを`is:issue is:open`で全件チェック(#15/#17/#21の3件、新規issue無し)。PROGRESS.mdのTODOのうち実機無しでも進められる3件(TODO8: ケーブル視覚化、TODO9: Prism Realm海底の高低差、旧TODO10: ランタン形状刷新)に対応した。
+前回セッション(v0.37.0ビルド修正)のCIビルドはstatus=ok確認済みだった状態から開始。GitHub Issueを`is:issue`で全件チェックしたところ、**Issue #17(羽石)がこんぺいとう氏により本日CLOSED(stateReason: COMPLETED)になっていることを発見**(v0.36.0のHUDパネル方式で最終的に納得いただけた模様)。#22〜#25も過去に解決・クローズ済みと確認。残るOPENは#15(電力バグ)・#21(JEI互換性)の2件のみで、新規コメント・新規issueは無し。
 
-**【重要・反省点】初回push(v0.37.0、commit c108ff9)は実際にはビルド失敗していたにもかかわらず、push成功だけを確認して「リリース完了」と誤って報告してしまった。** こんぺいとう氏から「ビルド失敗したままリリースしてない?」とご指摘をいただき、`https://github.com/Konpeitou24/ClaudeMod/actions/workflows/build-and-notify.yml`をfetchして実際のステータスを確認したところ、直近3回のpush(#289〜#291)・Releaseワークフロー(#45)がすべて失敗していたことが判明した。
+PROGRESS.mdのTODOのうち、実機無しでも進められて他の項目より優先度が高かったTODO9「Prism Realmにまず陸地(平原などの基本地形)を追加する」に対応した。
 
-- **原因**: `PrismiumLanternBlock.java`に実装した`@Override public boolean canPlace(BlockPlaceContext context)`が、1.20.1の`Block`クラスに実在しないメソッドだった(`method does not override or implement a method from a supertype`)。「vanillaのBlockItemがこういうチェックをしているはず」という推測だけで書いてしまい、実在確認を怠ったミス。
-- **修正**: 該当メソッドを削除(commit b6e9464)。機能は失われない - `BlockItem`の設置処理は元々`getStateForPlacement()`で計算した状態の`canSurvive()`を設置直前にチェックするため、支持の無い位置では元々これ無しでも正しく設置が失敗する。
-- **修正後の確認**: build-and-notify(#292)・release(#46)とも`Status Success`を確認済み。`builds/last_datapack_validation_summary.txt`もcommit b6e9464でstatus=ok。
-- **リリースの手直し**: v0.37.0タグは最初壊れたコミット(c108ff9)を指したまま作成してしまっていたため、一度削除して修正コミット(b6e9464)に張り直し、再push。Release run #46がStatus Successとなり、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.37.0`で実際にjar付きのリリースとして公開されていることを確認済み(修正前は`Assets 2`のみ=タグの自動アーカイブのみでリリース本体は存在しなかった)。
+- **実装**: `PrismiumLandFeature`を新規実装(`PrismiumSeafloorFeature`/`PrismiumStoneTransitionFeature`と同じ、flat generator向けraw_generation事後上書き手法)。低周波FractalNoise(frequency=0.006)で列ごとに陸地/海を判定(閾値0.28)、陸地は海面(y=63)より最大6ブロック高く、細かい起伏ノイズも追加。中身は表層3ブロックがprismium_soil、それ以外prismium_stone(バニラ平原の石+薄い土層を模倣)。y=41以上のみ操作するため、underground_oresの高度上限(y=40)・石/深層岩境界(y=0付近)とは干渉しない設計。
+- **ビルド確認**: build-and-notify #294(コード実装push、commit a01b3b0)・#295(バージョンv0.38.0+リリースノートpush、commit b29f564)ともActionsページで実際にStatus確認(In progressの間は待機してから再確認)、`builds/last_datapack_validation_summary.txt`のstatus=ok・commitハッシュ一致も確認。`builds/last_ore_verification.txt`でプリズミウム鉱石も引き続き検出されており、陸地機能がore配置と干渉していないことも確認できた。
+- **リリース**: v0.38.0としてタグ付け・push。Release #47もActionsページでStatus確認(2m34s、In progressではない)、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.38.0`で本文・Assets 3(jar付き)を実際に確認済み。
 
-対応内容自体(TODO8/9/旧10)の詳細はPROGRESS.mdの該当TODO/問題点項目を参照。
+今回は「pushしたら必ずActionsの実際の完了・成功を待ってから次に進む」を徹底し、push直後の早合点は無かった(GameTestサーバーの起動を含む検証ステップは3〜5分弱かかるため、150秒待って一度In progressだった場合はもう一度待つ、を繰り返した)。
 
 ## 次回最優先でやるべきこと
 
-- **今後は必ず、push/タグpush直後にActionsの実際のステータス(成功/失敗)を確認してから「完了」を報告すること。** `api.github.com`が使えない場合は`https://github.com/<owner>/<repo>/actions/workflows/<name>.yml`(必要なら`?nocache=1`等を付けてこのセッションのweb_fetchキャッシュを回避)を見て、対象コミット行の`aria-label="failed: ..."`/`"success: ..."`を確認する。失敗時は`.../actions/runs/<id>/job/<id>`の`## Annotations`セクションでエラー内容を直接読める(非ログインでも見える)。
-- 今回のv0.37.0の実機確認結果を(こんぺいとう氏から得られたら)反映する: ランタンの吊り下げ/据え置き設置判定・当たり判定・見た目、ケーブルのパルスアニメーション、Prism Realm海底の起伏。
-- PROGRESS.mdの「2. TODO」の残り、特にTODO7(FE移動アルゴリズムの最重要バグ)は再現条件の追加情報が無いと自動セッションだけでは前進しづらい。
-- 今回のようなAPIの実在確認漏れが他にも無いか、余裕があれば過去に追加した`@Override`メソッド群を`mappings.dev`で棚卸しすることも検討価値あり(今回は`PrismiumLanternBlock`のみ問題だったが、他クラスは既存の動いているパターンをコピーしているため恐らく安全)。
+- **v0.38.0で追加した陸地(PrismiumLandFeature)の実機確認・チューニング。** 陸地/海の比率(閾値LAND_THRESHOLD=0.28)、地形の見た目(大陸っぽいか島っぽいか)、起伏の自然さ(MAX_LAND_HEIGHT=6、DETAIL_AMPLITUDE=1.5)、v0.37.0の海底起伏との境目の見え方。もし陸地が少なすぎる/多すぎると感じたら、`PrismiumLandFeature.java`の該当定数を調整して再pushする。
+- 陸地の実機確認が取れたら、PROGRESS.md TODO9(各バイオーム固有ボスダンジョン、山岳バイオームから着手)に着手できる。地形の見た目がまだ固まっていない状態でダンジョン配置ロジックを組むと手戻りのリスクがあるため、確認を待つのが望ましい。
+- TODO1〜7(コンペンディウム・JEI・リフト・FEバランス・発電機燃料・FE移動アルゴリズムバグ・GUI固まり)は引き続き実機確認待ちのまま。特にTODO6(FE移動アルゴリズムの最重要バグ)はこんぺいとう氏本人からの再現条件の追加情報が無いと自動セッションだけでは前進しづらい。
+- Issue #15・#21は引き続きOPEN、対応済みだが実機未確認(TODO4・TODO12参照)。
 
 ## 注意点
 
-- v0.37.0は最終的に修正コミット(b6e9464)を指すタグとして正しく再公開済み。GitHub Releaseの本文はRELEASE_NOTES.mdの該当セクションのまま(内容自体の変更は無し、コミットだけ差し替えた)。
-- 実機(ゲームクライアント)起動は本セッションでも不可能なため、ランタンの見た目・ケーブルアニメーション・海底地形はいずれもコード上の妥当性とCIビルド成功のみ確認済みで、ゲーム内の見た目は未検証のまま。
-- `raw.githubusercontent.com/InventivetalentDev/minecraft-assets/<version>/...`でvanillaのバージョン別モデル/ブロックステートJSONを直接取得できること、`mappings.dev/<version>/...`でクラスの実際のフィールド/メソッド一覧を確認できることは、いずれもPROGRESS.mdに恒久ルールとして記録済み。次回以降、未確認のAPIを使う前に必ず活用すること。
+- v0.38.0は最初から一度もビルド失敗せずリリースまで到達できた(2026-09-01の前回セッションで発生した「push成功≠ビルド成功」の教訓を踏まえ、毎回のpush後に必ずActionsの完了を待って確認する運用を徹底した結果)。
+- 実機(ゲームクライアント)起動は本セッションでも不可能なため、陸地の見た目・比率・起伏の自然さはコード上の妥当性とCIビルド成功・鉱石生成への非干渉のみ確認済みで、ゲーム内の見た目は未検証のまま。
+- `raw.githubusercontent.com/InventivetalentDev/minecraft-assets/<version>/...`でvanillaのバージョン別モデル/ブロックステートJSONを直接取得できること、`mappings.dev/<version>/...`でクラスの実際のフィールド/メソッド一覧を確認できることは、いずれもPROGRESS.mdに恒久ルールとして記録済み。未確認のAPIを使う前に必ず活用すること(今回は既存の`Feature.place()`パターンをそのまま踏襲したため新規API確認は不要だった)。
+- Issue #17がクローズされたことで、今後のIssue確認では#15・#21の2件のみを追えばよい(新規issueが無いか`is:issue is:open`で毎回全件確認は引き続き徹底すること)。
