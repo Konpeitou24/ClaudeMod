@@ -66,6 +66,26 @@ public class PrismiumSmelterBlockEntity extends AbstractPrismiumMachineBlockEnti
         return recipes;
     }
 
+    /**
+     * Read-only view of {@link #recipes()} for {@code
+     * com.claudemod.compat.jei.ClaudeModJeiPlugin} to build JEI recipe
+     * entries from, added this session for GitHub issue #21 ("プリズミウム
+     * のインゴットなどのアイテムは粉砕、精錬などこのMODの製法で作られた
+     * アイテムに対応されていません" - JEI doesn't show this mod's own
+     * machine recipes). Deliberately reads from the same hardcoded map
+     * this class's own {@code recipeFor}/{@code isValidInput} already
+     * use as their single source of truth, rather than duplicating the
+     * input/output pairs a second time in the JEI plugin package, so the
+     * two can never silently drift apart if a future session edits one
+     * without the other. Only ever called when JEI is installed (see
+     * {@code ClaudeModJeiPlugin}'s own soft-dependency isolation
+     * javadoc) - {@code java.util.Map} is already imported by every
+     * caller of this class regardless, so this adds no new dependency.
+     */
+    public static java.util.Map<Item, ItemStack> jeiRecipes() {
+        return java.util.Collections.unmodifiableMap(recipes());
+    }
+
     @Nullable
     private static ItemStack recipeForStatic(Item item) {
         ItemStack result = recipes().get(item);

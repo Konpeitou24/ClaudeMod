@@ -237,5 +237,7 @@
     "gui.claudemod.prismium_chronoflame.advance": "Advance +6h",
     "gui.claudemod.prismium_chronoflame.rewind": "Rewind -6h",
     "gui.claudemod.prismium_chronoflame.ready": "Ready",
-    "gui.claudemod.prismium_chronoflame.cooldown": "Cooldown: %1$ss"
+    "gui.claudemod.prismium_chronoflame.cooldown": "Cooldown: %1$ss",
+    "jei.claudemod.category.energy_cost": "Energy cost: %1$s FE",
+    "jei.claudemod.prismium_shard.ore_info": "Prismium ore generates between Y=-64 and Y=40, most commonly around Y=-20 to Y=-4. It generates more frequently in the same height band within the Prism Realm."
 }

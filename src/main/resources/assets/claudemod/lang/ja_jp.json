@@ -237,5 +237,7 @@
     "gui.claudemod.prismium_chronoflame.advance": "進める +6時間",
     "gui.claudemod.prismium_chronoflame.rewind": "戻す -6時間",
     "gui.claudemod.prismium_chronoflame.ready": "準備完了",
-    "gui.claudemod.prismium_chronoflame.cooldown": "クールダウン: 残り%1$s秒"
+    "gui.claudemod.prismium_chronoflame.cooldown": "クールダウン: 残り%1$s秒",
+    "jei.claudemod.category.energy_cost": "消費エネルギー: %1$s FE",
+    "jei.claudemod.prismium_shard.ore_info": "プリズミウムの鉱石はY=-64〜40の範囲に生成され、Y=-20〜-4付近で特に見つかりやすい。プリズムレルムでは同じ高度帯でより高い頻度で生成される。"
 }
