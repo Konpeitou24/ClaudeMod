@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-09-01(定期実行セッション、v0.37.0リリース: TODO8(ケーブルのエネルギーフロー視覚化をランダム散布から移動パルス表現に変更)・TODO9(Prism Realmの海底に高低差を追加)・TODO10(Prismium Lantern/Pale Prismium Lanternをcube_allから正式な吊りランタン形状に作り直し)の3件に対応。いずれも実機無しで実装できる範囲のみ着手、実機確認は次回以降の課題。GitHub Issueは`is:issue is:open`で全件チェック済み(#15/#17/#21の3件、新規issue無し、ISSUES_TO_CLOSE.json/PENDING_ISSUES.jsonともに空)。直前のv0.36.0のビルドはstatus=ok確認済み。詳細はTODO・問題点参照)
+最終更新: 2026-09-01(定期実行セッション、v0.37.0リリース: TODO8(ケーブルのエネルギーフロー視覚化をランダム散布から移動パルス表現に変更)・TODO9(Prism Realmの海底に高低差を追加)・TODO10(Prismium Lantern/Pale Prismium Lanternをcube_allから正式な吊りランタン形状に作り直し)の3件に対応。**重要**: 初回push(commit c108ff9)はPrismiumLanternBlock.javaが存在しないcanPlace(BlockPlaceContext)をoverrideしておりビルド失敗、v0.37.0タグも一度その壊れたコミットを指したまま作成してしまっていた(こんぺいとう氏の指摘で発覚)。該当メソッドを削除して修正(commit b6e9464)、build-and-notify/releaseとも再確認しStatus Success済み、v0.37.0タグも修正コミットに張り直して再push・Release再作成済み。以後は必ずpush後にActionsの実際の成否(ステータスバッジ、'失敗'を示すaria-label等)を確認してからリリース完了を報告すること。GitHub Issueは`is:issue is:open`で全件チェック済み(#15/#17/#21の3件、新規issue無し、ISSUES_TO_CLOSE.json/PENDING_ISSUES.jsonともに空)。詳細はTODO・問題点参照)
 
 **このファイルの構成(2026-08-30に再整理)**: 以前は「セッションごとに実装内容を長文で追記し続ける」運用で肥大化していたため(ピーク時4000行超)、今回から以下の5分類に固定した。
 
@@ -31,6 +31,7 @@
   * `api.github.com`への直接アクセスも不可なため、リポジトリにコミットされる`builds/last_datapack_validation_summary.txt`/`last_ore_verification.txt`/`last_datapack_validation_errors.log`で結果を確認する。
   * Discord Webhookへの直接送信もサンドボックスから不可。通知はGitHub Actions側(`build-and-notify.yml`/`release.yml`)に任せ、無駄なリトライをしない。
   * `.github/workflows/build-and-notify.yml`のNotify Discordステップは、pushに含まれる全コミットの件名(自動コミット除く)を箇条書きで送る仕様。ワークフローを触る際もこの挙動を壊さないこと。
+  * **【2026-09-01追記・重要な教訓】push/タグpushをした後は、必ずActionsの実際の成否を確認してから「完了」を報告すること。** `builds/last_datapack_validation_summary.txt`等はCIが成功して初めてコミットされる仕組みなので、直前のコミットに対してまだ更新されていない(ファイルが古いコミットのままを指している)場合、それは「まだCIが終わっていない」可能性と「CIが失敗してコミットされなかった」可能性の両方があり、区別が付かない。`api.github.com`が使えない場合の確認手段: `https://github.com/<owner>/<repo>/actions/workflows/<workflow>.yml`(または`?nocache=1`のようなクエリを付けて`mcp__workspace__web_fetch`のセッション内キャッシュを回避)をfetchし、対象コミットの行の直前にある`aria-label="failed: ..."`/`aria-label="success: ..."`のようなSVGアイコンのaria-labelを確認する。個別runの詳細(コンパイルエラー箇所等)は`https://github.com/<owner>/<repo>/actions/runs/<run_id>/job/<job_id>`をfetchすると`## Annotations`セクションにエラー内容がそのままテキストで出る(ログ本文はサインインしないと見えないが、annotationsは非ログインでも見える)。2026-09-01セッションでは、pushした直後に確認せず「push成功=OK」と早合点してPROGRESS.md/HANDOFF.mdに「完了」と記録してしまい、こんぺいとう氏の指摘で実際にはビルドが3回連続失敗していたことが発覚した(原因はJavaの存在しないAPIメソッドをoverrideしていたこと、詳細は下記・問題点参照)。
 
 * **GitHub Issue対応**
   * 毎回の状況確認にGitHub Issueの確認を含める。`https://github.com/Konpeitou24/ClaudeMod/issues`や個別issueページを非ログインで`curl`取得(キャッシュバスティング用クエリ`?nocache=$(date +%s%N)`を付ける)。コメント本文は`react-app.embeddedData`のJSON(`data['payload']['preloadedQueries'][0]['result']['data']['repository']['issue']`のパス)をパースして読む。2026-09-01セッションではこのJSONパスが見つからなかったため、代わりに本文中の`/Konpeitou24/ClaudeMod/issues/(\d+)`正規表現でissue番号一覧だけを抽出する簡易フォールバックを使った(番号の存在確認だけなら十分)。
@@ -48,6 +49,10 @@
   * lang(en_us.json/ja_jp.json)等の整形済みJSONを部分編集する際は、`json.load`+`json.dump`による全体再整形をしない。既存エントリの直後に新規行を文字列置換で挿入する方式を使う。
   * このセッション環境のRead/Write/Editツールはリポジトリのgit作業ディレクトリ(Linuxサンドボックス内パス)に直接使えない(Windows側マウントパスしか読み書きできない)。ファイル編集は`mcp__workspace__bash`経由のpython/sed/catで行い、画像確認だけはWindows側マウントの作業フォルダ(outputs)にコピーしてから`Read`ツールで開く。
   * 外部API・Minecraft本体の未確認仕様を調べる際は`WebSearch`/`mcp__workspace__web_fetch`を積極的に使う。`minecraft.wiki`・`mappings.dev`(1.20.1 mojmap javadoc、フィールド一覧の確認に有効)・`raw.githubusercontent.com/InventivetalentDev/minecraft-assets`(バージョン別ブランチのvanilla資産そのもの、モデルJSON等の実物確認に有効、2026-09-01発見)には到達できる(bashの`curl`は`api.github.com`等の主要ホストが到達不可)。それでも足りなければ`mcp__Claude_Browser__*`で直接リポジトリ・公式mavenを読む。
+
+* **未確認のJava API(特に@Override)は必ず出典を確認してから使う(2026-09-01追記・重要な教訓)**
+  * v0.37.0の初回pushで、`PrismiumLanternBlock`に`@Override public boolean canPlace(BlockPlaceContext context)`を実装したところ、実際には1.20.1の`Block`クラスにそのようなオーバーライド可能なメソッドが存在せず(`method does not override or implement a method from a supertype`)、3回連続でビルド失敗・リリース失敗する事態になった。「vanillaのBlockItemが内部でこういうチェックをしているはず」という推測だけでコードを書いてしまったことが原因。
+  * 教訓: `@Override`を付けるメソッドは、既存のこのMOD内の別クラス(例: `PrismiumSnareBlock`/`PrismBrambleBlock`)で実際にコンパイルが通っている実例をコピーするか、`mappings.dev/<version>/<パッケージ>/<クラス>.html`でそのクラスの実際のメソッド一覧を確認してから使うこと。特に「こういうフックがあったら便利そうだ」という願望ベースで存在を仮定しないこと。座標・シェイプ等の具体的な値が要る場合は`raw.githubusercontent.com/InventivetalentDev/minecraft-assets`(本ファイル内の別項目参照)、メソッド・フィールドの存在確認には`mappings.dev`、が使える。
 
 * **外部MOD連携**
   * Mixinベースの外部依存MOD(Curios等)を`compileOnly`/`runtimeOnly`で追加する場合、CIの`runGameTestServer`で実際にロードされクラッシュしうる。`build.gradle`の該当runブロックに`mixin.env.remapRefMap` / `mixin.env.refMapRemappingFile`の設定が必要になる場合がある。
@@ -88,7 +93,7 @@
 
 ## 3. 問題点(既知の不具合・未検証事項)
 
-- **【v0.37.0で対応・実機未検証】** Prismium Lantern/Pale Prismium Lanternをcube_allの立方体から、HANGING/WATERLOGGED状態を持つ正式な吊りランタン形状(`PrismiumLanternBlock`)に作り直した(TODO16参照)。当たり判定・モデル形状はMojang公式`template_lantern`/`template_hanging_lantern`の座標をそのまま採用しているため寸法自体の誤りは無いはずだが、(a) 設置時の吊り下げ/据え置き判定が実際に狙い通り動くか、(b) 当たり判定の感触、(c) 新しいUVアンラップに合わせて描き直したテクスチャーが実際に3D形状へ正しく貼り付くか(サンドボックスでは3Dレンダリングを目視できないため、UV領域を切り出して並べた確認画像でのみレビュー済み)、実機での確認が必要。
+- **【v0.37.0で対応・CIビルド成功確認済み(2026-09-01追記)・実機未検証】** Prismium Lantern/Pale Prismium Lanternをcube_allの立方体から、HANGING/WATERLOGGED状態を持つ正式な吊りランタン形状(`PrismiumLanternBlock`)に作り直した(TODO16参照)。**初回実装には実在しないAPIをoverrideするミスがあり3回ビルド失敗していたが、該当箇所(`canPlace(BlockPlaceContext)`)を削除して修正済み、CIのビルド(build-and-notify/release)・データパック検証とも成功を確認済み(commit b6e9464、上記「約束や決まり事」参照)。** 当たり判定・モデル形状はMojang公式`template_lantern`/`template_hanging_lantern`の座標をそのまま採用しているため寸法自体の誤りは無いはずだが、(a) 設置時の吊り下げ/据え置き判定が実際に狙い通り動くか、(b) 当たり判定の感触、(c) 新しいUVアンラップに合わせて描き直したテクスチャーが実際に3D形状へ正しく貼り付くか(サンドボックスでは3Dレンダリングを目視できないため、UV領域を切り出して並べた確認画像でのみレビュー済み)、実機での確認が必要。
 - **【v0.37.0で対応・実機未検証】** ケーブルのエネルギーフロー視覚化を、ランダム位置への火花散布から、ケーブル経路に沿って移動する単一パルス(先頭にELECTRIC_SPARK、後方数マスにGLOWの尾)のアニメーションに変更した(TODO8参照)。パルスの移動速度(`PULSE_STEP_TICKS`)・トレイル長(`PULSE_TRAIL_LENGTH`)が体感として適切かは実機確認が必要。
 - **【v0.37.0で対応・実機未検証】** Prism Realmの海底に2Dフラクタルノイズで高低差(最大2〜3ブロック程度)を追加した(TODO9参照)。振幅・地形の見た目が自然に見えるかは実機確認が必要。underground_oresより前のraw_generationステップで実行しているため、海底を掘り下げた一部コラムでは鉱石が置かれなくなる(水没した場所に鉱石は出ない、という自然な副作用)。
 - **【v0.34.0で修正・実機未検証】** プリズミウム・コンペンディウム(v0.32.0)が右クリックで開けない不具合(issue #7関連)。`PrismiumCompendiumItem`で自前オープンに変更し修正したが、実機で本当に開くかは次回確認が必要(TODO2参照)。issue #7は、この修正の実機確認が取れるまで「未解決」扱いのまま据え置く。
