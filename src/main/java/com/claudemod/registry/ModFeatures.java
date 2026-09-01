@@ -1,6 +1,7 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.worldgen.feature.PrismiumLandFeature;
 import com.claudemod.worldgen.feature.PrismiumSeafloorFeature;
 import com.claudemod.worldgen.feature.PrismiumSoilFeature;
 import com.claudemod.worldgen.feature.PrismiumStoneTransitionFeature;
@@ -26,7 +27,11 @@ import net.minecraftforge.registries.RegistryObject;
  * PRISMIUM_SEAFLOOR ("Prism Realmの海底が完全に平らで不自然"), which
  * gives the otherwise perfectly flat seafloor plane gentle mounds and
  * depressions using the same noise utilities - see
- * PrismiumSeafloorFeature for the full rationale.
+ * PrismiumSeafloorFeature for the full rationale. Fourth entry:
+ * PRISMIUM_LAND (PROGRESS.md TODO9, "Prism Realmにまず陸地(平原などの
+ * 基本地形)を追加する"), which raises broad noise-selected areas of the
+ * otherwise fully-submerged Prism Realm above sea level into explorable
+ * dry land - see PrismiumLandFeature for the full rationale.
  */
 public class ModFeatures {
 
@@ -41,6 +46,9 @@ public class ModFeatures {
 
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_SEAFLOOR = FEATURES.register(
             "prismium_seafloor", () -> new PrismiumSeafloorFeature(NoneFeatureConfiguration.CODEC));
+
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_LAND = FEATURES.register(
+            "prismium_land", () -> new PrismiumLandFeature(NoneFeatureConfiguration.CODEC));
 
     public static void register(IEventBus eventBus) {
         FEATURES.register(eventBus);

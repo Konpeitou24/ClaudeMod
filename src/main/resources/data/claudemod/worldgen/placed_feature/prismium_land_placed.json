@@ -1,0 +1,8 @@
+{
+    "feature": "claudemod:prismium_land",
+    "placement": [
+        {
+            "type": "minecraft:biome"
+        }
+    ]
+}

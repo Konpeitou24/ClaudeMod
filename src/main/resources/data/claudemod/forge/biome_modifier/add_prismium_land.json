@@ -1,0 +1,8 @@
+{
+    "type": "forge:add_features",
+    "biomes": [
+        "claudemod:prism_realm"
+    ],
+    "features": "claudemod:prismium_land_placed",
+    "step": "raw_generation"
+}
