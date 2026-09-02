@@ -66,6 +66,10 @@ public class ModEntityEvents {
         // requirement as every prior mob, a registered AttributeSupplier
         // is needed before this LivingEntity subtype can be constructed.
         event.put(ModEntities.PRISMIUM_CRAWLER.get(), com.claudemod.entity.PrismiumCrawlerEntity.createAttributes().build());
+        // Sixth mob (see PrismiumWispEntity's javadoc) - same
+        // requirement as every prior mob, a registered AttributeSupplier
+        // is needed before this LivingEntity subtype can be constructed.
+        event.put(ModEntities.PRISMIUM_WISP.get(), com.claudemod.entity.PrismiumWispEntity.createAttributes().build());
     }
 
     @SubscribeEvent
@@ -112,6 +116,21 @@ public class ModEntityEvents {
         event.register(ModEntities.PRISMIUM_CRAWLER.get(), SpawnPlacements.Type.ON_GROUND,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 (type, level, spawnType, pos, random) -> !level.getBlockState(pos.below()).isAir(),
+                SpawnPlacementRegisterEvent.Operation.REPLACE);
+        // Sixth mob (see PrismiumWispEntity's javadoc): first
+        // NO_RESTRICTIONS-type spawn placement this mod has ever
+        // registered (confirmed via mappings.dev this session that
+        // SpawnPlacements.Type has a NO_RESTRICTIONS constant, the same
+        // type vanilla's own flying/ambient mobs like Bat use) - a
+        // flying creature has no meaningful "on ground" or "in water"
+        // spawn rule. The predicate only requires the candidate position
+        // itself to be open air (an airborne creature spawning inside a
+        // solid block would be stuck immediately). Actual placement
+        // (Prism Realm only) is handled data-driven, via
+        // data/claudemod/forge/biome_modifier/add_prismium_wisp_spawn_realm.json.
+        event.register(ModEntities.PRISMIUM_WISP.get(), SpawnPlacements.Type.NO_RESTRICTIONS,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (type, level, spawnType, pos, random) -> level.getBlockState(pos).isAir(),
                 SpawnPlacementRegisterEvent.Operation.REPLACE);
     }
 }

@@ -80,6 +80,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_SENTINEL_SPAWN_EGG.get());
                         output.accept(ModItems.PRISMIUM_DRIFTER_SPAWN_EGG.get()); // session 61
                         output.accept(ModItems.PRISMIUM_CRAWLER_SPAWN_EGG.get()); // scheduled session, 5th mob
+                        output.accept(ModItems.PRISMIUM_WISP_SPAWN_EGG.get()); // scheduled session, 6th mob
                         output.accept(ModItems.PRISMIUM_RIFT_SHARD.get());
                         output.accept(ModItems.PRISMIUM_LOCATOR.get());
                         output.accept(ModItems.PRISMIUM_PULSE_CHARM.get()); // session 63

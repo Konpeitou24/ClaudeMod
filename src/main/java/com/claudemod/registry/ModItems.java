@@ -354,6 +354,13 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_CRAWLER_SPAWN_EGG = ITEMS.register("prismium_crawler_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_CRAWLER, 0x241246, 0xff4fd8, new Item.Properties()));
 
+    // Sixth mob spawn egg (see PrismiumWispEntity's javadoc). Warm
+    // gold/violet colors distinguish it from every prior egg's cooler
+    // palette, matching the "glowing light spirit" reskin of Drifter's
+    // texture (see gen_prismium_wisp.py).
+    public static final RegistryObject<Item> PRISMIUM_WISP_SPAWN_EGG = ITEMS.register("prismium_wisp_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_WISP, 0x3a2463, 0xf7e199, new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));
 

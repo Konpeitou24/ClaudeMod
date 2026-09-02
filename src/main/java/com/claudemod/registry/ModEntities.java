@@ -5,6 +5,7 @@ import com.claudemod.entity.PrismiumDeepWraithEntity;
 import com.claudemod.entity.PrismiumCrawlerEntity;
 import com.claudemod.entity.PrismiumDrifterEntity;
 import com.claudemod.entity.PrismiumSentinelEntity;
+import com.claudemod.entity.PrismiumWispEntity;
 import com.claudemod.entity.PrismiumWraithEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -86,6 +87,23 @@ public class ModEntities {
                             .sized(0.4F, 0.3F)
                             .clientTrackingRange(6)
                             .build("prismium_crawler"));
+
+    // Sixth mob, first flying ambient creature (see PrismiumWispEntity's
+    // javadoc). MobCategory.AMBIENT matches PRISMIUM_CRAWLER's own
+    // registration (a small, harmless background critter, not a real
+    // "farmable" animal). Size (0.5x0.5) is smaller than Drifter's
+    // 0.8x0.8 squid-derived hitbox despite sharing its model geometry -
+    // a deliberate "small drifting light" read rather than "airborne
+    // squid" (see PrismiumWispRenderer, which does not compensate with
+    // any model-scale override, so the SquidModel geometry will render
+    // a little larger than the hitbox - an accepted cosmetic trade-off,
+    // not a bug).
+    public static final RegistryObject<EntityType<PrismiumWispEntity>> PRISMIUM_WISP =
+            ENTITY_TYPES.register("prismium_wisp",
+                    () -> EntityType.Builder.of(PrismiumWispEntity::new, MobCategory.AMBIENT)
+                            .sized(0.5F, 0.5F)
+                            .clientTrackingRange(6)
+                            .build("prismium_wisp"));
 
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
