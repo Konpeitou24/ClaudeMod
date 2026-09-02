@@ -1,27 +1,27 @@
 # HANDOFF.md (直前セッションからの申し送り、直近1回分のみ)
 
-## 今回やったこと(2026-09-01、定期実行セッション#2、v0.38.0リリース)
+## 今回やったこと(2026-09-02、定期実行セッション、v0.39.0リリース)
 
-前回セッション(v0.37.0ビルド修正)のCIビルドはstatus=ok確認済みだった状態から開始。GitHub Issueを`is:issue`で全件チェックしたところ、**Issue #17(羽石)がこんぺいとう氏により本日CLOSED(stateReason: COMPLETED)になっていることを発見**(v0.36.0のHUDパネル方式で最終的に納得いただけた模様)。#22〜#25も過去に解決・クローズ済みと確認。残るOPENは#15(電力バグ)・#21(JEI互換性)の2件のみで、新規コメント・新規issueは無し。
+前回セッション(v0.38.0、陸地追加)のCIビルドはstatus=ok確認済みだった状態から開始。GitHub Issueを`is:issue is:open`で再確認、#15(電力バグ)・#21(JEI互換性)の2件のみで新規issue・新規コメントなし。
 
-PROGRESS.mdのTODOのうち、実機無しでも進められて他の項目より優先度が高かったTODO9「Prism Realmにまず陸地(平原などの基本地形)を追加する」に対応した。
+PROGRESS.mdのTODOのうち、実機無しでも進められるTODO10「MOBのカテゴリ拡充(飛行アンビエント)」に対応した。
 
-- **実装**: `PrismiumLandFeature`を新規実装(`PrismiumSeafloorFeature`/`PrismiumStoneTransitionFeature`と同じ、flat generator向けraw_generation事後上書き手法)。低周波FractalNoise(frequency=0.006)で列ごとに陸地/海を判定(閾値0.28)、陸地は海面(y=63)より最大6ブロック高く、細かい起伏ノイズも追加。中身は表層3ブロックがprismium_soil、それ以外prismium_stone(バニラ平原の石+薄い土層を模倣)。y=41以上のみ操作するため、underground_oresの高度上限(y=40)・石/深層岩境界(y=0付近)とは干渉しない設計。
-- **ビルド確認**: build-and-notify #294(コード実装push、commit a01b3b0)・#295(バージョンv0.38.0+リリースノートpush、commit b29f564)ともActionsページで実際にStatus確認(In progressの間は待機してから再確認)、`builds/last_datapack_validation_summary.txt`のstatus=ok・commitハッシュ一致も確認。`builds/last_ore_verification.txt`でプリズミウム鉱石も引き続き検出されており、陸地機能がore配置と干渉していないことも確認できた。
-- **リリース**: v0.38.0としてタグ付け・push。Release #47もActionsページでStatus確認(2m34s、In progressではない)、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.38.0`で本文・Assets 3(jar付き)を実際に確認済み。
-
-今回は「pushしたら必ずActionsの実際の完了・成功を待ってから次に進む」を徹底し、push直後の早合点は無かった(GameTestサーバーの起動を含む検証ステップは3〜5分弱かかるため、150秒待って一度In progressだった場合はもう一度待つ、を繰り返した)。
+- **実装**: `PrismiumWispEntity`を新規実装。MOD第6体目・初の「飛行アンビエント」モブ。`PathfinderMob`を直接継承し、`FlyingMoveControl(this, 20, true)` + `createNavigation()`で`FlyingPathNavigation`を返す + `WaterAvoidingRandomFlyingGoal`(vanilla Bee/Parrotが使う汎用の飛行徘徊ゴール)という、このMOD初の飛行AI構成。使用した全API(`FlyingMoveControl`/`FlyingPathNavigation`/`WaterAvoidingRandomFlyingGoal`/`Entity#setNoGravity`/`SpawnPlacements.Type.NO_RESTRICTIONS`)は個別にmappings.devで実在・シグネチャを確認してから使用(v0.37.0のcanPlace()事故の教訓を徹底)。モデルは`SquidModel`(Drifterで既にUVが正しいと実績のあるジオメトリ)を流用。
+- **テクスチャー**: 新規ゼロ生成ではなく、Prismium Drifterの既存テクスチャーをPython(colorsys)でHSV色相変換し、シアン系ハイライトを金色に・紫系シャドウを少し暖色寄りにずらして「金〜紫の光の精霊」配色に仕上げた(`scripts/textures/gen_prismium_wisp.py`として保存、再実行可能)。10倍拡大画像で自己レビュー済み、変換の境界に不自然な色の飛びが残っていないか確認し、一度修正(青緑の色相ギャップを埋めた)。
+- **登録**: EntityType・属性・スポーン配置(NO_RESTRICTIONS、着地点が空気であることのみ要求)・クライアントレンダラー・スポーンエッグ(+クリエイティブタブ)・ルートテーブル(8%でプリズミウムの欠片、Crawlerと同じ)・Prism Realm限定バイオームスポーン(weight=10)・en/ja lang、を一通り登録。
+- **ビルド確認**: build-and-notify #297(コード実装push、commit 9eaffa1)・#298(バージョンv0.39.0+リリースノートpush、commit 7ccd7a9)ともActionsページで実際にStatus Success確認(押した直後はIn progressだったので待機してから再確認、を徹底)。`builds/last_datapack_validation_summary.txt`のstatus=ok・コミットハッシュ一致、`builds/last_ore_verification.txt`でプリズミウム鉱石も引き続き検出を確認。
+- **リリース**: v0.39.0としてタグ付け・push。**ここで新しい落とし穴を発見**: `git pull`で直前のCI自動コミット(`ci: update ore generation verification results [skip ci]`)まで取り込んでから、その最新コミット(df75fb0)にタグを打ってpushしたところ、Release workflowが一度も起動しなかった(エラーも出ない、Actions一覧に新しいrunが現れないだけ)。原因は、GitHub Actions組み込みの仕様で「コミットメッセージに`[skip ci]`が含まれるコミットに対しては、push/tagイベントのワークフロー実行自体が一切作成されない」こと。タグの指す先が偶然その種のコミットだったため、Release.ymlの`on: push: tags: 'v*.*.*'`トリガー自体が発火しなかった。`git tag -d v0.39.0 && git push origin :refs/tags/v0.39.0`で削除し、`[skip ci]`を含まない直前の「Bump version to v0.39.0, ...」コミット(7ccd7a9)へ`git tag -a v0.39.0 -m v0.39.0 7ccd7a9`で打ち直して再push、Release #48がStatus Success(2m33s)で起動することを確認、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.39.0`で本文・Assets 3(jar付き)を実際に確認できた。この教訓はPROGRESS.mdの「1. 約束や決まり事」に恒久ルールとして追記済み(次回セッションは、タグは必ずバージョンbumpコミット自体か、それ以前の`[skip ci]`を含まないコミットに打つこと)。
 
 ## 次回最優先でやるべきこと
 
-- **v0.38.0で追加した陸地(PrismiumLandFeature)の実機確認・チューニング。** 陸地/海の比率(閾値LAND_THRESHOLD=0.28)、地形の見た目(大陸っぽいか島っぽいか)、起伏の自然さ(MAX_LAND_HEIGHT=6、DETAIL_AMPLITUDE=1.5)、v0.37.0の海底起伏との境目の見え方。もし陸地が少なすぎる/多すぎると感じたら、`PrismiumLandFeature.java`の該当定数を調整して再pushする。
-- 陸地の実機確認が取れたら、PROGRESS.md TODO9(各バイオーム固有ボスダンジョン、山岳バイオームから着手)に着手できる。地形の見た目がまだ固まっていない状態でダンジョン配置ロジックを組むと手戻りのリスクがあるため、確認を待つのが望ましい。
+- **v0.39.0で追加したプリズミウム・ウィスプの実機確認・チューニング。** 自然スポーン頻度(weight=10、Prism Realm限定)、飛行AIが自然に見えるか(引っかかる・妙な高さに張り付く等がないか)、SquidModelを流用した見た目(サイズ0.5x0.5に対してモデルのジオメトリがやや大きく描画される想定、違和感が強ければ調整)、テクスチャーの色合いが実際に3Dモデルへ正しく貼り付いているか。
+- v0.38.0で追加した陸地(PrismiumLandFeature)の実機確認・チューニングもまだ手つかずのまま(TODO8、前回からの持ち越し)。地形の見た目が固まったら、TODO9(バイオーム固有ボスダンジョン)に着手できる。
 - TODO1〜7(コンペンディウム・JEI・リフト・FEバランス・発電機燃料・FE移動アルゴリズムバグ・GUI固まり)は引き続き実機確認待ちのまま。特にTODO6(FE移動アルゴリズムの最重要バグ)はこんぺいとう氏本人からの再現条件の追加情報が無いと自動セッションだけでは前進しづらい。
 - Issue #15・#21は引き続きOPEN、対応済みだが実機未確認(TODO4・TODO12参照)。
+- MOBのカテゴリは「戦闘」「水中非戦闘」「地上アンビエント」「飛行アンビエント」の4種類に到達。残るアイデアは使い魔的MOB(プレイヤーに追従する非戦闘MOB等)。
 
 ## 注意点
 
-- v0.38.0は最初から一度もビルド失敗せずリリースまで到達できた(2026-09-01の前回セッションで発生した「push成功≠ビルド成功」の教訓を踏まえ、毎回のpush後に必ずActionsの完了を待って確認する運用を徹底した結果)。
-- 実機(ゲームクライアント)起動は本セッションでも不可能なため、陸地の見た目・比率・起伏の自然さはコード上の妥当性とCIビルド成功・鉱石生成への非干渉のみ確認済みで、ゲーム内の見た目は未検証のまま。
-- `raw.githubusercontent.com/InventivetalentDev/minecraft-assets/<version>/...`でvanillaのバージョン別モデル/ブロックステートJSONを直接取得できること、`mappings.dev/<version>/...`でクラスの実際のフィールド/メソッド一覧を確認できることは、いずれもPROGRESS.mdに恒久ルールとして記録済み。未確認のAPIを使う前に必ず活用すること(今回は既存の`Feature.place()`パターンをそのまま踏襲したため新規API確認は不要だった)。
-- Issue #17がクローズされたことで、今後のIssue確認では#15・#21の2件のみを追えばよい(新規issueが無いか`is:issue is:open`で毎回全件確認は引き続き徹底すること)。
+- **タグは必ず`[skip ci]`を含まないコミットに打つこと(今回発見・PROGRESS.mdに恒久ルール化済み)。** `git pull`で最新化した直後にタグを打つ運用だと、CI自動コミット(jar/datapack検証/鉱石検証の3種、いずれも`[skip ci]`付き)を拾ってしまいがちなので注意。バージョンbump+リリースノートのコミットを作った直後、CI自動コミットが積まれる前にそのコミット自体へタグを打つのが一番安全。
+- v0.39.0はコード面ではビルド一度も失敗せずリリースまで到達できたが、タグの指し先を1回間違えてRelease workflowが起動しない事故があった(上記参照)。「タグをpushできた」だけでは「Releaseが実際に作られた」ことの証明にならない点は、push/ビルド成功の教訓と全く同じ構造の罠なので、今後も両方を疑うこと。
+- 実機(ゲームクライアント)起動は本セッションでも不可能なため、ウィスプの見た目・飛行挙動・スポーン頻度はコード上の妥当性とCIビルド成功のみ確認済みで、ゲーム内の実際の様子は未検証のまま。
