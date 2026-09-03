@@ -65,7 +65,14 @@ import net.minecraftforge.gametest.PrefixGameTestTemplate;
  * so the same template can be reused by any future test in this class
  * without needing a new hand-crafted .nbt per test.
  */
-@GameTestHolder(value = ClaudeMod.MOD_ID, namespace = ClaudeMod.MOD_ID)
+// Forge 47.4.0 (pinned by this project)'s GameTestHolder only has a
+// single value() (the default template namespace, "minecraft" if
+// omitted) - no separate namespace() attribute (that was added in a
+// later Forge release; confirmed against the actual
+// MinecraftForge/MinecraftForge "1.20.1" branch source, not a newer
+// mismatched doc - see class doc). Every @GameTest below also sets
+// templateNamespace explicitly, so this value is only a fallback.
+@GameTestHolder(ClaudeMod.MOD_ID)
 @PrefixGameTestTemplate(false)
 public class ClaudeModGameTests {
 
