@@ -3,11 +3,18 @@ package com.claudemod.gametest;
 import com.claudemod.ClaudeMod;
 import com.claudemod.blockentity.PrismiumCableBlockEntity;
 import com.claudemod.blockentity.PrismiumCellBlockEntity;
+import com.claudemod.blockentity.PrismiumCompressorBlockEntity;
 import com.claudemod.blockentity.PrismiumGeneratorBlockEntity;
+import com.claudemod.blockentity.PrismiumPulverizerBlockEntity;
+import com.claudemod.blockentity.PrismiumPylonBlockEntity;
+import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
+import com.claudemod.blockentity.PrismiumSmelterBlockEntity;
+import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
 import com.claudemod.registry.ModBlocks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.world.inventory.ContainerData;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
@@ -206,5 +213,194 @@ public class ClaudeModGameTests {
 
             helper.succeed();
         });
+    }
+
+    /** FE injected directly via {@code receiveEnergy} in the sink-block
+     * ContainerData tests below - well under every sink block's
+     * MAX_RECEIVE (2,000) and CAPACITY (4,000), see each block entity's
+     * own constants. */
+    private static final int SINK_TEST_FE = 500;
+
+    /**
+     * Regression tests mirroring {@link #generatorContainerDataTracksLiveEnergy}
+     * for the mod's other energy-consuming GUIs (TODO11 in PROGRESS.md's
+     * "次にやるべき拡張": "他の機械(Pylon/Restorer/Wardstone/Pulverizer/
+     * Smelter/Compressor)のContainerData同期テストへの横展開"). This is the
+     * same server-side half of the session #84 sync bug (see this class's
+     * own top-level doc) checked for every remaining GUI block in the mod,
+     * closing the gap left by only covering Generator.
+     *
+     * <p>Generator is the only block in the mod that generates its own FE
+     * over time, which is why its test above feeds fuel and waits several
+     * ticks. Every block covered below (Pylon, Restorer, Wardstone,
+     * Pulverizer, Smelter, Compressor) is instead a pure energy sink
+     * (maxExtract == 0, confirmed in each block entity's own class doc) -
+     * the only way any of them gain FE is a {@code receiveEnergy} call,
+     * exactly what a neighboring cable's push performs (see
+     * {@link com.claudemod.energy.EnergyPushHelper#pushThroughNetwork}).
+     * So these tests skip the cable network entirely and call
+     * {@code receiveEnergy} directly on the block entity's own energy
+     * storage - functionally identical from the block's point of view -
+     * then assert the read-only {@link ContainerData} exposed to the
+     * client mirrors the live storage in that same instant (no tick delay
+     * needed, unlike the generation-based test above: both reads happen
+     * synchronously here).
+     */
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void pylonContainerDataTracksLiveEnergy(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_PYLON.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumPylonBlockEntity pylon)) {
+            helper.fail("Pylon block entity was not created", pos);
+            return;
+        }
+
+        int accepted = pylon.getEnergyStorage().receiveEnergy(SINK_TEST_FE, false);
+        helper.assertTrue(accepted > 0,
+                "Pylon rejected all injected FE - receiveEnergy itself appears broken, unrelated to sync");
+
+        ContainerData containerData = pylon.getContainerData();
+        int liveEnergy = pylon.getEnergyStorage().getEnergyStored();
+        int liveMax = pylon.getEnergyStorage().getMaxEnergyStored();
+        helper.assertTrue(containerData.get(0) == liveEnergy,
+                "Pylon ContainerData slot 0 (energy) was " + containerData.get(0)
+                        + " but the live energy storage reads " + liveEnergy + " - sync wiring is broken");
+        helper.assertTrue(containerData.get(1) == liveMax,
+                "Pylon ContainerData slot 1 (max energy) was " + containerData.get(1)
+                        + " but the live energy storage reads " + liveMax + " - sync wiring is broken");
+
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void restorerContainerDataTracksLiveEnergy(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_RESTORER.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumRestorerBlockEntity restorer)) {
+            helper.fail("Restorer block entity was not created", pos);
+            return;
+        }
+
+        int accepted = restorer.getEnergyStorage().receiveEnergy(SINK_TEST_FE, false);
+        helper.assertTrue(accepted > 0,
+                "Restorer rejected all injected FE - receiveEnergy itself appears broken, unrelated to sync");
+
+        ContainerData containerData = restorer.getContainerData();
+        int liveEnergy = restorer.getEnergyStorage().getEnergyStored();
+        int liveMax = restorer.getEnergyStorage().getMaxEnergyStored();
+        helper.assertTrue(containerData.get(0) == liveEnergy,
+                "Restorer ContainerData slot 0 (energy) was " + containerData.get(0)
+                        + " but the live energy storage reads " + liveEnergy + " - sync wiring is broken");
+        helper.assertTrue(containerData.get(1) == liveMax,
+                "Restorer ContainerData slot 1 (max energy) was " + containerData.get(1)
+                        + " but the live energy storage reads " + liveMax + " - sync wiring is broken");
+
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void wardstoneContainerDataTracksLiveEnergy(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_WARDSTONE.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumWardstoneBlockEntity wardstone)) {
+            helper.fail("Wardstone block entity was not created", pos);
+            return;
+        }
+
+        int accepted = wardstone.getEnergyStorage().receiveEnergy(SINK_TEST_FE, false);
+        helper.assertTrue(accepted > 0,
+                "Wardstone rejected all injected FE - receiveEnergy itself appears broken, unrelated to sync");
+
+        ContainerData containerData = wardstone.getContainerData();
+        int liveEnergy = wardstone.getEnergyStorage().getEnergyStored();
+        int liveMax = wardstone.getEnergyStorage().getMaxEnergyStored();
+        helper.assertTrue(containerData.get(0) == liveEnergy,
+                "Wardstone ContainerData slot 0 (energy) was " + containerData.get(0)
+                        + " but the live energy storage reads " + liveEnergy + " - sync wiring is broken");
+        helper.assertTrue(containerData.get(1) == liveMax,
+                "Wardstone ContainerData slot 1 (max energy) was " + containerData.get(1)
+                        + " but the live energy storage reads " + liveMax + " - sync wiring is broken");
+
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void pulverizerContainerDataTracksLiveEnergy(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_PULVERIZER.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumPulverizerBlockEntity pulverizer)) {
+            helper.fail("Pulverizer block entity was not created", pos);
+            return;
+        }
+
+        assertMachineContainerDataTracksLiveEnergy(helper, pulverizer.getEnergyStorage(),
+                pulverizer.getContainerData(), "Pulverizer");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void smelterContainerDataTracksLiveEnergy(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_SMELTER.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumSmelterBlockEntity smelter)) {
+            helper.fail("Smelter block entity was not created", pos);
+            return;
+        }
+
+        assertMachineContainerDataTracksLiveEnergy(helper, smelter.getEnergyStorage(),
+                smelter.getContainerData(), "Smelter");
+        helper.succeed();
+    }
+
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void compressorContainerDataTracksLiveEnergy(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_COMPRESSOR.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumCompressorBlockEntity compressor)) {
+            helper.fail("Compressor block entity was not created", pos);
+            return;
+        }
+
+        assertMachineContainerDataTracksLiveEnergy(helper, compressor.getEnergyStorage(),
+                compressor.getContainerData(), "Compressor");
+        helper.succeed();
+    }
+
+    /**
+     * Shared assertion body for the three {@code AbstractPrismiumMachineBlockEntity}
+     * subclasses (Pulverizer/Smelter/Compressor), which all share byte-
+     * identical energy storage and {@link ContainerData} wiring (see that
+     * base class's own doc, session #77's extraction). Injects
+     * {@link #SINK_TEST_FE} directly via {@code receiveEnergy} (same
+     * reasoning as the Pylon/Restorer/Wardstone tests above) and checks
+     * slots 0/1 (energy/max energy). Slots 2/3 (progress/active) are
+     * intentionally not asserted here - reaching a non-zero, deterministic
+     * progress value needs a valid queued recipe and several ticks of
+     * processing, which is a meaningfully different (and already
+     * indirectly exercised by the recipe tables' own existence) scenario
+     * from "is the sync wiring for the energy bars connected at all";
+     * kept separate to avoid this test depending on any one machine's
+     * specific hardcoded recipe table.
+     */
+    private static void assertMachineContainerDataTracksLiveEnergy(GameTestHelper helper,
+            com.claudemod.energy.PrismiumEnergyStorage energyStorage, ContainerData containerData, String label) {
+        int accepted = energyStorage.receiveEnergy(SINK_TEST_FE, false);
+        helper.assertTrue(accepted > 0,
+                label + " rejected all injected FE - receiveEnergy itself appears broken, unrelated to sync");
+
+        int liveEnergy = energyStorage.getEnergyStored();
+        int liveMax = energyStorage.getMaxEnergyStored();
+        helper.assertTrue(containerData.get(0) == liveEnergy,
+                label + " ContainerData slot 0 (energy) was " + containerData.get(0)
+                        + " but the live energy storage reads " + liveEnergy + " - sync wiring is broken");
+        helper.assertTrue(containerData.get(1) == liveMax,
+                label + " ContainerData slot 1 (max energy) was " + containerData.get(1)
+                        + " but the live energy storage reads " + liveMax + " - sync wiring is broken");
     }
 }
