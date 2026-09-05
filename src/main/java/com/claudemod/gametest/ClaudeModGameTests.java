@@ -1,6 +1,7 @@
 package com.claudemod.gametest;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.blockentity.AbstractPrismiumMachineBlockEntity;
 import com.claudemod.blockentity.PrismiumCableBlockEntity;
 import com.claudemod.blockentity.PrismiumCellBlockEntity;
 import com.claudemod.blockentity.PrismiumCompressorBlockEntity;
@@ -11,10 +12,13 @@ import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
 import com.claudemod.blockentity.PrismiumSmelterBlockEntity;
 import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
 import com.claudemod.registry.ModBlocks;
+import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.world.inventory.ContainerData;
+import net.minecraft.world.item.Item;
+import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
@@ -221,6 +225,30 @@ public class ClaudeModGameTests {
      * own constants. */
     private static final int SINK_TEST_FE = 500;
 
+    /** Ticks to wait before checking progress in the three
+     * {@code *ProgressAdvancesWhileProcessing} tests below - deliberately
+     * well under {@link AbstractPrismiumMachineBlockEntity#PROCESS_TIME_TICKS}
+     * (100) so the operation is still in flight (input not yet consumed,
+     * output slot still empty) when the assertion runs, and well under
+     * what {@link AbstractPrismiumMachineBlockEntity#CAPACITY} worth of
+     * energy (set directly via {@code setEnergy} before the delay) could
+     * ever run out from at {@link AbstractPrismiumMachineBlockEntity#ENERGY_PER_TICK}
+     * per tick (4,000 / 20 = 200 ticks worth), so a stalled-for-energy
+     * false failure is not possible here. */
+    private static final int PROGRESS_CHECK_DELAY_TICKS = 10;
+    /** Slack ticks allowed below {@link #PROGRESS_CHECK_DELAY_TICKS} when
+     * asserting the live progress counter - GameTest's own scheduled
+     * callback and this mod's block entity ticker are not guaranteed to
+     * interleave with zero ambiguity (see this class's top-level doc), so
+     * progress landing a tick or two short of the wall-clock delay is
+     * expected and not itself a regression. Progress can never read
+     * *above* {@link #PROGRESS_CHECK_DELAY_TICKS} (it increments by
+     * exactly 1 per tick while active, see {@link
+     * AbstractPrismiumMachineBlockEntity#tick}), so no slack is allowed on
+     * that side - any overshoot would mean progress is incrementing more
+     * than once per tick, a real bug this test should catch. */
+    private static final int PROGRESS_CHECK_SLACK_TICKS = 2;
+
     /**
      * Regression tests mirroring {@link #generatorContainerDataTracksLiveEnergy}
      * for the mod's other energy-consuming GUIs (TODO11 in PROGRESS.md's
@@ -402,5 +430,113 @@ public class ClaudeModGameTests {
         helper.assertTrue(containerData.get(1) == liveMax,
                 label + " ContainerData slot 1 (max energy) was " + containerData.get(1)
                         + " but the live energy storage reads " + liveMax + " - sync wiring is broken");
+    }
+
+    /**
+     * TODO11's remaining "次にやるべき拡張(c)" item: unlike {@link
+     * #assertMachineContainerDataTracksLiveEnergy} above (which
+     * deliberately skips slots 2/3, see that method's doc), these three
+     * tests queue an actual valid recipe (a real input item this
+     * machine's own hardcoded {@code recipeFor} table accepts, at exactly
+     * the count {@code inputCountPerOperation()} needs - the many-to-one
+     * count for Smelter/Compressor, or 1 for Pulverizer's default) with
+     * energy topped up to full via {@link
+     * com.claudemod.energy.PrismiumEnergyStorage#setEnergy} (same NBT-
+     * restore-only method {@code PrismiumCellBlockEntity} already uses
+     * elsewhere in this mod - directly setting the stored amount rather
+     * than routing through {@code receiveEnergy}'s maxReceive cap, purely
+     * to remove energy availability as a variable in this specific test),
+     * then lets {@link #PROGRESS_CHECK_DELAY_TICKS} real ticks pass and
+     * checks the live {@code ContainerData} progress/active slots (index
+     * 2/3) actually advanced - the one gap the energy-only sink tests
+     * above intentionally left open (see their own doc: "reaching a non-
+     * zero, deterministic progress value needs a valid queued recipe and
+     * several ticks of processing... kept separate").
+     */
+    private static void assertMachineProgressAdvancesWhileProcessing(GameTestHelper helper,
+            AbstractPrismiumMachineBlockEntity machine, Item inputItem, int inputCount, String label) {
+        machine.getEnergyStorage().setEnergy(AbstractPrismiumMachineBlockEntity.CAPACITY);
+        machine.getInventory().setStackInSlot(0, new ItemStack(inputItem, inputCount));
+
+        helper.runAfterDelay(PROGRESS_CHECK_DELAY_TICKS, () -> {
+            ContainerData containerData = machine.getContainerData();
+            int progress = containerData.get(2);
+            boolean active = containerData.get(3) != 0;
+
+            helper.assertTrue(active,
+                    label + " ContainerData slot 3 (active) was false after " + PROGRESS_CHECK_DELAY_TICKS
+                            + " ticks with full energy and a valid queued recipe - processing appears stalled"
+                            + " or the active-flag sync wiring is broken");
+            helper.assertTrue(
+                    progress >= PROGRESS_CHECK_DELAY_TICKS - PROGRESS_CHECK_SLACK_TICKS
+                            && progress <= PROGRESS_CHECK_DELAY_TICKS,
+                    label + " ContainerData slot 2 (progress) was " + progress + " after "
+                            + PROGRESS_CHECK_DELAY_TICKS + " ticks, expected between "
+                            + (PROGRESS_CHECK_DELAY_TICKS - PROGRESS_CHECK_SLACK_TICKS) + " and "
+                            + PROGRESS_CHECK_DELAY_TICKS
+                            + " (stuck at/near 0 means processing never started or the progress sync wiring is"
+                            + " broken; a value above the upper bound would mean progress increments more than"
+                            + " once per tick)");
+
+            ItemStack remainingInput = machine.getInventory().getStackInSlot(0);
+            helper.assertTrue(remainingInput.getCount() == inputCount,
+                    label + " input slot count changed from " + inputCount + " to " + remainingInput.getCount()
+                            + " after only " + PROGRESS_CHECK_DELAY_TICKS
+                            + " ticks, before the operation should complete (PROCESS_TIME_TICKS="
+                            + AbstractPrismiumMachineBlockEntity.PROCESS_TIME_TICKS
+                            + ") - input consumed too early");
+
+            helper.succeed();
+        });
+    }
+
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID,
+            timeoutTicks = PROGRESS_CHECK_DELAY_TICKS + 20)
+    public static void pulverizerProgressAdvancesWhileProcessing(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_PULVERIZER.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumPulverizerBlockEntity pulverizer)) {
+            helper.fail("Pulverizer block entity was not created", pos);
+            return;
+        }
+
+        // Pulverizer's recipe table (PrismiumPulverizerBlockEntity#recipes)
+        // accepts the ore item directly; inputCountPerOperation() is not
+        // overridden by Pulverizer, so it uses the base class default of 1
+        // (see AbstractPrismiumMachineBlockEntity#inputCountPerOperation's
+        // doc).
+        assertMachineProgressAdvancesWhileProcessing(helper, pulverizer,
+                ModItems.PRISMIUM_ORE_ITEM.get(), 1, "Pulverizer");
+    }
+
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID,
+            timeoutTicks = PROGRESS_CHECK_DELAY_TICKS + 20)
+    public static void smelterProgressAdvancesWhileProcessing(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_SMELTER.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumSmelterBlockEntity smelter)) {
+            helper.fail("Smelter block entity was not created", pos);
+            return;
+        }
+
+        assertMachineProgressAdvancesWhileProcessing(helper, smelter, ModItems.PRISMIUM_SHARD.get(),
+                PrismiumSmelterBlockEntity.SHARDS_PER_INGOT, "Smelter");
+    }
+
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID,
+            timeoutTicks = PROGRESS_CHECK_DELAY_TICKS + 20)
+    public static void compressorProgressAdvancesWhileProcessing(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_COMPRESSOR.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumCompressorBlockEntity compressor)) {
+            helper.fail("Compressor block entity was not created", pos);
+            return;
+        }
+
+        assertMachineProgressAdvancesWhileProcessing(helper, compressor, ModItems.PRISMIUM_INGOT.get(),
+                PrismiumCompressorBlockEntity.INGOTS_PER_ALLOY_INGOT, "Compressor");
     }
 }
