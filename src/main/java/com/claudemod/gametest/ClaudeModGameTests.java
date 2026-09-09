@@ -11,16 +11,22 @@ import com.claudemod.blockentity.PrismiumPylonBlockEntity;
 import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
 import com.claudemod.blockentity.PrismiumSmelterBlockEntity;
 import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
+import com.claudemod.menu.PrismiumGeneratorMenu;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.AbstractContainerMenu;
+import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
+import net.minecraftforge.items.ItemStackHandler;
 
 /**
  * Automated GameTests for the Prismium Energy pillar (TODO11 in
@@ -687,5 +693,146 @@ public class ClaudeModGameTests {
 
             helper.succeed();
         });
+    }
+
+    /** Menu-slot index of the first fuel slot (0..{@link
+     * PrismiumGeneratorBlockEntity#FUEL_SLOT_COUNT}-1) in {@link
+     * PrismiumGeneratorMenu}, mirrored here rather than reflectively
+     * reaching into that class's own private {@code INVENTORY_START}
+     * constant - this test only needs to know the fuel range starts at
+     * slot 0, which is guaranteed by that menu's slot-registration order
+     * (fuel slots first, see its constructor) regardless of the exact
+     * private constant name. */
+    private static final int GENERATOR_FIRST_FUEL_SLOT = 0;
+
+    /** {@link PrismiumGeneratorMenu} menu-slot index of the player's own
+     * main-inventory slot 0 (the menu registers the 27 main-inventory
+     * slots starting right after the 4 fuel slots, see that class's
+     * constructor) - used below as "some player-inventory slot", not
+     * because slot 0 specifically matters. */
+    private static final int GENERATOR_MENU_PLAYER_SLOT_0 = PrismiumGeneratorBlockEntity.FUEL_SLOT_COUNT;
+
+    /**
+     * TODO11's remaining extension (b): a pseudo shift-click test for
+     * {@link PrismiumGeneratorMenu#quickMoveStack}, the one interaction
+     * GameTest cannot reproduce with an actual player clicking a real
+     * screen (see this class's own top-level doc and PROGRESS.md TODO11's
+     * "残っている拡張" note: GameTest has no connected client, so no mouse
+     * ever moves) - but {@code quickMoveStack} itself is plain server-side
+     * logic invoked by {@link AbstractContainerMenu#clicked} whenever a
+     * shift-click packet arrives, and nothing about that call requires an
+     * actual client on the other end. This test calls {@code clicked}
+     * directly with {@link ClickType#QUICK_MOVE} against a menu built for
+     * a {@linkplain GameTestHelper#makeMockServerPlayerInLevel() mock
+     * server player} placed in this test's own level, exercising the real
+     * routing code path ({@code clicked} -&gt; {@code doClick} -&gt;
+     * {@code quickMoveStack}) rather than calling {@code quickMoveStack}
+     * itself directly, which would skip {@code clicked}'s own slot/stack
+     * bookkeeping and risk a false pass.
+     *
+     * <p>Three scenarios, chosen to cover every branch of
+     * {@link PrismiumGeneratorMenu#quickMoveStack}'s three-band routing
+     * (see that method's own doc):
+     * <ol>
+     * <li>A Prismium Shard (valid fuel, see
+     * {@link PrismiumGeneratorBlockEntity#isValidFuel}) shift-clicked from
+     * the player's main inventory must land in a fuel slot (index
+     * &lt; {@link PrismiumGeneratorBlockEntity#FUEL_SLOT_COUNT}).</li>
+     * <li>That same shard, now sitting in a fuel slot, shift-clicked back
+     * out must land somewhere in the player's inventory/hotbar (not stay
+     * in a fuel slot, not vanish).</li>
+     * <li>A non-fuel item (a raw Prismium Ore, already used elsewhere in
+     * this class as an inert stand-in item) shift-clicked from the
+     * player's main inventory must be routed to the hotbar band instead
+     * of the fuel slots - the {@code isValidFuel} guard in
+     * {@code quickMoveStack}'s middle branch existing specifically to
+     * prevent junk items from being shift-clicked into the fuel slots.</li>
+     * </ol>
+     *
+     * <p>No delay/tick wait is needed - {@code clicked} runs its slot
+     * mutation synchronously, so every assertion below reads the result
+     * immediately after the corresponding {@code clicked} call in the same
+     * game tick the test starts on.
+     */
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void generatorQuickMoveStackRoutesFuelAndInventory(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 1, 1);
+        helper.setBlock(pos, ModBlocks.PRISMIUM_GENERATOR.get());
+
+        if (!(helper.getBlockEntity(pos) instanceof PrismiumGeneratorBlockEntity generator)) {
+            helper.fail("Generator block entity was not created", pos);
+            return;
+        }
+
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        Inventory playerInventory = player.getInventory();
+        ItemStackHandler fuelInventory = generator.getFuelInventory();
+
+        AbstractContainerMenu menuObj = generator.createMenu(0, playerInventory, player);
+        if (!(menuObj instanceof PrismiumGeneratorMenu menu)) {
+            helper.fail("Generator#createMenu did not return a PrismiumGeneratorMenu", pos);
+            return;
+        }
+
+        // Scenario 1: valid fuel in the player's inventory, shift-clicked,
+        // must land in a fuel slot.
+        playerInventory.setItem(9, new ItemStack(ModItems.PRISMIUM_SHARD.get(), 1));
+        menu.clicked(GENERATOR_MENU_PLAYER_SLOT_0, 0, ClickType.QUICK_MOVE, player);
+
+        boolean shardReachedFuelSlot = false;
+        for (int i = 0; i < PrismiumGeneratorBlockEntity.FUEL_SLOT_COUNT; i++) {
+            if (fuelInventory.getStackInSlot(i).is(ModItems.PRISMIUM_SHARD.get())) {
+                shardReachedFuelSlot = true;
+                break;
+            }
+        }
+        helper.assertTrue(shardReachedFuelSlot,
+                "Shift-clicking a Prismium Shard from the player's main inventory did not move it into any fuel"
+                        + " slot - quickMoveStack's player-inventory-to-fuel-slot routing appears broken");
+        helper.assertTrue(playerInventory.getItem(9).isEmpty(),
+                "Shift-clicking the shard out of the player's inventory left a copy behind at slot 9 - it should"
+                        + " have been fully moved, not duplicated");
+
+        // Scenario 2: that same shard, now in a fuel slot, shift-clicked
+        // back out must reach the player's inventory/hotbar.
+        menu.clicked(GENERATOR_FIRST_FUEL_SLOT, 0, ClickType.QUICK_MOVE, player);
+
+        helper.assertTrue(fuelInventory.getStackInSlot(GENERATOR_FIRST_FUEL_SLOT).isEmpty(),
+                "Shift-clicking the shard out of fuel slot " + GENERATOR_FIRST_FUEL_SLOT
+                        + " left it behind instead of moving it back to the player");
+        boolean shardReturnedToPlayer = false;
+        for (int i = 0; i < playerInventory.getContainerSize(); i++) {
+            if (playerInventory.getItem(i).is(ModItems.PRISMIUM_SHARD.get())) {
+                shardReturnedToPlayer = true;
+                break;
+            }
+        }
+        helper.assertTrue(shardReturnedToPlayer,
+                "Shift-clicking the shard out of its fuel slot did not deposit it anywhere in the player's"
+                        + " inventory/hotbar - quickMoveStack's fuel-slot-to-player routing appears broken");
+
+        // Scenario 3: a non-fuel item shift-clicked from the player's main
+        // inventory must be routed to the hotbar, never into a fuel slot.
+        playerInventory.setItem(9, new ItemStack(ModItems.PRISMIUM_ORE_ITEM.get(), 1));
+        menu.clicked(GENERATOR_MENU_PLAYER_SLOT_0, 0, ClickType.QUICK_MOVE, player);
+
+        for (int i = 0; i < PrismiumGeneratorBlockEntity.FUEL_SLOT_COUNT; i++) {
+            helper.assertTrue(!fuelInventory.getStackInSlot(i).is(ModItems.PRISMIUM_ORE_ITEM.get()),
+                    "Shift-clicking a non-fuel Prismium Ore incorrectly routed it into fuel slot " + i
+                            + " - the isValidFuel guard in quickMoveStack's middle branch appears broken");
+        }
+        boolean oreReachedHotbar = false;
+        for (int i = 0; i < 9; i++) {
+            if (playerInventory.getItem(i).is(ModItems.PRISMIUM_ORE_ITEM.get())) {
+                oreReachedHotbar = true;
+                break;
+            }
+        }
+        helper.assertTrue(oreReachedHotbar,
+                "Shift-clicking a non-fuel Prismium Ore out of the player's main inventory did not land it in the"
+                        + " hotbar - quickMoveStack's main-inventory-to-hotbar routing for non-fuel items appears"
+                        + " broken");
+
+        helper.succeed();
     }
 }
