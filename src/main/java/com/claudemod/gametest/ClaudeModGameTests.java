@@ -17,10 +17,9 @@ import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
 import net.minecraft.world.inventory.ContainerData;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -718,17 +717,43 @@ public class ClaudeModGameTests {
      * GameTest cannot reproduce with an actual player clicking a real
      * screen (see this class's own top-level doc and PROGRESS.md TODO11's
      * "残っている拡張" note: GameTest has no connected client, so no mouse
-     * ever moves) - but {@code quickMoveStack} itself is plain server-side
-     * logic invoked by {@link AbstractContainerMenu#clicked} whenever a
-     * shift-click packet arrives, and nothing about that call requires an
-     * actual client on the other end. This test calls {@code clicked}
-     * directly with {@link ClickType#QUICK_MOVE} against a menu built for
-     * a {@linkplain GameTestHelper#makeMockServerPlayerInLevel() mock
-     * server player} placed in this test's own level, exercising the real
-     * routing code path ({@code clicked} -&gt; {@code doClick} -&gt;
-     * {@code quickMoveStack}) rather than calling {@code quickMoveStack}
-     * itself directly, which would skip {@code clicked}'s own slot/stack
-     * bookkeeping and risk a false pass.
+     * ever moves).
+     *
+     * <p><b>This test calls {@code quickMoveStack} directly rather than
+     * going through {@link AbstractContainerMenu#clicked} - a deliberate,
+     * CI-verified choice, not the original plan.</b> The first version of
+     * this test used {@link GameTestHelper#makeMockServerPlayerInLevel()}
+     * (a real {@code ServerPlayer} that {@code PlayerList} actually logs
+     * in) and called {@code clicked(index, 0, ClickType.QUICK_MOVE,
+     * player)}, on the theory that exercising the real {@code clicked} -&gt;
+     * {@code doClick} -&gt; {@code quickMoveStack} path would be more
+     * faithful than calling {@code quickMoveStack} directly. That version
+     * failed CI immediately (build-and-notify run right after this test
+     * was first added): the log showed {@code "test-mock-player[local]
+     * logged in"} followed instantly by {@code "Cannot invoke
+     * io.netty.channel.Channel.pipeline() because the return value of
+     * net.minecraft.network.Connection.channel() is null"} - the mock
+     * server player's login goes through the same
+     * {@code PlayerList#placeNewPlayer} code real clients use, which tries
+     * to send join-game/inventory packets over a {@code Connection} that
+     * this headless {@code runGameTestServer} process never gave a real
+     * netty {@code Channel}. Both {@link
+     * GameTestHelper#makeMockServerPlayerInLevel()} and
+     * {@link AbstractContainerMenu#clicked} are therefore unusable
+     * together in this project's CI without a real client connection.
+     * {@link GameTestHelper#makeMockPlayer()} (the mapping's own
+     * alternate name is tellingly {@code createMockCreativePlayer}, with
+     * no "InLevel"/"InWorld" suffix) does not register with
+     * {@code PlayerList} and so never attempts this login/packet
+     * machinery - calling {@code quickMoveStack} directly on it exercises
+     * exactly the method this TODO item is actually about, without a
+     * network dependency headless CI cannot satisfy. {@code
+     * quickMoveStack}'s own body (see that method's doc) only touches
+     * {@code ItemStack}/{@code Slot} data and {@link
+     * net.minecraft.world.inventory.Slot#onTake} (which just marks the
+     * slot changed) - nothing in it actually needs {@code clicked}'s
+     * outer dispatch, so this substitution does not weaken what gets
+     * verified.
      *
      * <p>Three scenarios, chosen to cover every branch of
      * {@link PrismiumGeneratorMenu#quickMoveStack}'s three-band routing
@@ -749,10 +774,10 @@ public class ClaudeModGameTests {
      * prevent junk items from being shift-clicked into the fuel slots.</li>
      * </ol>
      *
-     * <p>No delay/tick wait is needed - {@code clicked} runs its slot
-     * mutation synchronously, so every assertion below reads the result
-     * immediately after the corresponding {@code clicked} call in the same
-     * game tick the test starts on.
+     * <p>No delay/tick wait is needed - {@code quickMoveStack} runs its
+     * slot mutation synchronously, so every assertion below reads the
+     * result immediately after the corresponding call in the same game
+     * tick the test starts on.
      */
     @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
     public static void generatorQuickMoveStackRoutesFuelAndInventory(GameTestHelper helper) {
@@ -764,7 +789,7 @@ public class ClaudeModGameTests {
             return;
         }
 
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        Player player = helper.makeMockPlayer();
         Inventory playerInventory = player.getInventory();
         ItemStackHandler fuelInventory = generator.getFuelInventory();
 
@@ -777,7 +802,7 @@ public class ClaudeModGameTests {
         // Scenario 1: valid fuel in the player's inventory, shift-clicked,
         // must land in a fuel slot.
         playerInventory.setItem(9, new ItemStack(ModItems.PRISMIUM_SHARD.get(), 1));
-        menu.clicked(GENERATOR_MENU_PLAYER_SLOT_0, 0, ClickType.QUICK_MOVE, player);
+        menu.quickMoveStack(player, GENERATOR_MENU_PLAYER_SLOT_0);
 
         boolean shardReachedFuelSlot = false;
         for (int i = 0; i < PrismiumGeneratorBlockEntity.FUEL_SLOT_COUNT; i++) {
@@ -795,7 +820,7 @@ public class ClaudeModGameTests {
 
         // Scenario 2: that same shard, now in a fuel slot, shift-clicked
         // back out must reach the player's inventory/hotbar.
-        menu.clicked(GENERATOR_FIRST_FUEL_SLOT, 0, ClickType.QUICK_MOVE, player);
+        menu.quickMoveStack(player, GENERATOR_FIRST_FUEL_SLOT);
 
         helper.assertTrue(fuelInventory.getStackInSlot(GENERATOR_FIRST_FUEL_SLOT).isEmpty(),
                 "Shift-clicking the shard out of fuel slot " + GENERATOR_FIRST_FUEL_SLOT
@@ -814,7 +839,7 @@ public class ClaudeModGameTests {
         // Scenario 3: a non-fuel item shift-clicked from the player's main
         // inventory must be routed to the hotbar, never into a fuel slot.
         playerInventory.setItem(9, new ItemStack(ModItems.PRISMIUM_ORE_ITEM.get(), 1));
-        menu.clicked(GENERATOR_MENU_PLAYER_SLOT_0, 0, ClickType.QUICK_MOVE, player);
+        menu.quickMoveStack(player, GENERATOR_MENU_PLAYER_SLOT_0);
 
         for (int i = 0; i < PrismiumGeneratorBlockEntity.FUEL_SLOT_COUNT; i++) {
             helper.assertTrue(!fuelInventory.getStackInSlot(i).is(ModItems.PRISMIUM_ORE_ITEM.get()),
