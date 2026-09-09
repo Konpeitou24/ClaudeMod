@@ -1,27 +1,24 @@
 # HANDOFF.md (直前セッションからの申し送り、直近1回分のみ)
 
-## 今回やったこと(2026-09-09、定期実行セッション、v0.40.3リリース)
+## 今回やったこと(2026-09-09、定期実行セッション、v0.40.4リリース)
 
-前回セッション(v0.40.2)のCIビルドはstatus=ok確認済み(commit=5dc2cc0)の状態から開始。HANDOFF.mdの「次回最優先」に書かれていたPROGRESS.md TODO11の残り拡張(a)「より複雑なケーブル網(分岐・ループ)での保存則テスト」に対応した。
+前回セッション(v0.40.3)のCIビルドはstatus=ok確認済み(commit=fb4f3d0)の状態から開始。HANDOFF.mdの「次回最優先」のうち、実機がないと確認できない項目(TODO6の実機確認等)を除き、着手可能だったPROGRESS.md TODO11の最後の残りタスク(b)「quickMoveStack(shift-click)のGameTestでの検証」に対応した。
 
-- **新規GameTest追加**: `ClaudeModGameTests`に`energyConservesAcrossBranchingCableNetwork`(発電機から2方向に分岐して別々のセルへ)と`energyConservesAcrossLoopedCableNetwork`(合流ループを含む網)の2件を追加。
-- **実バグ発見**: 分岐網のテストを書く過程で、`EnergyPushHelper#pushThroughNetwork`が複数の受け手を見つけた場合、BFS発見順の1つ目が受け取れるだけ受け取ってから2つ目に回す実装だと判明。発電機の毎tick実質出力(~10FE、上限200FEよりずっと小さい)は受け手1体の受電上限を下回るため、最初に見つかった枝の受け手が毎tick予算を完全に独占し、2つ目以降の枝は理論上永久に0FEのまま(飢餓状態)になる。これは長年未解決だったTODO6の「二段階の挙動」報告と非常によく一致する説明(片方の消費ブロックだけ先に電力が満ちていくように見える)。
-- **修正**: `EnergyPushHelper`に`distributeFairly`メソッドを新設し、複数の受け手が見つかった場合は毎tickの予算を受け手数で均等に分配するよう変更。受け手が1つだけの構成(既存の11テスト・最も一般的な実運用構成)では旧実装と完全に同じ挙動になるため、既存テスト・通常配線への影響は無いはず。
-- **push・ビルド確認**: commit 7a973fa(テスト+修正)をpush、build-and-notify(run=34294480946)でstatus=ok、`builds/last_datapack_validation_tail.log`で`All 13 required tests passed`(11→13件、新規2件含め全成功)を直接確認。
-- **リリース**: v0.40.3としてバージョンbump+リリースノート追加コミット(b045aea)を作成・push、同commitでもstatus=ok・All 13 required tests passedを確認してから、**CI自動コミットが積まれる前に**その場でb045aeaに直接タグを打ってpush。`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.40.3`をfetchし、本文・Assets 3(jar付き)が実際に公開されていることを確認済み。タグ関連の落とし穴(skip-ciコミットへの誤タグ付け等)は今回も再発しなかった。
-- **GitHub Issue確認**: `/issues?q=is%3Aissue+is%3Aopen`の集計(ブラウザツールのget_page_textで確認)で「Open 2 / Closed 23」を確認、前回セッションから件数変化なし(新規issueなし)。
+- **新規GameTest追加**: `ClaudeModGameTests`に`generatorQuickMoveStackRoutesFuelAndInventory`を追加。プリズミウムの欠片(有効な燃料)をプレイヤーの手持ちからshift-clickすると燃料スロットに入ること、その欠片を燃料スロットからshift-clickすると手持ちに戻ること、燃料として無効なアイテム(プリズミウムの鉱石)をshift-clickすると燃料スロットではなくホットバーに送られることの3パターンを検証。
+- **1回目のpushでビルド失敗を発見・修正(重要)**: 最初は`GameTestHelper#makeMockServerPlayerInLevel()`で作った本物の`ServerPlayer`に`AbstractContainerMenu#clicked(index, 0, ClickType.QUICK_MOVE, player)`を呼び出す実装でpush(commit f5f40f3)したところ、build-and-notifyが実際に失敗(`Connection.channel()`がnullのNPE)。ログを確認すると、モックプレイヤーの「ログイン」処理が実クライアントと同じ`PlayerList#placeNewPlayer`を通り、ヘッドレスCIが本物のnetty Channelを持たない`Connection`へパケット送信を試みてクラッシュしていたことが判明。`GameTestHelper#makeMockPlayer()`(PlayerList未登録の軽量モック)に切り替え、`clicked`ではなく検証対象そのものの`quickMoveStack`を直接呼び出す方式に修正(commit 0242989)して再push、CIで実際に成功(All 14 required tests passed)することを確認した。**この「push成功≠ビルド成功」を実地で再確認できたのは良い教訓**(教訓自体はPROGRESS.mdの約束や決まり事に新規追記済み)。
+- **リリース**: v0.40.4としてバージョンbump+リリースノート追加コミット(4a8a9dd)を作成・push、同commitでもstatus=ok・All 14 required tests passedを確認してからその場でタグを打ってpush。`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.40.4`をfetchし、本文・Assets 3(jar付き)が実際に公開されていることを確認済み。
+- **GitHub Issue #15/#21の個別ページ確認(新規発見あり)**: `mcp__Claude_Browser__get_page_text`で個別issueページを開いて確認。**Issue #15に2026-09-04付けでこんぺいとう氏本人による「UIの機能を確認しました。」という新しいコメントを発見した。** 直前のコメント(こんぺいとう氏自身)が「動力系のすべてのUIが全く機能していません」だったため、これはPROGRESS.md TODO7(全GUIブロックの画面固まりバグ、v0.31.2で修正済みだが実機未確認のまま長期間放置されていた)への実機確認と解釈できる。TODO7を「2026-09-04にこんぺいとう氏が実機確認済み」に更新した。Issue #21は前回確認時(v0.36.0対応時)から新規コメント無し。
 
 ## 次回最優先でやるべきこと
 
-- **TODO6の実機確認**: 今回の`distributeFairly`修正で、こんぺいとう氏が実際に体感していた「二段階の挙動」が本当に解消されたかどうかは、まだ検証できていない(今回の修正は「分岐して複数の受け手がある場合」に効くもので、単一経路・単一消費ブロックの構成でも同じ体感バグが起きていた可能性は否定できていない)。実機でのフィードバックを待つか、次回セッションで単一経路構成での別要因(GUI表示側の問題等)も再点検する価値がある。
-- PROGRESS.md TODO11の残り拡張(b): MenuのquickMoveStack(shift-click)のGameTestでの検証(`AbstractContainerMenu#clicked`をサーバー側から直接呼び出すことで擬似的に検証できる可能性がある、要調査)。
-- TODO11の拡張(a)(b)以外のTODO(1〜5、7〜10、12〜15)は引き続き全て「実機確認待ち」で止まっている。
-- v0.39.0のプリズミウム・ウィスプ、v0.38.0の陸地(PrismiumLandFeature)は引き続き実機確認待ち(TODO8・TODO10)。
-- Issue #15・#21は引き続きOPEN(今回も個別ページの内容確認までは行っていない、次回は個別ページでコメント更新の有無を確認するとなお良い)。特に#15は今回の修正が実機で解消を確認できたら、こんぺいとう氏に報告した上でクローズ検討に進める材料になる。
+- PROGRESS.md TODO11(GameTestによる自動検証)はa/b/cすべて完了した。残るTODOはほぼ全て「実機確認待ち」(1〜6、8〜10、12〜15)。このサンドボックスでは実機を起動できないため、こんぺいとう氏本人からの新しいフィードバック(Issue上のコメント、チャットでの直接報告)を待つのが基本線になる。
+- **TODO6(電力分配バグの実機確認)は今回も確認できなかった**。Issue #15の2026-09-04コメントは「UI」への言及であり、電力の二段階挙動(TODO6)そのものへの言及ではない可能性がある点に注意(UIとFE分配は別の話題)。次回セッションでもIssue #15の新規コメントの有無を個別ページで確認し続けること。
+- 次に着手しやすそうなのはTODO13(コンペンディウムの再入手レシピ)やTODO14(コンペンディウムの内容拡充)など、実機確認に依存しない新規実装タスク。TODO11が完了した今、次のセッションでは「実機確認待ちで止まっているものを漫然と繰り返し書くだけ」ではなく、実機に依存しない新規コンテンツ追加(装飾ブロック、コンペンディウム拡充等)に着手する方が生産的かもしれない。
+- Issue #15・#21は引き続きOPEN。次回も個別ページでコメント更新の有無を確認すること(一覧ページの状態表示は当てにならない、過去の教訓参照)。
 
 ## 注意点
 
-- 今回の`distributeFairly`修正は、受け手が1つだけの場合は数学的に旧実装と完全に同一の挙動になる(share = budget / 1 = budget全額)ことを手動でトレースして確認済み。既存の11テストが引き続き全て成功していることもCIで確認済みなので、既存の単一経路構成への意図しない影響は無いはず。
-- 分岐網テスト(`energyConservesAcrossBranchingCableNetwork`)は今回の修正が無いと確実に失敗する(2つ目のセルが0FEのまま`cellSouthEnergy > 0`のassertTrueで落ちる)設計にした。実際にCIでこの状態(修正込み)でパスしたことを確認しているが、万一将来この修正が意図せずロールバックされた場合はこのテストがすぐ検知できるはず。
-- 合流ループのテスト(`energyConservesAcrossLoopedCableNetwork`)は`distributeFairly`とは別の観点(BFSの受け手重複排除)を検証するもので、今回の分配ロジック変更の影響を受けない独立した回帰テスト。
-- GitHub Actionsの`build-and-notify.yml`のワークフロー一覧ページ(html直接fetch)は、直後に取得すると実際のrun一覧の反映に数十秒〜1分のタイムラグがあることが今回も確認された(このセッションではリポジトリにコミットされる`builds/last_datapack_validation_summary.txt`のcommitハッシュ照合を主たる確認手段として使い、Actions一覧ページのhtml fetchは補助的な確認に留めた)。
+- **新しい重要な教訓(PROGRESS.mdにも追記済み)**: このMODのCI(`runGameTestServer`、実クライアント接続なしのヘッドレス環境)でGameTestに疑似プレイヤーを絡める場合、`GameTestHelper#makeMockServerPlayerInLevel()`(PlayerListに本登録される重量級、ログイン処理で実クライアントと同じパケット送信コードを通る)は使ってはいけない。`GameTestHelper#makeMockPlayer()`(PlayerList未登録の軽量モック)を使うこと。また`AbstractContainerMenu#clicked`のような「クリックパケット処理の入り口」経由の呼び出しは未知の副作用リスクがあるため、検証したいメソッド(今回は`quickMoveStack`)があるなら直接呼び出す方が安全。詳細は`ClaudeModGameTests#generatorQuickMoveStackRoutesFuelAndInventory`のjavadocに経緯を記録済み。
+- 今回のCI失敗(1回目のpush、commit f5f40f3)は、build-and-notifyのActions結果を実際に確認したことで発覚した。もしpushしただけで確認を怠っていたら、また「ビルド失敗を見逃して完了報告」という過去の事故(2026-09-01)を繰り返すところだった。今回のセッションはこの確認プロセスが正しく機能した実例として記録しておく。
+- Issue #15の「UIの機能を確認しました。」コメントは、TODO7(GUI画面固まりバグ)への確認だと解釈したが、こんぺいとう氏に直接確認できたわけではない(あくまでIssueのコメント履歴からの推測)。もしこの解釈が誤りだった場合は、次回以降のセッションでの訂正が必要になる可能性がある。
+- v0.40.4時点でCIの自動テストは合計14件、全て成功中。今後さらにテストを追加する場合も、疑似プレイヤーが必要になったら上記の教訓(`makeMockPlayer()`を使う)に従うこと。
