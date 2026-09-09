@@ -73,10 +73,17 @@ public final class PrismiumCompendiumFactory {
      * covering (in order): intro, Prismium resource line, energy system
      * overview, generator/cell usage, cable networks, the three
      * processing machines, equipment overview, the passive/active charm
-     * family, Prism Realm access, hostile mobs, and misc utility items -
-     * see PROGRESS.md section 5 for the same grouping applied to the
-     * mod's own roadmap. */
-    private static final int PAGE_COUNT = 11;
+     * family, Prism Realm access, hostile mobs, decorative building
+     * blocks (Prismium Core family, Pale Prismium family, Lantern),
+     * traps/utility blocks (Snare, Chronoflame), how to re-craft this
+     * very book if lost (PrismiumCompendiumRecipe, TODO13/session
+     * following v0.41.0), and JEI/cable-network tips - see PROGRESS.md
+     * section 5 for the same grouping applied to the mod's own roadmap.
+     * Expanded from 11 to 15 pages in the content-expansion pass right
+     * after the re-crafting recipe shipped (PROGRESS.md TODO "コンペン
+     * ディウムの内容拡充"), since a book players can always get back is
+     * more worth reading in full. */
+    private static final int PAGE_COUNT = 15;
 
     public static ItemStack createStack() {
         ItemStack stack = new ItemStack(com.claudemod.registry.ModItems.PRISMIUM_COMPENDIUM.get());
