@@ -15,6 +15,7 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -207,20 +208,99 @@ public final class EnergyPushHelper {
             return false;
         }
 
+        return distributeFairly(receivers, storage, budget);
+    }
+
+    /**
+     * Splits {@code budget} FE across all of {@code receivers} as evenly as
+     * possible per call, instead of exhausting the budget on the
+     * first-discovered receiver before ever offering anything to the rest.
+     *
+     * <p><b>2026-09-09 fix (PROGRESS.md TODO6, the long-standing
+     * unresolved "二段階の挙動" report):</b> the code this replaced just
+     * walked {@code receivers} in BFS discovery order and kept feeding the
+     * first one until either it stopped accepting or the whole tick's
+     * budget ran out before ever moving on - harmless for the
+     * single-receiver networks every GameTest in this mod exercised until
+     * now, but on a *branching* network where a source's own per-tick
+     * output is small relative to what a single receiver can absorb (e.g.
+     * {@code PrismiumGeneratorBlockEntity}'s default 200 FE/tick
+     * maxExtract, but typically only ~10 FE actually sitting in its
+     * buffer at the start of any given tick - see that class's own doc on
+     * why), the first-discovered branch would silently absorb literally
+     * 100% of every tick's output forever, leaving every other branch at
+     * exactly 0 FE indefinitely - not a slow trickle, a complete and
+     * permanent starvation of every receiver after the first. Two new
+     * GameTests ({@code energyConservesAcrossBranchingCableNetwork} and
+     * {@code energyConservesAcrossLoopedCableNetwork} in
+     * {@code com.claudemod.gametest.ClaudeModGameTests}, written to try to
+     * auto-reproduce GitHub issue #15's "二段階の挙動" report per
+     * PROGRESS.md TODO11's extension (a)) caught exactly this: the second
+     * branch's Cell staying at 0 FE for the test's entire duration. This
+     * reads to a player exactly like a two-stage rollout - one consumer
+     * visibly fills first, and depending on how the player happened to
+     * wire their network, the other branch might never visibly start at
+     * all - matching the original report far better than the earlier,
+     * single-path-only investigations could have found (see
+     * {@code PrismiumGeneratorBlockEntity}'s own class doc for why that
+     * earlier pass concluded there was no bug - it never tried a branching
+     * topology).
+     *
+     * <p>Fix: rather than draining the budget into one receiver before
+     * touching the next, this loops over the still-hungry receivers in
+     * rounds, offering each an equal share of whatever budget remains at
+     * the start of that round (at least 1 FE, so a tiny remaining budget
+     * with many receivers still terminates promptly instead of looping
+     * forever on 0-sized shares). A receiver that accepts less than its
+     * offered share (full, or capped by its own maxReceive) is dropped
+     * from later rounds so its unused share can be re-offered to
+     * receivers that can actually use it, rather than being wasted doing
+     * nothing. This still moves at most {@code budget} FE total and still
+     * extracts from {@code storage} exactly once per accepted amount -
+     * identical bookkeeping to the loop it replaced (see this method's
+     * only caller, {@link #pushThroughNetwork}, for the conservation
+     * argument that bookkeeping supports) - so this changes *only* which
+     * receiver(s) get fed when there is more combined receiver capacity
+     * than budget, never whether the total amount actually moved is
+     * correct. With a single receiver (every previously-existing test's
+     * topology, and the overwhelmingly common real case of one cable run
+     * feeding one machine) this produces byte-identical behavior to the
+     * old loop, since a lone receiver's "share" is simply the whole
+     * remaining budget - so this fix could not have broken
+     * {@code energyFlowsThroughCableNetwork} or any of the single-sink
+     * ContainerData tests, all of which still pass unchanged.
+     */
+    private static boolean distributeFairly(List<IEnergyStorage> receivers, PrismiumEnergyStorage storage, int budget) {
         boolean moved = false;
-        for (IEnergyStorage receiver : receivers) {
-            if (budget <= 0) {
-                break;
+        List<IEnergyStorage> pending = new ArrayList<>(receivers);
+        while (budget > 0 && !pending.isEmpty() && storage.getEnergyStored() > 0) {
+            int share = Math.max(1, budget / pending.size());
+            boolean anyAcceptedThisRound = false;
+            Iterator<IEnergyStorage> it = pending.iterator();
+            while (it.hasNext() && budget > 0) {
+                IEnergyStorage receiver = it.next();
+                int toSend = Math.min(share, Math.min(budget, storage.getEnergyStored()));
+                if (toSend <= 0) {
+                    break;
+                }
+                int accepted = receiver.receiveEnergy(toSend, false);
+                if (accepted > 0) {
+                    storage.extractEnergy(accepted, false);
+                    budget -= accepted;
+                    moved = true;
+                    anyAcceptedThisRound = true;
+                }
+                if (accepted < toSend) {
+                    // Full, or capped below this round's share - stop
+                    // offering it further shares so the remainder isn't
+                    // wasted repeatedly retrying a receiver that can't
+                    // use it, and instead gets re-split among the
+                    // receivers that still can.
+                    it.remove();
+                }
             }
-            int toSend = Math.min(budget, storage.getEnergyStored());
-            if (toSend <= 0) {
+            if (!anyAcceptedThisRound) {
                 break;
-            }
-            int accepted = receiver.receiveEnergy(toSend, false);
-            if (accepted > 0) {
-                storage.extractEnergy(accepted, false);
-                budget -= accepted;
-                moved = true;
             }
         }
         return moved;

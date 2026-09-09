@@ -539,4 +539,153 @@ public class ClaudeModGameTests {
         assertMachineProgressAdvancesWhileProcessing(helper, compressor, ModItems.PRISMIUM_INGOT.get(),
                 PrismiumCompressorBlockEntity.INGOTS_PER_ALLOY_INGOT, "Compressor");
     }
+
+    /**
+     * TODO11に残っていた拡張(a): PROGRESS.md「3. 問題点」の最重要バグ
+     * (2026-08-31報告、"発電→ケーブル→消費ブロックのFE移動アルゴリズムが
+     * 直感に反する二段階の挙動をしている")の自動再現を試みる、より複雑な
+     * ケーブル網でのFE保存則テスト。{@link #energyFlowsThroughCableNetwork}
+     * は単一経路(発電機-ケーブル-ケーブル-セル)しか検証しておらず、報告に
+     * あった「複数の消費ブロック/発電機が絡んでいなかったか」という未確認
+     * 要因を全くカバーしていなかった。このテストは発電機1台からケーブル
+     * 網を南北2方向に分岐させ、それぞれ別々のセルに接続する("Y字"型)
+     * トポロジーを構築し、{@link com.claudemod.energy.EnergyPushHelper#pushThroughNetwork}の
+     * BFSが分岐先の両方に届き、かつ合計FEが単一経路の場合と同じ保存則の
+     * 範囲({@link #EXPECTED_MIN_TOTAL_FE}〜{@link #EXPECTED_MAX_TOTAL_FE},
+     * トポロジーに関わらず発電量とMAX_EXTRACTだけで決まるはずの値)に収まる
+     * ことを検証する。二段階の挙動(合計FEが範囲を外れる、あるいは片方の
+     * セルだけ極端に優遇される)が実在すれば、このテストがそれを検出できる
+     * はず。
+     *
+     * <p>トポロジー(すべてY座標1固定): generator(4,1,4) - cableNorth(4,1,3)
+     * - cellNorth(4,1,2) という一方の枝と、generator(4,1,4) -
+     * cableSouth(4,1,5) - cellSouth(4,1,6) というもう一方の枝が、発電機を
+     * 起点に分岐する。どちらの枝も発電機からセルまでちょうど2ホップで、
+     * 既存の直線テストと同じ距離感。
+     */
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID,
+            timeoutTicks = CHECK_DELAY_TICKS + 20)
+    public static void energyConservesAcrossBranchingCableNetwork(GameTestHelper helper) {
+        BlockPos generatorPos = new BlockPos(4, 1, 4);
+        BlockPos cableNorthPos = new BlockPos(4, 1, 3);
+        BlockPos cellNorthPos = new BlockPos(4, 1, 2);
+        BlockPos cableSouthPos = new BlockPos(4, 1, 5);
+        BlockPos cellSouthPos = new BlockPos(4, 1, 6);
+
+        helper.setBlock(generatorPos, ModBlocks.PRISMIUM_GENERATOR.get());
+        helper.setBlock(cableNorthPos, ModBlocks.PRISMIUM_CABLE.get());
+        helper.setBlock(cellNorthPos, ModBlocks.PRISMIUM_CELL.get());
+        helper.setBlock(cableSouthPos, ModBlocks.PRISMIUM_CABLE.get());
+        helper.setBlock(cellSouthPos, ModBlocks.PRISMIUM_CELL.get());
+
+        if (!(helper.getBlockEntity(generatorPos) instanceof PrismiumGeneratorBlockEntity generator)) {
+            helper.fail("Generator block entity was not created", generatorPos);
+            return;
+        }
+        generator.addFuel();
+
+        helper.runAfterDelay(CHECK_DELAY_TICKS, () -> {
+            if (!(helper.getBlockEntity(cableNorthPos) instanceof PrismiumCableBlockEntity cableNorth)
+                    || !(helper.getBlockEntity(cellNorthPos) instanceof PrismiumCellBlockEntity cellNorth)
+                    || !(helper.getBlockEntity(cableSouthPos) instanceof PrismiumCableBlockEntity cableSouth)
+                    || !(helper.getBlockEntity(cellSouthPos) instanceof PrismiumCellBlockEntity cellSouth)) {
+                helper.fail("A cable or cell block entity on one of the two branches was not created", generatorPos);
+                return;
+            }
+
+            int cellNorthEnergy = cellNorth.getEnergyStorage().getEnergyStored();
+            int cellSouthEnergy = cellSouth.getEnergyStorage().getEnergyStored();
+            helper.assertTrue(cellNorthEnergy > 0,
+                    "North-branch cell received no FE at all (branching network regression?) - cellNorthEnergy="
+                            + cellNorthEnergy);
+            helper.assertTrue(cellSouthEnergy > 0,
+                    "South-branch cell received no FE at all (branching network regression?) - cellSouthEnergy="
+                            + cellSouthEnergy);
+
+            int totalFe = generator.getEnergyStorage().getEnergyStored()
+                    + cableNorth.getEnergyStorage().getEnergyStored()
+                    + cellNorthEnergy
+                    + cableSouth.getEnergyStorage().getEnergyStored()
+                    + cellSouthEnergy;
+            helper.assertTrue(totalFe >= EXPECTED_MIN_TOTAL_FE && totalFe <= EXPECTED_MAX_TOTAL_FE,
+                    "Total FE across the branching network (generator+2 cables+2 cells) was " + totalFe
+                            + ", expected between " + EXPECTED_MIN_TOTAL_FE + " and " + EXPECTED_MAX_TOTAL_FE
+                            + " (same band as the single-path test - a branching topology should not by itself"
+                            + " change total generated/pushed FE; outside this band would mean FE is being"
+                            + " duplicated or lost specifically because of the branch)");
+
+            helper.succeed();
+        });
+    }
+
+    /**
+     * TODO11に残っていた拡張(a)のもう一方: ループ(合流)を含むケーブル網
+     * での保存則テスト。{@link com.claudemod.energy.EnergyPushHelper#pushThroughNetwork}の
+     * doc(「each physical receiver position is only ever added to the
+     * result list once even if the BFS reaches it via multiple cable
+     * paths (a looped or meshed network)」)がコード上主張している性質を、
+     * 実際にそのような地形を組んで確認する。菱形(ダイヤモンド)状に発電機
+     * から2本のケーブルが分岐し、両方が同じ1本のケーブルへ再合流してから
+     * セルに繋がるトポロジーを作る - 再合流点のケーブルとセルは、BFS上
+     * 2通りの経路で到達可能だが、それぞれ物理的には1個のブロックしか
+     * 無いので、二重に加算されていれば合計FEが単一経路テストの許容範囲
+     * ({@link #EXPECTED_MIN_TOTAL_FE}〜{@link #EXPECTED_MAX_TOTAL_FE})を
+     * 超えて検出できるはず。
+     *
+     * <p>トポロジー(すべてY座標1固定、+X=east/+Z=southの前提で配置):
+     * generator(1,1,1) → cableEast(2,1,1)(east隣接) と cableSouth(1,1,2)
+     * (south隣接)の2方向に分岐、両方とも cableMerge(2,1,2) に隣接
+     * (cableEastから見てsouth、cableSouthから見てeast)、最後に
+     * cableMergeのeast隣接である cell(3,1,2) が唯一の受け手。
+     */
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID,
+            timeoutTicks = CHECK_DELAY_TICKS + 20)
+    public static void energyConservesAcrossLoopedCableNetwork(GameTestHelper helper) {
+        BlockPos generatorPos = new BlockPos(1, 1, 1);
+        BlockPos cableEastPos = new BlockPos(2, 1, 1);
+        BlockPos cableSouthPos = new BlockPos(1, 1, 2);
+        BlockPos cableMergePos = new BlockPos(2, 1, 2);
+        BlockPos cellPos = new BlockPos(3, 1, 2);
+
+        helper.setBlock(generatorPos, ModBlocks.PRISMIUM_GENERATOR.get());
+        helper.setBlock(cableEastPos, ModBlocks.PRISMIUM_CABLE.get());
+        helper.setBlock(cableSouthPos, ModBlocks.PRISMIUM_CABLE.get());
+        helper.setBlock(cableMergePos, ModBlocks.PRISMIUM_CABLE.get());
+        helper.setBlock(cellPos, ModBlocks.PRISMIUM_CELL.get());
+
+        if (!(helper.getBlockEntity(generatorPos) instanceof PrismiumGeneratorBlockEntity generator)) {
+            helper.fail("Generator block entity was not created", generatorPos);
+            return;
+        }
+        generator.addFuel();
+
+        helper.runAfterDelay(CHECK_DELAY_TICKS, () -> {
+            if (!(helper.getBlockEntity(cableEastPos) instanceof PrismiumCableBlockEntity cableEast)
+                    || !(helper.getBlockEntity(cableSouthPos) instanceof PrismiumCableBlockEntity cableSouth)
+                    || !(helper.getBlockEntity(cableMergePos) instanceof PrismiumCableBlockEntity cableMerge)
+                    || !(helper.getBlockEntity(cellPos) instanceof PrismiumCellBlockEntity cell)) {
+                helper.fail("A cable or the cell block entity in the looped network was not created", generatorPos);
+                return;
+            }
+
+            int cellEnergy = cell.getEnergyStorage().getEnergyStored();
+            helper.assertTrue(cellEnergy > 0,
+                    "Cell at the far end of the looped network received no FE at all - relay through a"
+                            + " merge-point regression? cellEnergy=" + cellEnergy);
+
+            int totalFe = generator.getEnergyStorage().getEnergyStored()
+                    + cableEast.getEnergyStorage().getEnergyStored()
+                    + cableSouth.getEnergyStorage().getEnergyStored()
+                    + cableMerge.getEnergyStorage().getEnergyStored()
+                    + cellEnergy;
+            helper.assertTrue(totalFe >= EXPECTED_MIN_TOTAL_FE && totalFe <= EXPECTED_MAX_TOTAL_FE,
+                    "Total FE across the looped network (generator+3 cables+cell, with the merge cable and cell"
+                            + " each reachable via two BFS paths) was " + totalFe + ", expected between "
+                            + EXPECTED_MIN_TOTAL_FE + " and " + EXPECTED_MAX_TOTAL_FE
+                            + " (outside this band would mean the merge point or the cell got double-credited"
+                            + " because the BFS reached it twice, one instance per incoming path)");
+
+            helper.succeed();
+        });
+    }
 }
