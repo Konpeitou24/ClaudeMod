@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-09-09(定期実行セッション、v0.40.4リリース: PROGRESS.md TODO11に最後まで残っていた拡張(b)「quickMoveStack(shift-click)のGameTestでの検証」に対応、TODO11が(a)(b)(c)すべて完了。`GameTestHelper#makeMockPlayer()`で作った疑似プレイヤーに`quickMoveStack`を直接呼び出し、燃料の投入/払い出し/非燃料アイテムの誤ルーティング防止の3パターンを検証する`generatorQuickMoveStackRoutesFuelAndInventory`を追加。**重要な教訓を新規発見**: 最初`GameTestHelper#makeMockServerPlayerInLevel()`+`AbstractContainerMenu#clicked`で実装しCIにpushしたところ実際にビルド失敗(`Connection.channel()`がnullのNPE、モックプレイヤーの「ログイン」処理が実クライアントと同じPlayerListコードを通りパケット送信を試みるため)を確認、`makeMockPlayer()`(PlayerList未登録の軽量モック)+`quickMoveStack`直接呼び出しに修正して再pushし、CIで実際に成功(All 14 required tests passed)することを確認してからv0.40.4としてリリース(commit 4a8a9dd、Release Assets 3確認済み)。**もう一つの重要な発見**: GitHub Issue #15の個別ページを確認したところ、こんぺいとう氏本人による2026-09-04付けの最新コメント「UIの機能を確認しました。」を発見。これはTODO7(全GUIブロックの画面固まりバグ)への実機確認と読めるため、TODO7を実機確認済みに更新した。Issue #21は新規コメント無し。詳細はTODO・問題点・約束や決まり事を参照)
+最終更新: 2026-09-09(定期実行セッション2回目、v0.41.0リリース: PROGRESS.md TODO13「プリズミウム・コンペンディウムの紛失時の再入手レシピ」に対応。通常のクラフトレシピJSONは出力アイテムのNBT(コンペンディウムのauthor/pages/resolvedタグ)を指定できないため、バニラの本の複製(BookCloningRecipe)等と同じ`CustomRecipe`(special recipe)方式で実装(`PrismiumCompendiumRecipe`+`ModRecipes`、レシピはバニラの本1冊+プリズミウムのインゴット1個+プリズミウムの欠片3個)。`@Override`するメソッド(`matches`/`assemble`/`canCraftInDimensions`/`getSerializer`)の実在はmappings.dev(1.20.1)で`CustomRecipe`/`CraftingRecipe`/`SimpleCraftingRecipeSerializer`の実際のメソッド一覧を確認してから実装し、CIのbuild-and-notify(commit 8364124、run 34317000452)・Releaseワークフローとも実際にstatus=ok/succeededを確認、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.41.0`をfetchしAssets 3付きで公開されていることも確認済み。Issue #15/#21は個別ページを再確認したが前回セッションから新規コメント無し(TODO6の実機確認情報は引き続き得られず)。詳細はTODO・問題点・約束や決まり事を参照)
 
 **このファイルの構成(2026-08-30に再整理)**: 以前は「セッションごとに実装内容を長文で追記し続ける」運用で肥大化していたため(ピーク時4000行超)、今回から以下の5分類に固定した。
 
@@ -45,6 +45,7 @@
   * **【2026-09-01追記・重要な再利用技術】カスタムブロックの形状・当たり判定をvanilla標準ブロック(ランタン、チェーン等)に近づけたい場合、モデルJSONをvanillaの`minecraft:block/template_*`系テンプレート(例: `template_lantern`/`template_hanging_lantern`)に`textures`だけ差し替えてparentする手法が使える。** これによりvanillaの正確な3D形状(element/face/UV)をそのまま流用でき、独自に当たり判定の座標を推測する必要が無くなる。テンプレートの中身は`https://raw.githubusercontent.com/InventivetalentDev/minecraft-assets/<version>/assets/minecraft/models/block/<name>.json`(バージョンごとのブランチを持つ公開ミラー、`raw.githubusercontent.com`はサンドボックスから到達可能)で実際のJSONを直接確認できる。ただしテクスチャー側はテンプレートのUVアンラップ(単純なcube_all前提ではない、部位ごとに異なる矩形)に合わせて描き直す必要がある点に注意(`PrismiumLanternBlock`実装時の実例: `gen_prismium_lantern.py`参照)。
   * 音声(サウンド)方針: バニラの`SoundEvent`を複数レイヤーする(音量・ピッチを変えて`playSound`を複数回呼ぶ)ことを常に第一候補とする。Python合成(numpy等)は、バニラに近い音が本当に存在しない場合に限る最終手段。
   * 新ブロック追加時は関連タグ(`mineable/pickaxe`、`walls`等)への登録漏れに注意する(過去に2回発生済み)。
+  * **【v0.41.0追記】出力アイテムにNBT(本のページ内容など)を持たせたいクラフトレシピは、通常の`data/claudemod/recipes/*.json`(shaped/shapeless)では出力の`item`+`count`しか指定できないため実現不可。バニラが本の複製・革防具の染色・花火ロケット等で使っているのと同じ`CustomRecipe`(`net.minecraft.world.item.crafting.CustomRecipe`、special recipe)をコード側で実装し、`SimpleCraftingRecipeSerializer`で登録する方式を使うこと(実例: `PrismiumCompendiumRecipe`+`ModRecipes`)。レシピJSON側は`{"type": "claudemod:<名前>"}`だけで良い(パターン・keyは不要、`matches`/`assemble`はすべてJava側で判定・組み立てする)。
 
 * **コード・ファイル編集の制約**
   * lang(en_us.json/ja_jp.json)等の整形済みJSONを部分編集する際は、`json.load`+`json.dump`による全体再整形をしない。既存エントリの直後に新規行を文字列置換で挿入する方式を使う。
@@ -93,9 +94,8 @@
 10. **【v0.39.0で新規・実機確認待ち】プリズミウム・ウィスプ(飛行アンビエントMOB、TODO「MOBのカテゴリ拡充」に対応)の実機確認・チューニング。** `FlyingMoveControl`+`WaterAvoidingRandomFlyingGoal`によるこのMOD初の飛行AI、SquidModel流用の見た目、Prism Realmでの自然スポーン頻度(weight=10)が狙い通りか確認が必要。引っかかる・変な高さに行く等の飛行の不自然さがあれば`PrismiumWispEntity`のAI構成を調整する。MOBのカテゴリ拡充は「戦闘」「水中非戦闘」「地上アンビエント」「飛行アンビエント」の4種類まで到達、残るアイデアは使い魔的MOB(プレイヤーに追従する非戦闘MOB等)。
 11. **【v0.40.0〜v0.40.4で対応・CI上で実際にテスト成功を確認済み・完了】** GameTestフレームワークで、Issue #15の2件の具体的な報告(セルの二重貯蓄・ケーブルの6方向制限)への回帰テスト、GUIを持つ全エネルギーブロック8種のContainerDataサーバー側同期テスト、粉砕機/精錬機/圧縮機のprogress/activeフィールド検証、分岐・合流ループを含むケーブル網での保存則テスト(拡張(a)、TODO6参照)、そしてGeneratorのquickMoveStack(shift-click)ルーティング検証(拡張(b))を`com.claudemod.gametest.ClaudeModGameTests`に追加済み(合計14テスト)。CIの`runGameTestServer`上で`All 14 required tests passed`を実際に確認済み(v0.40.4/commit 4a8a9dd)。「次にやるべき拡張」a/b/cすべて完了。**このテストが検証しないもの**: クライアント側のGUI描画・ContainerDataのクライアント受信(session #84で修正したバグの再発)はGameTestServerにクライアントが接続されないため検証不可能(TODO7は2026-09-04にこんぺいとう氏本人が実機確認済み)。
 12. **【v0.36.0で対応・実機確認待ち】Issue #21(JEI互換性、レシピ表示の話)。** `ClaudeModJeiPlugin`に機械レシピカテゴリ・鉱石高度情報を追加済み。実機でレシピカテゴリの表示・機能・遷移・情報ページ表示・JEIバージョン互換性の確認が必要。
-13. プリズミウム・コンペンディウム(TODO1)の、紛失時の再入手レシピ(バニラの本+プリズミウムの欠片等)。専用NBTを持つカスタムレシピの実装が要る。
-14. コンペンディウムの内容拡充(現状11ページの概要のみ)。各エネルギー機械の詳細な配線図解、Prism Realmのダンジョン/ボス実装(TODO9)が進んだらその案内ページ追加など。
-15. **【v0.37.0で新規・要検討】Prismium Lantern/Pale Prismium Lanternの吊り下げ支持判定は、現状「床/天井が平らな面(isFaceSturdy)であること」のみに対応した簡略版。** vanilla本家のLanternBlockはフェンス・壁・鉄格子・トラップドア・チェーンからの特殊な吊り下げ/据え置きにも対応しているが、今回は未検証な特殊分岐を増やすリスクを避けて実装していない。実機確認(TODO確認後)を踏まえて、需要があれば拡張を検討する。
+13. コンペンディウムの内容拡充(現状11ページの概要のみ)。各エネルギー機械の詳細な配線図解、Prism Realmのダンジョン/ボス実装(TODO9)が進んだらその案内ページ追加など。
+14. **【v0.37.0で新規・要検討】Prismium Lantern/Pale Prismium Lanternの吊り下げ支持判定は、現状「床/天井が平らな面(isFaceSturdy)であること」のみに対応した簡略版。** vanilla本家のLanternBlockはフェンス・壁・鉄格子・トラップドア・チェーンからの特殊な吊り下げ/据え置きにも対応しているが、今回は未検証な特殊分岐を増やすリスクを避けて実装していない。実機確認(TODO確認後)を踏まえて、需要があれば拡張を検討する。
 
 **朗報**: Issue #18(CuriosAPI対応)はこんぺいとう氏の実機確認で完了済み、ISSUES_TO_CLOSE.jsonからも消化済み(空を確認済み)。プリズミウム・クロノフレイムのUI(v0.33.0)も「素晴らしい、えらい」と高評価済みで対応完了。**Issue #17(羽石の効果がわかりずらい)も2026-09-01時点でこんぺいとう氏によりCLOSED(stateReason: COMPLETED)を確認済み** - v0.36.0のHUDパネル方式(TODO1だった項目)で最終的に解決した模様。
 

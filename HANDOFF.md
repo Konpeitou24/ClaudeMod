@@ -1,24 +1,23 @@
 # HANDOFF.md (直前セッションからの申し送り、直近1回分のみ)
 
-## 今回やったこと(2026-09-09、定期実行セッション、v0.40.4リリース)
+## 今回やったこと(2026-09-09、定期実行セッション2回目、v0.41.0リリース)
 
-前回セッション(v0.40.3)のCIビルドはstatus=ok確認済み(commit=fb4f3d0)の状態から開始。HANDOFF.mdの「次回最優先」のうち、実機がないと確認できない項目(TODO6の実機確認等)を除き、着手可能だったPROGRESS.md TODO11の最後の残りタスク(b)「quickMoveStack(shift-click)のGameTestでの検証」に対応した。
+前回セッション(v0.40.4)のCIビルドはstatus=ok確認済み(commit=3f1f647)の状態から開始。Issue #15/#21の個別ページを再確認したが、前回から新規コメントは無かった(TODO6の実機確認情報は今回も得られず)。TODO11(GameTest)はa/b/cすべて完了済みのため、HANDOFF.mdの提案通り「実機確認に依存しない新規実装」であるTODO13(コンペンディウムの紛失時の再入手レシピ)に着手した。
 
-- **新規GameTest追加**: `ClaudeModGameTests`に`generatorQuickMoveStackRoutesFuelAndInventory`を追加。プリズミウムの欠片(有効な燃料)をプレイヤーの手持ちからshift-clickすると燃料スロットに入ること、その欠片を燃料スロットからshift-clickすると手持ちに戻ること、燃料として無効なアイテム(プリズミウムの鉱石)をshift-clickすると燃料スロットではなくホットバーに送られることの3パターンを検証。
-- **1回目のpushでビルド失敗を発見・修正(重要)**: 最初は`GameTestHelper#makeMockServerPlayerInLevel()`で作った本物の`ServerPlayer`に`AbstractContainerMenu#clicked(index, 0, ClickType.QUICK_MOVE, player)`を呼び出す実装でpush(commit f5f40f3)したところ、build-and-notifyが実際に失敗(`Connection.channel()`がnullのNPE)。ログを確認すると、モックプレイヤーの「ログイン」処理が実クライアントと同じ`PlayerList#placeNewPlayer`を通り、ヘッドレスCIが本物のnetty Channelを持たない`Connection`へパケット送信を試みてクラッシュしていたことが判明。`GameTestHelper#makeMockPlayer()`(PlayerList未登録の軽量モック)に切り替え、`clicked`ではなく検証対象そのものの`quickMoveStack`を直接呼び出す方式に修正(commit 0242989)して再push、CIで実際に成功(All 14 required tests passed)することを確認した。**この「push成功≠ビルド成功」を実地で再確認できたのは良い教訓**(教訓自体はPROGRESS.mdの約束や決まり事に新規追記済み)。
-- **リリース**: v0.40.4としてバージョンbump+リリースノート追加コミット(4a8a9dd)を作成・push、同commitでもstatus=ok・All 14 required tests passedを確認してからその場でタグを打ってpush。`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.40.4`をfetchし、本文・Assets 3(jar付き)が実際に公開されていることを確認済み。
-- **GitHub Issue #15/#21の個別ページ確認(新規発見あり)**: `mcp__Claude_Browser__get_page_text`で個別issueページを開いて確認。**Issue #15に2026-09-04付けでこんぺいとう氏本人による「UIの機能を確認しました。」という新しいコメントを発見した。** 直前のコメント(こんぺいとう氏自身)が「動力系のすべてのUIが全く機能していません」だったため、これはPROGRESS.md TODO7(全GUIブロックの画面固まりバグ、v0.31.2で修正済みだが実機未確認のまま長期間放置されていた)への実機確認と解釈できる。TODO7を「2026-09-04にこんぺいとう氏が実機確認済み」に更新した。Issue #21は前回確認時(v0.36.0対応時)から新規コメント無し。
+- **実装**: `PrismiumCompendiumRecipe`(`net.minecraft.world.item.crafting.CustomRecipe`を継承したspecial recipe)と、そのシリアライザーを登録する`ModRecipes`(`DeferredRegister<RecipeSerializer<?>>`)を新規追加。レシピは「バニラの本1冊 + プリズミウムのインゴット1個 + プリズミウムの欠片3個」(シェイプレス、グリッド内のどこに置いてもよい)で、`assemble()`が`PrismiumCompendiumFactory.createStack()`を呼んで11ページ分のNBTが正しく入ったコンペンディウムを組み立てる。データパックの`recipes/prismium_compendium.json`は`{"type": "claudemod:prismium_compendium"}`のみ(special recipeなのでpattern/keyは不要)。
+- **API確認の進め方(教訓通り)**: 通常のレシピJSONは出力アイテムにNBTを付けられないため、バニラが本の複製(BookCloningRecipe)等で使っている`CustomRecipe`方式を採用。`@Override`する`matches`/`assemble`/`canCraftInDimensions`/`getSerializer`の実在・シグネチャは、実装前にmappings.dev(1.20.1)で`CustomRecipe`(コンストラクタが`(ResourceLocation, CraftingBookCategory)`であること、`getResultItem`/`isSpecial`は既に実装済みであること)・`CraftingRecipe`・`Recipe`・`SimpleCraftingRecipeSerializer`(コンストラクタが`Factory<T>`一つで、`(ResourceLocation, CraftingBookCategory) -> T`のメソッド参照で満たせること)を1つずつ確認してから書いた。「未確認のJava APIは出典を確認してから使う」ルール通りに進めたため、今回は1回目のpushからビルド成功だった。
+- **CI確認**: push(commit 84753f3)後、build-and-notify #318が`succeeded in 4m 14s`であることを実際にActionsページ(ブラウザツール)で確認、`builds/last_datapack_validation_summary.txt`もstatus=ok・該当commitハッシュ一致を確認してから次に進んだ。
+- **リリース**: v0.41.0としてバージョンbump+リリースノート追加コミット(8364124)を作成・push、同commitのbuild-and-notify #319が`status=ok`(run 34317000452)であることを確認してからタグを打ってpush。Release workflow(#の詳細はrelease.ymlのrunページで`succeeded in 2m 19s`)を確認し、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.41.0`をfetchしてAssets 3(jar付き)が実際に公開されていることも確認済み。
 
 ## 次回最優先でやるべきこと
 
-- PROGRESS.md TODO11(GameTestによる自動検証)はa/b/cすべて完了した。残るTODOはほぼ全て「実機確認待ち」(1〜6、8〜10、12〜15)。このサンドボックスでは実機を起動できないため、こんぺいとう氏本人からの新しいフィードバック(Issue上のコメント、チャットでの直接報告)を待つのが基本線になる。
-- **TODO6(電力分配バグの実機確認)は今回も確認できなかった**。Issue #15の2026-09-04コメントは「UI」への言及であり、電力の二段階挙動(TODO6)そのものへの言及ではない可能性がある点に注意(UIとFE分配は別の話題)。次回セッションでもIssue #15の新規コメントの有無を個別ページで確認し続けること。
-- 次に着手しやすそうなのはTODO13(コンペンディウムの再入手レシピ)やTODO14(コンペンディウムの内容拡充)など、実機確認に依存しない新規実装タスク。TODO11が完了した今、次のセッションでは「実機確認待ちで止まっているものを漫然と繰り返し書くだけ」ではなく、実機に依存しない新規コンテンツ追加(装飾ブロック、コンペンディウム拡充等)に着手する方が生産的かもしれない。
-- Issue #15・#21は引き続きOPEN。次回も個別ページでコメント更新の有無を確認すること(一覧ページの状態表示は当てにならない、過去の教訓参照)。
+- TODO13は完了。次に着手しやすいのはTODO14改め**TODO13**(コンペンディウムの内容拡充、現状11ページの概要のみ)。今回追加した再入手レシピが実際に機能するには本の内容自体も充実している方が望ましいので、相性が良い。
+- 実機確認待ちの項目(TODO1〜7、8〜12)はこんぺいとう氏本人からの新しいフィードバックが無い限り進展しない。次回セッションでもIssue #15・#21の個別ページ(一覧ページの状態表示は当てにならない、過去の教訓参照)を確認すること。
+- 今回追加した`PrismiumCompendiumRecipe`のクラフト成立・出来上がった本のページ表示は実機未確認。もしこんぺいとう氏から「本を紛失してもう一度作れるか試した」等のフィードバックがあれば、TODO/問題点に反映すること。
+- PROGRESS.mdの「約束や決まり事」に、NBTを持つ出力アイテムのレシピは`CustomRecipe`方式を使うという新しい教訓を追記済み。今後同様のケース(例えば他のガイドブック的アイテムや、NBT付き装備の再入手レシピ)があれば再利用できる。
 
 ## 注意点
 
-- **新しい重要な教訓(PROGRESS.mdにも追記済み)**: このMODのCI(`runGameTestServer`、実クライアント接続なしのヘッドレス環境)でGameTestに疑似プレイヤーを絡める場合、`GameTestHelper#makeMockServerPlayerInLevel()`(PlayerListに本登録される重量級、ログイン処理で実クライアントと同じパケット送信コードを通る)は使ってはいけない。`GameTestHelper#makeMockPlayer()`(PlayerList未登録の軽量モック)を使うこと。また`AbstractContainerMenu#clicked`のような「クリックパケット処理の入り口」経由の呼び出しは未知の副作用リスクがあるため、検証したいメソッド(今回は`quickMoveStack`)があるなら直接呼び出す方が安全。詳細は`ClaudeModGameTests#generatorQuickMoveStackRoutesFuelAndInventory`のjavadocに経緯を記録済み。
-- 今回のCI失敗(1回目のpush、commit f5f40f3)は、build-and-notifyのActions結果を実際に確認したことで発覚した。もしpushしただけで確認を怠っていたら、また「ビルド失敗を見逃して完了報告」という過去の事故(2026-09-01)を繰り返すところだった。今回のセッションはこの確認プロセスが正しく機能した実例として記録しておく。
-- Issue #15の「UIの機能を確認しました。」コメントは、TODO7(GUI画面固まりバグ)への確認だと解釈したが、こんぺいとう氏に直接確認できたわけではない(あくまでIssueのコメント履歴からの推測)。もしこの解釈が誤りだった場合は、次回以降のセッションでの訂正が必要になる可能性がある。
-- v0.40.4時点でCIの自動テストは合計14件、全て成功中。今後さらにテストを追加する場合も、疑似プレイヤーが必要になったら上記の教訓(`makeMockPlayer()`を使う)に従うこと。
+- 今回は「未確認のJava APIは出典を確認してから使う」ルールが功を奏し、1回目のpushからビルド成功・リリースまで一直線で進んだ好例になった。今後も新しい`@Override`を書く前には必ずmappings.dev等での裏付けを取ること。
+- Issue #15の電力分配バグ(TODO6)・UIの動作確認済み(TODO7)・Issue #21(JEI、TODO12)は今回情報更新無し。次回セッションでの再確認は引き続き必要。
+- v0.41.0時点でCIの自動テストは引き続き合計14件、全て成功中(今回のレシピ追加自体にGameTestは書いていない - クラフトグリッドでの成立判定はGameTestHelperでの検証パターンが確立していないため、必要になれば次回以降に追加を検討)。
