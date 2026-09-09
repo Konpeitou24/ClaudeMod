@@ -1,3 +1,19 @@
+## ClaudeMod v0.40.4
+
+対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
+
+v0.40.3 からの変更点です(定期実行セッション: PROGRESS.md TODO11に最後まで残っていた拡張(b)「quickMoveStack(shift-click)のGameTestでの検証」への対応、PATCH)。
+
+### GameTestでPrismium Generatorのshift-clickルーティングも検証(TODO11完了)
+
+GameTestには実プレイヤーが画面をクリックする操作を再現する手段が無いため、これまで全機械の中で唯一「shift-clickでアイテムを移動する`quickMoveStack`」だけが自動テストの対象外でした。今回、`GameTestHelper#makeMockPlayer()`で作った疑似プレイヤーに対して`quickMoveStack`を直接呼び出し、(1) プレイヤーの手持ちのプリズミウムの欠片をshift-clickすると燃料スロットに入ること、(2) その欠片を燃料スロットからshift-clickするとプレイヤーの手持ちに戻ること、(3) 燃料として無効なアイテム(プリズミウムの鉱石)をshift-clickすると燃料スロットには入らずホットバーに送られること、の3パターンを検証するテストを追加しました。
+
+**実装の途中経緯(教訓として記録)**: 最初は`GameTestHelper#makeMockServerPlayerInLevel()`で作った本物の`ServerPlayer`に対し`AbstractContainerMenu#clicked`を呼び出す実装で最初のpushを行いましたが、CIで実際にビルド失敗を確認しました。このモックプレイヤーの「ログイン」処理が実際のクライアントと同じ`PlayerList`のコードを通るため、ヘッドレスCI環境で本物のネットワーク接続を持たないままパケット送信を試みてクラッシュしていました(`Connection.channel()`がnullでNPE)。`makeMockPlayer()`(`PlayerList`に登録されない、より軽量なモック)に切り替え、`clicked`ではなく検証対象そのものである`quickMoveStack`を直接呼び出す方式に修正し、CIで実際に成功することを確認してからリリースしています。
+
+これでPROGRESS.md TODO11に記載されていた「次にやるべき拡張」3点(a: 複雑なケーブル網での保存則テスト、b: 今回のquickMoveStack検証、c: progress/active検証)がすべて完了しました。CIの自動テストは合計14件となり、「All 14 required tests passed」を実際に確認済みです。
+
+**注意**: 引き続きサーバー側ロジックの自動検証であり、実際のマウスクリック・GUI描画の見た目は確認できません(実機確認が引き続き必要です)。
+
 ## ClaudeMod v0.40.3
 
 対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
