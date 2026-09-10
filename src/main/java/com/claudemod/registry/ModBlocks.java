@@ -403,6 +403,44 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 6)));
 
+    // Prismium Alloy Block Slab/Wall/Stairs (scheduled session, 2026-09-10):
+    // building variants for Prismium Alloy Block, mirroring the
+    // PRISMIUM_BLOCK_SLAB/WALL/STAIRS (session 34) and
+    // PALE_PRISMIUM_BLOCK_SLAB/WALL/STAIRS (session 78) precedent exactly
+    // - vanilla SlabBlock/WallBlock/StairBlock, no custom subclass, same
+    // stats as PRISMIUM_ALLOY_BLOCK itself (minus lightLevel, matching
+    // how the other two building-variant trios deliberately drop it),
+    // and reusing the base block's own texture rather than a new one.
+    // Note: PRISMIUM_ALLOY_BLOCK itself is only in mineable/pickaxe (no
+    // needs_iron_tool/needs_diamond_tool entry despite
+    // requiresCorrectToolForDrops()), unlike PRISMIUM_BLOCK (in
+    // needs_iron_tool) - an existing asymmetry noticed this session but
+    // left as-is (not this session's task to silently change an already-
+    // shipped block's harvest tier); these variants match that existing
+    // (not the iron-gated) treatment for consistency with the block they
+    // are cut from.
+    public static final RegistryObject<Block> PRISMIUM_ALLOY_BLOCK_SLAB = BLOCKS.register("prismium_alloy_block_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_ALLOY_BLOCK_WALL = BLOCKS.register("prismium_alloy_block_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_ALLOY_BLOCK_STAIRS = BLOCKS.register("prismium_alloy_block_stairs",
+            () -> new StairBlock(() -> PRISMIUM_ALLOY_BLOCK.get().defaultBlockState(),
+                    BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
     // Pale Prismium Block (session #77, scheduled): the mod's first
     // genuinely pale blue-white ("青白い") decorative block, answering a
     // direct user request that had been sitting in PROGRESS.md's

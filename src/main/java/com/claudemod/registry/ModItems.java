@@ -98,6 +98,17 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_ITEM = ITEMS.register("prismium_alloy_block",
             () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK.get(), new Item.Properties()));
 
+    // Prismium Alloy Block building variety (2026-09-10). See ModBlocks.
+    // PRISMIUM_ALLOY_BLOCK_SLAB / WALL / STAIRS.
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_SLAB_ITEM = ITEMS.register("prismium_alloy_block_slab",
+            () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK_SLAB.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_WALL_ITEM = ITEMS.register("prismium_alloy_block_wall",
+            () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK_WALL.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_STAIRS_ITEM = ITEMS.register("prismium_alloy_block_stairs",
+            () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK_STAIRS.get(), new Item.Properties()));
+
     // BlockItem for Pale Prismium Block (session #77, scheduled). See
     // ModBlocks.PALE_PRISMIUM_BLOCK.
     public static final RegistryObject<Item> PALE_PRISMIUM_BLOCK_ITEM = ITEMS.register("pale_prismium_block",
