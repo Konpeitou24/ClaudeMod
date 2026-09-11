@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-09-10(定期実行セッション、v0.43.0リリース: Prismium Alloy Blockに建築バリエーション(スラブ・塀・階段)を追加。既存のPrismium Block/Prismium Core/蒼白のプリズミウムブロック(v0.28.0)と同じパターン(vanilla SlabBlock/WallBlock/StairBlock、既存テクスチャー流用)で、ModBlocks/ModItems/ModCreativeTabsに登録、blockstates/models/loot_tables/recipes/lang/walls・mineable-pickaxeタグを整備。実機フィードバック待ち(Issue #15/#21に新規コメント無し、Issues一覧もOpen 2件のまま変化なし)のため、実機確認不要な新規コンテンツ追加に着手した回。CIのbuild-and-notify(コード変更コミット1f21a5e→run 34420534187、バージョンbumpコミット0924480→run 34421002682)・Releaseワークフロー(run 34421295030)とも実際にStatus Success/`status=ok`を確認、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.43.0`をfetchしAssets 3付きで公開されていることも確認済み。詳細はTODO・問題点・約束や決まり事を参照)
+最終更新: 2026-09-11(定期実行セッション、v0.44.0リリース: Prismium Stone/Prismium Deepstone(Prism Realmの地形基礎素材)に建築バリエーション(スラブ・塀・階段)を追加。v0.43.0のPrismium Alloy Blockと全く同じ低リスクパターン(vanilla SlabBlock/WallBlock/StairBlock、既存テクスチャー流用)で、ModBlocks/ModItems/ModCreativeTabsに登録、blockstates/models/loot_tables/recipes/lang/walls・mineable-pickaxeタグを整備。本体2ブロックがneeds_iron_tool/needs_diamond_tool未登録(木製ツールで採掘可)である既存挙動に合わせ、建築バリエーションも同様の扱いとした。実機フィードバック待ち(Issue #15/#21を個別ページで再確認、新規コメント無し、Issues一覧もOpen 2件のまま変化なし)のため、前回に続き実機確認不要な新規コンテンツ追加に着手した回。CIのbuild-and-notify(コード変更コミット1f3372c→run 34545741829、バージョンbumpコミット97c70b8→run 34546170055)・Releaseワークフロー(run 34546607332)とも実際にStatus Success/`status=ok`を確認、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.44.0`をfetchしAssets 3付きで公開されていることも確認済み。詳細はTODO・問題点・約束や決まり事を参照)
 
 **このファイルの構成(2026-08-30に再整理)**: 以前は「セッションごとに実装内容を長文で追記し続ける」運用で肥大化していたため(ピーク時4000行超)、今回から以下の5分類に固定した。
 
@@ -98,6 +98,7 @@
 14. **【v0.37.0で新規・要検討】Prismium Lantern/Pale Prismium Lanternの吊り下げ支持判定は、現状「床/天井が平らな面(isFaceSturdy)であること」のみに対応した簡略版。** vanilla本家のLanternBlockはフェンス・壁・鉄格子・トラップドア・チェーンからの特殊な吊り下げ/据え置きにも対応しているが、今回は未検証な特殊分岐を増やすリスクを避けて実装していない。実機確認(TODO確認後)を踏まえて、需要があれば拡張を検討する。
 15. **【v0.43.0で新規・実機確認待ち】Prismium Alloy Blockの建築バリエーション(スラブ・塀・階段)を追加。** 既存のPrismium Block/Prismium Core/蒼白のプリズミウムブロックと同じ低リスクパターン(vanilla SlabBlock/WallBlock/StairBlock、既存テクスチャー流用)。実機での設置・塀の接続・見た目の確認が必要。
 16. **【2026-09-10発見・要検討、低優先度】PRISMIUM_ALLOY_BLOCK自体が`requiresCorrectToolForDrops()`を持つのに`needs_iron_tool`/`needs_diamond_tool`タグのどちらにも登録されていない(PRISMIUM_BLOCKは`needs_iron_tool`に登録済み)。** v0.43.0で追加した建築バリエーション3種は、この既存の(意図的か見落としか不明な)挙動に合わせて同様にどちらのタグにも入れていない。ベースブロック本体の意図を確認・変更するのはこのセッションの範囲外と判断し、そのままにした。こんぺいとう氏の意図(木製ツールで採掘できて良いのか、鉄ツール以上を要求すべきか)を確認できれば、ベースブロックと3種の建築バリエーションをまとめて修正する。
+17. **【v0.44.0で新規・実機確認待ち】Prismium Stone/Prismium Deepstoneの建築バリエーション(スラブ・塀・階段)を追加。** 既存のPrismium Block/Prismium Core/蒼白のプリズミウムブロック/Prismium Alloy Blockと同じ低リスクパターン(vanilla SlabBlock/WallBlock/StairBlock、既存テクスチャー流用)。実機での設置・塀の接続・見た目の確認が必要(特にPrism Realmの地形素材として使う場面での馴染み具合)。
 
 **朗報**: Issue #18(CuriosAPI対応)はこんぺいとう氏の実機確認で完了済み、ISSUES_TO_CLOSE.jsonからも消化済み(空を確認済み)。プリズミウム・クロノフレイムのUI(v0.33.0)も「素晴らしい、えらい」と高評価済みで対応完了。**Issue #17(羽石の効果がわかりずらい)も2026-09-01時点でこんぺいとう氏によりCLOSED(stateReason: COMPLETED)を確認済み** - v0.36.0のHUDパネル方式(TODO1だった項目)で最終的に解決した模様。
 
@@ -145,5 +146,5 @@
 3. **新ディメンション**: 「Prism Realm」。`minecraft:flat`ジェネレータによる水没ワールド(専用バイオーム`claudemod:prism_realm`、深層岩/石境界・海底の高低差・v0.38.0で追加した陸地(平原地形)は、いずれも自作Perlin/Fractalノイズを使った事後上書きFeatureでまだら化・生成済み)、テレポート用アイテム(Prismium Rift Shard)まで実装済み。プリズミウム鉱石は既にオーバーワールドと共通の鉱石として生成される(Realm側は生成率を通常より高くブースト済み)。陸地は追加されたが実機未確認で比率・見た目のチューニングが要る可能性があり、Realm専用の鉱石種・本格的なポータルブロックもまだ無い。将来的には各バイオームに固有ボスを伴うダンジョンがまれに生成される仕組みを構想中(山岳地帯版から着手予定、TODO参照)。
 4. **新MOB**: Prismium Wraith/Deep Wraith(戦闘)、Sentinel(戦闘)、Drifter(水中非戦闘)、Crawler(地上アンビエント)、Wisp(飛行アンビエント、6体目、v0.39.0)の6体。ボス級はまだ無いが、各バイオーム固有のダンジョンボスとして今後複数体追加予定(TODO参照)。カテゴリは「戦闘」「水中非戦闘」「地上アンビエント」「飛行アンビエント」の4種類に到達、残る拡充アイデアは使い魔的MOB。
 5. **新装備**: ツール5種・アーマー4種(セット効果: 暗視+水中呼吸)、グラップリングフック、探知アイテム(Locator)、Shield、Bow、Guardian Charm(cheat-death)、Featherstone/Emberguard/Vitastone/Magnet Charm(完全パッシブ系)まで実装済み。一部はCuriosAPI対応済み(Issue #18)。
-6. **新ブロック/ギミック**: Prismium Core、Prismium Lantern(v0.37.0でvanilla同等の正式な吊り下げ/据え置き形状に刷新)、蒼白のプリズミウムブロック・ランタン・建築バリエーション、Prismium Alloy Blockの建築バリエーション(v0.43.0)、Prismium Snare(罠ギミック)まで実装済み。装飾ブロック・ダンジョン用ギミックブロックはさらに拡充の余地がある。
+6. **新ブロック/ギミック**: Prismium Core、Prismium Lantern(v0.37.0でvanilla同等の正式な吊り下げ/据え置き形状に刷新)、蒼白のプリズミウムブロック・ランタン・建築バリエーション、Prismium Alloy Blockの建築バリエーション(v0.43.0)、Prismium Snare(罠ギミック)、Prismium Stone/Prismium Deepstoneの建築バリエーション(v0.44.0)まで実装済み。装飾ブロック・ダンジョン用ギミックブロックはさらに拡充の余地がある。
 7. **プレイヤー向けUX/ドキュメンテーション**: issue #7(MODについて何も分からない)への対応として、各エネルギーブロックの使い方ツールチップ、詳細表示オーバーレイ(W長押し)、プリズミウム・コンペンディウム(初回配布されるガイドブック)まで実装済み。今後も新しい系統(Prism Realmのダンジョン/ボス等)を追加するたびに、この系統のドキュメントも一緒に更新していく。
