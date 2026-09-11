@@ -110,6 +110,66 @@ public class ModBlocks {
                     .strength(3.0f, 6.0f)
                     .sound(SoundType.DEEPSLATE)));
 
+    // Prismium Stone Slab/Wall/Stairs (scheduled session, 2026-09-11):
+    // building variants for Prismium Stone, the Prism Realm flat
+    // generator's bulk fill material (see PRISMIUM_STONE above). Mirrors
+    // the PRISMIUM_BLOCK_SLAB/WALL/STAIRS (session 34) precedent exactly -
+    // vanilla SlabBlock/WallBlock/StairBlock, no custom subclass, same
+    // stats as PRISMIUM_STONE itself, and reusing the base block's own
+    // texture rather than a new one. PRISMIUM_STONE itself is not in
+    // needs_iron_tool/needs_diamond_tool (unlike PRISMIUM_BLOCK, which is
+    // in needs_iron_tool) - these variants match that existing treatment
+    // for consistency with the block they are cut from, same reasoning
+    // already applied to PRISMIUM_ALLOY_BLOCK's own variants (v0.43.0).
+    public static final RegistryObject<Block> PRISMIUM_STONE_SLAB = BLOCKS.register("prismium_stone_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_STONE_WALL = BLOCKS.register("prismium_stone_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_STONE_STAIRS = BLOCKS.register("prismium_stone_stairs",
+            () -> new StairBlock(() -> PRISMIUM_STONE.get().defaultBlockState(),
+                    BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    // Prismium Deepstone Slab/Wall/Stairs (scheduled session, 2026-09-11):
+    // same building-variant treatment as Prismium Stone above, applied to
+    // its deep-layer counterpart PRISMIUM_DEEPSTONE. Same rationale and
+    // same "matches the existing non-tool-tiered treatment of the base
+    // block" note applies.
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_SLAB = BLOCKS.register("prismium_deepstone_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_WALL = BLOCKS.register("prismium_deepstone_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_STAIRS = BLOCKS.register("prismium_deepstone_stairs",
+            () -> new StairBlock(() -> PRISMIUM_DEEPSTONE.get().defaultBlockState(),
+                    BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
     // Compressed storage block, crafted from 9 Prismium Shards.
     public static final RegistryObject<Block> PRISMIUM_BLOCK = BLOCKS.register("prismium_block",
             () -> new Block(BlockBehaviour.Properties.of()

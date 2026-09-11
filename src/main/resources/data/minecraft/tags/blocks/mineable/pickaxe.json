@@ -35,6 +35,12 @@
         "claudemod:pale_prismium_lantern",
         "claudemod:prismium_alloy_block_slab",
         "claudemod:prismium_alloy_block_wall",
-        "claudemod:prismium_alloy_block_stairs"
+        "claudemod:prismium_alloy_block_stairs",
+        "claudemod:prismium_stone_slab",
+        "claudemod:prismium_stone_wall",
+        "claudemod:prismium_stone_stairs",
+        "claudemod:prismium_deepstone_slab",
+        "claudemod:prismium_deepstone_wall",
+        "claudemod:prismium_deepstone_stairs"
     ]
 }

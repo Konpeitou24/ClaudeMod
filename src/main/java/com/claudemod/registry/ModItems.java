@@ -90,6 +90,26 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_ITEM = ITEMS.register("prismium_deepstone",
             () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE.get(), new Item.Properties()));
 
+    // Scheduled session 2026-09-11: BlockItems for Prismium Stone/Deepstone's
+    // new slab/wall/stairs building variants (see ModBlocks).
+    public static final RegistryObject<Item> PRISMIUM_STONE_SLAB_ITEM = ITEMS.register("prismium_stone_slab",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STONE_SLAB.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_STONE_WALL_ITEM = ITEMS.register("prismium_stone_wall",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STONE_WALL.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_STONE_STAIRS_ITEM = ITEMS.register("prismium_stone_stairs",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STONE_STAIRS.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_SLAB_ITEM = ITEMS.register("prismium_deepstone_slab",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_SLAB.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_WALL_ITEM = ITEMS.register("prismium_deepstone_wall",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_WALL.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_STAIRS_ITEM = ITEMS.register("prismium_deepstone_stairs",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_STAIRS.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOCK_ITEM = ITEMS.register("prismium_block",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK.get(), new Item.Properties()));
 

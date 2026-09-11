@@ -1,0 +1,13 @@
+{
+    "variants": {
+        "type=bottom": {
+            "model": "claudemod:block/prismium_stone_slab"
+        },
+        "type=top": {
+            "model": "claudemod:block/prismium_stone_slab_top"
+        },
+        "type=double": {
+            "model": "claudemod:block/prismium_stone"
+        }
+    }
+}

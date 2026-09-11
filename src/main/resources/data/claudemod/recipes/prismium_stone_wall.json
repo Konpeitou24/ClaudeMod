@@ -1,0 +1,17 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "building",
+    "pattern": [
+        "###",
+        "###"
+    ],
+    "key": {
+        "#": {
+            "item": "claudemod:prismium_stone"
+        }
+    },
+    "result": {
+        "item": "claudemod:prismium_stone_wall",
+        "count": 6
+    }
+}

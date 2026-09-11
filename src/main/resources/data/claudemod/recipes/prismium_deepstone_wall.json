@@ -1,0 +1,17 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "building",
+    "pattern": [
+        "###",
+        "###"
+    ],
+    "key": {
+        "#": {
+            "item": "claudemod:prismium_deepstone"
+        }
+    },
+    "result": {
+        "item": "claudemod:prismium_deepstone_wall",
+        "count": 6
+    }
+}

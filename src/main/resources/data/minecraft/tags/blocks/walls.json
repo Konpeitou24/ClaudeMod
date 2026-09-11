@@ -4,6 +4,8 @@
         "claudemod:prismium_block_wall",
         "claudemod:prismium_core_wall",
         "claudemod:pale_prismium_block_wall",
-        "claudemod:prismium_alloy_block_wall"
+        "claudemod:prismium_alloy_block_wall",
+        "claudemod:prismium_stone_wall",
+        "claudemod:prismium_deepstone_wall"
     ]
 }
