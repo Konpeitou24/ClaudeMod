@@ -1,23 +1,23 @@
 # HANDOFF.md (直前セッションからの申し送り、直近1回分のみ)
 
-## 今回やったこと(2026-09-11、定期実行セッション、v0.44.0リリース)
+## 今回やったこと(2026-09-12、定期実行セッション、v0.45.0リリース)
 
-前回セッション(v0.43.0)のCIビルドはstatus=ok確認済み(commit=5bfafba)の状態から開始。Issue #15・#21を個別ページで再確認したが、前回セッションから新規コメントは無かった(実機フィードバックは今回も得られず)。Issues一覧もOpen 2件のまま変化なし。実機確認に依存しない新規作業として、前回のPrismium Alloy Blockに続き、Prism Realmの地形基礎素材であるPrismium Stone/Prismium Deepstoneに建築バリエーション(スラブ・塀・階段)を追加した。
+前回セッション(v0.44.0)のCIビルドはstatus=ok確認済み(commit=f6ce86b)の状態から開始。Issue #15・#21を個別ページで再確認したが、前回セッションから新規コメントは無かった(実機フィードバックは今回も得られず)。Issues一覧もOpen 2件のまま変化なし。実機確認に依存しない新規作業として、HANDOFF.md前回分が提案していた「コンペンディウムのさらなる内容拡充(各エネルギー機械の配線図解)」(TODO13の残作業)に着手した。
 
-- **実装**: 既存のPrismium Block/Prismium Core/蒼白のプリズミウムブロック/Prismium Alloy Block(v0.43.0)で確立済みの低リスクパターン(vanilla SlabBlock/WallBlock/StairBlock、カスタムサブクラス・`@Override`一切無し、既存の`prismium_stone`/`prismium_deepstone`テクスチャーをそのまま流用)を2素材分(計6ブロック)に適用。`ModBlocks`/`ModItems`/`ModCreativeTabs`への登録、blockstates/models(block・item)/loot_tables/recipes/lang(en_us・ja_jp)の新規作成、`minecraft:walls`タグと`mineable/pickaxe`タグへの登録まで実施。新規テクスチャー生成は無し(既存PNGを流用する既存パターンに従った)。
-- **既存の非対称性の扱い**: Prismium Stone/Prismium Deepstone本体はどちらも`needs_iron_tool`/`needs_diamond_tool`タグに元々登録されていない(木製ツールで採掘可能)。今回追加した建築バリエーション6種も、ベースブロックの既存挙動に合わせてそのまま(どちらのタグにも入れずに)登録した。
-- **CI確認**: push(commit 1f3372c)後、build-and-notify #327が`status=ok`(run 34545741829、`builds/last_datapack_validation_summary.txt`で確認)であることを確認してから次に進んだ。
-- **リリース**: v0.44.0としてバージョンbump+リリースノート追加コミット(97c70b8)を作成・push、同commitのbuild-and-notify #328(run 34546170055)が`status=ok`であることを確認してからタグを打ってpush。Release workflow(run 34546607332、2m36s、Release #57)を確認し、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.44.0`をfetchしてAssets 3(jar付き)が実際に公開されていることも確認済み。
+- **実装**: `PrismiumCompendiumFactory`のPAGE_COUNTを15→18に拡張し、ja_jp.json/en_us.jsonの両方に`book.claudemod.compendium.page16〜18`を追加。内容は(1)発電機とセルの基本接続、(2)発電機から粉砕機・精錬機・圧縮機への分岐ケーブル網、(3)発電機→ケーブル→粉砕機→精錬機→圧縮機という加工チェーンに沿った配線例、の3ページ。各ページは`[発電機] → [ケーブル] → [セル]`のような括弧と矢印だけの簡易図解にした(Minecraftの本のフォントは等幅ではないため、インデントで桁を揃える本格的なアスキーアートは避けた、という判断をPrismiumCompendiumFactoryのクラスdocに明記済み)。新規Javaクラス・`@Override`は一切追加していない(PAGE_COUNTの定数変更とlangファイルの追記のみ)ため、未確認APIによるビルド失敗リスクは無かった。
+- **CI確認**: push(コード変更コミット013be20)後、build-and-notify #330(run 34660933735)がStatus Successであることを確認。続けてバージョンbumpコミット43c4ad3をpushし、build-and-notify #331(run 34661189651)もStatus Successを確認してから次に進んだ。
+- **リリース**: v0.45.0としてバージョンbump+リリースノート追加コミット(43c4ad3)にタグを打ってpush、Release workflow(run 34661466649、Release #58、2m36s)がStatus Successであることを確認。`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.45.0`をfetchし、Assets 3(jar付き)で実際に公開されていることも確認済み。`builds/last_datapack_validation_summary.txt`も`status=ok commit=43c4ad3...`に更新されていることを確認済み。
 
 ## 次回最優先でやるべきこと
 
 - 実機確認待ちの項目(TODO1〜7、8〜12、13、15、17)はこんぺいとう氏本人からの新しいフィードバックが無い限り進展しない。次回セッションでもIssue #15・#21の個別ページ(一覧ページの状態表示は当てにならない、過去の教訓参照)を必ず確認すること。
+- TODO13は今回のページ追加で「配線図解」自体は一通り揃った。残るのはPrism Realmのダンジョン/ボス実装(TODO9)が進んだ時の案内ページ追加のみ。
 - TODO16(PRISMIUM_ALLOY_BLOCK/PRISMIUM_STONE/PRISMIUM_DEEPSTONEのneeds_iron_tool未登録という既存の非対称性)について、こんぺいとう氏の意図を確認できれば、これら本体ブロックと関連する建築バリエーションをまとめて修正する。
-- 実機フィードバックが来ない場合、次に着手しやすいのは今回と同様の低リスクな新規コンテンツ追加。建築バリエーションのパターンは主要な資源ブロック(Prismium Block/Core/Alloy Block/Stone/Deepstone/蒼白ブロック)にほぼ行き渡ったので、次はコンペンディウムのさらなる内容拡充(各エネルギー機械の配線図解など、TODO13の残作業)や、装飾ブロック・ダンジョン用ギミックブロックの新規追加を検討する余地がある。
+- 実機フィードバックが来ない場合、次に着手しやすいのは低リスクな新規コンテンツ追加。建築バリエーションのパターンは主要な資源ブロックにほぼ行き渡り、コンペンディウムの配線図解もひと段落したので、次はPrism Realm専用の新しい装飾ブロック・ダンジョン用ギミックブロックの新規追加、または既存の使い魔的MOB案(TODO「MOBのカテゴリ拡充」の残りアイデア)を検討する余地がある。
 
 ## 注意点
 
-- 今回もコード変更(Java 6ブロック追加)を伴ったが、既存の実証済みパターン(vanilla SlabBlock/WallBlock/StairBlock、`@Override`無し)のみを使用したため、未確認APIによるビルド失敗リスクは無かった。実際に1回目のpushからビルド成功。
-- 「push成功≠ビルド成功」の確認手順(Actionsページでの実際のStatus確認)は今回も省略せずに実施した(build-and-notify・Release workflowとも実際にStatus Success/status=okを確認)。
+- 今回はコード変更(Java 1ファイルの定数変更のみ)+lang追加という、これまでで最も低リスクな部類の変更だった。実際に1回目のpushからビルド成功(build-and-notify #330・#331とも一発成功)。
+- 「push成功≠ビルド成功」の確認手順(Actionsページでの実際のStatus確認)は今回も省略せずに実施した(build-and-notify・Release workflowとも実際にStatus Successを確認)。
 - Issue #15の電力分配バグ(TODO6)・Issue #21(JEI、TODO12)は今回情報更新無し。次回セッションでの再確認は引き続き必要。
-- v0.44.0時点でCIの自動テストは引き続き合計14件(今回の建築バリエーション追加自体にGameTestは書いていない・書く必要も無い、既存パターンの単純な複製のため)。
+- v0.45.0で追加した配線図解3ページは、本のGUI上で実際に行送り崩れなく表示されるかは未検証(Minecraftクライアントがこのサンドボックスに無いため)。特にページ17の分岐ネットワーク図解はインデントで枝分かれを表現しているが、プロポーショナルフォントのため桁が揃わない可能性が高いことをPrismiumCompendiumFactoryのクラスdocにも明記済み。実機確認が取れたら、読みにくければ簡略化を検討すること。
