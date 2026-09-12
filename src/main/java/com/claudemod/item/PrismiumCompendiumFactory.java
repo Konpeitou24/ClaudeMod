@@ -77,13 +77,27 @@ public final class PrismiumCompendiumFactory {
      * blocks (Prismium Core family, Pale Prismium family, Lantern),
      * traps/utility blocks (Snare, Chronoflame), how to re-craft this
      * very book if lost (PrismiumCompendiumRecipe, TODO13/session
-     * following v0.41.0), and JEI/cable-network tips - see PROGRESS.md
-     * section 5 for the same grouping applied to the mod's own roadmap.
+     * following v0.41.0), JEI/cable-network tips, and (session, scheduled
+     * 2026-09-12) three wiring-diagram pages for the energy machines
+     * (basic Generator/Cell connection, a branching Cable network, and
+     * the Pulverizer->Smelter->Compressor processing chain) - see
+     * PROGRESS.md section 5 for the same grouping applied to the mod's
+     * own roadmap.
      * Expanded from 11 to 15 pages in the content-expansion pass right
      * after the re-crafting recipe shipped (PROGRESS.md TODO "コンペン
-     * ディウムの内容拡充"), since a book players can always get back is
-     * more worth reading in full. */
-    private static final int PAGE_COUNT = 15;
+     * ディウムの内容拡充"), then to 18 pages (session, scheduled
+     * 2026-09-12) adding the wiring-diagram trio above (TODO13's
+     * remaining "各エネルギー機械のより詳細な配線図解" item), since a
+     * book players can always get back is more worth reading in full.
+     * The diagrams use plain bracket-and-arrow text (e.g.
+     * "[発電機] -> [ケーブル] -> [セル]") rather than aligned box-drawing
+     * characters, since Minecraft's default book font is proportional
+     * (not monospace) and would not keep indentation-based ASCII art
+     * lined up consistently across locales/font sizes - see the
+     * "Unverified in-game" note below, which now also covers whether
+     * these diagram lines actually read clearly at the book GUI's font
+     * size (untested in a running client). */
+    private static final int PAGE_COUNT = 18;
 
     public static ItemStack createStack() {
         ItemStack stack = new ItemStack(com.claudemod.registry.ModItems.PRISMIUM_COMPENDIUM.get());
