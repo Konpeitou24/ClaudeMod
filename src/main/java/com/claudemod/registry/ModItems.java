@@ -400,6 +400,12 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_SPIKE_ITEM = ITEMS.register("prismium_spike",
             () -> new BlockItem(ModBlocks.PRISMIUM_SPIKE.get(), new Item.Properties()));
 
+    // Prismium Geode Cluster (scheduled session, 2026-09-13): BlockItem
+    // for the mod's third surface-decoration crystal prop - see
+    // ModBlocks.PRISMIUM_GEODE_CLUSTER.
+    public static final RegistryObject<Item> PRISMIUM_GEODE_CLUSTER_ITEM = ITEMS.register("prismium_geode_cluster",
+            () -> new BlockItem(ModBlocks.PRISMIUM_GEODE_CLUSTER.get(), new Item.Properties()));
+
     // Prism Lily (session 40): BlockItem for the mod's first Prism
     // Realm-exclusive surface decoration - see ModBlocks.PRISM_LILY.
     public static final RegistryObject<Item> PRISM_LILY_ITEM = ITEMS.register("prism_lily",

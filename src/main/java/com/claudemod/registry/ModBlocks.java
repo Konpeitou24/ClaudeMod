@@ -10,6 +10,7 @@ import com.claudemod.block.PrismiumCellBlock;
 import com.claudemod.block.PrismiumCompressorBlock;
 import com.claudemod.block.PrismiumChronoflameBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
+import com.claudemod.block.PrismiumGeodeClusterBlock;
 import com.claudemod.block.PrismiumGeyserBlock;
 import com.claudemod.block.PrismiumLanternBlock;
 import com.claudemod.block.PrismiumPortalBlock;
@@ -803,6 +804,27 @@ public class ModBlocks {
                     .strength(5.0f, 8.0f)
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 5)));
+
+    // Prismium Geode Cluster (scheduled session, 2026-09-13): the mod's
+    // third surface-decoration crystal prop after Prismium Bloom (session
+    // 17) and Prismium Spike (session 18) - see PrismiumGeodeClusterBlock
+    // for the full design rationale (short/wide geode-like cluster,
+    // player-craftable rather than worldgen-only). Same
+    // noCollission()/instabreak()/AMETHYST_CLUSTER-sound/noOcclusion()
+    // family treatment as Bloom/Spike/Snare so it behaves like a
+    // walk-through, one-hit-pop decorative prop. Light level 9 - brighter
+    // than Bloom (5) and Spike (7) since this one is explicitly meant to
+    // double as a deliberately-placed light fixture/dungeon accent (see
+    // the recipe: 4 Prismium Shards), but well short of Lantern's
+    // dedicated-light-source 15.
+    public static final RegistryObject<Block> PRISMIUM_GEODE_CLUSTER = BLOCKS.register("prismium_geode_cluster",
+            () -> new PrismiumGeodeClusterBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 9)
+                    .noOcclusion()));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
