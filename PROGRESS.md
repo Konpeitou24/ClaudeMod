@@ -3,7 +3,7 @@
 このファイルは、1時間ごとに自動起動される開発セッション間の**唯一の記憶**です。
 新しいセッションを始める前に必ずこのファイル全体を読んでください。会話履歴は引き継がれません。
 
-最終更新: 2026-09-13(定期実行セッション、v0.46.0リリース: 新規装飾ブロック「プリズミウムの晶洞クラスタ」(Prismium Geode Cluster)を追加。プリズミウムの花(Bloom)・結晶棘(Spike)に続く3つ目の「block/cross」型クリスタル装飾で、割れた岩盤から複数の短いクリスタルが突き出た横広・低シルエット(既存のAmethystClusterBlock等の新API採用は見送り、Bloom/Spikeの実績あるパターンをそのまま踏襲)。Bloom/Spikeと異なりワールド生成専用ではなくプレイヤーがクラフト可能(プリズミウムの欠片x4のシェイプレス)、将来のPrism Realmダンジョン内装(TODO9)への布石という位置づけ。テクスチャーはPythonで新規生成・自己レビュー済み。Issue #15/#21は個別ページで再確認したが新規コメント無し(なお今回、Issues一覧ページの検索結果・サイドバーの件数表示(「Issues 8」)がどちらも実際には全てクローズ済みの#7/#16/#17/#18/#19/#23を含めて不正確に表示することを再確認 - 個別issueページのOpen/Closedバッジのみが信頼できる、下記「その他」参照)。CIのbuild-and-notify(コード変更コミットd09a641→run 34727713207、バージョンbumpコミット2feaff6→run 34727944844)・Releaseワークフロー(run 34728166858)とも実際にStatus Successを確認、`builds/last_datapack_validation_summary.txt`でも`status=ok commit=d09a641...`を確認、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.46.0`をfetchしAssets 3付きで公開されていることも確認済み。詳細はTODO・問題点・その他を参照)
+最終更新: 2026-09-14(定期実行セッション、v0.47.0リリース: 新規装飾ブロック「プリズミウムの鍾乳結晶」(Prismium Stalactite Crystal)を追加。プリズミウムの花(Bloom)・結晶棘(Spike)・晶洞クラスタ(Geode Cluster)に続く4つ目の「block/cross」型クリスタル装飾で、シリーズ初の天井設置型(canSurvive()が`isFaceSturdy(..., Direction.DOWN)`で上のブロックを判定、既存3種の`Direction.UP`判定の鏡像)。プレイヤーがクラフト可能(プリズミウムの欠片x2+バニラの尖った鍾乳石x1のシェイプレス、既存Geode Clusterの4欠片レシピとの重複を避けつつ意匠的にも一致)。光レベル4でシリーズ最暗(花5・棘7・晶洞クラスタ9)。テクスチャーはPythonで新規生成(晶洞クラスタの上下反転版のロジック)・24倍プレビューで自己レビュー済み(チェッカーボード背景での透過崩れ無し)。Issue #15/#21は個別ページで再確認したが新規コメント無し(2セッション連続で変化無し)。念のため`/issues?q=is%3Aissue+sort%3Acreated-desc`一覧でOpen/Closedの総数(2/23)と個別issue番号一覧も確認し、#24「鉱脈が見当たりません」・#25「バージョニングについて」という未知の番号を発見したが、いずれも個別ページで確認した結果、遥か以前(v0.20.0/v0.25.2当時)にgithub-actions botのコメント付きで既にCLOSED(completed)済みであり、対応不要と判断(PROGRESS_ARCHIVE等には未記載だった古い既解決issueだった模様)。CIのbuild-and-notify(コード変更コミット61d6539→run 34792216908、バージョンbumpコミット5b12d49→run 34792562092)・Releaseワークフロー(run 34792840815)とも実際にStatus Successを確認、`builds/last_datapack_validation_summary.txt`でも`status=ok commit=5b12d49...`を確認、`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.47.0`をfetchしAssets 3付きで公開されていることも確認済み。詳細はTODO・問題点・その他を参照)
 
 **このファイルの構成(2026-08-30に再整理)**: 以前は「セッションごとに実装内容を長文で追記し続ける」運用で肥大化していたため(ピーク時4000行超)、今回から以下の5分類に固定した。
 
@@ -100,11 +100,13 @@
 16. **【2026-09-10発見・要検討、低優先度】PRISMIUM_ALLOY_BLOCK自体が`requiresCorrectToolForDrops()`を持つのに`needs_iron_tool`/`needs_diamond_tool`タグのどちらにも登録されていない(PRISMIUM_BLOCKは`needs_iron_tool`に登録済み)。** v0.43.0で追加した建築バリエーション3種は、この既存の(意図的か見落としか不明な)挙動に合わせて同様にどちらのタグにも入れていない。ベースブロック本体の意図を確認・変更するのはこのセッションの範囲外と判断し、そのままにした。こんぺいとう氏の意図(木製ツールで採掘できて良いのか、鉄ツール以上を要求すべきか)を確認できれば、ベースブロックと3種の建築バリエーションをまとめて修正する。
 17. **【v0.44.0で新規・実機確認待ち】Prismium Stone/Prismium Deepstoneの建築バリエーション(スラブ・塀・階段)を追加。** 既存のPrismium Block/Prismium Core/蒼白のプリズミウムブロック/Prismium Alloy Blockと同じ低リスクパターン(vanilla SlabBlock/WallBlock/StairBlock、既存テクスチャー流用)。実機での設置・塀の接続・見た目の確認が必要(特にPrism Realmの地形素材として使う場面での馴染み具合)。
 18. **【v0.46.0で新規・実機確認待ち】プリズミウムの晶洞クラスタ(Prismium Geode Cluster)の設置・クラフト・見た目確認。** プリズミウムの欠片x4のシェイプレスレシピでクラフト可能な新規装飾ブロック(Bloom/Spikeと違い自然生成なし)。実機でクラフト・設置・光源としての見た目(光レベル9)・16x16クロス型テクスチャーの表示が意図通りか確認が必要。将来的にPrism Realmダンジョン内装(TODO9)の一部として使う想定。
+19. **【v0.47.0で新規・実機確認待ち】プリズミウムの鍾乳結晶(Prismium Stalactite Crystal)の設置・クラフト・見た目確認。** シリーズ初の天井設置型クリスタル装飾ブロック(プリズミウムの欠片x2+尖った鍾乳石x1のシェイプレス)。実機で(a) 天井への設置判定(頑丈な面が上にある場所でのみ設置できるか)、(b) 下向きクリスタルのテクスチャー・シルエットの見た目、(c) 光レベル4の体感、の3点確認が必要。
 
 **朗報**: Issue #18(CuriosAPI対応)はこんぺいとう氏の実機確認で完了済み、ISSUES_TO_CLOSE.jsonからも消化済み(空を確認済み)。プリズミウム・クロノフレイムのUI(v0.33.0)も「素晴らしい、えらい」と高評価済みで対応完了。**Issue #17(羽石の効果がわかりずらい)も2026-09-01時点でこんぺいとう氏によりCLOSED(stateReason: COMPLETED)を確認済み** - v0.36.0のHUDパネル方式(TODO1だった項目)で最終的に解決した模様。
 
 ## 3. 問題点(既知の不具合・未検証事項)
 
+- **【v0.47.0で新規・実機未検証】** プリズミウムの鍾乳結晶(TODO19参照)。CIビルド・データパック検証は成功済みだが、実機での天井設置判定・見た目・光量は未検証。
 - **【v0.46.0で新規・実機未検証】** プリズミウムの晶洞クラスタ(TODO18参照)。CIビルド・データパック検証は成功済みだが、実機でのクラフト・設置・見た目は未検証。
 
 - **【v0.37.0で対応・CIビルド成功確認済み(2026-09-01追記)・実機未検証】** Prismium Lantern/Pale Prismium Lanternをcube_allの立方体から、HANGING/WATERLOGGED状態を持つ正式な吊りランタン形状(`PrismiumLanternBlock`)に作り直した(TODO15参照)。**初回実装には実在しないAPIをoverrideするミスがあり3回ビルド失敗していたが、該当箇所(`canPlace(BlockPlaceContext)`)を削除して修正済み、CIのビルド(build-and-notify/release)・データパック検証とも成功を確認済み(commit b6e9464、上記「約束や決まり事」参照)。** 当たり判定・モデル形状はMojang公式`template_lantern`/`template_hanging_lantern`の座標をそのまま採用しているため寸法自体の誤りは無いはずだが、(a) 設置時の吊り下げ/据え置き判定が実際に狙い通り動くか、(b) 当たり判定の感触、(c) 新しいUVアンラップに合わせて描き直したテクスチャーが実際に3D形状へ正しく貼り付くか(サンドボックスでは3Dレンダリングを目視できないため、UV領域を切り出して並べた確認画像でのみレビュー済み)、実機での確認が必要。
@@ -138,6 +140,8 @@
 
 - **2026-09-03追記**: `data/claudemod/structures/gametest/empty_platform.nbt`(9x5x9の完全な空気のみの構造、Python/nbtlibで自作生成、DataVersion 3465)を、GameTestの共有バウンディングボックスとして用意した。新しいGameTestを書くときはこのテンプレートを`template = "gametest/empty_platform"`で再利用し、テスト対象のブロックは構造に焼き込まず`GameTestHelper#setBlock`でテストメソッド内から配置するのが、この MOD での標準パターン(`ClaudeModGameTests`参照)。新しい.nbtを都度手作りする必要はない。
 
+**2026-09-14追記**: `/issues?q=is%3Aissue+sort%3Acreated-desc`一覧をブラウザツールで開くと、Open/Closedの件数タブ自体(「Open 2」「Closed 23」)は信頼できる形で表示された(サイドバーの`Issues N`ナビバッジのみが誤表示することがある、という2026-09-13までの教訓と矛盾しない)。この一覧から今まで知らなかった#24「鉱脈が見当たりません」・#25「バージョニングについて」を発見したが、個別ページを開いたところどちらもv0.20.0/v0.25.2当時(HANDOFF.mdの記憶が及ばないほど過去)にgithub-actions botの説明コメント付きで既にCLOSED(completed)されていた。**教訓: 定期的に一覧ページで全issue番号を洗い出し、TODO/HANDOFF.mdに載っていない番号を見つけたら必ず個別ページで真偽を確認する価値はある(が、今回のように「実は大昔に解決済みだった」というケースもあるため、番号が新しい=対応が必要、と早合点しないこと)。**
+
 **通知状況**: Discord Webhookはサンドボックスから到達不可のため試みていない。GitHub Actions側(`build-and-notify.yml`・`release.yml`)がpush/タグに対応する通知を送信する(Secret設定済み前提)。
 
 ## 5. MOD構想・ロードマップ
@@ -149,5 +153,5 @@
 3. **新ディメンション**: 「Prism Realm」。`minecraft:flat`ジェネレータによる水没ワールド(専用バイオーム`claudemod:prism_realm`、深層岩/石境界・海底の高低差・v0.38.0で追加した陸地(平原地形)は、いずれも自作Perlin/Fractalノイズを使った事後上書きFeatureでまだら化・生成済み)、テレポート用アイテム(Prismium Rift Shard)まで実装済み。プリズミウム鉱石は既にオーバーワールドと共通の鉱石として生成される(Realm側は生成率を通常より高くブースト済み)。陸地は追加されたが実機未確認で比率・見た目のチューニングが要る可能性があり、Realm専用の鉱石種・本格的なポータルブロックもまだ無い。将来的には各バイオームに固有ボスを伴うダンジョンがまれに生成される仕組みを構想中(山岳地帯版から着手予定、TODO参照)。
 4. **新MOB**: Prismium Wraith/Deep Wraith(戦闘)、Sentinel(戦闘)、Drifter(水中非戦闘)、Crawler(地上アンビエント)、Wisp(飛行アンビエント、6体目、v0.39.0)の6体。ボス級はまだ無いが、各バイオーム固有のダンジョンボスとして今後複数体追加予定(TODO参照)。カテゴリは「戦闘」「水中非戦闘」「地上アンビエント」「飛行アンビエント」の4種類に到達、残る拡充アイデアは使い魔的MOB。
 5. **新装備**: ツール5種・アーマー4種(セット効果: 暗視+水中呼吸)、グラップリングフック、探知アイテム(Locator)、Shield、Bow、Guardian Charm(cheat-death)、Featherstone/Emberguard/Vitastone/Magnet Charm(完全パッシブ系)まで実装済み。一部はCuriosAPI対応済み(Issue #18)。
-6. **新ブロック/ギミック**: Prismium Core、Prismium Lantern(v0.37.0でvanilla同等の正式な吊り下げ/据え置き形状に刷新)、蒼白のプリズミウムブロック・ランタン・建築バリエーション、Prismium Alloy Blockの建築バリエーション(v0.43.0)、Prismium Snare(罠ギミック)、Prismium Stone/Prismium Deepstoneの建築バリエーション(v0.44.0)、プリズミウムの晶洞クラスタ(Prismium Geode Cluster、v0.46.0、プレイヤークラフト可能な装飾クリスタル)まで実装済み。装飾ブロック・ダンジョン用ギミックブロックはさらに拡充の余地がある。
+6. **新ブロック/ギミック**: Prismium Core、Prismium Lantern(v0.37.0でvanilla同等の正式な吊り下げ/据え置き形状に刷新)、蒼白のプリズミウムブロック・ランタン・建築バリエーション、Prismium Alloy Blockの建築バリエーション(v0.43.0)、Prismium Snare(罠ギミック)、Prismium Stone/Prismium Deepstoneの建築バリエーション(v0.44.0)、プリズミウムの晶洞クラスタ(Prismium Geode Cluster、v0.46.0)・プリズミウムの鍾乳結晶(Prismium Stalactite Crystal、v0.47.0、シリーズ初の天井設置型)というプレイヤークラフト可能な装飾クリスタル系まで実装済み。装飾ブロック・ダンジョン用ギミックブロックはさらに拡充の余地がある。
 7. **プレイヤー向けUX/ドキュメンテーション**: issue #7(MODについて何も分からない)への対応として、各エネルギーブロックの使い方ツールチップ、詳細表示オーバーレイ(W長押し)、プリズミウム・コンペンディウム(初回配布されるガイドブック)まで実装済み。今後も新しい系統(Prism Realmのダンジョン/ボス等)を追加するたびに、この系統のドキュメントも一緒に更新していく。
