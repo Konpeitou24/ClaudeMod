@@ -20,6 +20,7 @@ import com.claudemod.block.PrismiumRestorerBlock;
 import com.claudemod.block.PrismiumSmelterBlock;
 import com.claudemod.block.PrismiumSnareBlock;
 import com.claudemod.block.PrismiumSpikeBlock;
+import com.claudemod.block.PrismiumStalactiteBlock;
 import com.claudemod.block.PrismiumWardstoneBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SlabBlock;
@@ -824,6 +825,27 @@ public class ModBlocks {
                     .instabreak()
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .lightLevel(state -> 9)
+                    .noOcclusion()));
+
+    // Prismium Stalactite Crystal (scheduled session, 2026-09-14): the
+    // mod's fourth surface-decoration crystal prop and first
+    // ceiling-mounted one (see PrismiumStalactiteBlock for the full
+    // design rationale - hangs from a sturdy block above rather than
+    // standing on one below, mirroring Bloom/Spike/Geode Cluster's
+    // canSurvive check with Direction.DOWN instead of Direction.UP).
+    // Same noCollission()/instabreak()/AMETHYST_CLUSTER-sound/
+    // noOcclusion() family treatment. Light level 4 - the dimmest of the
+    // family (Bloom 5, Spike 7, Geode Cluster 9), since this one is
+    // meant to read as a subtle cave/ceiling accent rather than a
+    // deliberate light fixture (recipe: 2 Prismium Shards + 1 vanilla
+    // Pointed Dripstone, a thematic nod to real stalactites).
+    public static final RegistryObject<Block> PRISMIUM_STALACTITE = BLOCKS.register("prismium_stalactite",
+            () -> new PrismiumStalactiteBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 4)
                     .noOcclusion()));
 
     public static void register(IEventBus eventBus) {

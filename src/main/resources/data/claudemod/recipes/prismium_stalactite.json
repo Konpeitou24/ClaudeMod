@@ -1,0 +1,13 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "claudemod:prismium_shard" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "minecraft:pointed_dripstone" }
+    ],
+    "result": {
+        "item": "claudemod:prismium_stalactite",
+        "count": 1
+    }
+}

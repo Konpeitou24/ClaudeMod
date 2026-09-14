@@ -406,6 +406,12 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_GEODE_CLUSTER_ITEM = ITEMS.register("prismium_geode_cluster",
             () -> new BlockItem(ModBlocks.PRISMIUM_GEODE_CLUSTER.get(), new Item.Properties()));
 
+    // Prismium Stalactite Crystal (scheduled session, 2026-09-14):
+    // BlockItem for the mod's fourth surface-decoration crystal prop and
+    // first ceiling-mounted one - see ModBlocks.PRISMIUM_STALACTITE.
+    public static final RegistryObject<Item> PRISMIUM_STALACTITE_ITEM = ITEMS.register("prismium_stalactite",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STALACTITE.get(), new Item.Properties()));
+
     // Prism Lily (session 40): BlockItem for the mod's first Prism
     // Realm-exclusive surface decoration - see ModBlocks.PRISM_LILY.
     public static final RegistryObject<Item> PRISM_LILY_ITEM = ITEMS.register("prism_lily",

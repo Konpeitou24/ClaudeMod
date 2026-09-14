@@ -61,6 +61,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_BLOOM_ITEM.get());
                         output.accept(ModItems.PRISMIUM_SPIKE_ITEM.get());
                         output.accept(ModItems.PRISMIUM_GEODE_CLUSTER_ITEM.get()); // scheduled session, 2026-09-13
+                        output.accept(ModItems.PRISMIUM_STALACTITE_ITEM.get()); // scheduled session, 2026-09-14
                         output.accept(ModItems.PRISM_LILY_ITEM.get());
                         output.accept(ModItems.PRISM_BRAMBLE_ITEM.get());
                         output.accept(ModItems.PRISM_VINE_ITEM.get());
