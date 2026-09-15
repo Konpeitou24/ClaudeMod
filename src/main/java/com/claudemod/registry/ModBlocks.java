@@ -848,6 +848,35 @@ public class ModBlocks {
                     .lightLevel(state -> 4)
                     .noOcclusion()));
 
+    // Pale Prismium Geode Cluster (scheduled session, 2026-09-15): the
+    // Pale Prismium family's own crystal surface decoration, mirroring
+    // PRISMIUM_GEODE_CLUSTER's shape/behavior exactly by reusing the
+    // SAME Java class (PrismiumGeodeClusterBlock is generic - no
+    // hardcoded block ID - see its class doc) with only the texture,
+    // registry name, MapColor and recipe differing. This is the family's
+    // fifth crystal-prop member overall (Bloom/Spike/Geode Cluster/
+    // Stalactite/this) but the first "palette sibling" rather than a new
+    // silhouette, so it introduces zero new Java code paths - the safest
+    // possible way to add content this session (no new @Override
+    // surface to verify, per PROGRESS.md's standing caution). See
+    // gen_pale_prismium_geode_cluster.py for the icy-recolor art
+    // rationale. MapColor.ICE to match PALE_PRISMIUM_BLOCK/LANTERN
+    // rather than COLOR_CYAN. Same light level (9) as the teal original
+    // since both are equally meant to double as a placed light fixture.
+    // Recipe: 1 Pale Prismium Block + 2 Prismium Shards (see
+    // data/claudemod/recipes/pale_prismium_geode_cluster.json) -
+    // deliberately NOT the same shapeless ingredient set as
+    // PALE_PRISMIUM_BLOCK's own recipe (2 shards + 1 quartz block), to
+    // avoid two shapeless recipes sharing one ingredient multiset.
+    public static final RegistryObject<Block> PALE_PRISMIUM_GEODE_CLUSTER = BLOCKS.register("pale_prismium_geode_cluster",
+            () -> new PrismiumGeodeClusterBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 9)
+                    .noOcclusion()));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

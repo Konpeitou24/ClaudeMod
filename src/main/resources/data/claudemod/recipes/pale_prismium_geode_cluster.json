@@ -1,0 +1,13 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "claudemod:pale_prismium_block" },
+        { "item": "claudemod:prismium_shard" },
+        { "item": "claudemod:prismium_shard" }
+    ],
+    "result": {
+        "item": "claudemod:pale_prismium_geode_cluster",
+        "count": 1
+    }
+}
