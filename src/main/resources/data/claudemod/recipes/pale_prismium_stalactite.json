@@ -1,0 +1,12 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "claudemod:pale_prismium_block" },
+        { "item": "minecraft:pointed_dripstone" }
+    ],
+    "result": {
+        "item": "claudemod:pale_prismium_stalactite",
+        "count": 1
+    }
+}

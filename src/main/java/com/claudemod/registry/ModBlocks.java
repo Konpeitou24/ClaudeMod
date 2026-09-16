@@ -877,6 +877,34 @@ public class ModBlocks {
                     .lightLevel(state -> 9)
                     .noOcclusion()));
 
+    // Pale Prismium Stalactite Crystal (scheduled session, 2026-09-16):
+    // the Pale Prismium family's ceiling-mounted crystal decoration,
+    // reusing PrismiumStalactiteBlock (Java) verbatim - it is generic,
+    // no hardcoded block ID (same reasoning as PrismiumGeodeClusterBlock
+    // for PALE_PRISMIUM_GEODE_CLUSTER above). Second "palette sibling"
+    // after Pale Geode Cluster, so zero new Java code paths are
+    // introduced - only texture, registry name, MapColor and recipe
+    // differ from PRISMIUM_STALACTITE. MapColor.ICE to match the rest of
+    // the Pale Prismium family. Same light level (4, the dimmest of the
+    // crystal-prop family) as the teal original since both are meant to
+    // read as a subtle ceiling accent rather than a light fixture.
+    // Recipe: 1 Pale Prismium Block + 1 vanilla Pointed Dripstone (see
+    // data/claudemod/recipes/pale_prismium_stalactite.json) -
+    // deliberately a different shapeless ingredient multiset from every
+    // other Pale Prismium / Stalactite recipe (PALE_PRISMIUM_BLOCK: 2
+    // shards + 1 quartz block; PALE_PRISMIUM_GEODE_CLUSTER: 1 pale block
+    // + 2 shards; PRISMIUM_STALACTITE: 2 shards + 1 pointed dripstone;
+    // PALE_PRISMIUM_LANTERN: 1 pale block + 1 torch) to avoid two
+    // shapeless recipes sharing one ingredient multiset.
+    public static final RegistryObject<Block> PALE_PRISMIUM_STALACTITE = BLOCKS.register("pale_prismium_stalactite",
+            () -> new PrismiumStalactiteBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 4)
+                    .noOcclusion()));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

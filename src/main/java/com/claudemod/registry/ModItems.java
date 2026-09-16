@@ -418,6 +418,12 @@ public class ModItems {
     public static final RegistryObject<Item> PALE_PRISMIUM_GEODE_CLUSTER_ITEM = ITEMS.register("pale_prismium_geode_cluster",
             () -> new BlockItem(ModBlocks.PALE_PRISMIUM_GEODE_CLUSTER.get(), new Item.Properties()));
 
+    // Pale Prismium Stalactite Crystal (scheduled session, 2026-09-16):
+    // BlockItem for the Pale Prismium family's ceiling-mounted crystal
+    // decoration - see ModBlocks.PALE_PRISMIUM_STALACTITE.
+    public static final RegistryObject<Item> PALE_PRISMIUM_STALACTITE_ITEM = ITEMS.register("pale_prismium_stalactite",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_STALACTITE.get(), new Item.Properties()));
+
     // Prism Lily (session 40): BlockItem for the mod's first Prism
     // Realm-exclusive surface decoration - see ModBlocks.PRISM_LILY.
     public static final RegistryObject<Item> PRISM_LILY_ITEM = ITEMS.register("prism_lily",
