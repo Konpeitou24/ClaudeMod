@@ -1,0 +1,8 @@
+{
+    "render_type": "minecraft:cutout",
+    "parent": "block/cross",
+    "textures": {
+        "cross": "claudemod:block/pale_prismium_spike",
+        "particle": "claudemod:block/pale_prismium_spike"
+    }
+}

@@ -424,6 +424,18 @@ public class ModItems {
     public static final RegistryObject<Item> PALE_PRISMIUM_STALACTITE_ITEM = ITEMS.register("pale_prismium_stalactite",
             () -> new BlockItem(ModBlocks.PALE_PRISMIUM_STALACTITE.get(), new Item.Properties()));
 
+    // Pale Prismium Bloom (scheduled session, 2026-09-17): BlockItem for
+    // the Pale Prismium family's own worldgen-decoration-turned-craftable
+    // crystal prop - see ModBlocks.PALE_PRISMIUM_BLOOM.
+    public static final RegistryObject<Item> PALE_PRISMIUM_BLOOM_ITEM = ITEMS.register("pale_prismium_bloom",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_BLOOM.get(), new Item.Properties()));
+
+    // Pale Prismium Spike (scheduled session, 2026-09-17): BlockItem for
+    // the Pale Prismium family's own worldgen-decoration-turned-craftable
+    // crystal prop - see ModBlocks.PALE_PRISMIUM_SPIKE.
+    public static final RegistryObject<Item> PALE_PRISMIUM_SPIKE_ITEM = ITEMS.register("pale_prismium_spike",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_SPIKE.get(), new Item.Properties()));
+
     // Prism Lily (session 40): BlockItem for the mod's first Prism
     // Realm-exclusive surface decoration - see ModBlocks.PRISM_LILY.
     public static final RegistryObject<Item> PRISM_LILY_ITEM = ITEMS.register("prism_lily",

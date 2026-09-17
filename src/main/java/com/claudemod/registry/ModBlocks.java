@@ -905,6 +905,55 @@ public class ModBlocks {
                     .lightLevel(state -> 4)
                     .noOcclusion()));
 
+    // Pale Prismium Bloom (scheduled session, 2026-09-17): the Pale
+    // Prismium family's third crystal-prop palette sibling, reusing
+    // PrismiumBloomBlock (Java) verbatim - it is generic, no hardcoded
+    // block ID (same reasoning as the other Pale palette siblings
+    // above). Unlike Pale Geode Cluster/Pale Stalactite (which mirror
+    // teal originals that were ALREADY player-craftable), the teal
+    // Prismium Bloom is worldgen-only with no recipe of its own (see
+    // PrismiumBloomBlock's javadoc) - this session deliberately gives
+    // the Pale sibling its own shapeless recipe instead (1 Pale
+    // Prismium Block + 1 Prismium Shard) rather than also wiring up new
+    // worldgen biome-modifier/configured-feature/placed-feature files,
+    // per the lower-risk option discussed in the 2026-09-16 HANDOFF.md
+    // (see gen_pale_prismium_bloom.py for the full rationale). MapColor.ICE
+    // and the same icy PALE_* texture ramp as the rest of the Pale
+    // family. Same light level (5) and noCollission()/instabreak()/
+    // AMETHYST_CLUSTER-sound/noOcclusion() treatment as the teal
+    // original since only the palette differs, not the "glowing plant
+    // prop" behavior.
+    public static final RegistryObject<Block> PALE_PRISMIUM_BLOOM = BLOCKS.register("pale_prismium_bloom",
+            () -> new PrismiumBloomBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 5)
+                    .noOcclusion()));
+
+    // Pale Prismium Spike (scheduled session, 2026-09-17): the Pale
+    // Prismium family's fourth crystal-prop palette sibling, reusing
+    // PrismiumSpikeBlock (Java) verbatim for the same reasons as Pale
+    // Bloom above. Like Pale Bloom, the teal Prismium Spike is
+    // worldgen-only with no recipe of its own, so this Pale sibling gets
+    // its own new shapeless recipe (1 Pale Prismium Block + 1 vanilla
+    // Amethyst Shard - deliberately a different ingredient multiset from
+    // Pale Bloom's own new recipe just above, so the two don't collide;
+    // see gen_pale_prismium_spike.py for the full rationale). MapColor.ICE
+    // and the same icy PALE_* texture ramp as the rest of the Pale
+    // family. Same light level (7) and noCollission()/instabreak()/
+    // AMETHYST_CLUSTER-sound/noOcclusion() treatment as the teal
+    // original.
+    public static final RegistryObject<Block> PALE_PRISMIUM_SPIKE = BLOCKS.register("pale_prismium_spike",
+            () -> new PrismiumSpikeBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 7)
+                    .noOcclusion()));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }
