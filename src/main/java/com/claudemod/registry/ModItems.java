@@ -129,6 +129,10 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_STAIRS_ITEM = ITEMS.register("prismium_alloy_block_stairs",
             () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK_STAIRS.get(), new Item.Properties()));
 
+    // ModBlocks.CHISELED_PRISMIUM_ALLOY_BLOCK.
+    public static final RegistryObject<Item> CHISELED_PRISMIUM_ALLOY_BLOCK_ITEM = ITEMS.register("chiseled_prismium_alloy_block",
+            () -> new BlockItem(ModBlocks.CHISELED_PRISMIUM_ALLOY_BLOCK.get(), new Item.Properties()));
+
     // BlockItem for Pale Prismium Block (session #77, scheduled). See
     // ModBlocks.PALE_PRISMIUM_BLOCK.
     public static final RegistryObject<Item> PALE_PRISMIUM_BLOCK_ITEM = ITEMS.register("pale_prismium_block",
@@ -144,6 +148,10 @@ public class ModItems {
 
     public static final RegistryObject<Item> PALE_PRISMIUM_BLOCK_STAIRS_ITEM = ITEMS.register("pale_prismium_block_stairs",
             () -> new BlockItem(ModBlocks.PALE_PRISMIUM_BLOCK_STAIRS.get(), new Item.Properties()));
+
+    // ModBlocks.CHISELED_PALE_PRISMIUM_BLOCK.
+    public static final RegistryObject<Item> CHISELED_PALE_PRISMIUM_BLOCK_ITEM = ITEMS.register("chiseled_pale_prismium_block",
+            () -> new BlockItem(ModBlocks.CHISELED_PALE_PRISMIUM_BLOCK.get(), new Item.Properties()));
 
     // Pale Prismium Lantern (session #79, scheduled). See
     // ModBlocks.PALE_PRISMIUM_LANTERN.

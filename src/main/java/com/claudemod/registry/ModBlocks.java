@@ -503,6 +503,28 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)));
 
+    // Chiseled Prismium Alloy Block (scheduled session, 2026-09-18): the
+    // decorative-masonry treatment already given to Prismium Block
+    // (session 34, CHISELED_PRISMIUM_BLOCK) and Prismium Core (session
+    // 37, CHISELED_PRISMIUM_CORE) extended to Prismium Alloy Block, the
+    // only other plain full storage block in the mod that had building
+    // variants (slab/wall/stairs, above) but no chiseled sibling yet.
+    // Same stats as PRISMIUM_ALLOY_BLOCK (tool-gated, same hardness/
+    // resistance/sound/light) since it's the same material just cut
+    // differently - only the texture differs. See
+    // gen_chiseled_prismium_alloy_block.py for the art. Not added to
+    // needs_iron_tool/needs_diamond_tool, matching how
+    // CHISELED_PRISMIUM_BLOCK itself and PRISMIUM_ALLOY_BLOCK are
+    // treated (mineable/pickaxe only) - see TODO16 in PROGRESS.md for
+    // the existing asymmetry this mirrors rather than fixes.
+    public static final RegistryObject<Block> CHISELED_PRISMIUM_ALLOY_BLOCK = BLOCKS.register("chiseled_prismium_alloy_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 6)));
+
     // Pale Prismium Block (session #77, scheduled): the mod's first
     // genuinely pale blue-white ("青白い") decorative block, answering a
     // direct user request that had been sitting in PROGRESS.md's
@@ -551,6 +573,25 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)));
+
+    // Chiseled Pale Prismium Block (scheduled session, 2026-09-18): the
+    // same decorative-masonry treatment extended to the Pale Prismium
+    // family, closing the other half of the "plain block with building
+    // variants but no chiseled sibling" gap alongside
+    // CHISELED_PRISMIUM_ALLOY_BLOCK above (done in the same session).
+    // Same stats as PALE_PRISMIUM_BLOCK (tool-gated, same hardness/
+    // resistance/sound/light) since it's the same material just cut
+    // differently - only the texture differs. See
+    // gen_chiseled_pale_prismium_block.py for the art. Not added to
+    // needs_iron_tool/needs_diamond_tool, matching how
+    // PALE_PRISMIUM_BLOCK itself is treated (mineable/pickaxe only).
+    public static final RegistryObject<Block> CHISELED_PALE_PRISMIUM_BLOCK = BLOCKS.register("chiseled_pale_prismium_block",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 8)));
 
     // Pale Prismium Lantern (session #79, scheduled): the Pale Prismium
     // family's own exploration light source, mirroring PRISMIUM_LANTERN
