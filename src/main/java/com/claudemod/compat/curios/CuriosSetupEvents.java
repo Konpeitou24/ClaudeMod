@@ -43,6 +43,7 @@ public class CuriosSetupEvents {
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_EMBERGUARD.get());
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_VITASTONE.get());
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_MAGNET_CHARM.get());
+            CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_AEGIS_CHARM.get());
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_GUARDIAN_CHARM.get());
         });
     }

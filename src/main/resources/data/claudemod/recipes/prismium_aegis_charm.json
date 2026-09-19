@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "O": { "item": "minecraft:obsidian" },
+        "G": { "item": "minecraft:gunpowder" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        " O ",
+        "GSG",
+        " O "
+    ],
+    "result": {
+        "item": "claudemod:prismium_aegis_charm",
+        "count": 1
+    }
+}

@@ -113,6 +113,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_PULVERIZER_ITEM.get()); // session 67
                         output.accept(ModItems.PRISMIUM_SMELTER_ITEM.get()); // session 68
                         output.accept(ModItems.PRISMIUM_COMPRESSOR_ITEM.get()); // session 70
+                        output.accept(ModItems.PRISMIUM_AEGIS_CHARM.get()); // scheduled session, 2026-09-19
                         // scheduled session, issue #7 follow-up: pre-filled stack (not
                         // a blank book) so the creative tab entry itself already shows
                         // the real guide content - see PrismiumCompendiumFactory.
