@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "I": { "item": "minecraft:packed_ice" },
+        "P": { "item": "minecraft:powder_snow_bucket" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        " I ",
+        "IPI",
+        " I "
+    ],
+    "result": {
+        "item": "claudemod:prismium_frostguard_charm",
+        "count": 1
+    }
+}
