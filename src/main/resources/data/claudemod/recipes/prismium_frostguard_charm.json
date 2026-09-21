@@ -7,9 +7,9 @@
         "S": { "item": "claudemod:prismium_shard" }
     },
     "pattern": [
-        " I ",
         "IPI",
-        " I "
+        " S ",
+        "I I"
     ],
     "result": {
         "item": "claudemod:prismium_frostguard_charm",
