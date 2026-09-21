@@ -21,6 +21,7 @@ import com.claudemod.block.PrismiumSmelterBlock;
 import com.claudemod.block.PrismiumSnareBlock;
 import com.claudemod.block.PrismiumSpikeBlock;
 import com.claudemod.block.PrismiumStalactiteBlock;
+import com.claudemod.block.PrismiumWallLampBlock;
 import com.claudemod.block.PrismiumWardstoneBlock;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.SlabBlock;
@@ -994,6 +995,25 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .lightLevel(state -> 7)
                     .noOcclusion()));
+
+    // Prismium Wall Lamp (scheduled session, 2026-09-21): the mod's first
+    // HORIZONTAL_FACING/wall-mounted block - see PrismiumWallLampBlock's
+    // class doc for the full API-confirmation and geometry rationale.
+    // Same noCollission()/instabreak()/AMETHYST_CLUSTER-sound treatment
+    // as the rest of the Prismium crystal-light-prop family (Bloom 5/
+    // Spike 7/Geode Cluster 9/Stalactite 4), but noOcclusion() is
+    // omitted since this one IS meant to occlude neighbors behind its
+    // thin plaque like a normal wall fixture, not read as a walk-through
+    // prop. Light level 13 - just under vanilla torch's 14, since this
+    // is meant to double as a deliberate, torch-equivalent wall light
+    // source rather than a subtle cave accent.
+    public static final RegistryObject<Block> PRISMIUM_WALL_LAMP = BLOCKS.register("prismium_wall_lamp",
+            () -> new PrismiumWallLampBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 13)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

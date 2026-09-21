@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "G": { "item": "minecraft:glowstone_dust" },
+        "S": { "item": "claudemod:prismium_shard" },
+        "I": { "item": "minecraft:iron_nugget" }
+    },
+    "pattern": [
+        "G",
+        "S",
+        "I"
+    ],
+    "result": {
+        "item": "claudemod:prismium_wall_lamp",
+        "count": 2
+    }
+}

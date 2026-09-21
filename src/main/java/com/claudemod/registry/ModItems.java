@@ -606,6 +606,12 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_COMPENDIUM = ITEMS.register("prismium_compendium",
             () -> new com.claudemod.item.PrismiumCompendiumItem(new Item.Properties().stacksTo(16)));
 
+    // Prismium Wall Lamp (scheduled session, 2026-09-21): BlockItem for
+    // ModBlocks.PRISMIUM_WALL_LAMP, the mod's first HORIZONTAL_FACING
+    // wall-mounted block - see PrismiumWallLampBlock's class doc.
+    public static final RegistryObject<Item> PRISMIUM_WALL_LAMP_ITEM = ITEMS.register("prismium_wall_lamp",
+            () -> new BlockItem(ModBlocks.PRISMIUM_WALL_LAMP.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
