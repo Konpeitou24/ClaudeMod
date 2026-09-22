@@ -1015,6 +1015,24 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .lightLevel(state -> 13)));
 
+    // Pale Prismium Wall Lamp (scheduled session, 2026-09-22): the Pale
+    // Prismium family's own wall-mounted fixture, mirroring
+    // PRISMIUM_WALL_LAMP exactly in shape/behavior but reskinned in the
+    // icy PALE_* palette. Reuses PrismiumWallLampBlock (Java) verbatim -
+    // same low-risk "texture/ID/recipe-only" pattern already used for
+    // PALE_PRISMIUM_LANTERN/GEODE_CLUSTER/STALACTITE/BLOOM/SPIKE - no new
+    // Java code path, just a new registration reusing an already
+    // CI-verified Block subclass. Same light level (13) as the teal
+    // original, matching how every other Pale sibling keeps its
+    // original's light level unchanged.
+    public static final RegistryObject<Block> PALE_PRISMIUM_WALL_LAMP = BLOCKS.register("pale_prismium_wall_lamp",
+            () -> new PrismiumWallLampBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .noCollission()
+                    .instabreak()
+                    .sound(SoundType.AMETHYST_CLUSTER)
+                    .lightLevel(state -> 13)));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

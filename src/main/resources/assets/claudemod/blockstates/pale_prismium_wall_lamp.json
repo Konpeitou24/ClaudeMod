@@ -1,0 +1,8 @@
+{
+    "variants": {
+        "facing=north": { "model": "claudemod:block/pale_prismium_wall_lamp" },
+        "facing=east": { "model": "claudemod:block/pale_prismium_wall_lamp", "y": 90 },
+        "facing=south": { "model": "claudemod:block/pale_prismium_wall_lamp", "y": 180 },
+        "facing=west": { "model": "claudemod:block/pale_prismium_wall_lamp", "y": 270 }
+    }
+}

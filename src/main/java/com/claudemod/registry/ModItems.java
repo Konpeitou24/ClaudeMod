@@ -612,6 +612,11 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_WALL_LAMP_ITEM = ITEMS.register("prismium_wall_lamp",
             () -> new BlockItem(ModBlocks.PRISMIUM_WALL_LAMP.get(), new Item.Properties()));
 
+    // Pale Prismium Wall Lamp (scheduled session, 2026-09-22): BlockItem
+    // for ModBlocks.PALE_PRISMIUM_WALL_LAMP.
+    public static final RegistryObject<Item> PALE_PRISMIUM_WALL_LAMP_ITEM = ITEMS.register("pale_prismium_wall_lamp",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_WALL_LAMP.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
