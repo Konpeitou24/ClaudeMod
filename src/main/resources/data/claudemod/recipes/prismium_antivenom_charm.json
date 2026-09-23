@@ -1,0 +1,14 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": [
+        { "item": "minecraft:spider_eye" },
+        { "item": "minecraft:spider_eye" },
+        { "item": "minecraft:wither_rose" },
+        { "item": "claudemod:prismium_shard" }
+    ],
+    "result": {
+        "item": "claudemod:prismium_antivenom_charm",
+        "count": 1
+    }
+}

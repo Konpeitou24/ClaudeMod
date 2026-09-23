@@ -14,6 +14,7 @@ import com.claudemod.item.EnergyStorageBlockItem;
 import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumAegisCharmItem;
+import com.claudemod.item.PrismiumAntivenomCharmItem;
 import com.claudemod.item.PrismiumBowItem;
 import com.claudemod.item.PrismiumChronoflameBlockItem;
 import com.claudemod.item.PrismiumEmberguardItem;
@@ -589,6 +590,15 @@ public class ModItems {
     // Featherstone/Emberguard/Vitastone/Magnet Charm/Aegis Charm.
     public static final RegistryObject<Item> PRISMIUM_FROSTGUARD_CHARM = ITEMS.register("prismium_frostguard_charm",
             () -> new PrismiumFrostguardCharmItem(new Item.Properties()));
+
+    // Prismium Antivenom Charm (scheduled session, 2026-09-23): the
+    // mod's seventh purely passive accessory - see
+    // PrismiumAntivenomCharmItem / PrismiumAntivenomCharmHandler.
+    // Same "stacks normally, presence-only" treatment as
+    // Featherstone/Emberguard/Vitastone/Magnet Charm/Aegis Charm/
+    // Frostguard Charm.
+    public static final RegistryObject<Item> PRISMIUM_ANTIVENOM_CHARM = ITEMS.register("prismium_antivenom_charm",
+            () -> new PrismiumAntivenomCharmItem(new Item.Properties()));
 
     // Prismium Compendium (scheduled session, GitHub issue #7 follow-up).
     // 2026-08-31 direct-chat feedback (PROGRESS.md TODO3): right-click did

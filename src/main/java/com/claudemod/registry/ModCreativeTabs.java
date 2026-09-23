@@ -117,6 +117,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_FROSTGUARD_CHARM.get()); // scheduled session, 2026-09-20
                         output.accept(ModItems.PRISMIUM_WALL_LAMP_ITEM.get()); // scheduled session, 2026-09-21
                         output.accept(ModItems.PALE_PRISMIUM_WALL_LAMP_ITEM.get()); // scheduled session, 2026-09-22
+                        output.accept(ModItems.PRISMIUM_ANTIVENOM_CHARM.get()); // scheduled session, 2026-09-23
                         // scheduled session, issue #7 follow-up: pre-filled stack (not
                         // a blank book) so the creative tab entry itself already shows
                         // the real guide content - see PrismiumCompendiumFactory.
