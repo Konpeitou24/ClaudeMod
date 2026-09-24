@@ -17,6 +17,7 @@ import com.claudemod.entity.client.PrismiumDeepWraithRenderer;
 import com.claudemod.entity.client.PrismiumDrifterRenderer;
 import com.claudemod.entity.client.PrismiumSentinelRenderer;
 import com.claudemod.entity.client.PrismiumWispRenderer;
+import com.claudemod.entity.client.PrismiumFamiliarRenderer;
 import com.claudemod.entity.client.PrismiumWraithRenderer;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModEntities;
@@ -62,6 +63,8 @@ public class ClientModEvents {
         event.registerEntityRenderer(ModEntities.PRISMIUM_CRAWLER.get(), PrismiumCrawlerRenderer::new);
         // Sixth mob (see PrismiumWispEntity's javadoc).
         event.registerEntityRenderer(ModEntities.PRISMIUM_WISP.get(), PrismiumWispRenderer::new);
+        // Seventh mob (see PrismiumFamiliarEntity's javadoc).
+        event.registerEntityRenderer(ModEntities.PRISMIUM_FAMILIAR.get(), PrismiumFamiliarRenderer::new);
     }
 
     @SubscribeEvent

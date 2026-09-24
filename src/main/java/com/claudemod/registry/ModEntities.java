@@ -6,6 +6,7 @@ import com.claudemod.entity.PrismiumCrawlerEntity;
 import com.claudemod.entity.PrismiumDrifterEntity;
 import com.claudemod.entity.PrismiumSentinelEntity;
 import com.claudemod.entity.PrismiumWispEntity;
+import com.claudemod.entity.PrismiumFamiliarEntity;
 import com.claudemod.entity.PrismiumWraithEntity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
@@ -104,6 +105,19 @@ public class ModEntities {
                             .sized(0.5F, 0.5F)
                             .clientTrackingRange(6)
                             .build("prismium_wisp"));
+
+    // Seventh mob, this mod's first tamable companion (see
+    // PrismiumFamiliarEntity's javadoc). MobCategory.AMBIENT matches
+    // PRISMIUM_WISP's own registration (a small, harmless creature, not a
+    // "farmable" animal despite technically extending TamableAnimal->
+    // Animal->AgeableMob). Same 0.5x0.5 size as Wisp since it shares the
+    // exact same flight AI/model/hitbox intent, just reskinned and tamable.
+    public static final RegistryObject<EntityType<PrismiumFamiliarEntity>> PRISMIUM_FAMILIAR =
+            ENTITY_TYPES.register("prismium_familiar",
+                    () -> EntityType.Builder.of(PrismiumFamiliarEntity::new, MobCategory.AMBIENT)
+                            .sized(0.5F, 0.5F)
+                            .clientTrackingRange(8)
+                            .build("prismium_familiar"));
 
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);

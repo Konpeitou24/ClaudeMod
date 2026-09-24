@@ -403,6 +403,13 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_WISP_SPAWN_EGG = ITEMS.register("prismium_wisp_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_WISP, 0x3a2463, 0xf7e199, new Item.Properties()));
 
+    // Seventh mob spawn egg (see PrismiumFamiliarEntity's javadoc). Soft
+    // rose/lavender colors distinguish it from Wisp's warm gold/violet -
+    // a "friendly companion" palette rather than a "background ambient
+    // light" one, matching the reskin in gen_prismium_familiar.py.
+    public static final RegistryObject<Item> PRISMIUM_FAMILIAR_SPAWN_EGG = ITEMS.register("prismium_familiar_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_FAMILIAR, 0xf7c6e0, 0x6a3b7a, new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));
 

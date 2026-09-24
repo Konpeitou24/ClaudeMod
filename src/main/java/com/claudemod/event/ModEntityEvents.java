@@ -70,6 +70,10 @@ public class ModEntityEvents {
         // requirement as every prior mob, a registered AttributeSupplier
         // is needed before this LivingEntity subtype can be constructed.
         event.put(ModEntities.PRISMIUM_WISP.get(), com.claudemod.entity.PrismiumWispEntity.createAttributes().build());
+        // Seventh mob (see PrismiumFamiliarEntity's javadoc) - same
+        // requirement as every prior mob, a registered AttributeSupplier
+        // is needed before this LivingEntity subtype can be constructed.
+        event.put(ModEntities.PRISMIUM_FAMILIAR.get(), com.claudemod.entity.PrismiumFamiliarEntity.createAttributes().build());
     }
 
     @SubscribeEvent
@@ -129,6 +133,18 @@ public class ModEntityEvents {
         // (Prism Realm only) is handled data-driven, via
         // data/claudemod/forge/biome_modifier/add_prismium_wisp_spawn_realm.json.
         event.register(ModEntities.PRISMIUM_WISP.get(), SpawnPlacements.Type.NO_RESTRICTIONS,
+                Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
+                (type, level, spawnType, pos, random) -> level.getBlockState(pos).isAir(),
+                SpawnPlacementRegisterEvent.Operation.REPLACE);
+        // Seventh mob (see PrismiumFamiliarEntity's javadoc): same
+        // NO_RESTRICTIONS/open-air predicate as Wisp (PRISMIUM_WISP,
+        // directly above) - it shares the exact same flight AI, so the
+        // same "just needs open air to not spawn stuck in a wall" rule
+        // applies. Actual placement (Prism Realm only, low weight since
+        // this is meant to be a rare, exciting find to tame rather than
+        // a common sight) is handled data-driven, via
+        // data/claudemod/forge/biome_modifier/add_prismium_familiar_spawn_realm.json.
+        event.register(ModEntities.PRISMIUM_FAMILIAR.get(), SpawnPlacements.Type.NO_RESTRICTIONS,
                 Heightmap.Types.MOTION_BLOCKING_NO_LEAVES,
                 (type, level, spawnType, pos, random) -> level.getBlockState(pos).isAir(),
                 SpawnPlacementRegisterEvent.Operation.REPLACE);
