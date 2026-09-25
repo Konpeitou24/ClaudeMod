@@ -43,6 +43,7 @@
         "claudemod:prismium_deepstone_wall",
         "claudemod:prismium_deepstone_stairs",
         "claudemod:chiseled_prismium_alloy_block",
-        "claudemod:chiseled_pale_prismium_block"
+        "claudemod:chiseled_pale_prismium_block",
+        "claudemod:prismium_crystal_pillar"
     ]
 }

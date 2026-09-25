@@ -1,0 +1,7 @@
+{
+    "parent": "minecraft:block/cube_column",
+    "textures": {
+        "end": "claudemod:block/prismium_crystal_pillar_top",
+        "side": "claudemod:block/prismium_crystal_pillar"
+    }
+}

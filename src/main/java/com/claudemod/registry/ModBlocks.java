@@ -24,6 +24,7 @@ import com.claudemod.block.PrismiumStalactiteBlock;
 import com.claudemod.block.PrismiumWallLampBlock;
 import com.claudemod.block.PrismiumWardstoneBlock;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.RotatedPillarBlock;
 import net.minecraft.world.level.block.SlabBlock;
 import net.minecraft.world.level.block.StairBlock;
 import net.minecraft.world.level.block.WallBlock;
@@ -702,6 +703,33 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)));
+
+    // Prismium Crystal Pillar (scheduled session, 2026-09-25): the
+    // building-variety trio's missing "vertical column" silhouette -
+    // Slab/Wall/Stairs (sessions 34-35) never covered the load-bearing
+    // pillar shape vanilla itself gives Quartz/Purpur/Basalt. This is the
+    // mod's first use of vanilla's own RotatedPillarBlock (net.minecraft.
+    // world.level.block.RotatedPillarBlock) - a stock class, no custom
+    // subclass, single BlockBehaviour.Properties constructor confirmed
+    // via mappings.dev/1.20.1 before use (same "lowest risk new block
+    // type" reasoning as the original SlabBlock/WallBlock/StairBlock
+    // trio, see that trio's own comments above). Same stats as
+    // PRISMIUM_BLOCK (tool-gated, same hardness/resistance/sound) since
+    // it's cut from the same material, with a slightly higher light
+    // level (7 vs Block's 6) to sell the "glowing crystal vein down the
+    // column" look the texture (gen_prismium_crystal_pillar.py) gives
+    // it - still well short of Lantern's dedicated 15. Not added to
+    // needs_iron_tool/needs_diamond_tool, matching how PRISMIUM_BLOCK's
+    // own Slab/Wall/Stairs and PRISMIUM_ALLOY_BLOCK are treated
+    // (mineable/pickaxe only) - see TODO16 in PROGRESS.md for the
+    // existing asymmetry this mirrors rather than fixes.
+    public static final RegistryObject<Block> PRISMIUM_CRYSTAL_PILLAR = BLOCKS.register("prismium_crystal_pillar",
+            () -> new RotatedPillarBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 7)));
 
     // Prismium Core building variety (session 36): extends the slab/wall/
     // stairs trio already proven out on Prismium Block (sessions 34-35,

@@ -183,6 +183,12 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_BLOCK_STAIRS_ITEM = ITEMS.register("prismium_block_stairs",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK_STAIRS.get(), new Item.Properties()));
 
+    // Prismium Crystal Pillar (scheduled session, 2026-09-25): BlockItem
+    // for the mod's first RotatedPillarBlock. See
+    // ModBlocks.PRISMIUM_CRYSTAL_PILLAR.
+    public static final RegistryObject<Item> PRISMIUM_CRYSTAL_PILLAR_ITEM = ITEMS.register("prismium_crystal_pillar",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CRYSTAL_PILLAR.get(), new Item.Properties()));
+
     // Prismium Core building variety (session 36). See ModBlocks.
     public static final RegistryObject<Item> PRISMIUM_CORE_SLAB_ITEM = ITEMS.register("prismium_core_slab",
             () -> new BlockItem(ModBlocks.PRISMIUM_CORE_SLAB.get(), new Item.Properties()));
