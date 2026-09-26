@@ -731,6 +731,24 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST)
                     .lightLevel(state -> 7)));
 
+    // Pale Prismium Crystal Pillar (scheduled session, 2026-09-26): the
+    // Pale Prismium family's own version of PRISMIUM_CRYSTAL_PILLAR,
+    // mirroring it exactly in shape/behavior (same vanilla RotatedPillarBlock,
+    // no new Java code) but reskinned in the icy PALE_* palette - same
+    // low-risk "texture/ID/recipe-only" pattern already used for every
+    // other Pale sibling (Lantern/Geode Cluster/Stalactite/Bloom/Spike/
+    // Wall Lamp). Same stats as PALE_PRISMIUM_BLOCK (tool-gated, same
+    // hardness/resistance/sound) and same light level (7) as the teal
+    // original, matching how every other Pale sibling keeps its
+    // original's light level unchanged.
+    public static final RegistryObject<Block> PALE_PRISMIUM_CRYSTAL_PILLAR = BLOCKS.register("pale_prismium_crystal_pillar",
+            () -> new RotatedPillarBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .lightLevel(state -> 7)));
+
     // Prismium Core building variety (session 36): extends the slab/wall/
     // stairs trio already proven out on Prismium Block (sessions 34-35,
     // PROGRESS.md handoff item 8-d) to Prismium Core. Same low-risk

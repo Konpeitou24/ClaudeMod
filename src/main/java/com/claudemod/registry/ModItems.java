@@ -189,6 +189,11 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_CRYSTAL_PILLAR_ITEM = ITEMS.register("prismium_crystal_pillar",
             () -> new BlockItem(ModBlocks.PRISMIUM_CRYSTAL_PILLAR.get(), new Item.Properties()));
 
+    // Pale Prismium Crystal Pillar (scheduled session, 2026-09-26): BlockItem
+    // for ModBlocks.PALE_PRISMIUM_CRYSTAL_PILLAR.
+    public static final RegistryObject<Item> PALE_PRISMIUM_CRYSTAL_PILLAR_ITEM = ITEMS.register("pale_prismium_crystal_pillar",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_CRYSTAL_PILLAR.get(), new Item.Properties()));
+
     // Prismium Core building variety (session 36). See ModBlocks.
     public static final RegistryObject<Item> PRISMIUM_CORE_SLAB_ITEM = ITEMS.register("prismium_core_slab",
             () -> new BlockItem(ModBlocks.PRISMIUM_CORE_SLAB.get(), new Item.Properties()));
