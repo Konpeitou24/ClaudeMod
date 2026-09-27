@@ -271,7 +271,7 @@ public class PrismiumFamiliarEntity extends TamableAnimal {
     }
 
     @Override
-    protected void addAdditionalSaveData(CompoundTag tag) {
+    public void addAdditionalSaveData(CompoundTag tag) {
         super.addAdditionalSaveData(tag);
         if (!this.carriedItem.isEmpty()) {
             tag.put("CarriedItem", this.carriedItem.save(new CompoundTag()));
@@ -279,7 +279,7 @@ public class PrismiumFamiliarEntity extends TamableAnimal {
     }
 
     @Override
-    protected void readAdditionalSaveData(CompoundTag tag) {
+    public void readAdditionalSaveData(CompoundTag tag) {
         super.readAdditionalSaveData(tag);
         if (tag.contains("CarriedItem")) {
             this.carriedItem = ItemStack.of(tag.getCompound("CarriedItem"));
