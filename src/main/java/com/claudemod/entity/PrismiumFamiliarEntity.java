@@ -1,8 +1,11 @@
 package com.claudemod.entity;
 
 import com.claudemod.registry.ModItems;
+import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvent;
 import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
@@ -99,13 +102,59 @@ import org.jetbrains.annotations.Nullable;
  * is already proven in this codebase), sit-toggle responsiveness, and
  * the reskinned texture's in-game look are all unconfirmed against a
  * running client.
+ *
+ * <p><b>v0.60.0 addition - single-item carrying ("pack familiar")</b>:
+ * once tamed, the owner can sneak + right-click while holding an item to
+ * hand it to the familiar (it holds exactly one stack, no GUI - a small,
+ * low-risk step towards HANDOFF.md's option (f) "使い魔に第二の機能を持
+ * たせる案" without committing to a full inventory/menu implementation
+ * this session), and sneak + right-click empty-handed to take it back
+ * (returned to the player's inventory via {@link
+ * net.minecraft.world.entity.player.Inventory#add}, or dropped at their
+ * feet via {@link Player#drop(ItemStack, boolean)} if the inventory is
+ * full - both confirmed to exist with this exact signature on
+ * {@code forge-1.20.1}'s own javadoc mirror, see
+ * {@code https://lexxie.dev/forge/1.20.1/net/minecraft/world/entity/player/Inventory.html}
+ * / {@code .../Player.html}, this session). The stored stack survives
+ * save/load via {@link #addAdditionalSaveData}/{@link
+ * #readAdditionalSaveData} (both confirmed present on {@code Entity} -
+ * and confirmed overridden with an identical {@code void(CompoundTag)}
+ * signature by vanilla's own {@code Wolf} class, a sibling
+ * {@code TamableAnimal}, on the same 1.20.1 javadoc mirror - and
+ * {@link ItemStack#save}/{@link ItemStack#of} (confirmed via
+ * mappings.dev's 1.20.1 mojmap page for {@code ItemStack}), the same
+ * verify-before-{@code @Override} discipline as the rest of this class.
+ * Deliberately does <em>not</em> attempt a held-item render above the
+ * mob's head this session (would require {@code
+ * PrismiumFamiliarRenderer} additions that can't be visually confirmed
+ * in this sandbox); the carried item is functional but currently
+ * invisible on the model, tracked as a follow-up in PROGRESS.md. If the
+ * familiar dies while holding an item, that item is lost rather than
+ * dropped (no verified {@code Entity}/{@code Mob} drop-hook signature
+ * was confirmed for this within this session's time budget) - also
+ * tracked as a follow-up rather than guessed at.
  */
 public class PrismiumFamiliarEntity extends TamableAnimal {
+
+    /**
+     * The single item this familiar is currently carrying for its owner,
+     * or {@link ItemStack#EMPTY} if it isn't holding anything. See the
+     * class javadoc's "v0.60.0 addition" section.
+     */
+    private ItemStack carriedItem = ItemStack.EMPTY;
 
     public PrismiumFamiliarEntity(EntityType<? extends PrismiumFamiliarEntity> entityType, Level level) {
         super(entityType, level);
         this.moveControl = new FlyingMoveControl(this, 20, true);
         this.setNoGravity(true);
+    }
+
+    /**
+     * @return the item currently being carried, or {@link ItemStack#EMPTY}.
+     * Exposed for a future renderer enhancement (see class javadoc).
+     */
+    public ItemStack getCarriedItem() {
+        return this.carriedItem;
     }
 
     /**
@@ -164,13 +213,79 @@ public class PrismiumFamiliarEntity extends TamableAnimal {
             }
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
-        if (this.isTame() && this.isOwnedBy(player) && stack.isEmpty()) {
+        if (this.isTame() && this.isOwnedBy(player) && player.isCrouching()) {
+            if (!stack.isEmpty() && this.carriedItem.isEmpty()) {
+                if (!this.level().isClientSide) {
+                    this.carriedItem = stack.copy();
+                    player.setItemInHand(hand, ItemStack.EMPTY);
+                    this.playCarryFeedback(true);
+                }
+                return InteractionResult.sidedSuccess(this.level().isClientSide);
+            }
+            if (stack.isEmpty() && !this.carriedItem.isEmpty()) {
+                if (!this.level().isClientSide) {
+                    ItemStack returned = this.carriedItem;
+                    this.carriedItem = ItemStack.EMPTY;
+                    if (!player.getInventory().add(returned)) {
+                        player.drop(returned, false);
+                    }
+                    this.playCarryFeedback(false);
+                }
+                return InteractionResult.sidedSuccess(this.level().isClientSide);
+            }
+        }
+        if (this.isTame() && this.isOwnedBy(player) && !player.isCrouching() && stack.isEmpty()) {
             if (!this.level().isClientSide) {
                 this.setOrderedToSit(!this.isOrderedToSit());
             }
             return InteractionResult.sidedSuccess(this.level().isClientSide);
         }
         return super.mobInteract(player, hand);
+    }
+
+    /**
+     * Particle + sound feedback for the carry/retrieve interaction above,
+     * following the exact {@code ServerLevel#sendParticles}/{@code
+     * #playSound} call pattern already established (and therefore already
+     * proven to compile) in {@code PrismiumVitastoneHandler#playFeedback}
+     * rather than a freshly-guessed particle/sound API shape. Both sound
+     * events reused here ({@link SoundEvents#EXPERIENCE_ORB_PICKUP} and
+     * {@link SoundEvents#ARMOR_EQUIP_GENERIC}) were already confirmed to
+     * exist and compile elsewhere in this codebase/this session rather
+     * than guessed - {@code SoundEvents.ITEM_PICKUP} was considered first
+     * but could not be confirmed present on the 1.20.1 mapping this
+     * session, so it was deliberately not used.
+     *
+     * @param stored {@code true} when an item was just handed to the
+     *               familiar, {@code false} when one was just taken back.
+     */
+    private void playCarryFeedback(boolean stored) {
+        if (this.level() instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(ParticleTypes.HAPPY_VILLAGER,
+                    this.getX(), this.getY() + this.getBbHeight() / 2.0D, this.getZ(),
+                    4, 0.25D, 0.25D, 0.25D, 0.01D);
+            serverLevel.playSound(null, this.blockPosition(),
+                    stored ? SoundEvents.EXPERIENCE_ORB_PICKUP : SoundEvents.ARMOR_EQUIP_GENERIC,
+                    SoundSource.NEUTRAL, 0.5F, stored ? 1.4F : 1.0F);
+        }
+    }
+
+    @Override
+    protected void addAdditionalSaveData(CompoundTag tag) {
+        super.addAdditionalSaveData(tag);
+        if (!this.carriedItem.isEmpty()) {
+            tag.put("CarriedItem", this.carriedItem.save(new CompoundTag()));
+        }
+    }
+
+    @Override
+    protected void readAdditionalSaveData(CompoundTag tag) {
+        super.readAdditionalSaveData(tag);
+        if (tag.contains("CarriedItem")) {
+            this.carriedItem = ItemStack.of(tag.getCompound("CarriedItem"));
+        } else {
+            this.carriedItem = ItemStack.EMPTY;
+        }
     }
 
     @Override
