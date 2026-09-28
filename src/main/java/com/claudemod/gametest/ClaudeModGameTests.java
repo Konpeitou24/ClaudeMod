@@ -11,12 +11,17 @@ import com.claudemod.blockentity.PrismiumPylonBlockEntity;
 import com.claudemod.blockentity.PrismiumRestorerBlockEntity;
 import com.claudemod.blockentity.PrismiumSmelterBlockEntity;
 import com.claudemod.blockentity.PrismiumWardstoneBlockEntity;
+import com.claudemod.entity.PrismiumFamiliarEntity;
 import com.claudemod.menu.PrismiumGeneratorMenu;
 import com.claudemod.registry.ModBlocks;
+import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModItems;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.nbt.CompoundTag;
+import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -26,6 +31,8 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraftforge.gametest.GameTestHolder;
 import net.minecraftforge.gametest.PrefixGameTestTemplate;
 import net.minecraftforge.items.ItemStackHandler;
+
+import java.util.List;
 
 /**
  * Automated GameTests for the Prismium Energy pillar (TODO11 in
@@ -857,6 +864,79 @@ public class ClaudeModGameTests {
                 "Shift-clicking a non-fuel Prismium Ore out of the player's main inventory did not land it in the"
                         + " hotbar - quickMoveStack's main-inventory-to-hotbar routing for non-fuel items appears"
                         + " broken");
+
+        helper.succeed();
+    }
+
+    /**
+     * Regression/verification test for v0.61.0's follow-up (i) from
+     * HANDOFF.md: {@link PrismiumFamiliarEntity#dropCustomDeathLoot} must
+     * actually spawn the carried item as a loose {@link ItemEntity} when
+     * the familiar dies, rather than silently discarding it (the
+     * behaviour v0.60.0 shipped with, before this fix). Everything else
+     * in this mod's Familiar coverage (taming odds, follow behaviour,
+     * flight) cannot be exercised headlessly (see the class javadoc's
+     * PROGRESS.md pointer on this sandbox's limits), but a server-side
+     * death + loot check needs no client and no timing luck, so it is
+     * covered here the same way the energy network tests above cover
+     * their own server-only logic.
+     *
+     * <p>The familiar is spawned via {@link GameTestHelper#spawnWithNoFreeWill}
+     * (confirmed on {@code GameTestHelper} this session, returns
+     * {@code E extends Mob} - {@code PrismiumFamiliarEntity} qualifies via
+     * its {@code TamableAnimal}/{@code Mob} ancestry) so it cannot fly off
+     * mid-test. Since {@link PrismiumFamiliarEntity#carriedItem} has no
+     * public setter (this session deliberately did not add a
+     * test-only production API for it), the carried item is seeded the
+     * same way the real save/load path already proven in the class
+     * javadoc does it: build a {@code CompoundTag} with a
+     * {@code "CarriedItem"} key via {@link ItemStack#save} and hand it to
+     * the entity's own (public) {@link PrismiumFamiliarEntity#readAdditionalSaveData},
+     * which vanilla convention guarantees tolerates a tag missing every
+     * other field (every read in {@code Entity}/{@code Mob}/
+     * {@code TamableAnimal}'s own {@code readAdditionalSaveData} is
+     * guarded by {@code tag.contains(...)}). {@link LivingEntity#kill()}
+     * (confirmed {@code public void}, no arguments, on {@code LivingEntity})
+     * is then called directly to trigger a real, synchronous death - this
+     * runs the same {@code hurt} -&gt; {@code die} -&gt;
+     * {@code dropAllDeathLoot} -&gt; {@code dropCustomDeathLoot} chain a
+     * player's kill would, so no delay is needed before checking for the
+     * dropped {@link ItemEntity} via {@link GameTestHelper#getEntitiesAround}
+     * (confirmed on {@code GameTestHelper} this session, taking an
+     * {@code EntityType<T>}/{@code BlockPos}/{@code double} radius).
+     */
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void familiarDropsCarriedItemOnDeath(GameTestHelper helper) {
+        BlockPos pos = new BlockPos(1, 2, 1);
+        PrismiumFamiliarEntity familiar = helper.spawnWithNoFreeWill(ModEntities.PRISMIUM_FAMILIAR.get(), pos);
+
+        ItemStack carried = new ItemStack(ModItems.PRISMIUM_SHARD.get(), 1);
+        CompoundTag seedTag = new CompoundTag();
+        seedTag.put("CarriedItem", carried.save(new CompoundTag()));
+        familiar.readAdditionalSaveData(seedTag);
+
+        helper.assertTrue(!familiar.getCarriedItem().isEmpty(),
+                "Seeding PrismiumFamiliarEntity via readAdditionalSaveData did not restore a carried item - test"
+                        + " setup itself is broken, not the death-drop logic under test");
+
+        familiar.kill();
+
+        helper.assertTrue(familiar.isRemoved() || !familiar.isAlive(),
+                "Calling kill() on the familiar did not actually kill it - the rest of this test's assertions"
+                        + " would be meaningless, so failing fast here instead");
+
+        List<ItemEntity> drops = helper.getEntitiesAround(EntityType.ITEM, pos, 2.0D);
+        boolean shardDropped = false;
+        for (ItemEntity drop : drops) {
+            if (drop.getItem().is(ModItems.PRISMIUM_SHARD.get())) {
+                shardDropped = true;
+                break;
+            }
+        }
+        helper.assertTrue(shardDropped,
+                "The familiar's carried Prismium Shard was not found as a dropped ItemEntity after death -"
+                        + " dropCustomDeathLoot's item-drop appears broken (or the carried item was lost, the"
+                        + " exact v0.60.0 regression this override exists to fix)");
 
         helper.succeed();
     }

@@ -13,6 +13,7 @@ import net.minecraft.world.entity.AgeableMob;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.TamableAnimal;
+import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.ai.control.FlyingMoveControl;
@@ -124,15 +125,25 @@ import org.jetbrains.annotations.Nullable;
  * {@link ItemStack#save}/{@link ItemStack#of} (confirmed via
  * mappings.dev's 1.20.1 mojmap page for {@code ItemStack}), the same
  * verify-before-{@code @Override} discipline as the rest of this class.
- * Deliberately does <em>not</em> attempt a held-item render above the
- * mob's head this session (would require {@code
- * PrismiumFamiliarRenderer} additions that can't be visually confirmed
- * in this sandbox); the carried item is functional but currently
- * invisible on the model, tracked as a follow-up in PROGRESS.md. If the
- * familiar dies while holding an item, that item is lost rather than
- * dropped (no verified {@code Entity}/{@code Mob} drop-hook signature
- * was confirmed for this within this session's time budget) - also
- * tracked as a follow-up rather than guessed at.
+ *
+ * <p><b>v0.61.0 addition - death drop and on-model render, options (h)/(i)
+ * from HANDOFF.md</b>: {@link #dropCustomDeathLoot} (declared {@code
+ * protected} on {@code Mob} itself, confirmed via mappings.dev's 1.20.1
+ * mojmap page for {@code Mob} - a second, independent lexxie.dev javadoc
+ * mirror lookup this session cross-checked the same signature) now
+ * spawns the carried item as a standalone {@link ItemEntity} at the
+ * familiar's position when it dies, using the exact {@code new
+ * ItemEntity(Level, double, double, double, ItemStack)} +
+ * {@code Level#addFreshEntity} pattern already proven to compile
+ * elsewhere in this codebase ({@code PrismiumMiningHandler#spawnBonus})
+ * rather than the unverified {@code LivingEntity#spawnAtLocation} helper
+ * (this session's mappings.dev/lexxie.dev lookups for that method
+ * returned inconsistent/incomplete results, so it was deliberately
+ * avoided in favour of a helper this codebase already knows compiles).
+ * The on-model render itself is handled by {@link
+ * com.claudemod.entity.client.PrismiumFamiliarRenderer}, which reads
+ * {@link #getCarriedItem()} - see that class's javadoc for the render-side
+ * API verification.
  */
 public class PrismiumFamiliarEntity extends TamableAnimal {
 
@@ -284,6 +295,25 @@ public class PrismiumFamiliarEntity extends TamableAnimal {
         if (tag.contains("CarriedItem")) {
             this.carriedItem = ItemStack.of(tag.getCompound("CarriedItem"));
         } else {
+            this.carriedItem = ItemStack.EMPTY;
+        }
+    }
+
+    /**
+     * Drops {@link #carriedItem} as a loose {@link ItemEntity} on death,
+     * so a familiar carrying something for its owner doesn't just erase it
+     * (TODO32/follow-up (i) from HANDOFF.md's 2026-09-27 notes). See the
+     * class javadoc's "v0.61.0 addition" section for the API verification
+     * behind both the override itself and the drop mechanism used inside
+     * it.
+     */
+    @Override
+    protected void dropCustomDeathLoot(DamageSource damageSource, int lootingLevel, boolean recentlyHitIn) {
+        super.dropCustomDeathLoot(damageSource, lootingLevel, recentlyHitIn);
+        if (!this.carriedItem.isEmpty() && !this.level().isClientSide) {
+            ItemEntity drop = new ItemEntity(this.level(),
+                    this.getX(), this.getY(), this.getZ(), this.carriedItem);
+            this.level().addFreshEntity(drop);
             this.carriedItem = ItemStack.EMPTY;
         }
     }
