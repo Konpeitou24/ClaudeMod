@@ -901,9 +901,13 @@ public class ClaudeModGameTests {
      * runs the same {@code hurt} -&gt; {@code die} -&gt;
      * {@code dropAllDeathLoot} -&gt; {@code dropCustomDeathLoot} chain a
      * player's kill would, so no delay is needed before checking for the
-     * dropped {@link ItemEntity} via {@link GameTestHelper#getEntitiesAround}
-     * (confirmed on {@code GameTestHelper} this session, taking an
-     * {@code EntityType<T>}/{@code BlockPos}/{@code double} radius).
+     * dropped {@link ItemEntity} via {@link GameTestHelper#getEntities(EntityType,
+     * BlockPos, double)} (the actual method name - an earlier
+     * {@code getEntitiesAround} guess for this same lookup did not exist
+     * and failed CI with "cannot find symbol"; the correct name was
+     * confirmed against two independent 1.19.3/1.20.6 javadoc snapshots
+     * sharing the exact same obfuscated parameter names, i.e. an
+     * unchanged method across versions, after that failure).
      */
     @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
     public static void familiarDropsCarriedItemOnDeath(GameTestHelper helper) {
@@ -925,7 +929,7 @@ public class ClaudeModGameTests {
                 "Calling kill() on the familiar did not actually kill it - the rest of this test's assertions"
                         + " would be meaningless, so failing fast here instead");
 
-        List<ItemEntity> drops = helper.getEntitiesAround(EntityType.ITEM, pos, 2.0D);
+        List<ItemEntity> drops = helper.getEntities(EntityType.ITEM, pos, 2.0D);
         boolean shardDropped = false;
         for (ItemEntity drop : drops) {
             if (drop.getItem().is(ModItems.PRISMIUM_SHARD.get())) {
