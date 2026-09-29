@@ -113,6 +113,20 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_STAIRS_ITEM = ITEMS.register("prismium_deepstone_stairs",
             () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_STAIRS.get(), new Item.Properties()));
 
+    // Scheduled session 2026-09-29: BlockItems for Prismium Bricks/Cracked
+    // Bricks and their Deepstone counterparts (see ModBlocks).
+    public static final RegistryObject<Item> PRISMIUM_BRICKS_ITEM = ITEMS.register("prismium_bricks",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BRICKS.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> CRACKED_PRISMIUM_BRICKS_ITEM = ITEMS.register("cracked_prismium_bricks",
+            () -> new BlockItem(ModBlocks.CRACKED_PRISMIUM_BRICKS.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BRICKS_ITEM = ITEMS.register("prismium_deepstone_bricks",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BRICKS.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> CRACKED_PRISMIUM_DEEPSTONE_BRICKS_ITEM = ITEMS.register("cracked_prismium_deepstone_bricks",
+            () -> new BlockItem(ModBlocks.CRACKED_PRISMIUM_DEEPSTONE_BRICKS.get(), new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOCK_ITEM = ITEMS.register("prismium_block",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK.get(), new Item.Properties()));
 

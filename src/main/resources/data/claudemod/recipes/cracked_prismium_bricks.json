@@ -1,0 +1,9 @@
+{
+    "type": "minecraft:smelting",
+    "ingredient": {
+        "item": "claudemod:prismium_bricks"
+    },
+    "result": "claudemod:cracked_prismium_bricks",
+    "experience": 0.1,
+    "cookingtime": 200
+}

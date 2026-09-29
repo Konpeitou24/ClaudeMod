@@ -174,6 +174,52 @@ public class ModBlocks {
                     .strength(3.0f, 6.0f)
                     .sound(SoundType.DEEPSLATE)));
 
+    // Prismium Bricks / Cracked Prismium Bricks (scheduled session,
+    // 2026-09-29): the "quarried stone" follow-up the 2026-09-18
+    // PROGRESS.md note flagged as the more natural next step for Prismium
+    // Stone than a Chiseled decorative variant (that note explicitly
+    // excluded Stone/Deepstone from the Chiseled pattern for this reason).
+    // Mirrors vanilla's own stone -> stone_bricks -> cracked_stone_bricks
+    // family: plain vanilla Block (no custom subclass, no overrides -
+    // lowest possible compile risk), same stats as PRISMIUM_STONE itself,
+    // Cracked obtained by furnace-smelting the plain Bricks (see
+    // data/claudemod/recipes/cracked_prismium_bricks.json). Not added to
+    // needs_iron_tool/needs_diamond_tool, matching PRISMIUM_STONE's own
+    // (deliberately untiered) treatment for consistency with the block
+    // they are cut from.
+    public static final RegistryObject<Block> PRISMIUM_BRICKS = BLOCKS.register("prismium_bricks",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> CRACKED_PRISMIUM_BRICKS = BLOCKS.register("cracked_prismium_bricks",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    // Prismium Deepstone Bricks / Cracked Prismium Deepstone Bricks
+    // (scheduled session, 2026-09-29): same "quarried stone" treatment as
+    // Prismium Bricks above, applied to the deep-layer counterpart
+    // PRISMIUM_DEEPSTONE. Same rationale and same non-tiered tool
+    // treatment applies.
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BRICKS = BLOCKS.register("prismium_deepstone_bricks",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> CRACKED_PRISMIUM_DEEPSTONE_BRICKS = BLOCKS.register("cracked_prismium_deepstone_bricks",
+            () -> new Block(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
     // Compressed storage block, crafted from 9 Prismium Shards.
     public static final RegistryObject<Block> PRISMIUM_BLOCK = BLOCKS.register("prismium_block",
             () -> new Block(BlockBehaviour.Properties.of()

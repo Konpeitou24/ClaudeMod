@@ -38,6 +38,10 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_DEEPSTONE_SLAB_ITEM.get()); // 2026-09-11
                         output.accept(ModItems.PRISMIUM_DEEPSTONE_WALL_ITEM.get()); // 2026-09-11
                         output.accept(ModItems.PRISMIUM_DEEPSTONE_STAIRS_ITEM.get()); // 2026-09-11
+                        output.accept(ModItems.PRISMIUM_BRICKS_ITEM.get()); // 2026-09-29
+                        output.accept(ModItems.CRACKED_PRISMIUM_BRICKS_ITEM.get()); // 2026-09-29
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_ITEM.get()); // 2026-09-29
+                        output.accept(ModItems.CRACKED_PRISMIUM_DEEPSTONE_BRICKS_ITEM.get()); // 2026-09-29
                         output.accept(ModItems.PRISMIUM_BLOCK_ITEM.get());
                         output.accept(ModItems.PRISMIUM_ALLOY_BLOCK_ITEM.get()); // session 70
                         output.accept(ModItems.PRISMIUM_ALLOY_BLOCK_SLAB_ITEM.get()); // 2026-09-10

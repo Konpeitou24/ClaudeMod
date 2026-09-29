@@ -45,6 +45,10 @@
         "claudemod:chiseled_prismium_alloy_block",
         "claudemod:chiseled_pale_prismium_block",
         "claudemod:prismium_crystal_pillar",
-        "claudemod:pale_prismium_crystal_pillar"
+        "claudemod:pale_prismium_crystal_pillar",
+        "claudemod:prismium_bricks",
+        "claudemod:cracked_prismium_bricks",
+        "claudemod:prismium_deepstone_bricks",
+        "claudemod:cracked_prismium_deepstone_bricks"
     ]
 }
