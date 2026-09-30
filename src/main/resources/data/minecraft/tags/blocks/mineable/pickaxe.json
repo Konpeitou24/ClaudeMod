@@ -49,6 +49,12 @@
         "claudemod:prismium_bricks",
         "claudemod:cracked_prismium_bricks",
         "claudemod:prismium_deepstone_bricks",
-        "claudemod:cracked_prismium_deepstone_bricks"
+        "claudemod:cracked_prismium_deepstone_bricks",
+        "claudemod:prismium_bricks_slab",
+        "claudemod:prismium_bricks_wall",
+        "claudemod:prismium_bricks_stairs",
+        "claudemod:prismium_deepstone_bricks_slab",
+        "claudemod:prismium_deepstone_bricks_wall",
+        "claudemod:prismium_deepstone_bricks_stairs"
     ]
 }

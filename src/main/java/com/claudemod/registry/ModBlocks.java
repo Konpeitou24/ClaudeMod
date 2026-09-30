@@ -220,6 +220,62 @@ public class ModBlocks {
                     .strength(3.0f, 6.0f)
                     .sound(SoundType.DEEPSLATE)));
 
+    // Prismium Bricks Slab/Wall/Stairs (scheduled session, 2026-09-30):
+    // building variants for Prismium Bricks (v0.62.0), same treatment as
+    // PRISMIUM_STONE_SLAB/WALL/STAIRS and PRISMIUM_DEEPSTONE_SLAB/WALL/STAIRS
+    // above - vanilla SlabBlock/WallBlock/StairBlock, no custom subclass,
+    // same stats as PRISMIUM_BRICKS itself, reusing that block's own
+    // texture. Cracked Prismium Bricks does not get these variants,
+    // matching vanilla's own cracked_stone_bricks (no slab/wall/stairs).
+    public static final RegistryObject<Block> PRISMIUM_BRICKS_SLAB = BLOCKS.register("prismium_bricks_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_BRICKS_WALL = BLOCKS.register("prismium_bricks_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_BRICKS_STAIRS = BLOCKS.register("prismium_bricks_stairs",
+            () -> new StairBlock(() -> PRISMIUM_BRICKS.get().defaultBlockState(),
+                    BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    // Prismium Deepstone Bricks Slab/Wall/Stairs (scheduled session,
+    // 2026-09-30): same building-variant treatment as Prismium Bricks
+    // above, applied to the deep-layer counterpart PRISMIUM_DEEPSTONE_BRICKS.
+    // Same rationale, and Cracked Prismium Deepstone Bricks likewise does
+    // not get these variants.
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BRICKS_SLAB = BLOCKS.register("prismium_deepstone_bricks_slab",
+            () -> new SlabBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BRICKS_WALL = BLOCKS.register("prismium_deepstone_bricks_wall",
+            () -> new WallBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BRICKS_STAIRS = BLOCKS.register("prismium_deepstone_bricks_stairs",
+            () -> new StairBlock(() -> PRISMIUM_DEEPSTONE_BRICKS.get().defaultBlockState(),
+                    BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
     // Compressed storage block, crafted from 9 Prismium Shards.
     public static final RegistryObject<Block> PRISMIUM_BLOCK = BLOCKS.register("prismium_block",
             () -> new Block(BlockBehaviour.Properties.of()
