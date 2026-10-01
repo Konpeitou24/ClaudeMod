@@ -144,6 +144,16 @@ import org.jetbrains.annotations.Nullable;
  * com.claudemod.entity.client.PrismiumFamiliarRenderer}, which reads
  * {@link #getCarriedItem()} - see that class's javadoc for the render-side
  * API verification.
+ *
+ * <p><b>v0.64.0 addition - companion regeneration aura, HANDOFF.md option
+ * (d)</b>: a third function, this time added entirely outside this class.
+ * {@link com.claudemod.event.PrismiumFamiliarAuraHandler} grants the owner
+ * a mild Regeneration effect whenever their tamed Familiar is nearby and
+ * not sitting ({@link #isOrderedToSit()} already used elsewhere in this
+ * class). See that handler's own javadoc for the full design rationale and
+ * API verification - it deliberately introduces no new override on this
+ * class at all, reusing only accessors ({@link #isTame()}, {@link
+ * #isOwnedBy}, {@link #isOrderedToSit()}) already in use above.
  */
 public class PrismiumFamiliarEntity extends TamableAnimal {
 
