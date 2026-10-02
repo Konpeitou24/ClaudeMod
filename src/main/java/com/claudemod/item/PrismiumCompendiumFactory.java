@@ -82,7 +82,10 @@ public final class PrismiumCompendiumFactory {
      * (basic Generator/Cell connection, a branching Cable network, and
      * the Pulverizer->Smelter->Compressor processing chain) - see
      * PROGRESS.md section 5 for the same grouping applied to the mod's
-     * own roadmap.
+     * own roadmap. Finally, two pages (scheduled session, 2026-10-02) on
+     * the Prismium Familiar: how to tame/follow/sit it, and the two
+     * things it does for an owner once tamed (carrying one item, and a
+     * nearby-Regeneration aura).
      * Expanded from 11 to 15 pages in the content-expansion pass right
      * after the re-crafting recipe shipped (PROGRESS.md TODO "コンペン
      * ディウムの内容拡充"), then to 18 pages (session, scheduled
@@ -96,8 +99,19 @@ public final class PrismiumCompendiumFactory {
      * lined up consistently across locales/font sizes - see the
      * "Unverified in-game" note below, which now also covers whether
      * these diagram lines actually read clearly at the book GUI's font
-     * size (untested in a running client). */
-    private static final int PAGE_COUNT = 18;
+     * size (untested in a running client).
+     * Expanded again to 20 pages (scheduled session, 2026-10-02): the
+     * Prismium Familiar (v0.57.0, gained a carrying slot in v0.60.0 and a
+     * Regeneration aura in v0.64.0) had never been mentioned anywhere in
+     * this book, which this noticed partway through the v0.64.0 session
+     * (see HANDOFF.md's "(j)" option from that session) and flagged as
+     * worth closing given the book's own stated purpose (issue #7,
+     * "explain the mod to the player"). Page 19 covers taming/following/
+     * sitting, page 20 the two things it does for the player once tamed
+     * (item carrying, the nearby-Regeneration aura) - following the same
+     * "one topic/mechanic pairing per page" grouping as every earlier
+     * entry in this list. */
+    private static final int PAGE_COUNT = 20;
 
     public static ItemStack createStack() {
         ItemStack stack = new ItemStack(com.claudemod.registry.ModItems.PRISMIUM_COMPENDIUM.get());

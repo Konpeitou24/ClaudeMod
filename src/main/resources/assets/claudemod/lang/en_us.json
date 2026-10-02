@@ -285,6 +285,8 @@
     "book.claudemod.compendium.page16": "Wiring Diagram (1): Basic Connection\n\n[Generator] -> [Cable] -> [Cell]\n\nA Generator and Cell sitting right next to each other transfer power directly, no cable needed. A bit further apart? Just run Cable between them - power flows the same way.",
     "book.claudemod.compendium.page17": "Wiring Diagram (2): Branching Network\n\nA single Cable run can branch off as many times as you like.\n\n[Generator]->[Cable]->[Pulverizer]\n            \\->[Smelter]\n            \\->[Compressor]\n\nEvery machine on every branch gets a fair share of the power.",
     "book.claudemod.compendium.page18": "Wiring Diagram (3): Processing Chain\n\n[Generator]->[Cable]->[Pulverizer]->[Smelter]->[Compressor]\n\nLine machines up in the same order as the Ore -> Shard -> Ingot -> Alloy Ingot chain and cable them together - your wiring layout matches your processing flow.",
+    "book.claudemod.compendium.page19": "Prismium Familiar\n\nA small tamable companion that rarely turns up in the Prism Realm. Hold a Prismium Shard and right-click it - with a bit of luck, it will take a liking to you. Once tamed, right-click it empty-handed to toggle following and sitting.",
+    "book.claudemod.compendium.page20": "The Familiar's Two Gifts\n\nWhile it's following you, sneak + right-click to hand it one item to carry, and sneak + right-click again to take it back.\n\nAlso, as long as it stays nearby (within 6 blocks) and isn't sitting, it quietly grants you Regeneration.",
     "gui.claudemod.prismium_chronoflame.advance": "Advance +6h",
     "gui.claudemod.prismium_chronoflame.rewind": "Rewind -6h",
     "gui.claudemod.prismium_chronoflame.ready": "Ready",
