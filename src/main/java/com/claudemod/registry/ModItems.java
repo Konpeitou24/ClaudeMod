@@ -218,6 +218,23 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_BLOCK_STAIRS_ITEM = ITEMS.register("prismium_block_stairs",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOCK_STAIRS.get(), new Item.Properties()));
 
+    // Prismium Block Fence / Fence Gate (scheduled session, 2026-10-03):
+    // BlockItems for ModBlocks.PRISMIUM_FENCE / PRISMIUM_FENCE_GATE.
+    public static final RegistryObject<Item> PRISMIUM_FENCE_ITEM = ITEMS.register("prismium_fence",
+            () -> new BlockItem(ModBlocks.PRISMIUM_FENCE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_FENCE_GATE_ITEM = ITEMS.register("prismium_fence_gate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_FENCE_GATE.get(), new Item.Properties()));
+
+    // Pale Prismium Block Fence / Fence Gate (scheduled session,
+    // 2026-10-03): BlockItems for ModBlocks.PALE_PRISMIUM_FENCE /
+    // PALE_PRISMIUM_FENCE_GATE.
+    public static final RegistryObject<Item> PALE_PRISMIUM_FENCE_ITEM = ITEMS.register("pale_prismium_fence",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_FENCE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PALE_PRISMIUM_FENCE_GATE_ITEM = ITEMS.register("pale_prismium_fence_gate",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_FENCE_GATE.get(), new Item.Properties()));
+
     // Prismium Crystal Pillar (scheduled session, 2026-09-25): BlockItem
     // for the mod's first RotatedPillarBlock. See
     // ModBlocks.PRISMIUM_CRYSTAL_PILLAR.

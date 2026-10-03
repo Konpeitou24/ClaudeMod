@@ -678,6 +678,29 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)));
 
+    // Pale Prismium Block Fence / Fence Gate (scheduled session,
+    // 2026-10-03): the pale family's version of PRISMIUM_FENCE/
+    // PRISMIUM_FENCE_GATE above, mirroring the same "reuse the vanilla
+    // class, reuse the existing texture" treatment every other pale
+    // building variant uses. See PRISMIUM_FENCE for the full rationale
+    // (WoodType.OAK choice, no walls-style tag needed, needs_iron_tool
+    // left untouched for consistency with PALE_PRISMIUM_BLOCK_WALL/
+    // SLAB/STAIRS).
+    public static final RegistryObject<Block> PALE_PRISMIUM_FENCE = BLOCKS.register("pale_prismium_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PALE_PRISMIUM_FENCE_GATE = BLOCKS.register("pale_prismium_fence_gate",
+            () -> new net.minecraft.world.level.block.FenceGateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST),
+                    net.minecraft.world.level.block.state.properties.WoodType.OAK));
+
     // Chiseled Pale Prismium Block (scheduled session, 2026-09-18): the
     // same decorative-masonry treatment extended to the Pale Prismium
     // family, closing the other half of the "plain block with building
@@ -805,6 +828,44 @@ public class ModBlocks {
                     .requiresCorrectToolForDrops()
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST)));
+
+    // Prismium Block Fence / Fence Gate (scheduled session, 2026-10-03):
+    // a brand new silhouette for the building-variety lineup - Slab/Wall/
+    // Stairs (sessions 34-35) and Crystal Pillar (2026-09-25) never
+    // covered the "fence" shape vanilla gives every plank material.
+    // Plain vanilla FenceBlock/FenceGateBlock (net.minecraft.world.level.
+    // block), confirmed via mappings.dev before use (FenceBlock takes a
+    // single Properties argument; FenceGateBlock additionally takes a
+    // WoodType - WoodType.OAK is used purely for the open/close sound and
+    // gate behavior flags, it has no effect on texture or appearance, the
+    // same approach many non-wood fence gate mods use since vanilla has
+    // no "stone" WoodType). No custom subclass, no new @Override - lowest
+    // possible compile risk, same rationale as every other
+    // Slab/Wall/Stairs/Pillar variant in this file. Reuses Prismium
+    // Block's own texture (see models/block/prismium_fence*.json)
+    // instead of a new one, matching vanilla's own fence-reuses-plank-
+    // texture convention. Unlike WallBlock, FenceBlock#canConnectToFence
+    // connects to any other FenceBlock purely via an instanceof check
+    // (confirmed via mappings.dev - no BlockTag field on the class), so
+    // no equivalent of the walls.json tag is needed here. Not added to
+    // needs_iron_tool.json, matching the existing (deliberately
+    // untouched, see PROGRESS.md TODO16) treatment of
+    // PRISMIUM_BLOCK_WALL/SLAB/STAIRS, which also aren't in that tag
+    // despite PRISMIUM_BLOCK itself being in it.
+    public static final RegistryObject<Block> PRISMIUM_FENCE = BLOCKS.register("prismium_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_FENCE_GATE = BLOCKS.register("prismium_fence_gate",
+            () -> new net.minecraft.world.level.block.FenceGateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST),
+                    net.minecraft.world.level.block.state.properties.WoodType.OAK));
 
     // Prismium Crystal Pillar (scheduled session, 2026-09-25): the
     // building-variety trio's missing "vertical column" silhouette -

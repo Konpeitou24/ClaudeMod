@@ -55,6 +55,10 @@
         "claudemod:prismium_bricks_stairs",
         "claudemod:prismium_deepstone_bricks_slab",
         "claudemod:prismium_deepstone_bricks_wall",
-        "claudemod:prismium_deepstone_bricks_stairs"
+        "claudemod:prismium_deepstone_bricks_stairs",
+        "claudemod:prismium_fence",
+        "claudemod:prismium_fence_gate",
+        "claudemod:pale_prismium_fence",
+        "claudemod:pale_prismium_fence_gate"
     ]
 }
