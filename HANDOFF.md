@@ -1,44 +1,41 @@
 # HANDOFF.md (直前セッションからの申し送り、直近1回分のみ)
 
-## 今回やったこと(2026-10-03、定期実行セッション、v0.66.0リリース)
+## 今回やったこと(2026-10-04、定期実行セッション、v0.67.0リリース)
 
-前回セッション(v0.65.0)のCIビルドはstatus=ok確認済みの状態から開始。Issue #15・#21を個別ページで再確認したが、新規コメントは無かった(22セッション連続で変化無し)。Issues一覧ページも`?nocache=`付きで再取得し、#15/#21の2件のみ・「Open 2 (2)」の件数表示も正しく確認できた(新規issue番号の出現も無し)。
+前回セッション(v0.66.0)のCIビルドはstatus=ok確認済みの状態から開始。Issue #15・#21を個別ページで再確認したが、新規コメントは無かった(23セッション連続で変化無し)。Issues一覧ページも再取得し、既知の8件(#7/#15/#16/#17/#18/#19/#21/#23)のみで新規issue番号の出現は無かった(真の未解決はOpen 2件、#15/#21のまま)。
 
-- **実装**: 前回HANDOFF.mdが挙げていた選択肢(k)「新しいコンテンツ系統の新規着手」に着手した。
-  - プリズミウムブロック/蒼白のプリズミウムブロックに「フェンス・フェンスゲート」を追加(計4ブロック)。
-  - Slab/Wall/Stairs(建築バリエーション、session 34-35)・Crystal Pillar(柱、v0.58.0)に続く、このMOD初の「柵」シルエット。
-  - **設計上の判断**: バニラの`FenceBlock`/`FenceGateBlock`(net.minecraft.world.level.block)をそのまま使用し、新規Javaクラス・新規`@Override`は一切無い。`FenceGateBlock`のコンストラクタが要求する`WoodType`引数には`WoodType.OAK`を使用(開閉音の種類を決めるだけで見た目には影響しないことを確認済み。バニラに石材用の`WoodType`は存在しないため)。
-  - **未確認API確認の手順を踏んだ**: 実装前にmappings.devで`FenceBlock`/`FenceGateBlock`/`WoodType`の実際のコンストラクタシグネチャ・パッケージパスを確認し、さらに`FenceBlock#canConnectToFence`が(WallBlockの`minecraft:walls`タグと違い)`instanceof FenceBlock`のみで判定すること(=専用タグ不要)も確認してから実装した。
-  - blockstateのfacing別回転値(フェンスゲート: south=0/west=90/north=180/east=270度)は、minecraft-assetsミラーの`oak_fence_gate.json`と`spruce_fence_gate.json`を独立に2回クロスチェックしてから転記した(過去のStairsブロックステート実装時に「40エントリの回転値を記憶だけで書くのは危険」という教訓があったため)。
-  - 新規テクスチャーは無し(既存のprismium_block.png/pale_prismium_block.pngを再利用、vanillaのslab/wall/stairs同様のテクスチャー再利用パターン)。
-  - レシピは`key`/`pattern`の整合性をPythonスクリプトで機械的に検証済み(フェンス: 対応ブロックx4+棒x2→3個、フェンスゲート: 対応ブロックx1+棒x2→1個、いずれもバニラのoak_fence/oak_fence_gateと同じパターン形状)。
-  - `mineable/pickaxe.json`に4ブロックとも追加。`needs_iron_tool.json`へは追加していない(PRISMIUM_BLOCK_WALL/SLAB/STAIRS等、既存の建築バリエーションと同じ扱いで、TODO16の論点はこの変更の対象外として据え置き)。
+- **実装**: 前回HANDOFF.mdが挙げていた選択肢(l)「柵(フェンス・フェンスゲート)を他の建築バリエーション済みブロックにも横展開する」に着手した。
+  - **プリズミウムコア**・**プリズミウム合金ブロック**・**プリズミウムストーン**・**プリズミウム深層岩**・**プリズミウムれんが**・**プリズミウム深層岩のれんが**の6系統に、それぞれフェンス・フェンスゲートを追加(計12ブロック)。v0.66.0(プリズミウムブロック/蒼白のプリズミウムブロック)と合わせて、フェンス系統は8系統16ブロックになった。
+  - **設計上の判断**: v0.66.0と全く同じ方式。バニラの`FenceBlock`/`FenceGateBlock`をそのまま使用し、新規Javaクラス・新規`@Override`は一切無い。各ブロックのプロパティ(mapColor/strength/sound)は、フェンス元になる各ブロックの既存のSlab/Wall/Stairsの値をそのままコピーした(Prismium Blockの値を流用するv0.66.0の失敗をしないよう、各系統ごとにModBlocks.javaの既存Slab/Wall/Stairs登録を先に読んでから書いた)。
+  - **プリズミウムコアの特殊対応**: コア本体・既存のSlab/Wall/Stairs/Chiseled同様、`needs_diamond_tool`/`incorrect_for_diamond_tool`タグにフェンス・フェンスゲートも追加し、ダイヤモンドツールでは採掘できない(プリズミウム製ツール限定)仕様を継承した。他の5系統は元のSlab/Wall/Stairsと同じく`needs_iron_tool`/`needs_diamond_tool`どちらにも入れていない(TODO16の既存の非対称性はそのまま、今回の対象外)。
+  - **作業方法**: 12ブロック×(blockstate2種+モデル8種+レシピ2種+ルートテーブル2種)=168ファイルが必要になる完全に機械的な繰り返し作業だったため、Pythonスクリプトでblockstate/モデル/レシピ/ルートテーブルのJSONをまとめて生成した(テンプレートはv0.66.0のprismium_fence*.json/prismium_fence_gate*.jsonをそのまま一般化)。
+  - **検証**: 生成後、(a) リポジトリ内全644個のJSONファイルが例外なくパース可能であること、(b) 新規追加した全shapedレシピの`key`/`pattern`整合性(2026-09-21の教訓の機械チェック)をPythonスクリプトで確認してからコミットした。新規テクスチャーは無し(各系統の既存テクスチャーをそのまま再利用)。
 
 ## ビルド確認の経過(今回も一度も失敗なし)
 
-- 実装コミット(e9cca7c)push後のbuild-and-notify run #395: Success(3分6秒)。個別run詳細ページで確認、`builds/last_datapack_validation_summary.txt`の`status=ok commit=e9cca7c...`とも一致。
-- バージョンbump+リリースノートコミット(e83054c)push後のbuild-and-notify: Success(3分59秒)、`builds/last_datapack_validation_summary.txt`でも`status=ok commit=e83054c...`と一致。タグ`v0.66.0`のRelease run: Success(2分29秒)。
-- `https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.66.0`でAssets 3・日本語のリリース本文(フェンス・フェンスゲートについて)ありを確認済み。
+- 実装コミット(b86d6b0)push後のbuild-and-notify run #398: Success(3分52秒)。個別run詳細ページで確認、`builds/last_datapack_validation_summary.txt`の`status=ok commit=b86d6b0...`とも一致。
+- バージョンbump+リリースノートコミット(28e1fdd)push後のbuild-and-notify run #399: Success、`builds/last_datapack_validation_summary.txt`でも`status=ok commit=28e1fdd...`と一致。タグ`v0.67.0`のRelease run #80: Success(2分26秒)。
+- `https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.67.0`でAssets 3・日本語のリリース本文ありを確認済み。
 
 ## 今回もプロキシ回避策が必須だった(main push・タグpushとも)
 
-`git push origin main`を素の状態で実行したところ「access denied by the git proxy」で拒否され、プロキシ回避策(`https_proxy="" HTTPS_PROXY="" http_proxy="" HTTP_PROXY=""`)で成功した(実装コミット・バージョンbumpコミットの2回とも)。`git push origin v0.66.0`(タグpush)も最初から回避策付きで実行し、問題なく成功した。
+`git push origin main`を素の状態で実行したところ「access denied by the git proxy」で拒否され、プロキシ回避策(`https_proxy="" HTTPS_PROXY="" http_proxy="" HTTP_PROXY=""`)で成功した(実装コミット・バージョンbumpコミットの2回とも)。`git push origin v0.67.0`(タグpush)も最初から回避策付きで実行し、問題なく成功した。
 
-`api.github.com`への直接curlアクセスは今回も試したが`HTTP 403`で不通だった(github.comへの直接curlも403)。`mcp__...WebFetch`ツール経由でのみ到達可能だった点は前回までと同様。
+`api.github.com`への直接curlアクセスは今回も試したが`HTTP 403`で不通だった(github.com直接curl、`gh`コマンドも同様に不通/未認可)。`WebFetch`ツール経由でのみ到達可能だった点は前回までと同様。
 
 ## 次回最優先でやるべきこと
 
-- 実機確認待ちの項目(TODO1〜37)はこんぺいとう氏本人からの新しいフィードバックが無い限り進展しない。次回セッションでもIssue #15・#21の個別ページを確認すること。
-- TODO37が新規: プリズミウムブロック/蒼白のプリズミウムブロックのフェンス・フェンスゲートが実機で正しく設置・接続・開閉するかの確認が必要(特にフェンス同士の接続、フェンスゲートの壁埋め込み時の見た目)。
+- 実機確認待ちの項目(TODO1〜38)はこんぺいとう氏本人からの新しいフィードバックが無い限り進展しない。次回セッションでもIssue #15・#21の個別ページを確認すること。
+- TODO38が新規: プリズミウムコア/合金ブロック/ストーン/深層岩/れんが/深層岩のれんがのフェンス・フェンスゲート(計12ブロック)が実機で正しく設置・接続・開閉・採掘(特にコアがダイヤツールで採掘不可になっているか)するかの確認が必要。
 - 実機フィードバックが来ない場合、次に着手しやすい選択肢(前回から更新):
   - (b) 蒼白以外の第三のパレット系統の新設(かなり大きな判断、慎重に)。
   - (c) TODO16(PRISMIUM_ALLOY_BLOCK等のneeds_iron_tool非対称性、こんぺいとう氏の意図確認待ち)。
-  - (l) 今回追加した柵(フェンス・フェンスゲート)を、Prismium Alloy Block/Prismium Stone/Prismium Deepstone/Prismium Bricks系統など、既にSlab/Wall/Stairsを持つ他のブロックにも横展開する(同じ低リスクパターンがそのまま使える)。
-  - (m) 新しい装備カテゴリの検討(例: トライデント、クロスボウ)。ただしトライデントは投擲エンティティに新規`@Override`が必要になる可能性が高く、このMODでこれまで繰り返し起きたビルド事故パターン(存在しないAPIのoverride)のリスクが他の選択肢より高い点に注意。着手するなら特に慎重に出典確認すること。
+  - (m) 新しい装備カテゴリの検討(例: トライデント、クロスボウ)。トライデントは投擲エンティティに新規`@Override`が必要になる可能性が高く、このMODでこれまで繰り返し起きたビルド事故パターン(存在しないAPIのoverride)のリスクが他の選択肢より高い点に注意。着手するなら特に慎重に出典確認すること。
+  - (n) 柵系統が8系統16ブロックまで出揃ったので、次の新しいブロックシルエット(例: トラップドア・ドア等、このMOD未使用のBlockState構成)を検討する。vanillaのTrapDoorBlock/DoorBlockは複数のBlockState(HALF/OPEN/HINGE等)を持つため、着手前にmappings.devでコンストラクタ・プロパティを必ず確認すること。
 
 ## 注意点
 
-- 今回もコードの実装ミスが一度も発生しなかった。vanillaクラスをそのまま使う最低リスクパターンを踏襲しつつ、未確認だった2点(FenceGateBlockのコンストラクタ引数、フェンス接続にタグが要るか)を実装前にmappings.devで確認してから進めたのが功を奏した。
-- blockstateの回転値はCIのデータパック検証では検証されない(ブロックステート・モデルはクライアント専用アセットのため)。今回2ソースでクロスチェックしたとはいえ、実機で向きが正しいかの確認は依然として必要([問題点]参照)。
+- 今回もコードの実装ミスが一度も発生しなかった。vanillaクラスをそのまま使う最低リスクパターンを6系統分スクリプト的に繰り返すだけの作業だったが、各系統のプロパティ値を「元のSlab/Wall/Stairsの値をコピーする」のではなく記憶や推測で書いていたら、ステータス不整合(ビルドは通るが数値が間違っている)の事故になっていたリスクがあった点に留意。次回以降も同様の横展開作業では、必ず既存の同系統Slab/Wall/Stairsの登録コードを先に読んでから数値を転記すること。
+- blockstateの回転値はCIのデータパック検証では検証されない(ブロックステート・モデルはクライアント専用アセットのため)。今回もv0.66.0と同じ回転値テンプレートを使っただけだが、実機で向きが正しいかの確認は依然として必要([問題点]参照)。
 - Issue #15の電力分配バグ(TODO6)・Issue #21(JEI、TODO12)は今回情報更新無し。次回セッションでの再確認は引き続き必要。
-- 今回も新しいissue番号の出現は無かった(真の未解決はOpen 2件、22セッション連続一致)。
+- 今回も新しいissue番号の出現は無かった(真の未解決はOpen 2件、23セッション連続一致)。
