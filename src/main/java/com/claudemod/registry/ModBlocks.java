@@ -1242,6 +1242,121 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST_CLUSTER)
                     .lightLevel(state -> 13)));
 
+    // Prismium Core / Alloy Block / Stone / Deepstone / Bricks / Deepstone
+    // Bricks Fence + Fence Gate (scheduled session, 2026-10-04): expands
+    // the "fence" silhouette introduced on Prismium Block / Pale Prismium
+    // Block (v0.66.0, see PRISMIUM_FENCE above for the full API-usage
+    // rationale: vanilla FenceBlock/FenceGateBlock, WoodType.OAK for the
+    // gate's open/close sound only, no walls-style tag needed because
+    // FenceBlock#canConnectToFence is a plain instanceof check) to every
+    // other existing block family that already has a Slab/Wall/Stairs
+    // trio (TODO/HANDOFF option (l)). Same low-risk pattern repeated
+    // verbatim per family: no new Java class, no new @Override, each
+    // fence/gate reuses its own base block's existing texture and copies
+    // that base block's exact BlockBehaviour.Properties (mapColor/
+    // strength/sound) rather than Prismium Block's. Harvest-tier tagging
+    // mirrors each family's existing (not-newly-decided) treatment: Core
+    // is the mod's diamond-exclusive material, so its fence/gate are also
+    // added to needs_diamond_tool/incorrect_for_diamond_tool (matching
+    // PRISMIUM_CORE_SLAB/WALL/STAIRS); the other five families are left
+    // out of needs_iron_tool/needs_diamond_tool, matching how their own
+    // existing Slab/Wall/Stairs variants are treated (mineable/pickaxe
+    // only). All six pairs' blockstate rotation values (south=0/west=90/
+    // north=180/east=270 for the gate) are the same vanilla oak_fence_gate/
+    // spruce_fence_gate values already cross-checked and used for
+    // PRISMIUM_FENCE_GATE in v0.66.0 - no new lookup needed, the geometry
+    // is identical across every fence/gate pair regardless of material.
+
+    public static final RegistryObject<Block> PRISMIUM_CORE_FENCE = BLOCKS.register("prismium_core_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(8.0f, 20.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_CORE_FENCE_GATE = BLOCKS.register("prismium_core_fence_gate",
+            () -> new net.minecraft.world.level.block.FenceGateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(8.0f, 20.0f)
+                    .sound(SoundType.AMETHYST),
+                    net.minecraft.world.level.block.state.properties.WoodType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_ALLOY_BLOCK_FENCE = BLOCKS.register("prismium_alloy_block_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_ALLOY_BLOCK_FENCE_GATE = BLOCKS.register("prismium_alloy_block_fence_gate",
+            () -> new net.minecraft.world.level.block.FenceGateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST),
+                    net.minecraft.world.level.block.state.properties.WoodType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_STONE_FENCE = BLOCKS.register("prismium_stone_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_STONE_FENCE_GATE = BLOCKS.register("prismium_stone_fence_gate",
+            () -> new net.minecraft.world.level.block.FenceGateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE),
+                    net.minecraft.world.level.block.state.properties.WoodType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_FENCE = BLOCKS.register("prismium_deepstone_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_FENCE_GATE = BLOCKS.register("prismium_deepstone_fence_gate",
+            () -> new net.minecraft.world.level.block.FenceGateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE),
+                    net.minecraft.world.level.block.state.properties.WoodType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_BRICKS_FENCE = BLOCKS.register("prismium_bricks_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_BRICKS_FENCE_GATE = BLOCKS.register("prismium_bricks_fence_gate",
+            () -> new net.minecraft.world.level.block.FenceGateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE),
+                    net.minecraft.world.level.block.state.properties.WoodType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BRICKS_FENCE = BLOCKS.register("prismium_deepstone_bricks_fence",
+            () -> new net.minecraft.world.level.block.FenceBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BRICKS_FENCE_GATE = BLOCKS.register("prismium_deepstone_bricks_fence_gate",
+            () -> new net.minecraft.world.level.block.FenceGateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE),
+                    net.minecraft.world.level.block.state.properties.WoodType.OAK));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

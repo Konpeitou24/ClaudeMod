@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:block/fence_post",
+    "textures": {
+        "texture": "claudemod:block/prismium_alloy_block"
+    }
+}

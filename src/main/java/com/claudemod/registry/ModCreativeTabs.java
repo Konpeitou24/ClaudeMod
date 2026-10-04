@@ -69,6 +69,18 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-03
                         output.accept(ModItems.PALE_PRISMIUM_FENCE_ITEM.get()); // scheduled session, 2026-10-03
                         output.accept(ModItems.PALE_PRISMIUM_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-03
+                        output.accept(ModItems.PRISMIUM_CORE_FENCE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_CORE_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_ALLOY_BLOCK_FENCE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_ALLOY_BLOCK_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_STONE_FENCE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_STONE_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_FENCE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_BRICKS_FENCE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_BRICKS_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_FENCE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-04
                         output.accept(ModItems.PRISMIUM_CRYSTAL_PILLAR_ITEM.get()); // scheduled session, 2026-09-25
                         output.accept(ModItems.PALE_PRISMIUM_CRYSTAL_PILLAR_ITEM.get()); // scheduled session, 2026-09-26
                         output.accept(ModItems.PRISMIUM_CORE_SLAB_ITEM.get());

@@ -697,6 +697,46 @@ public class ModItems {
     public static final RegistryObject<Item> PALE_PRISMIUM_WALL_LAMP_ITEM = ITEMS.register("pale_prismium_wall_lamp",
             () -> new BlockItem(ModBlocks.PALE_PRISMIUM_WALL_LAMP.get(), new Item.Properties()));
 
+    // Prismium Core / Alloy Block / Stone / Deepstone / Bricks / Deepstone
+    // Bricks Fence + Fence Gate (scheduled session, 2026-10-04): BlockItems
+    // for the ModBlocks fence/gate pairs added in that same session (see
+    // ModBlocks.java for the full rationale).
+    public static final RegistryObject<Item> PRISMIUM_CORE_FENCE_ITEM = ITEMS.register("prismium_core_fence",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CORE_FENCE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_CORE_FENCE_GATE_ITEM = ITEMS.register("prismium_core_fence_gate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CORE_FENCE_GATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_FENCE_ITEM = ITEMS.register("prismium_alloy_block_fence",
+            () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK_FENCE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_FENCE_GATE_ITEM = ITEMS.register("prismium_alloy_block_fence_gate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK_FENCE_GATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_STONE_FENCE_ITEM = ITEMS.register("prismium_stone_fence",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STONE_FENCE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_STONE_FENCE_GATE_ITEM = ITEMS.register("prismium_stone_fence_gate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STONE_FENCE_GATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_FENCE_ITEM = ITEMS.register("prismium_deepstone_fence",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_FENCE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_FENCE_GATE_ITEM = ITEMS.register("prismium_deepstone_fence_gate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_FENCE_GATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_BRICKS_FENCE_ITEM = ITEMS.register("prismium_bricks_fence",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BRICKS_FENCE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_BRICKS_FENCE_GATE_ITEM = ITEMS.register("prismium_bricks_fence_gate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BRICKS_FENCE_GATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BRICKS_FENCE_ITEM = ITEMS.register("prismium_deepstone_bricks_fence",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BRICKS_FENCE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BRICKS_FENCE_GATE_ITEM = ITEMS.register("prismium_deepstone_bricks_fence_gate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BRICKS_FENCE_GATE.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

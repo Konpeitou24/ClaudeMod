@@ -1,0 +1,20 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "building",
+    "pattern": [
+        "#W#",
+        "#W#"
+    ],
+    "key": {
+        "W": {
+            "item": "claudemod:prismium_alloy_block"
+        },
+        "#": {
+            "item": "minecraft:stick"
+        }
+    },
+    "result": {
+        "item": "claudemod:prismium_alloy_block_fence_gate",
+        "count": 1
+    }
+}

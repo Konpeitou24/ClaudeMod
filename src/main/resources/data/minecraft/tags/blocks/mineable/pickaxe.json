@@ -59,6 +59,18 @@
         "claudemod:prismium_fence",
         "claudemod:prismium_fence_gate",
         "claudemod:pale_prismium_fence",
-        "claudemod:pale_prismium_fence_gate"
+        "claudemod:pale_prismium_fence_gate",
+        "claudemod:prismium_core_fence",
+        "claudemod:prismium_core_fence_gate",
+        "claudemod:prismium_alloy_block_fence",
+        "claudemod:prismium_alloy_block_fence_gate",
+        "claudemod:prismium_stone_fence",
+        "claudemod:prismium_stone_fence_gate",
+        "claudemod:prismium_deepstone_fence",
+        "claudemod:prismium_deepstone_fence_gate",
+        "claudemod:prismium_bricks_fence",
+        "claudemod:prismium_bricks_fence_gate",
+        "claudemod:prismium_deepstone_bricks_fence",
+        "claudemod:prismium_deepstone_bricks_fence_gate"
     ]
 }

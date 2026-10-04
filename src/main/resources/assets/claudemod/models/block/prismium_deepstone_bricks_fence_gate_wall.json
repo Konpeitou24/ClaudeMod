@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:block/template_fence_gate_wall",
+    "textures": {
+        "texture": "claudemod:block/prismium_deepstone_bricks"
+    }
+}

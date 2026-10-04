@@ -5,6 +5,8 @@
         "claudemod:prismium_core_slab",
         "claudemod:prismium_core_wall",
         "claudemod:prismium_core_stairs",
-        "claudemod:chiseled_prismium_core"
+        "claudemod:chiseled_prismium_core",
+        "claudemod:prismium_core_fence",
+        "claudemod:prismium_core_fence_gate"
     ]
 }
