@@ -701,6 +701,25 @@ public class ModBlocks {
                     .sound(SoundType.AMETHYST),
                     net.minecraft.world.level.block.state.properties.WoodType.OAK));
 
+    // Pale Prismium Block Trapdoor (scheduled session, 2026-10-05): the
+    // pale family's version of PRISMIUM_TRAPDOOR above, mirroring the
+    // same "reuse the vanilla class, reuse the existing fence-gate's
+    // BlockSetType.OAK rationale" treatment every other pale building
+    // variant uses. See PRISMIUM_TRAPDOOR for the full rationale
+    // (BlockSetType.OAK choice and the mappings.dev cross-check,
+    // needs_iron_tool left untouched for consistency with
+    // PALE_PRISMIUM_BLOCK_WALL/SLAB/STAIRS/FENCE). Uses a dedicated
+    // pale_prismium_trapdoor.png texture derived the same way from
+    // Pale Prismium Block's own texture/palette.
+    public static final RegistryObject<Block> PALE_PRISMIUM_TRAPDOOR = BLOCKS.register("pale_prismium_trapdoor",
+            () -> new net.minecraft.world.level.block.TrapDoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
     // Chiseled Pale Prismium Block (scheduled session, 2026-09-18): the
     // same decorative-masonry treatment extended to the Pale Prismium
     // family, closing the other half of the "plain block with building
@@ -866,6 +885,54 @@ public class ModBlocks {
                     .strength(5.0f, 6.0f)
                     .sound(SoundType.AMETHYST),
                     net.minecraft.world.level.block.state.properties.WoodType.OAK));
+
+    // Prismium Block Trapdoor (scheduled session, 2026-10-05): a brand
+    // new silhouette - Slab/Wall/Stairs, Crystal Pillar and Fence/Fence
+    // Gate never covered the single-block "hatch" shape vanilla gives
+    // every plank material (and iron). Plain vanilla TrapDoorBlock
+    // (net.minecraft.world.level.block), confirmed public with a
+    // (Properties, BlockSetType) constructor for 1.20.1 by cross-checking
+    // an actual compiling external 1.20.x Forge mod's block registry
+    // (Tutorials-By-Kaupenjoe/Forge-Tutorial-1.20.X, ModBlocks.java,
+    // SAPPHIRE_TRAPDOOR) rather than trusting mappings.dev alone - that
+    // single-source lookup claimed the constructor was *protected* for
+    // 1.20.1, which would not have compiled from this package, and the
+    // 2026-09-28 lesson in this file's "1. 約束や決まり事" section is
+    // explicitly that mappings.dev can hallucinate a wrong answer with
+    // full confidence, so a second, independently-verifiable source
+    // (real working code, not a docs summary) was required before using
+    // it. BlockSetType.OAK is used deliberately instead of IRON: IRON's
+    // BlockSetType has canOpenByHand=false (real vanilla iron trapdoors
+    // only toggle via redstone, never by right-click), which would make
+    // this trapdoor unusable by hand with no way to notice the regression
+    // from a CI build alone. OAK is the real BlockSetType vanilla's own
+    // wooden trapdoors use to open by hand, so picking it guarantees
+    // correct interactive behavior instead of assuming an unverified
+    // BlockSetType.STONE/GOLD/POLISHED_BLACKSTONE constant mappings.dev
+    // also listed would behave the same way for a trapdoor (none of
+    // those are ever used on a real vanilla trapdoor, so their
+    // canOpenByHand value for this use is unconfirmed) - the exact same
+    // "pick the proven wood-type stand-in" reasoning already used for
+    // PRISMIUM_FENCE_GATE's WoodType.OAK above. No custom subclass, no
+    // new @Override - lowest possible compile risk. .noOcclusion() is
+    // added because the open/closed shapes are not a full cube (matches
+    // the SAPPHIRE_TRAPDOOR reference above). Reuses a new dedicated
+    // prismium_trapdoor.png texture (derived from Prismium Block's own
+    // texture/palette with an added frame + two seam lines, see
+    // textures/block/prismium_trapdoor.png) rather than the bare cube
+    // texture, since unlike the fence the trapdoor's texture covers the
+    // entire visible face and reads better with a paneled/hatch look.
+    // Not added to needs_iron_tool.json, matching the existing
+    // (deliberately untouched, see PROGRESS.md TODO16) treatment of
+    // every other PRISMIUM_BLOCK building variant.
+    public static final RegistryObject<Block> PRISMIUM_TRAPDOOR = BLOCKS.register("prismium_trapdoor",
+            () -> new net.minecraft.world.level.block.TrapDoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
 
     // Prismium Crystal Pillar (scheduled session, 2026-09-25): the
     // building-variety trio's missing "vertical column" silhouette -

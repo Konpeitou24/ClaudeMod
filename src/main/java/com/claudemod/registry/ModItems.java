@@ -235,6 +235,15 @@ public class ModItems {
     public static final RegistryObject<Item> PALE_PRISMIUM_FENCE_GATE_ITEM = ITEMS.register("pale_prismium_fence_gate",
             () -> new BlockItem(ModBlocks.PALE_PRISMIUM_FENCE_GATE.get(), new Item.Properties()));
 
+    // Prismium Block Trapdoor / Pale Prismium Block Trapdoor (scheduled
+    // session, 2026-10-05): BlockItems for ModBlocks.PRISMIUM_TRAPDOOR /
+    // PALE_PRISMIUM_TRAPDOOR.
+    public static final RegistryObject<Item> PRISMIUM_TRAPDOOR_ITEM = ITEMS.register("prismium_trapdoor",
+            () -> new BlockItem(ModBlocks.PRISMIUM_TRAPDOOR.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PALE_PRISMIUM_TRAPDOOR_ITEM = ITEMS.register("pale_prismium_trapdoor",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_TRAPDOOR.get(), new Item.Properties()));
+
     // Prismium Crystal Pillar (scheduled session, 2026-09-25): BlockItem
     // for the mod's first RotatedPillarBlock. See
     // ModBlocks.PRISMIUM_CRYSTAL_PILLAR.
