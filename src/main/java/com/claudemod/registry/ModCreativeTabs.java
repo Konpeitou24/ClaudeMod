@@ -83,6 +83,12 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_BRICKS_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-04
                         output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_FENCE_ITEM.get()); // scheduled session, 2026-10-04
                         output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-04
+                        output.accept(ModItems.PRISMIUM_CORE_TRAPDOOR_ITEM.get()); // scheduled session, 2026-10-06
+                        output.accept(ModItems.PRISMIUM_ALLOY_BLOCK_TRAPDOOR_ITEM.get()); // scheduled session, 2026-10-06
+                        output.accept(ModItems.PRISMIUM_STONE_TRAPDOOR_ITEM.get()); // scheduled session, 2026-10-06
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_TRAPDOOR_ITEM.get()); // scheduled session, 2026-10-06
+                        output.accept(ModItems.PRISMIUM_BRICKS_TRAPDOOR_ITEM.get()); // scheduled session, 2026-10-06
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_TRAPDOOR_ITEM.get()); // scheduled session, 2026-10-06
                         output.accept(ModItems.PRISMIUM_CRYSTAL_PILLAR_ITEM.get()); // scheduled session, 2026-09-25
                         output.accept(ModItems.PALE_PRISMIUM_CRYSTAL_PILLAR_ITEM.get()); // scheduled session, 2026-09-26
                         output.accept(ModItems.PRISMIUM_CORE_SLAB_ITEM.get());

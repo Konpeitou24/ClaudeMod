@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:block/template_trapdoor_top",
+    "textures": {
+        "texture": "claudemod:block/prismium_alloy_block_trapdoor"
+    }
+}

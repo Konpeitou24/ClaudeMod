@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:block/template_trapdoor_open",
+    "textures": {
+        "texture": "claudemod:block/prismium_stone_trapdoor"
+    }
+}
