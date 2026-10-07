@@ -1508,6 +1508,73 @@ public class ModBlocks {
                     .noOcclusion(),
                     net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
 
+    // Prismium Block Door (scheduled session, 2026-10-07): the mod's first
+    // "door" silhouette, the one shape Slab/Wall/Stairs, Crystal Pillar,
+    // Fence/Fence Gate and Trapdoor (sessions through 2026-10-05) never
+    // covered. Plain vanilla DoorBlock (net.minecraft.world.level.block),
+    // confirmed with a (Properties, BlockSetType) constructor the exact
+    // same way PRISMIUM_TRAPDOOR's constructor was confirmed above: a raw
+    // fetch of mappings.dev/1.20.1 claimed the constructor was *protected*
+    // (the same kind of false claim the 2026-09-28/2026-10-05 lessons in
+    // this file's "1. 約束や決まり事" section warn about), so it was
+    // cross-checked against a second, independently-verifiable source - a
+    // real compiling external 1.20.X Forge mod's block registry
+    // (Tutorials-By-Kaupenjoe/Forge-Tutorial-1.20.X, ModBlocks.java,
+    // SAPPHIRE_DOOR: `new DoorBlock(BlockBehaviour.Properties..., BlockSetType.IRON)`
+    // called directly from that mod's own package, proving the constructor
+    // is public) before using it here. BlockSetType.OAK is used for the
+    // exact same reason PRISMIUM_TRAPDOOR/PRISMIUM_FENCE_GATE use it: OAK
+    // is the real vanilla BlockSetType that keeps canOpenByHand=true (IRON
+    // would make this door openable only via redstone, with no visible
+    // signal from a CI build that the behavior regressed). No custom
+    // subclass, no new @Override - lowest possible compile risk, matching
+    // every other building-variant block in this file. The full 32-variant
+    // blockstate rotation table (facing x half x hinge x open) was copied
+    // verbatim from two independent raw fetches of minecraft-assets'
+    // 1.20.1 oak_door.json (half=lower and half=upper separately, which
+    // cross-confirmed upper mirrors lower with only the model's
+    // bottom/top naming swapped) rather than guessed - see
+    // blockstates/prismium_door.json and models/block/prismium_door_*.json,
+    // each parented to vanilla's own minecraft:block/door_* templates
+    // (same "parent the vanilla template, swap only the texture" technique
+    // already used for PrismiumLanternBlock/PRISMIUM_TRAPDOOR) with a new
+    // dedicated prismium_door_bottom.png/prismium_door_top.png pair (see
+    // textures/block/), reusing Prismium Block's own diagonal-streak fill
+    // and corner-accent-gem palette so the door reads as the same family
+    // as the trapdoor/fence next to it, generation script at
+    // scripts/textures/gen_prismium_door.py, both halves and the stacked
+    // combination visually reviewed before commit. Not added to
+    // needs_iron_tool.json, matching the existing (deliberately untouched,
+    // see PROGRESS.md TODO16) treatment of every other PRISMIUM_BLOCK
+    // building variant.
+    public static final RegistryObject<Block> PRISMIUM_DOOR = BLOCKS.register("prismium_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
+    // Pale Prismium Block Door (scheduled session, 2026-10-07): the pale
+    // family's version of PRISMIUM_DOOR above, mirroring the same "reuse
+    // the vanilla class, reuse the existing fence-gate/trapdoor's
+    // BlockSetType.OAK rationale" treatment every other pale building
+    // variant uses. See PRISMIUM_DOOR for the full rationale (API-usage
+    // cross-check and BlockSetType.OAK choice; needs_iron_tool left
+    // untouched for consistency with PALE_PRISMIUM_BLOCK_WALL/SLAB/
+    // STAIRS/FENCE/TRAPDOOR). Uses a dedicated
+    // pale_prismium_door_bottom.png/pale_prismium_door_top.png pair
+    // derived the same way from Pale Prismium Block's own texture/palette.
+    public static final RegistryObject<Block> PALE_PRISMIUM_DOOR = BLOCKS.register("pale_prismium_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

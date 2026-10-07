@@ -244,6 +244,21 @@ public class ModItems {
     public static final RegistryObject<Item> PALE_PRISMIUM_TRAPDOOR_ITEM = ITEMS.register("pale_prismium_trapdoor",
             () -> new BlockItem(ModBlocks.PALE_PRISMIUM_TRAPDOOR.get(), new Item.Properties()));
 
+    // Prismium Block Door / Pale Prismium Block Door (scheduled session,
+    // 2026-10-07): BlockItems for ModBlocks.PRISMIUM_DOOR /
+    // PALE_PRISMIUM_DOOR. A plain BlockItem is correct here (no custom
+    // DoorItem subclass needed): vanilla's own DoorBlock#setPlacedBy
+    // (confirmed present via mappings.dev/1.20.1, see PRISMIUM_DOOR in
+    // ModBlocks.java) is what places the upper half automatically after
+    // BlockItem#place places the lower half - the same mechanism real
+    // vanilla oak_door itself relies on, so no new placement logic is
+    // needed on this mod's side.
+    public static final RegistryObject<Item> PRISMIUM_DOOR_ITEM = ITEMS.register("prismium_door",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DOOR.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PALE_PRISMIUM_DOOR_ITEM = ITEMS.register("pale_prismium_door",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_DOOR.get(), new Item.Properties()));
+
     // Prismium Crystal Pillar (scheduled session, 2026-09-25): BlockItem
     // for the mod's first RotatedPillarBlock. See
     // ModBlocks.PRISMIUM_CRYSTAL_PILLAR.

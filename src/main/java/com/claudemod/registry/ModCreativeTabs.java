@@ -71,6 +71,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PALE_PRISMIUM_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-03
                         output.accept(ModItems.PRISMIUM_TRAPDOOR_ITEM.get()); // scheduled session, 2026-10-05
                         output.accept(ModItems.PALE_PRISMIUM_TRAPDOOR_ITEM.get()); // scheduled session, 2026-10-05
+                        output.accept(ModItems.PRISMIUM_DOOR_ITEM.get()); // scheduled session, 2026-10-07
+                        output.accept(ModItems.PALE_PRISMIUM_DOOR_ITEM.get()); // scheduled session, 2026-10-07
                         output.accept(ModItems.PRISMIUM_CORE_FENCE_ITEM.get()); // scheduled session, 2026-10-04
                         output.accept(ModItems.PRISMIUM_CORE_FENCE_GATE_ITEM.get()); // scheduled session, 2026-10-04
                         output.accept(ModItems.PRISMIUM_ALLOY_BLOCK_FENCE_ITEM.get()); // scheduled session, 2026-10-04

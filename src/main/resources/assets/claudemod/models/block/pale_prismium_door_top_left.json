@@ -1,0 +1,7 @@
+{
+    "parent": "minecraft:block/door_top_left",
+    "textures": {
+        "bottom": "claudemod:block/pale_prismium_door_bottom",
+        "top": "claudemod:block/pale_prismium_door_top"
+    }
+}
