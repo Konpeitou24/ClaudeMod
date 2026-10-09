@@ -81,6 +81,12 @@
         "claudemod:prismium_stone_trapdoor",
         "claudemod:prismium_deepstone_trapdoor",
         "claudemod:prismium_bricks_trapdoor",
-        "claudemod:prismium_deepstone_bricks_trapdoor"
+        "claudemod:prismium_deepstone_bricks_trapdoor",
+        "claudemod:prismium_core_door",
+        "claudemod:prismium_alloy_block_door",
+        "claudemod:prismium_stone_door",
+        "claudemod:prismium_deepstone_door",
+        "claudemod:prismium_bricks_door",
+        "claudemod:prismium_deepstone_bricks_door"
     ]
 }

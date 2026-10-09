@@ -8,6 +8,7 @@
         "claudemod:chiseled_prismium_core",
         "claudemod:prismium_core_fence",
         "claudemod:prismium_core_fence_gate",
-        "claudemod:prismium_core_trapdoor"
+        "claudemod:prismium_core_trapdoor",
+        "claudemod:prismium_core_door"
     ]
 }

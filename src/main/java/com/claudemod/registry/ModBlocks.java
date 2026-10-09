@@ -1575,6 +1575,93 @@ public class ModBlocks {
                     .noOcclusion(),
                     net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
 
+    // Prismium Core / Alloy Block / Stone / Deepstone / Bricks / Deepstone
+    // Bricks Door (scheduled session, 2026-10-09): expands the "door"
+    // silhouette introduced on Prismium Block / Pale Prismium Block
+    // (v0.70.0, see PRISMIUM_DOOR above for the full API-usage rationale:
+    // plain vanilla DoorBlock with a (Properties, BlockSetType) constructor,
+    // BlockSetType.OAK chosen so the door opens by hand instead of
+    // redstone-only) to every other existing block family that already has
+    // a Slab/Wall/Stairs/Fence/Trapdoor lineup (HANDOFF option (q), the
+    // same horizontal-rollout pattern already used for the fence expansion
+    // (v0.66.0 -> v0.67.0) and the trapdoor expansion (v0.68.0 -> v0.69.0)).
+    // Same low-risk pattern repeated verbatim per family: no new Java
+    // class, no new @Override, each door reuses its own dedicated
+    // <family>_door_bottom.png/<family>_door_top.png pair (generated the
+    // same way as prismium_door_bottom.png/top.png: the family's own
+    // existing block texture with a darker frame + seam line, see
+    // scripts/textures/gen_doors_expansion.py - Stone/Deepstone/Bricks/
+    // Deepstone Bricks deliberately use only their own existing grey
+    // mortar/edge shades with no cyan/teal accent, matching the
+    // gen_prismium_stone.py/gen_prismium_deepstone.py correction already
+    // made for GitHub issue #22, "紛らわしいリソースパック") and copies
+    // that family's exact BlockBehaviour.Properties (mapColor/strength/
+    // sound) from its own Fence/Trapdoor registration above rather than
+    // Prismium Block's. Harvest-tier tagging mirrors each family's existing
+    // treatment: Core is added to needs_diamond_tool/
+    // incorrect_for_diamond_tool (matching PRISMIUM_CORE_SLAB/WALL/STAIRS/
+    // FENCE/TRAPDOOR); the other five families are left out of
+    // needs_iron_tool/needs_diamond_tool, matching how their own existing
+    // Slab/Wall/Stairs/Fence/Trapdoor variants are treated (mineable/
+    // pickaxe only). All six blockstates reuse the exact same 32-variant
+    // facing/half/hinge/open rotation table already used for PRISMIUM_DOOR
+    // in v0.70.0 (verified identical via a mechanical diff against
+    // prismium_door.json before commit) - no new lookup needed, the
+    // geometry is identical across every door regardless of material.
+    public static final RegistryObject<Block> PRISMIUM_CORE_DOOR = BLOCKS.register("prismium_core_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(8.0f, 20.0f)
+                    .sound(SoundType.AMETHYST)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_ALLOY_BLOCK_DOOR = BLOCKS.register("prismium_alloy_block_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .requiresCorrectToolForDrops()
+                    .strength(5.0f, 6.0f)
+                    .sound(SoundType.AMETHYST)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_STONE_DOOR = BLOCKS.register("prismium_stone_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_DOOR = BLOCKS.register("prismium_deepstone_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_BRICKS_DOOR = BLOCKS.register("prismium_bricks_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .requiresCorrectToolForDrops()
+                    .strength(2.0f, 6.0f)
+                    .sound(SoundType.STONE)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BRICKS_DOOR = BLOCKS.register("prismium_deepstone_bricks_door",
+            () -> new net.minecraft.world.level.block.DoorBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .requiresCorrectToolForDrops()
+                    .strength(3.0f, 6.0f)
+                    .sound(SoundType.DEEPSLATE)
+                    .noOcclusion(),
+                    net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

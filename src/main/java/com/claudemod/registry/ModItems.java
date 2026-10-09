@@ -783,6 +783,30 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BRICKS_TRAPDOOR_ITEM = ITEMS.register("prismium_deepstone_bricks_trapdoor",
             () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BRICKS_TRAPDOOR.get(), new Item.Properties()));
 
+    // Prismium Core / Alloy Block / Stone / Deepstone / Bricks / Deepstone
+    // Bricks Door (scheduled session, 2026-10-09): BlockItems for the
+    // ModBlocks door registrations added in that same session (see
+    // ModBlocks.java for the full rationale). Plain BlockItem, same
+    // reasoning as PRISMIUM_DOOR_ITEM above (vanilla DoorBlock#setPlacedBy
+    // handles placing the upper half).
+    public static final RegistryObject<Item> PRISMIUM_CORE_DOOR_ITEM = ITEMS.register("prismium_core_door",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CORE_DOOR.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_DOOR_ITEM = ITEMS.register("prismium_alloy_block_door",
+            () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK_DOOR.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_STONE_DOOR_ITEM = ITEMS.register("prismium_stone_door",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STONE_DOOR.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_DOOR_ITEM = ITEMS.register("prismium_deepstone_door",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_DOOR.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_BRICKS_DOOR_ITEM = ITEMS.register("prismium_bricks_door",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BRICKS_DOOR.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BRICKS_DOOR_ITEM = ITEMS.register("prismium_deepstone_bricks_door",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BRICKS_DOOR.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
