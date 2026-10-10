@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "R": { "item": "minecraft:redstone" },
+        "D": { "item": "minecraft:diamond" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        " R ",
+        "DSD",
+        " R "
+    ],
+    "result": {
+        "item": "claudemod:prismium_haste_charm",
+        "count": 1
+    }
+}

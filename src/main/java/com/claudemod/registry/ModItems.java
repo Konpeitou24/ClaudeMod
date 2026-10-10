@@ -22,6 +22,7 @@ import com.claudemod.item.PrismiumFeatherstoneItem;
 import com.claudemod.item.PrismiumFrostguardCharmItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumGuardianCharmItem;
+import com.claudemod.item.PrismiumHasteCharmItem;
 import com.claudemod.item.PrismiumLocatorItem;
 import com.claudemod.item.PrismiumMagnetCharmItem;
 import com.claudemod.item.PrismiumPulseCharmItem;
@@ -806,6 +807,16 @@ public class ModItems {
 
     public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BRICKS_DOOR_ITEM = ITEMS.register("prismium_deepstone_bricks_door",
             () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BRICKS_DOOR.get(), new Item.Properties()));
+
+    // Prismium Haste Charm (scheduled session, 2026-10-10): the mod's
+    // eighth purely passive accessory - see PrismiumHasteCharmItem /
+    // PrismiumHasteCharmHandler. First charm in this family whose
+    // effect is not a damage-type mitigation (permanent Haste I while
+    // carried). Same "stacks normally, presence-only" treatment as
+    // Featherstone/Emberguard/Vitastone/Magnet Charm/Aegis Charm/
+    // Frostguard Charm/Antivenom Charm.
+    public static final RegistryObject<Item> PRISMIUM_HASTE_CHARM = ITEMS.register("prismium_haste_charm",
+            () -> new PrismiumHasteCharmItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
