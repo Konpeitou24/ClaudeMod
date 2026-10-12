@@ -46,6 +46,15 @@ public class CuriosSetupEvents {
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_AEGIS_CHARM.get());
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_FROSTGUARD_CHARM.get());
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_GUARDIAN_CHARM.get());
+            // scheduled session, 2026-10-12: PRISMIUM_ANTIVENOM_CHARM (v0.56.0) and
+            // PRISMIUM_HASTE_CHARM (v0.72.0) were never added to data/curios/tags/items/
+            // charm.json OR this list when they shipped, so despite their tooltip/lang
+            // text explicitly claiming Curios charm-slot support, neither could actually
+            // be placed in (or right-click-equipped into) a Curios charm slot - found and
+            // fixed this session alongside PRISMIUM_LUCK_CHARM's own initial registration.
+            CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_ANTIVENOM_CHARM.get());
+            CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_HASTE_CHARM.get());
+            CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_LUCK_CHARM.get());
         });
     }
 }

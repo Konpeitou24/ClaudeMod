@@ -24,6 +24,7 @@ import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumGuardianCharmItem;
 import com.claudemod.item.PrismiumHasteCharmItem;
 import com.claudemod.item.PrismiumLocatorItem;
+import com.claudemod.item.PrismiumLuckCharmItem;
 import com.claudemod.item.PrismiumMagnetCharmItem;
 import com.claudemod.item.PrismiumPulseCharmItem;
 import com.claudemod.item.PrismiumRiftAnchorItem;
@@ -817,6 +818,16 @@ public class ModItems {
     // Frostguard Charm/Antivenom Charm.
     public static final RegistryObject<Item> PRISMIUM_HASTE_CHARM = ITEMS.register("prismium_haste_charm",
             () -> new PrismiumHasteCharmItem(new Item.Properties()));
+
+    // Prismium Luck Charm (scheduled session, 2026-10-12): the mod's
+    // ninth purely passive accessory - see PrismiumLuckCharmItem /
+    // PrismiumLuckCharmHandler. Second charm in this family whose
+    // effect is not a damage-type mitigation (permanent Luck I while
+    // carried). Same "stacks normally, presence-only" treatment as
+    // Featherstone/Emberguard/Vitastone/Magnet Charm/Aegis Charm/
+    // Frostguard Charm/Antivenom Charm/Haste Charm.
+    public static final RegistryObject<Item> PRISMIUM_LUCK_CHARM = ITEMS.register("prismium_luck_charm",
+            () -> new PrismiumLuckCharmItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
