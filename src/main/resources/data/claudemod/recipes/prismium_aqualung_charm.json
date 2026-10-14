@@ -2,7 +2,7 @@
     "type": "minecraft:crafting_shaped",
     "category": "misc",
     "key": {
-        "T": { "item": "minecraft:turtle_scute" },
+        "T": { "item": "minecraft:scute" },
         "P": { "item": "minecraft:prismarine_crystals" },
         "S": { "item": "claudemod:prismium_shard" }
     },
