@@ -55,6 +55,10 @@ public class CuriosSetupEvents {
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_ANTIVENOM_CHARM.get());
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_HASTE_CHARM.get());
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_LUCK_CHARM.get());
+            // scheduled session, 2026-10-14: tenth passive charm, registered here
+            // from the start (unlike Antivenom/Haste, which shipped without this
+            // and had to be fixed later - see the note above).
+            CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_AQUALUNG_CHARM.get());
         });
     }
 }

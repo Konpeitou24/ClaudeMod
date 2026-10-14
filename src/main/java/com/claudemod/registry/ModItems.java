@@ -15,6 +15,7 @@ import com.claudemod.item.ModArmorMaterials;
 import com.claudemod.item.ModToolTiers;
 import com.claudemod.item.PrismiumAegisCharmItem;
 import com.claudemod.item.PrismiumAntivenomCharmItem;
+import com.claudemod.item.PrismiumAqualungCharmItem;
 import com.claudemod.item.PrismiumBowItem;
 import com.claudemod.item.PrismiumChronoflameBlockItem;
 import com.claudemod.item.PrismiumEmberguardItem;
@@ -828,6 +829,16 @@ public class ModItems {
     // Frostguard Charm/Antivenom Charm/Haste Charm.
     public static final RegistryObject<Item> PRISMIUM_LUCK_CHARM = ITEMS.register("prismium_luck_charm",
             () -> new PrismiumLuckCharmItem(new Item.Properties()));
+
+    // Prismium Aqualung Charm (scheduled session, 2026-10-14): the mod's
+    // tenth purely passive accessory - see PrismiumAqualungCharmItem /
+    // PrismiumAqualungCharmHandler. Third charm in this family whose
+    // effect is not a damage-type mitigation (permanent Water Breathing
+    // while carried). Same "stacks normally, presence-only" treatment as
+    // Featherstone/Emberguard/Vitastone/Magnet Charm/Aegis Charm/
+    // Frostguard Charm/Antivenom Charm/Haste Charm/Luck Charm.
+    public static final RegistryObject<Item> PRISMIUM_AQUALUNG_CHARM = ITEMS.register("prismium_aqualung_charm",
+            () -> new PrismiumAqualungCharmItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);

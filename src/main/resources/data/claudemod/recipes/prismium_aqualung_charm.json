@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "T": { "item": "minecraft:turtle_scute" },
+        "P": { "item": "minecraft:prismarine_crystals" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        " T ",
+        "PSP",
+        " T "
+    ],
+    "result": {
+        "item": "claudemod:prismium_aqualung_charm",
+        "count": 1
+    }
+}
