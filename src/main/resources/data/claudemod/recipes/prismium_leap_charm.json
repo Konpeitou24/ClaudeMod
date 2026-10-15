@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "L": { "item": "minecraft:leather" },
+        "B": { "item": "minecraft:slime_ball" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        " L ",
+        "BSB",
+        " L "
+    ],
+    "result": {
+        "item": "claudemod:prismium_leap_charm",
+        "count": 1
+    }
+}

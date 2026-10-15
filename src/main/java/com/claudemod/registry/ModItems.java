@@ -24,6 +24,7 @@ import com.claudemod.item.PrismiumFrostguardCharmItem;
 import com.claudemod.item.PrismiumGrapplingHookItem;
 import com.claudemod.item.PrismiumGuardianCharmItem;
 import com.claudemod.item.PrismiumHasteCharmItem;
+import com.claudemod.item.PrismiumLeapCharmItem;
 import com.claudemod.item.PrismiumLocatorItem;
 import com.claudemod.item.PrismiumLuckCharmItem;
 import com.claudemod.item.PrismiumMagnetCharmItem;
@@ -839,6 +840,17 @@ public class ModItems {
     // Frostguard Charm/Antivenom Charm/Haste Charm/Luck Charm.
     public static final RegistryObject<Item> PRISMIUM_AQUALUNG_CHARM = ITEMS.register("prismium_aqualung_charm",
             () -> new PrismiumAqualungCharmItem(new Item.Properties()));
+
+    // Prismium Leap Charm (scheduled session, 2026-10-15): the mod's
+    // eleventh purely passive accessory - see PrismiumLeapCharmItem /
+    // PrismiumLeapCharmHandler. Fourth charm in this family whose
+    // effect is not a damage-type mitigation (permanent Jump Boost I
+    // while carried). Same "stacks normally, presence-only" treatment
+    // as Featherstone/Emberguard/Vitastone/Magnet Charm/Aegis Charm/
+    // Frostguard Charm/Antivenom Charm/Haste Charm/Luck Charm/Aqualung
+    // Charm.
+    public static final RegistryObject<Item> PRISMIUM_LEAP_CHARM = ITEMS.register("prismium_leap_charm",
+            () -> new PrismiumLeapCharmItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
