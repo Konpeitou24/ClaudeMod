@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "B": { "item": "minecraft:bread" },
+        "G": { "item": "minecraft:golden_carrot" },
+        "S": { "item": "claudemod:prismium_shard" }
+    },
+    "pattern": [
+        " B ",
+        "GSG",
+        " B "
+    ],
+    "result": {
+        "item": "claudemod:prismium_satiation_charm",
+        "count": 1
+    }
+}

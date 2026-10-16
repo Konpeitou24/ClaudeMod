@@ -31,6 +31,7 @@ import com.claudemod.item.PrismiumMagnetCharmItem;
 import com.claudemod.item.PrismiumPulseCharmItem;
 import com.claudemod.item.PrismiumRiftAnchorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
+import com.claudemod.item.PrismiumSatiationCharmItem;
 import com.claudemod.item.PrismiumShieldItem;
 import com.claudemod.item.PrismiumVitastoneItem;
 import net.minecraft.world.item.ArmorItem;
@@ -851,6 +852,17 @@ public class ModItems {
     // Charm.
     public static final RegistryObject<Item> PRISMIUM_LEAP_CHARM = ITEMS.register("prismium_leap_charm",
             () -> new PrismiumLeapCharmItem(new Item.Properties()));
+
+    // Prismium Satiation Charm (scheduled session, 2026-10-16): the mod's
+    // twelfth purely passive accessory - see PrismiumSatiationCharmItem /
+    // PrismiumSatiationCharmHandler. Fifth charm in this family whose
+    // effect is not a damage-type mitigation (permanent Saturation I
+    // while carried). Same "stacks normally, presence-only" treatment
+    // as Featherstone/Emberguard/Vitastone/Magnet Charm/Aegis Charm/
+    // Frostguard Charm/Antivenom Charm/Haste Charm/Luck Charm/Aqualung
+    // Charm/Leap Charm.
+    public static final RegistryObject<Item> PRISMIUM_SATIATION_CHARM = ITEMS.register("prismium_satiation_charm",
+            () -> new PrismiumSatiationCharmItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
