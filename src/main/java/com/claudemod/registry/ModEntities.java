@@ -1,6 +1,7 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.entity.PrismiumColossusEntity;
 import com.claudemod.entity.PrismiumDeepWraithEntity;
 import com.claudemod.entity.PrismiumCrawlerEntity;
 import com.claudemod.entity.PrismiumDrifterEntity;
@@ -118,6 +119,25 @@ public class ModEntities {
                             .sized(0.5F, 0.5F)
                             .clientTrackingRange(8)
                             .build("prismium_familiar"));
+
+    // Eighth mob, this mod's first boss-tier monster (see
+    // PrismiumColossusEntity's javadoc). MobCategory.MONSTER like the
+    // other hostile mobs, but deliberately NOT given a
+    // SpawnPlacementRegisterEvent entry in ModEntityEvents (same choice
+    // already made for PRISMIUM_DEEP_WRAITH) - this session only adds the
+    // boss entity itself, not the mountain-dungeon structure TODO9
+    // envisions housing it in, so it exists via spawn egg only for now.
+    // Size (1.2x2.7) is noticeably larger than every other ClaudeMod mob's
+    // hitbox (the widest prior hostile mob, Wraith/Sentinel, is 0.6 wide
+    // and under 2.0 tall) to read as "boss-scale" even though the reused
+    // HumanoidModel geometry itself does not scale up to match (accepted
+    // cosmetic trade-off, see PrismiumColossusRenderer's javadoc).
+    public static final RegistryObject<EntityType<PrismiumColossusEntity>> PRISMIUM_COLOSSUS =
+            ENTITY_TYPES.register("prismium_colossus",
+                    () -> EntityType.Builder.of(PrismiumColossusEntity::new, MobCategory.MONSTER)
+                            .sized(1.2F, 2.7F)
+                            .clientTrackingRange(10)
+                            .build("prismium_colossus"));
 
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);

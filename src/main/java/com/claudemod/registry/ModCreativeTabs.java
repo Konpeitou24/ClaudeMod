@@ -26,6 +26,7 @@ public class ModCreativeTabs {
                     .title(Component.translatable("itemGroup.claudemod.claudemod_tab"))
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.PRISMIUM_SHARD.get());
+                        output.accept(ModItems.PRISMIUM_COLOSSUS_CORE.get()); // scheduled session, 2026-10-17
                         output.accept(ModItems.PRISMIUM_INGOT.get()); // session 68
                         output.accept(ModItems.PRISMIUM_ALLOY_INGOT.get()); // session 70
                         output.accept(ModItems.PRISMIUM_ORE_ITEM.get());
@@ -168,6 +169,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_AQUALUNG_CHARM.get()); // scheduled session, 2026-10-14, 10th passive charm
                         output.accept(ModItems.PRISMIUM_LEAP_CHARM.get()); // scheduled session, 2026-10-15, 11th passive charm
                         output.accept(ModItems.PRISMIUM_SATIATION_CHARM.get()); // scheduled session, 2026-10-16, 12th passive charm
+                        output.accept(ModItems.PRISMIUM_COLOSSUS_SPAWN_EGG.get()); // scheduled session, 2026-10-17, 8th mob (first boss)
                         // scheduled session, issue #7 follow-up: pre-filled stack (not
                         // a blank book) so the creative tab entry itself already shows
                         // the real guide content - see PrismiumCompendiumFactory.

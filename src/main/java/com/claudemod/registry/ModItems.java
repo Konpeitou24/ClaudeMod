@@ -62,6 +62,16 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_SHARD = ITEMS.register("prismium_shard",
             () -> new Item(new Item.Properties()));
 
+    // Prismium Colossus Core (scheduled session, 2026-10-17): a guaranteed
+    // drop from the mod's first boss-tier mob (see PrismiumColossusEntity).
+    // Plain Item, same minimal pattern as PRISMIUM_SHARD above - no new
+    // behaviour this session, just a themed crafting material reserved
+    // for a future boss-tier recipe (equipment, charm, or dungeon-related
+    // crafting) to be decided in a later session once this boss itself
+    // has had time to be reviewed.
+    public static final RegistryObject<Item> PRISMIUM_COLOSSUS_CORE = ITEMS.register("prismium_colossus_core",
+            () -> new Item(new Item.Properties()));
+
     // Prismium Ingot (session 68): the mod's first refined-material
     // item, produced by Prismium Smelter from Prismium Shards - see
     // PrismiumSmelterBlockEntity. Plain Item like PRISMIUM_SHARD; no
@@ -501,6 +511,15 @@ public class ModItems {
     // light" one, matching the reskin in gen_prismium_familiar.py.
     public static final RegistryObject<Item> PRISMIUM_FAMILIAR_SPAWN_EGG = ITEMS.register("prismium_familiar_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_FAMILIAR, 0xf7c6e0, 0x6a3b7a, new Item.Properties()));
+
+    // Eighth mob spawn egg (see PrismiumColossusEntity's javadoc), this
+    // mod's first boss-tier monster. Colors deliberately darker/heavier
+    // than every prior egg (near-black base) with the same violet
+    // PRISMIUM_ACCENT family used on the entity's own texture
+    // (gen_prismium_colossus.py) as the spot color, so it reads as
+    // visibly more ominous than the other seven eggs in creative.
+    public static final RegistryObject<Item> PRISMIUM_COLOSSUS_SPAWN_EGG = ITEMS.register("prismium_colossus_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_COLOSSUS, 0x0d0514, 0xc34bf2, new Item.Properties()));
 
     public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));

@@ -74,6 +74,12 @@ public class ModEntityEvents {
         // requirement as every prior mob, a registered AttributeSupplier
         // is needed before this LivingEntity subtype can be constructed.
         event.put(ModEntities.PRISMIUM_FAMILIAR.get(), com.claudemod.entity.PrismiumFamiliarEntity.createAttributes().build());
+        // Eighth mob, this mod's first boss-tier monster (see
+        // PrismiumColossusEntity's javadoc) - same requirement as every
+        // prior mob, a registered AttributeSupplier is needed before this
+        // LivingEntity subtype can be constructed (including via its
+        // spawn egg, since it is deliberately not naturally spawned yet).
+        event.put(ModEntities.PRISMIUM_COLOSSUS.get(), com.claudemod.entity.PrismiumColossusEntity.createAttributes().build());
     }
 
     @SubscribeEvent

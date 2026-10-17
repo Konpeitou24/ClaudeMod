@@ -12,6 +12,7 @@ import com.claudemod.client.screen.PrismiumSmelterScreen;
 import com.claudemod.client.screen.PrismiumPylonScreen;
 import com.claudemod.client.screen.PrismiumRestorerScreen;
 import com.claudemod.client.screen.PrismiumWardstoneScreen;
+import com.claudemod.entity.client.PrismiumColossusRenderer;
 import com.claudemod.entity.client.PrismiumCrawlerRenderer;
 import com.claudemod.entity.client.PrismiumDeepWraithRenderer;
 import com.claudemod.entity.client.PrismiumDrifterRenderer;
@@ -65,6 +66,9 @@ public class ClientModEvents {
         event.registerEntityRenderer(ModEntities.PRISMIUM_WISP.get(), PrismiumWispRenderer::new);
         // Seventh mob (see PrismiumFamiliarEntity's javadoc).
         event.registerEntityRenderer(ModEntities.PRISMIUM_FAMILIAR.get(), PrismiumFamiliarRenderer::new);
+        // Eighth mob, this mod's first boss-tier monster (see
+        // PrismiumColossusEntity's javadoc).
+        event.registerEntityRenderer(ModEntities.PRISMIUM_COLOSSUS.get(), PrismiumColossusRenderer::new);
     }
 
     @SubscribeEvent
