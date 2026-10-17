@@ -1,6 +1,7 @@
 package com.claudemod.registry;
 
 import com.claudemod.ClaudeMod;
+import com.claudemod.worldgen.feature.PrismiumDungeonFeature;
 import com.claudemod.worldgen.feature.PrismiumLandFeature;
 import com.claudemod.worldgen.feature.PrismiumSeafloorFeature;
 import com.claudemod.worldgen.feature.PrismiumSoilFeature;
@@ -49,6 +50,14 @@ public class ModFeatures {
 
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_LAND = FEATURES.register(
             "prismium_land", () -> new PrismiumLandFeature(NoneFeatureConfiguration.CODEC));
+
+    // Fifth entry: PRISMIUM_DUNGEON (PROGRESS.md TODO9, direct request
+    // 2026-10-17 "次はダンジョンを陸地に稀に作ってボスを出すとこまで") -
+    // a rare procedurally-built room on Prism Realm land with a
+    // PrismiumColossusEntity (the mod's first boss) waiting inside - see
+    // PrismiumDungeonFeature for the full design writeup.
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_DUNGEON = FEATURES.register(
+            "prismium_dungeon", () -> new PrismiumDungeonFeature(NoneFeatureConfiguration.CODEC));
 
     public static void register(IEventBus eventBus) {
         FEATURES.register(eventBus);
