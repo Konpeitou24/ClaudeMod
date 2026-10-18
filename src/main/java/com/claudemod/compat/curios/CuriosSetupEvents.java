@@ -65,6 +65,11 @@ public class CuriosSetupEvents {
             // scheduled session, 2026-10-16: twelfth passive charm, registered
             // here from the start (same precaution as Aqualung/Leap Charm above).
             CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_SATIATION_CHARM.get());
+            // scheduled session, 2026-10-18: thirteenth passive charm, registered
+            // here from the start (same precaution as Aqualung/Leap/Satiation
+            // Charm above - see the note above about Antivenom/Haste shipping
+            // without this and needing a later fix).
+            CuriosCompat.enableRightClickEquip(ModItems.PRISMIUM_COLOSSUS_SIGIL_CHARM.get());
         });
     }
 }

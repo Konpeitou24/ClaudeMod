@@ -1,0 +1,18 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "misc",
+    "key": {
+        "S": { "item": "claudemod:prismium_shard" },
+        "D": { "item": "minecraft:diamond" },
+        "C": { "item": "claudemod:prismium_colossus_core" }
+    },
+    "pattern": [
+        "SDS",
+        "DCD",
+        "SDS"
+    ],
+    "result": {
+        "item": "claudemod:prismium_colossus_sigil_charm",
+        "count": 1
+    }
+}

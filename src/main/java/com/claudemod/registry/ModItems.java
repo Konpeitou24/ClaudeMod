@@ -32,6 +32,7 @@ import com.claudemod.item.PrismiumPulseCharmItem;
 import com.claudemod.item.PrismiumRiftAnchorItem;
 import com.claudemod.item.PrismiumRiftShardItem;
 import com.claudemod.item.PrismiumSatiationCharmItem;
+import com.claudemod.item.PrismiumColossusSigilCharmItem;
 import com.claudemod.item.PrismiumShieldItem;
 import com.claudemod.item.PrismiumVitastoneItem;
 import net.minecraft.world.item.ArmorItem;
@@ -882,6 +883,19 @@ public class ModItems {
     // Charm/Leap Charm.
     public static final RegistryObject<Item> PRISMIUM_SATIATION_CHARM = ITEMS.register("prismium_satiation_charm",
             () -> new PrismiumSatiationCharmItem(new Item.Properties()));
+
+    // Prismium Colossus Sigil Charm (scheduled session, 2026-10-18): the
+    // mod's thirteenth purely passive accessory - see
+    // PrismiumColossusSigilCharmItem / PrismiumColossusSigilCharmHandler.
+    // First charm in this family whose effect is combat offense
+    // (permanent Strength I) rather than mitigation/detection/utility,
+    // and the first gated behind a boss-drop ingredient (one Prismium
+    // Colossus Core) rather than purely overworld-obtainable materials -
+    // gives PRISMIUM_COLOSSUS_CORE its first crafting use (HANDOFF.md
+    // 2026-10-17 option (x)). Same "stacks normally, presence-only"
+    // treatment as the rest of the family.
+    public static final RegistryObject<Item> PRISMIUM_COLOSSUS_SIGIL_CHARM = ITEMS.register("prismium_colossus_sigil_charm",
+            () -> new PrismiumColossusSigilCharmItem(new Item.Properties()));
 
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
