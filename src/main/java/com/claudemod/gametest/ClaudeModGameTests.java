@@ -16,6 +16,7 @@ import com.claudemod.menu.PrismiumGeneratorMenu;
 import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModItems;
+import com.claudemod.worldgen.feature.PrismiumDungeonFeature;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -941,6 +942,113 @@ public class ClaudeModGameTests {
                 "The familiar's carried Prismium Shard was not found as a dropped ItemEntity after death -"
                         + " dropCustomDeathLoot's item-drop appears broken (or the carried item was lost, the"
                         + " exact v0.60.0 regression this override exists to fix)");
+
+        helper.succeed();
+    }
+
+    /**
+     * Pure-math regression test for {@link PrismiumDungeonFeature#isDesignatedChunk}
+     * (PROGRESS.md TODO9 "ダンジョン生成の重複抑制" follow-up added after
+     * v0.79.0, see that method's own javadoc for the full design). This
+     * deliberately touches no block, entity, or world state at all -
+     * {@code GameTestServer}'s world is a fixed, hand-built template, not
+     * real procedural chunk generation, so there is no way to actually
+     * "generate many chunks and see if dungeons cluster" inside a GameTest.
+     * What CAN be verified here, with zero world interaction, is that the
+     * grid math itself behaves as designed. This is run inside a
+     * {@code @GameTest} (rather than, say, a plain JUnit test, which this
+     * mod has no test runner wired up for) purely so it executes automatically
+     * in CI's existing {@code runGameTestServer} step alongside every other
+     * test in this class - it does not need the GameTestHelper for anything
+     * but reporting pass/fail.
+     *
+     * <p>Checks, over every chunk in a 17x17-cell sample (cells -8..8 on
+     * each axis, centered on the origin to also exercise negative chunk
+     * coordinates): (a) {@code isDesignatedChunk} is deterministic (same
+     * answer on repeated calls with the same arguments), (b) each cell has
+     * <em>exactly</em> one designated chunk (not zero, not more than one),
+     * (c) that chunk is never inside the edge margin, and (d) no two
+     * different cells - including checking every cell against each of its 8
+     * neighbors directly, not just trusting the margin math - ever designate
+     * chunks closer together than the design's guaranteed minimum spacing.
+     */
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void prismiumDungeonPlacementGridIsDeterministicAndSpaced(GameTestHelper helper) {
+        final int cellSizeChunks = 16;
+        final int marginChunks = 4;
+        final int minGuaranteedGapChunks = 2 * marginChunks + 1;
+        final int cellRadius = 8;
+
+        java.util.Map<Long, int[]> designatedChunkByCell = new java.util.HashMap<>();
+        java.util.Set<Long> allDesignatedChunks = new java.util.HashSet<>();
+
+        for (int cellX = -cellRadius; cellX <= cellRadius; cellX++) {
+            for (int cellZ = -cellRadius; cellZ <= cellRadius; cellZ++) {
+                int[] designatedOffset = null;
+                for (int dx = 0; dx < cellSizeChunks; dx++) {
+                    for (int dz = 0; dz < cellSizeChunks; dz++) {
+                        int chunkX = cellX * cellSizeChunks + dx;
+                        int chunkZ = cellZ * cellSizeChunks + dz;
+                        boolean first = PrismiumDungeonFeature.isDesignatedChunk(chunkX, chunkZ);
+                        boolean second = PrismiumDungeonFeature.isDesignatedChunk(chunkX, chunkZ);
+                        helper.assertTrue(first == second,
+                                "isDesignatedChunk(" + chunkX + ", " + chunkZ + ") gave a different answer on a"
+                                        + " second call with the same arguments - the grid must be deterministic");
+                        if (first) {
+                            helper.assertTrue(designatedOffset == null,
+                                    "Cell (" + cellX + ", " + cellZ + ") has more than one designated chunk");
+                            designatedOffset = new int[] {dx, dz};
+                        }
+                    }
+                }
+
+                helper.assertTrue(designatedOffset != null,
+                        "Cell (" + cellX + ", " + cellZ + ") has no designated chunk at all");
+                helper.assertTrue(
+                        designatedOffset[0] >= marginChunks && designatedOffset[0] < cellSizeChunks - marginChunks
+                                && designatedOffset[1] >= marginChunks
+                                && designatedOffset[1] < cellSizeChunks - marginChunks,
+                        "Cell (" + cellX + ", " + cellZ + ")'s designated offset (" + designatedOffset[0] + ", "
+                                + designatedOffset[1] + ") falls inside the " + marginChunks + "-chunk edge margin");
+
+                int designatedChunkX = cellX * cellSizeChunks + designatedOffset[0];
+                int designatedChunkZ = cellZ * cellSizeChunks + designatedOffset[1];
+                long chunkKey = (((long) designatedChunkX) << 32) ^ (designatedChunkZ & 0xFFFFFFFFL);
+                helper.assertTrue(allDesignatedChunks.add(chunkKey),
+                        "Two different cells designated the exact same chunk (" + designatedChunkX + ", "
+                                + designatedChunkZ + ")");
+
+                long cellKey = (((long) cellX) << 32) ^ (cellZ & 0xFFFFFFFFL);
+                designatedChunkByCell.put(cellKey, new int[] {designatedChunkX, designatedChunkZ});
+            }
+        }
+
+        for (int cellX = -cellRadius; cellX <= cellRadius; cellX++) {
+            for (int cellZ = -cellRadius; cellZ <= cellRadius; cellZ++) {
+                long cellKey = (((long) cellX) << 32) ^ (cellZ & 0xFFFFFFFFL);
+                int[] here = designatedChunkByCell.get(cellKey);
+                for (int ndx = -1; ndx <= 1; ndx++) {
+                    for (int ndz = -1; ndz <= 1; ndz++) {
+                        if (ndx == 0 && ndz == 0) {
+                            continue;
+                        }
+                        int neighborCellX = cellX + ndx;
+                        int neighborCellZ = cellZ + ndz;
+                        if (Math.abs(neighborCellX) > cellRadius || Math.abs(neighborCellZ) > cellRadius) {
+                            continue;
+                        }
+                        long neighborKey = (((long) neighborCellX) << 32) ^ (neighborCellZ & 0xFFFFFFFFL);
+                        int[] neighbor = designatedChunkByCell.get(neighborKey);
+                        int gap = Math.max(Math.abs(here[0] - neighbor[0]), Math.abs(here[1] - neighbor[1]));
+                        helper.assertTrue(gap >= minGuaranteedGapChunks,
+                                "Cell (" + cellX + ", " + cellZ + ")'s designated chunk and neighboring cell ("
+                                        + neighborCellX + ", " + neighborCellZ + ")'s designated chunk are only "
+                                        + gap + " chunks apart (want >= " + minGuaranteedGapChunks + "), closer than"
+                                        + " this room's 9x9 footprint can safely tolerate");
+                    }
+                }
+            }
+        }
 
         helper.succeed();
     }

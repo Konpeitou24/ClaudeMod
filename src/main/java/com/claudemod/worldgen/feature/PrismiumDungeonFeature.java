@@ -40,20 +40,61 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  *
  * <p><b>Placement</b>: registered via
  * data/claudemod/worldgen/placed_feature/prismium_dungeon_placed.json
- * with a {@code minecraft:rarity_filter} (1-in-250 chunks) +
- * {@code minecraft:in_square} (random position within the chosen chunk)
- * + {@code minecraft:biome} placement modifier chain - the same pattern
- * {@code prismium_ore_placed.json} already uses successfully, just
- * swapping the ore feature's {@code count} decorator for
- * {@code rarity_filter} (this needs "rare, at most one per very many
- * chunks", not "several per chunk"). Wired to the
- * {@code claudemod:prism_realm} biome only (same as the land/Wisp/
- * Familiar biome modifiers) at step {@code vegetal_decoration} - the
- * same step {@code add_prismium_soil.json} already uses successfully,
- * and late enough that {@link PrismiumLandFeature} (step
- * {@code raw_generation}, much earlier) has already finished raising
- * this chunk's land before this feature runs, so the heightmap queries
- * below see the land's final shape.
+ * with a {@code minecraft:in_square} (random position within the
+ * current chunk) + {@code minecraft:biome} placement modifier chain -
+ * the same pattern {@code prismium_ore_placed.json} already uses
+ * successfully, minus the {@code count}/{@code rarity_filter} decorator
+ * those placements use, because this feature now does its own
+ * frequency/spacing decision in {@link #place} (see {@link
+ * #isDesignatedChunk} below) rather than delegating it to a modifier -
+ * {@code place} is therefore invoked once for every chunk of the
+ * {@code claudemod:prism_realm} biome (cheaply rejecting all but the one
+ * designated chunk per grid cell before doing anything else, see below),
+ * not just a random 1-in-250 of them as the original v0.78.0 version
+ * did. Wired to the {@code claudemod:prism_realm} biome only (same as
+ * the land/Wisp/Familiar biome modifiers) at step {@code
+ * vegetal_decoration} - the same step {@code add_prismium_soil.json}
+ * already uses successfully, and late enough that {@link
+ * PrismiumLandFeature} (step {@code raw_generation}, much earlier) has
+ * already finished raising this chunk's land before this feature runs,
+ * so the heightmap queries below see the land's final shape.
+ *
+ * <p><b>Minimum separation between dungeons (added after v0.79.0, see
+ * PROGRESS.md TODO9 "ダンジョン生成の重複抑制")</b>: the original
+ * v0.78.0 version placed a dungeon in roughly 1-in-250 chunks completely
+ * independently of every other chunk, so two dungeons could in principle
+ * (if rarely) have rolled the same chance in neighboring or even
+ * touching chunks, overlapping or crowding each other. {@link
+ * #isDesignatedChunk} fixes this by replacing that per-chunk coin flip
+ * with a deterministic spatial grid: the world's chunk grid is divided
+ * into {@value #CELL_SIZE_CHUNKS}x{@value #CELL_SIZE_CHUNKS}-chunk
+ * cells, and exactly one chunk inside each cell - chosen by hashing the
+ * cell's own coordinates, never anything seed- or time-dependent, so the
+ * same cell always designates the same chunk - is ever eligible to
+ * attempt a dungeon at all; every other chunk's call to {@link #place}
+ * returns {@code false} immediately, before the land/flatness checks
+ * even run. Because exactly one candidate chunk exists per cell, two
+ * dungeons can never end up in the same cell, and because the candidate
+ * is additionally kept at least {@value #CELL_MARGIN_CHUNKS} chunks away
+ * from every edge of its cell (see {@link #isDesignatedChunk}'s
+ * javadoc), the worst case between two dungeons in *adjacent* cells is
+ * still {@code 2 * CELL_MARGIN_CHUNKS} chunks apart - comfortably clear
+ * of this room's 9x9 footprint. A {@value #CELL_SIZE_CHUNKS}-chunk cell
+ * was chosen to keep the overall frequency close to the original
+ * design's "about 1-in-250 chunks" ({@value #CELL_SIZE_CHUNKS}^2 = 256),
+ * rather than the land/flatness rejection rate further on top of that,
+ * same as before. This check deliberately never reads a single block
+ * (only does integer arithmetic on the chunk coordinates passed into
+ * {@link #place}), so unlike a block-scan-based "is there already a
+ * dungeon nearby" approach, it cannot touch a chunk outside the small
+ * footprint {@link #place} already writes to, and so cannot risk the
+ * kind of "WorldGenRegion asked to access an unloaded chunk" crash that
+ * reading distant terrain during decoration could cause (a failure mode
+ * that, like everything else in this class, this sandbox has no game
+ * client to rule out by testing - staying within the footprint {@link
+ * #cornersAreFlatLand} already proved safe sidesteps the question
+ * entirely rather than gambling on an unverified decoration-radius
+ * assumption).
  *
  * <p><b>Land/flatness check, done entirely inside {@link #place}</b>
  * (not by the placement-modifier chain, which has no "is this land"
@@ -94,12 +135,12 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * mod (see PROGRESS.md section 3), this compiles against the 1.20.1
  * Forge API as best as can be checked without a local build/game client,
  * but has not been run in an actual game client. In particular: the
- * actual in-game rarity/findability of a 1-in-250-chunk feature that
- * also requires landing on dry land, whether the room ever generates
- * partially embedded in a hill on a borderline-flat site, and whether
- * the boss spawns cleanly on the floor (rather than, say, inside a wall
- * if the flatness/footprint math has an off-by-one) are all unverified
- * and flagged in PROGRESS.md as needing real playtesting.
+ * actual in-game rarity/findability/spacing of this grid-based feature
+ * that also requires landing on dry land, whether the room ever
+ * generates partially embedded in a hill on a borderline-flat site, and
+ * whether the boss spawns cleanly on the floor (rather than, say, inside
+ * a wall if the flatness/footprint math has an off-by-one) are all
+ * unverified and flagged in PROGRESS.md as needing real playtesting.
  */
 public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
 
@@ -118,6 +159,20 @@ public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
     /** Chance (out of 10) that a given wall/floor/ceiling block uses the cracked variant instead. */
     private static final int CRACKED_CHANCE_OUT_OF_TEN = 2;
 
+    /** Side length, in chunks, of one placement grid cell - see {@link #isDesignatedChunk}. */
+    private static final int CELL_SIZE_CHUNKS = 16;
+
+    /**
+     * Chunks of margin kept clear on every edge of a cell, so that the
+     * designated chunk of one cell can never land right next to the
+     * designated chunk of a neighboring cell - see {@link
+     * #isDesignatedChunk}.
+     */
+    private static final int CELL_MARGIN_CHUNKS = 4;
+
+    /** Usable offset range once {@link #CELL_MARGIN_CHUNKS} is excluded from both edges of a cell. */
+    private static final int CELL_INNER_RANGE_CHUNKS = CELL_SIZE_CHUNKS - 2 * CELL_MARGIN_CHUNKS;
+
     public PrismiumDungeonFeature(Codec<NoneFeatureConfiguration> codec) {
         super(codec);
     }
@@ -129,6 +184,10 @@ public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
         BlockPos origin = context.origin();
         int cx = origin.getX();
         int cz = origin.getZ();
+
+        if (!isDesignatedChunk(cx >> 4, cz >> 4)) {
+            return false;
+        }
 
         int centerGroundY = surfaceY(level, cx, cz);
         if (centerGroundY < SEA_LEVEL_Y) {
@@ -177,6 +236,58 @@ public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
         spawnBoss(level, cx + 0.5D, floorY + 1, cz + 0.5D);
 
         return true;
+    }
+
+    /**
+     * True only for the single chunk, inside the {@value #CELL_SIZE_CHUNKS}x
+     * {@value #CELL_SIZE_CHUNKS}-chunk grid cell that {@code (chunkX, chunkZ)}
+     * falls into, that is eligible to even attempt a dungeon - see this
+     * class's "Minimum separation between dungeons" javadoc above for why.
+     *
+     * <p>Deliberately uses only plain {@code long}/{@code int} arithmetic on
+     * the chunk coordinates (no world seed, no {@code RandomSource}, no
+     * Minecraft-specific hashing class) so that (a) the same cell always
+     * designates the same chunk - a cell's designated chunk must be a fixed
+     * property of its coordinates alone, not of generation order or which
+     * chunk happens to ask first, or two neighboring chunks could each
+     * believe themselves the designated one - and (b) this needed no new,
+     * unfamiliar API to verify (this mod's standing rule, see PROGRESS.md
+     * section 1): {@link #mix} is the public-domain MurmurHash3 finalizer
+     * (pure bit math, not a library call), and {@code Math.floorDiv}/{@code
+     * Math.floorMod} are plain {@code java.lang.Math} methods that correctly
+     * handle negative chunk coordinates (unlike {@code /}/{@code %}, which
+     * round toward zero and would make the cell boundaries asymmetric across
+     * the origin).
+     *
+     * <p>Package-visibility would be the tighter choice, but this is {@code
+     * public} instead specifically so {@code
+     * com.claudemod.gametest.ClaudeModGameTests#prismiumDungeonPlacementGridIsDeterministicAndSpaced}
+     * (a different package) can call this exact production method directly
+     * - a pure function with no world/level dependency is cheap, safe CI
+     * coverage this mod otherwise has no way to get for worldgen logic (see
+     * that test's own javadoc for why).
+     */
+    public static boolean isDesignatedChunk(int chunkX, int chunkZ) {
+        int cellX = Math.floorDiv(chunkX, CELL_SIZE_CHUNKS);
+        int cellZ = Math.floorDiv(chunkZ, CELL_SIZE_CHUNKS);
+
+        long hash = mix(mix((long) cellX) ^ (mix((long) cellZ) * 0x9E3779B97F4A7C15L));
+        int offsetX = CELL_MARGIN_CHUNKS + (int) Math.floorMod(hash, (long) CELL_INNER_RANGE_CHUNKS);
+        int offsetZ = CELL_MARGIN_CHUNKS + (int) Math.floorMod(hash >>> 32, (long) CELL_INNER_RANGE_CHUNKS);
+
+        int designatedChunkX = cellX * CELL_SIZE_CHUNKS + offsetX;
+        int designatedChunkZ = cellZ * CELL_SIZE_CHUNKS + offsetZ;
+        return chunkX == designatedChunkX && chunkZ == designatedChunkZ;
+    }
+
+    /** MurmurHash3's 64-bit finalizer (public-domain bit-mixing math, not a library/API call). */
+    private static long mix(long x) {
+        x ^= x >>> 33;
+        x *= 0xff51afd7ed558ccdL;
+        x ^= x >>> 33;
+        x *= 0xc4ceb9fe1a85ec53L;
+        x ^= x >>> 33;
+        return x;
     }
 
     /** Topmost non-air block's Y, same technique {@link PrismiumSoilFeature} already uses. */
