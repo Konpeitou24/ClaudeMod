@@ -17,6 +17,7 @@ import com.claudemod.registry.ModBlocks;
 import com.claudemod.registry.ModEntities;
 import com.claudemod.registry.ModItems;
 import com.claudemod.worldgen.feature.PrismiumDungeonFeature;
+import com.claudemod.worldgen.feature.PrismiumVaultFeature;
 import net.minecraft.core.BlockPos;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -1045,6 +1046,101 @@ public class ClaudeModGameTests {
                                         + neighborCellX + ", " + neighborCellZ + ")'s designated chunk are only "
                                         + gap + " chunks apart (want >= " + minGuaranteedGapChunks + "), closer than"
                                         + " this room's 9x9 footprint can safely tolerate");
+                    }
+                }
+            }
+        }
+
+        helper.succeed();
+    }
+
+    /** Mirrors {@link PrismiumVaultFeature}'s own private cell-size constant, for the test below. */
+    private static final int VAULT_CELL_SIZE_CHUNKS = 10;
+
+    /**
+     * Pure-math regression test for {@link PrismiumVaultFeature#isDesignatedChunk}
+     * (PROGRESS.md TODO9 "宝物庫" follow-up added after v0.80.0, see that
+     * method's own javadoc for the full design). Same rationale and
+     * structure as {@link #prismiumDungeonPlacementGridIsDeterministicAndSpaced}
+     * just above - see that test's javadoc for why this is a {@code
+     * @GameTest} at all despite touching no block/entity/world state - just
+     * parameterized for {@link PrismiumVaultFeature}'s smaller {@value
+     * #VAULT_CELL_SIZE_CHUNKS}-chunk cell instead of the dungeon's 16-chunk
+     * one.
+     */
+    @GameTest(template = EMPTY_PLATFORM_TEMPLATE, templateNamespace = ClaudeMod.MOD_ID, timeoutTicks = 20)
+    public static void prismiumVaultPlacementGridIsDeterministicAndSpaced(GameTestHelper helper) {
+        final int cellSizeChunks = VAULT_CELL_SIZE_CHUNKS;
+        final int marginChunks = 2;
+        final int minGuaranteedGapChunks = 2 * marginChunks + 1;
+        final int cellRadius = 8;
+
+        java.util.Map<Long, int[]> designatedChunkByCell = new java.util.HashMap<>();
+        java.util.Set<Long> allDesignatedChunks = new java.util.HashSet<>();
+
+        for (int cellX = -cellRadius; cellX <= cellRadius; cellX++) {
+            for (int cellZ = -cellRadius; cellZ <= cellRadius; cellZ++) {
+                int[] designatedOffset = null;
+                for (int dx = 0; dx < cellSizeChunks; dx++) {
+                    for (int dz = 0; dz < cellSizeChunks; dz++) {
+                        int chunkX = cellX * cellSizeChunks + dx;
+                        int chunkZ = cellZ * cellSizeChunks + dz;
+                        boolean first = PrismiumVaultFeature.isDesignatedChunk(chunkX, chunkZ);
+                        boolean second = PrismiumVaultFeature.isDesignatedChunk(chunkX, chunkZ);
+                        helper.assertTrue(first == second,
+                                "isDesignatedChunk(" + chunkX + ", " + chunkZ + ") gave a different answer on a"
+                                        + " second call with the same arguments - the grid must be deterministic");
+                        if (first) {
+                            helper.assertTrue(designatedOffset == null,
+                                    "Cell (" + cellX + ", " + cellZ + ") has more than one designated chunk");
+                            designatedOffset = new int[] {dx, dz};
+                        }
+                    }
+                }
+
+                helper.assertTrue(designatedOffset != null,
+                        "Cell (" + cellX + ", " + cellZ + ") has no designated chunk at all");
+                helper.assertTrue(
+                        designatedOffset[0] >= marginChunks && designatedOffset[0] < cellSizeChunks - marginChunks
+                                && designatedOffset[1] >= marginChunks
+                                && designatedOffset[1] < cellSizeChunks - marginChunks,
+                        "Cell (" + cellX + ", " + cellZ + ")'s designated offset (" + designatedOffset[0] + ", "
+                                + designatedOffset[1] + ") falls inside the " + marginChunks + "-chunk edge margin");
+
+                int designatedChunkX = cellX * cellSizeChunks + designatedOffset[0];
+                int designatedChunkZ = cellZ * cellSizeChunks + designatedOffset[1];
+                long chunkKey = (((long) designatedChunkX) << 32) ^ (designatedChunkZ & 0xFFFFFFFFL);
+                helper.assertTrue(allDesignatedChunks.add(chunkKey),
+                        "Two different cells designated the exact same chunk (" + designatedChunkX + ", "
+                                + designatedChunkZ + ")");
+
+                long cellKey = (((long) cellX) << 32) ^ (cellZ & 0xFFFFFFFFL);
+                designatedChunkByCell.put(cellKey, new int[] {designatedChunkX, designatedChunkZ});
+            }
+        }
+
+        for (int cellX = -cellRadius; cellX <= cellRadius; cellX++) {
+            for (int cellZ = -cellRadius; cellZ <= cellRadius; cellZ++) {
+                long cellKey = (((long) cellX) << 32) ^ (cellZ & 0xFFFFFFFFL);
+                int[] here = designatedChunkByCell.get(cellKey);
+                for (int ndx = -1; ndx <= 1; ndx++) {
+                    for (int ndz = -1; ndz <= 1; ndz++) {
+                        if (ndx == 0 && ndz == 0) {
+                            continue;
+                        }
+                        int neighborCellX = cellX + ndx;
+                        int neighborCellZ = cellZ + ndz;
+                        if (Math.abs(neighborCellX) > cellRadius || Math.abs(neighborCellZ) > cellRadius) {
+                            continue;
+                        }
+                        long neighborKey = (((long) neighborCellX) << 32) ^ (neighborCellZ & 0xFFFFFFFFL);
+                        int[] neighbor = designatedChunkByCell.get(neighborKey);
+                        int gap = Math.max(Math.abs(here[0] - neighbor[0]), Math.abs(here[1] - neighbor[1]));
+                        helper.assertTrue(gap >= minGuaranteedGapChunks,
+                                "Cell (" + cellX + ", " + cellZ + ")'s designated chunk and neighboring cell ("
+                                        + neighborCellX + ", " + neighborCellZ + ")'s designated chunk are only "
+                                        + gap + " chunks apart (want >= " + minGuaranteedGapChunks + "), closer than"
+                                        + " this room's 5x5 footprint can safely tolerate");
                     }
                 }
             }

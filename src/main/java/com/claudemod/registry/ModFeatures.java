@@ -6,6 +6,7 @@ import com.claudemod.worldgen.feature.PrismiumLandFeature;
 import com.claudemod.worldgen.feature.PrismiumSeafloorFeature;
 import com.claudemod.worldgen.feature.PrismiumSoilFeature;
 import com.claudemod.worldgen.feature.PrismiumStoneTransitionFeature;
+import com.claudemod.worldgen.feature.PrismiumVaultFeature;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -58,6 +59,15 @@ public class ModFeatures {
     // PrismiumDungeonFeature for the full design writeup.
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_DUNGEON = FEATURES.register(
             "prismium_dungeon", () -> new PrismiumDungeonFeature(NoneFeatureConfiguration.CODEC));
+
+    // Sixth entry: PRISMIUM_VAULT (PROGRESS.md TODO9 follow-up, the
+    // "宝物庫だけで敵がいないもの" half of the two dungeon-type ideas
+    // HANDOFF.md carried over after PRISMIUM_DUNGEON) - a smaller, more
+    // common, enemy-free treasure room on Prism Realm land with a single
+    // loot-table chest - see PrismiumVaultFeature for the full design
+    // writeup.
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_VAULT = FEATURES.register(
+            "prismium_vault", () -> new PrismiumVaultFeature(NoneFeatureConfiguration.CODEC));
 
     public static void register(IEventBus eventBus) {
         FEATURES.register(eventBus);
