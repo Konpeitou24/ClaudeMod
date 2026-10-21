@@ -47,17 +47,33 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * those placements use, because this feature now does its own
  * frequency/spacing decision in {@link #place} (see {@link
  * #isDesignatedChunk} below) rather than delegating it to a modifier -
- * {@code place} is therefore invoked once for every chunk of the
- * {@code claudemod:prism_realm} biome (cheaply rejecting all but the one
+ * {@code place} is therefore invoked once for every chunk of every biome
+ * this feature is wired to (cheaply rejecting all but the one
  * designated chunk per grid cell before doing anything else, see below),
  * not just a random 1-in-250 of them as the original v0.78.0 version
- * did. Wired to the {@code claudemod:prism_realm} biome only (same as
- * the land/Wisp/Familiar biome modifiers) at step {@code
- * vegetal_decoration} - the same step {@code add_prismium_soil.json}
- * already uses successfully, and late enough that {@link
- * PrismiumLandFeature} (step {@code raw_generation}, much earlier) has
- * already finished raising this chunk's land before this feature runs,
- * so the heightmap queries below see the land's final shape.
+ * did. Wired to the {@code claudemod:prism_realm} biome (same as the
+ * land/Wisp/Familiar biome modifiers, {@code
+ * data/claudemod/forge/biome_modifier/add_prismium_dungeon.json}) at
+ * step {@code vegetal_decoration} - the same step {@code
+ * add_prismium_soil.json} already uses successfully, and late enough
+ * that {@link PrismiumLandFeature} (step {@code raw_generation}, much
+ * earlier) has already finished raising this chunk's land before this
+ * feature runs, so the heightmap queries below see the land's final
+ * shape. <b>Since v0.82.0</b>, also wired via a second biome modifier
+ * ({@code add_prismium_dungeon_mountains.json}) to the vanilla {@code
+ * #minecraft:is_mountain} biome tag (meadow/frozen_peaks/jagged_peaks/
+ * stony_peaks/snowy_slopes/cherry_grove in 1.20.1, confirmed against the
+ * actual vanilla tag file before use) - PROGRESS.md TODO9's final
+ * "山岳等の他バイオームへの横展開" piece. This class's land/flatness check
+ * never inspects block types (only {@code Heightmap.Types.WORLD_SURFACE_WG}
+ * Y values against the same sea-level constant vanilla itself uses), and
+ * nothing else in {@link #place} reads a Prism-Realm-specific block
+ * either, so the exact same compiled class is reused unmodified for the
+ * vanilla overworld biomes - the whole expansion is a two-file,
+ * zero-Java-change addition. Steep peaks (frozen_peaks/jagged_peaks)
+ * will mostly fail {@link #cornersAreFlatLand} and so rarely host a
+ * room in practice; the flatter sub-biomes (meadow/snowy_slopes/
+ * stony_peaks) are where it is expected to actually appear.
  *
  * <p><b>Minimum separation between dungeons (added after v0.79.0, see
  * PROGRESS.md TODO9 "ダンジョン生成の重複抑制")</b>: the original

@@ -76,6 +76,16 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * unverified API surface rather than assumed, matching how {@link
  * PrismiumDungeonFeature#spawnBoss} handled its own first-time API surface.
  *
+ * <p><b>Biomes</b>: wired to {@code claudemod:prism_realm} via {@code
+ * data/claudemod/forge/biome_modifier/add_prismium_vault.json}, and, <b>since
+ * v0.82.0</b>, also to the vanilla {@code #minecraft:is_mountain} biome tag
+ * via a second biome modifier ({@code add_prismium_vault_mountains.json}) -
+ * see {@link PrismiumDungeonFeature}'s javadoc for the shared rationale
+ * (this class is equally biome-agnostic: no Prism-Realm-specific block or
+ * biome check anywhere in {@link #place}, only heightmap Y comparisons, so
+ * the same compiled class works unmodified in vanilla overworld mountain
+ * biomes).
+ *
  * <p><b>Unverified</b>: like {@link PrismiumDungeonFeature} and every other
  * worldgen/entity change in this mod (see PROGRESS.md section 3), this
  * compiles against the 1.20.1 Forge API as best as can be checked without a
