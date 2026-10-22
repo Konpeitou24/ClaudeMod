@@ -18,6 +18,8 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
+import java.util.function.Supplier;
+
 /**
  * Worldgen feature: a small, enemy-free "treasure vault" on Prism Realm dry
  * land - the other half of the two dungeon ideas PROGRESS.md's TODO9
@@ -84,7 +86,14 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * (this class is equally biome-agnostic: no Prism-Realm-specific block or
  * biome check anywhere in {@link #place}, only heightmap Y comparisons, so
  * the same compiled class works unmodified in vanilla overworld mountain
- * biomes).
+ * biomes). <b>Since v0.83.0</b>, that mountain biome modifier points at a
+ * second registration of this same class - {@code
+ * com.claudemod.registry.ModFeatures#PRISMIUM_MOUNTAIN_VAULT} - built with
+ * a vanilla {@code Blocks.STONE_BRICKS}/{@code Blocks.MOSSY_STONE_BRICKS}
+ * palette (see {@link #wallStateSupplier}) instead of reusing the Prism
+ * Realm's {@code prismium_bricks} verbatim, exactly parallel to {@link
+ * PrismiumDungeonFeature}'s own mountain registration added the same
+ * version (PROGRESS.md TODO53's "各バイオームに固有の見た目" follow-up).
  *
  * <p><b>Unverified</b>: like {@link PrismiumDungeonFeature} and every other
  * worldgen/entity change in this mod (see PROGRESS.md section 3), this
@@ -142,8 +151,28 @@ public class PrismiumVaultFeature extends Feature<NoneFeatureConfiguration> {
     private static final ResourceLocation VAULT_LOOT_TABLE =
             new ResourceLocation(ClaudeMod.MOD_ID, "chests/prismium_vault");
 
+    /**
+     * Wall/floor/ceiling material and its weathered variant - see {@link
+     * PrismiumDungeonFeature#wallStateSupplier}'s javadoc for why these are
+     * lazy suppliers rather than plain fields, and why this class gained a
+     * second (material-parameterized) constructor in v0.83.0.
+     */
+    private final Supplier<BlockState> wallStateSupplier;
+    private final Supplier<BlockState> crackedWallStateSupplier;
+
+    /** Prism Realm-flavored constructor: the original v0.81.0 surface brick ruin look, unchanged. */
     public PrismiumVaultFeature(Codec<NoneFeatureConfiguration> codec) {
+        this(codec,
+                () -> ModBlocks.PRISMIUM_BRICKS.get().defaultBlockState(),
+                () -> ModBlocks.CRACKED_PRISMIUM_BRICKS.get().defaultBlockState());
+    }
+
+    /** Material-parameterized constructor - see {@link #wallStateSupplier}'s javadoc above. */
+    public PrismiumVaultFeature(Codec<NoneFeatureConfiguration> codec,
+            Supplier<BlockState> wallStateSupplier, Supplier<BlockState> crackedWallStateSupplier) {
         super(codec);
+        this.wallStateSupplier = wallStateSupplier;
+        this.crackedWallStateSupplier = crackedWallStateSupplier;
     }
 
     @Override
@@ -177,8 +206,8 @@ public class PrismiumVaultFeature extends Feature<NoneFeatureConfiguration> {
         int floorY = centerGroundY + 1;
         int ceilingY = floorY + INTERIOR_HEIGHT + 1;
 
-        BlockState bricks = ModBlocks.PRISMIUM_BRICKS.get().defaultBlockState();
-        BlockState crackedBricks = ModBlocks.CRACKED_PRISMIUM_BRICKS.get().defaultBlockState();
+        BlockState bricks = wallStateSupplier.get();
+        BlockState crackedBricks = crackedWallStateSupplier.get();
         BlockState air = Blocks.AIR.defaultBlockState();
 
         for (int dx = -ROOM_HALF_SIZE; dx <= ROOM_HALF_SIZE; dx++) {

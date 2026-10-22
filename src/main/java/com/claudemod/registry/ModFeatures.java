@@ -7,6 +7,7 @@ import com.claudemod.worldgen.feature.PrismiumSeafloorFeature;
 import com.claudemod.worldgen.feature.PrismiumSoilFeature;
 import com.claudemod.worldgen.feature.PrismiumStoneTransitionFeature;
 import com.claudemod.worldgen.feature.PrismiumVaultFeature;
+import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 import net.minecraftforge.eventbus.api.IEventBus;
@@ -68,6 +69,34 @@ public class ModFeatures {
     // writeup.
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_VAULT = FEATURES.register(
             "prismium_vault", () -> new PrismiumVaultFeature(NoneFeatureConfiguration.CODEC));
+
+    // Seventh/eighth entries: PRISMIUM_MOUNTAIN_DUNGEON/PRISMIUM_MOUNTAIN_VAULT
+    // (v0.83.0, PROGRESS.md TODO53 follow-up "各バイオームに固有の見た目") -
+    // second registrations of PrismiumDungeonFeature/PrismiumVaultFeature
+    // using their new material-parameterized constructors (see those
+    // classes' javadoc), so the overworld mountain biome_modifier can point
+    // at a distinct, weathered vanilla-stone-brick ruin look
+    // (mossy_stone_bricks/cracked_stone_bricks for the dungeon,
+    // stone_bricks/mossy_stone_bricks for the smaller vault, deliberately
+    // the reverse "which is the weathered one" pairing so the two room
+    // types keep reading as visually distinct from each other, mirroring
+    // how the Prism Realm originals use deepstone bricks (dark) for the
+    // dungeon and surface bricks (light) for the vault) instead of
+    // reusing the Prism Realm's prismium brick textures verbatim as
+    // v0.82.0 did. Every other field/method (placement grid, flatness
+    // check, light source, boss, loot table) is the exact same shared code
+    // as PRISMIUM_DUNGEON/PRISMIUM_VAULT - only the four Blocks.* constants
+    // below differ, and all four are long-standing vanilla fields, so this
+    // needed no new unverified API (PROGRESS.md section 1).
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_MOUNTAIN_DUNGEON = FEATURES.register(
+            "prismium_mountain_dungeon", () -> new PrismiumDungeonFeature(NoneFeatureConfiguration.CODEC,
+                    () -> Blocks.MOSSY_STONE_BRICKS.defaultBlockState(),
+                    () -> Blocks.CRACKED_STONE_BRICKS.defaultBlockState()));
+
+    public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_MOUNTAIN_VAULT = FEATURES.register(
+            "prismium_mountain_vault", () -> new PrismiumVaultFeature(NoneFeatureConfiguration.CODEC,
+                    () -> Blocks.STONE_BRICKS.defaultBlockState(),
+                    () -> Blocks.MOSSY_STONE_BRICKS.defaultBlockState()));
 
     public static void register(IEventBus eventBus) {
         FEATURES.register(eventBus);

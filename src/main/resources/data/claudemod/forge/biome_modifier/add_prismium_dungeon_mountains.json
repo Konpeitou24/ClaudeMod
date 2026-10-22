@@ -1,6 +1,6 @@
 {
     "type": "forge:add_features",
     "biomes": "#minecraft:is_mountain",
-    "features": "claudemod:prismium_dungeon_placed",
+    "features": "claudemod:prismium_mountain_dungeon_placed",
     "step": "vegetal_decoration"
 }

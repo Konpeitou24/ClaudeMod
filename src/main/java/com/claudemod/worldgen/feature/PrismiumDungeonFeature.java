@@ -14,6 +14,8 @@ import net.minecraft.world.level.levelgen.feature.Feature;
 import net.minecraft.world.level.levelgen.feature.FeaturePlaceContext;
 import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConfiguration;
 
+import java.util.function.Supplier;
+
 /**
  * Worldgen feature: a small, rare "ruin" room built on Prism Realm dry
  * land (see {@link PrismiumLandFeature}), with a {@link
@@ -68,12 +70,24 @@ import net.minecraft.world.level.levelgen.feature.configurations.NoneFeatureConf
  * never inspects block types (only {@code Heightmap.Types.WORLD_SURFACE_WG}
  * Y values against the same sea-level constant vanilla itself uses), and
  * nothing else in {@link #place} reads a Prism-Realm-specific block
- * either, so the exact same compiled class is reused unmodified for the
- * vanilla overworld biomes - the whole expansion is a two-file,
- * zero-Java-change addition. Steep peaks (frozen_peaks/jagged_peaks)
+ * either, so the exact same compiled class works unmodified in the
+ * vanilla overworld biomes too. Steep peaks (frozen_peaks/jagged_peaks)
  * will mostly fail {@link #cornersAreFlatLand} and so rarely host a
  * room in practice; the flatter sub-biomes (meadow/snowy_slopes/
  * stony_peaks) are where it is expected to actually appear.
+ *
+ * <p><b>Since v0.83.0</b>, the mountain biome modifier points at a
+ * <em>second</em> registration of this same class -
+ * {@code com.claudemod.registry.ModFeatures#PRISMIUM_MOUNTAIN_DUNGEON} -
+ * rather than reusing {@code PRISMIUM_DUNGEON} verbatim as v0.82.0 did, so
+ * the overworld version of this room is built out of weathered vanilla
+ * stone brick ({@code Blocks.MOSSY_STONE_BRICKS}/{@code
+ * Blocks.CRACKED_STONE_BRICKS}, see {@link #wallStateSupplier}) instead of
+ * the Prism Realm's crystalline {@code prismium_deepstone_bricks} - the
+ * "各バイオームに固有の見た目" half of TODO53's remaining follow-up
+ * (PROGRESS.md TODO9/TODO53). The boss itself is still the exact same
+ * {@link PrismiumColossusEntity} in both registrations - a biome-specific
+ * boss variant is deliberately left for a future session, see PROGRESS.md.
  *
  * <p><b>Minimum separation between dungeons (added after v0.79.0, see
  * PROGRESS.md TODO9 "ダンジョン生成の重複抑制")</b>: the original
@@ -189,8 +203,48 @@ public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
     /** Usable offset range once {@link #CELL_MARGIN_CHUNKS} is excluded from both edges of a cell. */
     private static final int CELL_INNER_RANGE_CHUNKS = CELL_SIZE_CHUNKS - 2 * CELL_MARGIN_CHUNKS;
 
+    /**
+     * Wall/floor/ceiling material and its weathered variant, as lazy {@code
+     * BlockState} suppliers rather than fields resolved at construction time
+     * (this class is instantiated by {@code ModFeatures} during {@code
+     * DeferredRegister} setup, before the vanilla/mod block registries are
+     * necessarily populated, so {@code .defaultBlockState()} must not be
+     * called until {@link #place} actually runs - the same reason the
+     * original version only ever called {@code ModBlocks.*.get()} inside
+     * {@code place} and never in its constructor).
+     *
+     * <p><b>Added in v0.83.0</b> so {@link com.claudemod.registry.ModFeatures}
+     * can register a second instance of this exact class - {@code
+     * PRISMIUM_MOUNTAIN_DUNGEON} - that builds the same room shape and the
+     * same boss encounter out of a different, vanilla-only material palette
+     * (see {@link com.claudemod.registry.ModFeatures} for the two palettes),
+     * giving the overworld mountain version of this dungeon ("the other
+     * half" of TODO53's "各バイオームに固有の見た目" follow-up) a distinct,
+     * weathered-stone-ruin look instead of reusing the Prism Realm's
+     * crystalline deepstone brick look verbatim. Every other field/method on
+     * this class (placement grid, flatness check, light source, boss) is
+     * unchanged and shared by both registrations.
+     */
+    private final Supplier<BlockState> wallStateSupplier;
+    private final Supplier<BlockState> crackedWallStateSupplier;
+
+    /** Prism Realm-flavored constructor: the original v0.78.0 deepstone brick ruin look, unchanged. */
     public PrismiumDungeonFeature(Codec<NoneFeatureConfiguration> codec) {
+        this(codec,
+                () -> ModBlocks.PRISMIUM_DEEPSTONE_BRICKS.get().defaultBlockState(),
+                () -> ModBlocks.CRACKED_PRISMIUM_DEEPSTONE_BRICKS.get().defaultBlockState());
+    }
+
+    /**
+     * Material-parameterized constructor - see {@link #wallStateSupplier}'s
+     * javadoc above for why this exists and why these are suppliers rather
+     * than plain {@code BlockState} arguments.
+     */
+    public PrismiumDungeonFeature(Codec<NoneFeatureConfiguration> codec,
+            Supplier<BlockState> wallStateSupplier, Supplier<BlockState> crackedWallStateSupplier) {
         super(codec);
+        this.wallStateSupplier = wallStateSupplier;
+        this.crackedWallStateSupplier = crackedWallStateSupplier;
     }
 
     @Override
@@ -216,8 +270,8 @@ public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
         int floorY = centerGroundY + 1;
         int ceilingY = floorY + INTERIOR_HEIGHT + 1;
 
-        BlockState bricks = ModBlocks.PRISMIUM_DEEPSTONE_BRICKS.get().defaultBlockState();
-        BlockState crackedBricks = ModBlocks.CRACKED_PRISMIUM_DEEPSTONE_BRICKS.get().defaultBlockState();
+        BlockState bricks = wallStateSupplier.get();
+        BlockState crackedBricks = crackedWallStateSupplier.get();
         BlockState air = Blocks.AIR.defaultBlockState();
 
         for (int dx = -ROOM_HALF_SIZE; dx <= ROOM_HALF_SIZE; dx++) {
