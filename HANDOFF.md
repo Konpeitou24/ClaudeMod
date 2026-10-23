@@ -1,39 +1,40 @@
 # HANDOFF.md (直前セッションからの申し送り、直近1回分のみ)
 
-## 今回やったこと(2026-10-22、定期実行セッション、v0.83.0リリース完了)
+## 今回やったこと(2026-10-23、定期実行セッション、v0.84.0リリース完了)
 
-作業開始時、前回セッション(v0.82.0、山岳バイオーム横展開)はタグ付け・リリースページ公開まで完了済みの状態で、未完了の引き継ぎ作業は無かった(`builds/last_datapack_validation_summary.txt`のcommitフィールドがdc0e413(前回最終コミット)と一致、status=okを確認)。Issue #15/#21も個別ページで再確認した(詳細は「注意点」参照)、Issues一覧(open絞り込み)で#23までを再確認、#24以降の新規番号も無し。
+作業開始時、前回セッション(v0.83.0、山岳版ダンジョン/秘宝庫の素材パレット対応)はタグ付け・リリースページ公開まで完了済みの状態で、未完了の引き継ぎ作業は無かった。Issue #15/#21を個別ページ(JSONを直接パースする新方式、詳細は後述)で再確認したが2026-09-04/2026-08-31以降の新規コメント無し。Issues一覧を`is:issue`(open絞り込みなし、全件)で再取得したところ#24/#25という見慣れない番号が見つかったが、個別ページで確認した結果どちらも2026-08-25/27に開かれ即日`github-actions`が自動対応・CLOSED(COMPLETED)済みの古いissueで、単に過去セッションがopen絞り込みでしか確認していなかったため見えていなかっただけと判明(新規の懸念ではない、詳細はPROGRESS.md「1. 約束や決まり事」のGitHub Issue対応の項参照)。#26以降の新規番号は無し。
 
-前回HANDOFF.mdが挙げていた持ち越し選択肢のうち(bb)「山岳バイオーム版ダンジョンに固有の見た目・ボスを与える仕上げ」のうち、**「見た目(建材)」の部分**に着手した。
+前回HANDOFF.mdが挙げていた持ち越し選択肢のうち(cc)「TODO53の最後の仕上げ」(Prismium Colossusの山岳バリアント)に着手した。
 
-1. **新規実装: 山岳版「プリズミウムの巨像の間」・「プリズミウムの秘宝庫」に専用の素材パレット(TODO53参照)**
-   - `PrismiumDungeonFeature`/`PrismiumVaultFeature`のコンストラクタを、壁/床/天井の素材を`Supplier<BlockState>`として受け取れるようにパラメータ化した(既定のコンストラクタは従来のPrism Realm向け素材にそのまま委譲するので、既存のPrism Realm側の見た目・挙動は不変)。
-   - `ModFeatures`に、この新しいコンストラクタを使った山岳バイオーム専用の第二の登録(`PRISMIUM_MOUNTAIN_DUNGEON`/`PRISMIUM_MOUNTAIN_VAULT`)を追加し、山岳側の`biome_modifier`(`add_prismium_dungeon_mountains.json`/`add_prismium_vault_mountains.json`)がこちらを参照するように向け直した(新規`configured_feature`/`placed_feature` JSONを各2つ追加)。
-   - 山岳版の建材はvanilla標準ブロックのみ(新規テクスチャー不要): ダンジョンは`mossy_stone_bricks`(主)+`cracked_stone_bricks`(風化)、秘宝庫は`stone_bricks`(主)+`mossy_stone_bricks`(風化)という、Prism Realm側(ダンジョン=暗い深層岩/秘宝庫=明るい通常れんが)と同様に「ダンジョンの方が年季が入って見える」組み合わせを、逆の濃淡で実現し、2種が見分けやすいようにした。光源(晶洞クラスタ)・ボス(Prismium Colossus)・配置グリッド・ルートテーブルは変更していない。
-   - 新規Javaクラス・`@Override`・新規テクスチャーは一切追加していない(既存クラスへのコンストラクタ追加と`ModFeatures`の第二登録のみ)。
+1. **新規実装: プリズミウムの巨像(山岳バリアント)、TODO53完了**
+   - `PrismiumColossusEntity`クラスをそのまま再利用した第二の`EntityType`登録(`ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS`)を追加。ステータス・AI・耐性等は本家Prismium Colossusと完全に同一(`ModEntityEvents`で同じ`createAttributes()`を再利用)で、見た目(テクスチャー)とスポーン先のみが異なる。
+   - 専用テクスチャー(`gen_prismium_mountain_colossus.py`、64x64 Steve系UV)は、本家の「近黒の腐食石+紫の結晶脈」から「風化花崗岩グレー+苔色結晶脈」に配色変更(v0.83.0の山岳建材 mossy/cracked stone bricks と馴染むように設計)。Python/Pillowでゼロから生成し、拡大プレビューをReadで目視確認済み(alpha値は{0,255}のみ)。
+   - `PrismiumColossusRenderer`はクラスを増やさず、`getTextureLocation`内で`entity.getType()`を見て2つのテクスチャーを分岐する実装にした(`Entity#getType()`の存在はmappings.devで確認済み)。
+   - `PrismiumDungeonFeature`のコンストラクタに、ボスの`EntityType`を`Supplier<EntityType<PrismiumColossusEntity>>`として注入できる第4引数を追加(壁材の`Supplier<BlockState>`と同じパラメータ化パターン、既存の3引数コンストラクタは`ModEntities.PRISMIUM_COLOSSUS`にデフォルト委譲するオーバーロードとして残した)。`ModFeatures.PRISMIUM_MOUNTAIN_DUNGEON`の登録から`ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS`を渡すようにし、山岳ダンジョンは山岳バリアントのボスを配置するようになった。Prism Realm側のダンジョン・既存のPrism Realm版Colossusの挙動・呼び出し元は一切変更していない。
+   - 専用スポーンエッグ(`prismium_mountain_colossus_spawn_egg`、風化花崗岩グレー×苔緑)・専用ルートテーブル(巨像の核x2-4、プリズミウムの欠片x3-6、生の鉄x1-3(50%、本家のエメラルドから変更して山岳らしさを演出))・lang(en/ja)も追加。
+   - 新規`@Override`・新規モデルクラスは一切追加していない(既存クラスの第二登録・コンストラクタのパラメータ化・既存メソッドのif分岐のみ)。
 2. **リリース手順(push/タグ/Release確認、2段階すべて実施)**:
-   - 実装push(commit `5f8c238`)→CI成功確認(`status=ok commit=5f8c238...`、run=39698062770)。
-   - バージョンbump(0.82.0→0.83.0)・リリースノート追加push(commit `ffb0aea`)→CI成功確認(`status=ok commit=ffb0aea...`、run=39698568119)。
-   - タグ`v0.83.0`はバージョンbumpコミット`ffb0aea`のSHAを明示して打ち→push→`workflows/release.yml`ページでRelease #96が「completed successfully」(2m57s)であることを確認→`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.83.0`でLatestバッジ・Assets 3・本文見出し一致を確認。
-3. **PROGRESS.md更新**: 最終更新サマリ、2節(TODO53を更新)、3節(v0.83.0の未検証事項を新規追加)、4節(2026-10-22の追記)、5節(Prism Realmロードマップに素材パレット対応を追記)を更新した。
+   - 実装push(commit `f35e5ab`)→CI成功確認(`status=ok commit=f35e5ab...`、run=39876629998、3m16s)。
+   - バージョンbump(0.83.0→0.84.0)・リリースノート追加push(commit `9bc2ff0`)→CI成功確認(`status=ok commit=9bc2ff0...`、run=39877102978、4m9s)。
+   - タグ`v0.84.0`はバージョンbumpコミット`9bc2ff0`のSHAを明示して打ち→push→`workflows/release.yml`ページでRelease #97が「completed successfully」(2m34s)であることを確認→`https://github.com/Konpeitou24/ClaudeMod/releases/tag/v0.84.0`でLatestバッジ・Assets 3・本文見出し一致をWebFetchで確認。
+3. **PROGRESS.md更新**: 最終更新サマリ、2節(TODO53を完了扱いに更新)、3節(v0.84.0の未検証事項を新規追加)、4節(2026-10-23の技術的発見2件を追記、詳細は下記)、5節(Prism Realmロードマップ・新MOB項目にv0.84.0対応を追記)を更新した。
 
 ## 次回最優先でやるべきこと
 
 - **恒例の確認**: 作業開始時、PROGRESS.md/HANDOFF.mdの記述と実際の`git log`を必ず突き合わせること。
-- 実機確認待ちの項目(TODO1〜53)はこんぺいとう氏本人からの新しいフィードバックが無い限り進展しない。次回セッションでもIssue #15・#21の個別ページを確認すること。
-- **TODO53が未完了のまま持ち越し**: 「各バイオームに固有のボス」(Prismium Colossus自体の山岳バリアント)が残っている。これは新規`EntityType`登録・新規`EntityRenderer`(テクスチャー差分)を伴いやすく、Entity本体のJavaクラス自体は`PrismiumColossusEntity`を共有できるはずだが、「新規モブ」に近い判断力・テクスチャー作成が必要になる。着手するなら(cc)参照。
-- 次に着手しやすい他の選択肢(持ち越し):
+- 実機確認待ちの項目(TODO1〜53)はこんぺいとう氏本人からの新しいフィードバックが無い限り進展しない。次回セッションでもIssue #15・#21の個別ページを確認すること(今回確立した新方式を使うこと、下記参照)。
+- **TODO53はこれで完了扱いとした**が、ダンジョン本体(TODO9/TODO49)自体が実機未検証のままである点は変わらない。次回セッションが「TODO9/TODO49も完了」と即断せず、こんぺいとう氏本人からの実機フィードバックを待つ姿勢を維持すること。
+- 次に着手しやすい他の選択肢(持ち越し、TODO53が片付いたので優先度を再検討してよい):
   - (b) 蒼白以外の第三のパレット系統の新設(かなり大きな判断、慎重に)。
   - (c) TODO16(PRISMIUM_ALLOY_BLOCK等のneeds_iron_tool非対称性、こんぺいとう氏の意図確認待ち)。
   - (m) 新しい装備カテゴリの検討(例: トライデント、クロスボウ)。トライデントは投擲エンティティへの新規`@Override`が必要になりやすく、慎重な出典確認が必要。
-  - (w) Prismium Colossusの第二形態・特殊攻撃の拡充(現状は激昂バフのみ)。
-  - (cc) **【TODO53の最後の仕上げ】** Prismium Colossusの山岳バリアント。新規`EntityType`(例: `PRISMIUM_MOUNTAIN_COLOSSUS`、同じ`PrismiumColossusEntity`クラスを使い回せるか、見た目差分だけなら新規Rendererのテクスチャー切り替えで足りるか要検討)・新規テクスチャー(石材モチーフの配色)が必要。着手前に、同じEntityクラスを複数のEntityTypeで共有する際の`EntityType.Builder`の要求事項(サイズ・カテゴリ等の再指定が必要か)をmappings.dev等で確認すること。
+  - (w) Prismium Colossusの第二形態・特殊攻撃の拡充(現状は激昂バフのみ、山岳バリアントにも同じ変更が自動的に及ぶ)。
+  - (dd) 新しい方向性の模索: TODO9の横展開が一区切りついたので、新しいコンテンツの柱(新ディメンションの別エリア、新しい装飾ブロック系統、新しいエネルギー系ブロック等)を検討してもよい時期。
 
 ## 注意点
 
 - Issue #15の電力分配バグ(TODO6)・Issue #21(JEI、TODO12)は前回までの時点で未解決のまま。次回セッションでの再確認が必要。
-- **今回新たに気付いた点**: Issue #15の個別ページをWebFetchで要約させたところ、今回は3件のコメントしか返ってこず、過去のセッション(2026-09-09)が確認した「2026-09-04付けの4件目のコメント(UIの機能を確認しました)」が見えなかった。これはコメントが本当に消えた/編集されたのではなく、Issues一覧ページの既知の誤表示(PROGRESS.md「1. 約束や決まり事」のGitHub Issue対応の項参照)と同種の、WebFetch経由でのGitHub動的ページ取得が時々不完全になる現象だと判断し、新規の懸念事項としては扱わなかった。次回セッションでは、この4件目のコメントが実際に(個別に明示的な問い合わせで)確認できるか、念のため再確認する価値がある。
-- v0.72.0のGitHub Releaseページ本文に、過去のRELEASE_NOTES.md編集ミス(v0.71.0見出し消失、mainでは修正済み)の影響が残っている可能性がある件は、このセッションのトークンでは手動修正できないため据え置いたまま。
-- **重要**: TODO9(ダンジョン+ボス)は本体(v0.77.0ボス・v0.78.0ダンジョン・v0.81.0秘宝庫・v0.82.0山岳横展開・v0.83.0山岳建材)が実機未検証のまま。今回の建材変更もダンジョン本体の生成・ボス配置ロジックには手を付けていないので、次回セッションが「TODO9/TODO53は完了」と即断せず、こんぺいとう氏本人からの実機フィードバックを待つ姿勢を維持すること。
-- `gh`CLI・`api.github.com`は今回もこのセッションのリポジトリ許可外(403)で使えなかった。ビルド確認は毎回`builds/last_datapack_validation_summary.txt`のcommitフィールド一致を主証拠にすること。
-- **今回確立したパターン**: worldgenのFeatureクラスが使う素材(BlockState)がコンストラクタ引数で注入できるよう設計されていれば、「同じクラスを複数の見た目で複数回登録する」という、ブロック(蒼白ファミリー等)で既に確立していたパターンをworldgen Featureにも適用できる。今後、別バイオーム・別ディメンション向けに同じ構造物を「見た目だけ変えて」展開したい場面があれば、まず対象のFeatureクラスのコンストラクタが素材を外部から注入できるか(できなければそのように改修できるか)を検討すること。
+- **今回確立した重要な新方式(次回以降も積極的に使うこと)**: `https_proxy="" HTTPS_PROXY="" http_proxy="" HTTP_PROXY="" curl -s -L "<URL>?nocache=$(date +%s%N)" -A "Mozilla/5.0" -o out.html`でGitHubのHTMLページを取得し(今回のセッションではこのプロキシ回避策で`github.com`への素のcurlアクセスが`HTTP 200`になった。素の状態での`curl`は`HTTP 400`だったので、2026-10-11セッションが報告した「プロキシに阻まれる」症状の有無は環境差異で変わりうる点に注意)、HTML内の`<script type="application/json" data-target="react-app.embeddedData">...</script>`をPythonの`re`+`json`でパースする方式が、Actionsワークフロー実行一覧ページ(`/actions/workflows/<name>.yml`)・個別Issueページ(`/issues/<番号>`)の両方で、`WebFetch`やaria-label文字列抽出より遥かに確実・高速に構造化データを取得できることを確認した。Actions側は`payload.workflowRunsRoute.workflowRuns[0]`に`runNumber`/`id`/`state.status`/`state.conclusion`/`timing.text`/`title`/`branch.name`、Issue側は`payload.issueViewerRoute.data.repository.issue`に`title`/`state`/`stateReason`/`body`、`backTimelineItems.edges`(末尾)に最新コメントが入っている。詳細・サンプルコードはPROGRESS.md「1. 約束や決まり事」の2026-10-23追記(ビルド・CI確認の項、GitHub Issue対応の項それぞれ)を参照。次回セッションはまずこの方式を試すこと。
+- `gh`CLI・`api.github.com`は今回もこのセッションのリポジトリ許可外(403)で使えなかった(変化無し)。
+- Release確認(Assets件数・本文)は引き続きWebFetchで具体的に問い合わせる方式が機能した(v0.84.0でAssets 3・本文見出し一致を確認)。
+- **今回確立したパターン**: Javaのクラスをそのまま再利用しつつ、`EntityType`登録・コンストラクタのパラメータ(`Supplier`)だけを増やして「ステータス・AI同一、見た目のみ別」のバリアントを作る手法は、v0.83.0でworldgenのFeatureクラス(壁材のBlockStateサプライヤ)に確立したパターンをEntity登録にもそのまま応用できることを今回確認した。今後、同じモブの別パレットバリアント(別ダンジョン種・別ディメンション向け等)を作りたい場面があれば、新しいEntityサブクラスを書く前に、まず「既存クラスの第二の`EntityType`登録+レンダラーのテクスチャー分岐」で足りないか検討すること。
