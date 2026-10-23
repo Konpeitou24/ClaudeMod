@@ -85,6 +85,15 @@ import org.jetbrains.annotations.Nullable;
  * takes a real fight, but is still soloable with decent gear" and are
  * flagged in PROGRESS.md as needing real playtesting before they are
  * trusted.
+ *
+ * <p><b>Since the scheduled 2026-10-23 session</b>, this exact class is
+ * also registered a second time as {@code
+ * com.claudemod.registry.ModEntities#PRISMIUM_MOUNTAIN_COLOSSUS} (closing
+ * out PROGRESS.md TODO53's "各バイオームに固有のボス" piece): identical
+ * stats/AI/loot, only a different {@code EntityType} id/spawn egg and a
+ * distinct weathered-stone/moss texture (see {@code
+ * PrismiumColossusRenderer}), spawned by {@code PrismiumDungeonFeature}'s
+ * mountain-biome registration instead of {@code PRISMIUM_COLOSSUS}.
  */
 public class PrismiumColossusEntity extends AbstractPrismiumMonster {
 

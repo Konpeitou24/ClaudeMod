@@ -522,6 +522,15 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_COLOSSUS_SPAWN_EGG = ITEMS.register("prismium_colossus_spawn_egg",
             () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_COLOSSUS, 0x0d0514, 0xc34bf2, new Item.Properties()));
 
+    // Mountain-biome palette variant of the same boss's spawn egg
+    // (scheduled session, 2026-10-23, TODO53 follow-up, see
+    // ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS). Weathered granite/moss
+    // colors (matching gen_prismium_mountain_colossus.py's palette)
+    // instead of the original's near-black/violet, so the two eggs are
+    // visually distinguishable from each other in creative.
+    public static final RegistryObject<Item> PRISMIUM_MOUNTAIN_COLOSSUS_SPAWN_EGG = ITEMS.register("prismium_mountain_colossus_spawn_egg",
+            () -> new ForgeSpawnEggItem(ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS, 0x6e6c5e, 0x6fa83f, new Item.Properties()));
+
     public static final RegistryObject<Item> PRISMIUM_BLOOM_ITEM = ITEMS.register("prismium_bloom",
             () -> new BlockItem(ModBlocks.PRISMIUM_BLOOM.get(), new Item.Properties()));
 

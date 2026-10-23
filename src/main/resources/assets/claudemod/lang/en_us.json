@@ -153,6 +153,8 @@
     "item.claudemod.prismium_familiar_spawn_egg": "Prismium Familiar Spawn Egg",
     "entity.claudemod.prismium_colossus": "Prismium Colossus",
     "item.claudemod.prismium_colossus_spawn_egg": "Prismium Colossus Spawn Egg",
+    "entity.claudemod.prismium_mountain_colossus": "Prismium Mountain Colossus",
+    "item.claudemod.prismium_mountain_colossus_spawn_egg": "Prismium Mountain Colossus Spawn Egg",
     "block.claudemod.prismium_stone": "Prismium Stone",
     "block.claudemod.prismium_deepstone": "Prismium Deepstone",
     "block.claudemod.prismium_stone_slab": "Prismium Stone Slab",

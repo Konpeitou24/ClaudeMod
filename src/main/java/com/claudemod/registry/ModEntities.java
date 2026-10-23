@@ -139,6 +139,26 @@ public class ModEntities {
                             .clientTrackingRange(10)
                             .build("prismium_colossus"));
 
+    // Second registration of the exact same PrismiumColossusEntity class
+    // (scheduled session, 2026-10-23), closing out TODO53's final
+    // remaining piece ("各バイオームに固有のボス") - mirrors the "same
+    // class, second EntityType/texture, no new @Override" pattern v0.83.0
+    // already proved out for PrismiumDungeonFeature/PrismiumVaultFeature
+    // (see ModFeatures javadoc). Same size/category/tracking range as
+    // PRISMIUM_COLOSSUS (purely a palette variant, not a stat variant -
+    // see PrismiumColossusEntity.createAttributes(), reused unchanged by
+    // both registrations via ModEntityEvents). Also deliberately not
+    // given a SpawnPlacementRegisterEvent entry, same reasoning as
+    // PRISMIUM_COLOSSUS: it only ever appears via PrismiumDungeonFeature's
+    // mountain registration (ModFeatures.PRISMIUM_MOUNTAIN_DUNGEON) or its
+    // own spawn egg, never ambient natural spawning.
+    public static final RegistryObject<EntityType<PrismiumColossusEntity>> PRISMIUM_MOUNTAIN_COLOSSUS =
+            ENTITY_TYPES.register("prismium_mountain_colossus",
+                    () -> EntityType.Builder.of(PrismiumColossusEntity::new, MobCategory.MONSTER)
+                            .sized(1.2F, 2.7F)
+                            .clientTrackingRange(10)
+                            .build("prismium_mountain_colossus"));
+
     public static void register(IEventBus eventBus) {
         ENTITY_TYPES.register(eventBus);
     }

@@ -6,6 +6,7 @@ import com.claudemod.entity.PrismiumColossusEntity;
 import com.mojang.serialization.Codec;
 import net.minecraft.core.BlockPos;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.level.WorldGenLevel;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
@@ -85,9 +86,20 @@ import java.util.function.Supplier;
  * Blocks.CRACKED_STONE_BRICKS}, see {@link #wallStateSupplier}) instead of
  * the Prism Realm's crystalline {@code prismium_deepstone_bricks} - the
  * "各バイオームに固有の見た目" half of TODO53's remaining follow-up
- * (PROGRESS.md TODO9/TODO53). The boss itself is still the exact same
- * {@link PrismiumColossusEntity} in both registrations - a biome-specific
- * boss variant is deliberately left for a future session, see PROGRESS.md.
+ * (PROGRESS.md TODO9/TODO53).
+ *
+ * <p><b>Since the scheduled 2026-10-23 session</b>, the mountain
+ * registration also spawns a distinct boss - {@code
+ * com.claudemod.registry.ModEntities#PRISMIUM_MOUNTAIN_COLOSSUS} - closing
+ * out TODO53's remaining "各バイオームに固有のボス" piece. This is still
+ * the exact same {@link PrismiumColossusEntity} Java class in both
+ * registrations (only a second {@code EntityType}/texture, see that
+ * class's registration in {@code ModEntities} and {@code
+ * PrismiumColossusRenderer}), selected via the new {@link
+ * #bossTypeSupplier} constructor parameter rather than a hard-coded
+ * {@code ModEntities.PRISMIUM_COLOSSUS} reference - the same
+ * "parameterize via a lazy Supplier" pattern already used for the wall
+ * material above.
  *
  * <p><b>Minimum separation between dungeons (added after v0.79.0, see
  * PROGRESS.md TODO9 "ダンジョン生成の重複抑制")</b>: the original
@@ -228,23 +240,63 @@ public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
     private final Supplier<BlockState> wallStateSupplier;
     private final Supplier<BlockState> crackedWallStateSupplier;
 
+    /**
+     * Which {@code EntityType} to spawn as this room's boss - same lazy
+     * {@code Supplier} reasoning as {@link #wallStateSupplier} (this class
+     * is instantiated by {@code ModFeatures} during {@code DeferredRegister}
+     * setup, before {@code ModEntities}'s own registry entries are
+     * necessarily resolved yet, so {@code .get()} must not be called until
+     * {@link #place}/{@link #spawnBoss} actually runs).
+     *
+     * <p><b>Added in the scheduled 2026-10-23 session</b> so {@code
+     * ModFeatures.PRISMIUM_MOUNTAIN_DUNGEON} can spawn {@code
+     * ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS} - a second {@code EntityType}
+     * that reuses this exact same {@link PrismiumColossusEntity} class with
+     * only a different texture (see that class's registration in {@code
+     * ModEntities} and {@code PrismiumColossusRenderer}) - instead of the
+     * original Prism Realm {@code PRISMIUM_COLOSSUS}, closing out TODO53's
+     * "各バイオームに固有のボス" remaining piece. Declared as the exact
+     * (non-wildcard) type {@code Supplier<EntityType<PrismiumColossusEntity>>}
+     * rather than a {@code ? extends} wildcard, since both registrations
+     * really are {@code EntityType<PrismiumColossusEntity>} (same Java
+     * class, not a subclass) - a {@code RegistryObject<EntityType<
+     * PrismiumColossusEntity>>} (which already implements {@code Supplier}
+     * of that exact type) can therefore be passed directly with no wildcard
+     * variance to work around.
+     */
+    private final Supplier<EntityType<PrismiumColossusEntity>> bossTypeSupplier;
+
     /** Prism Realm-flavored constructor: the original v0.78.0 deepstone brick ruin look, unchanged. */
     public PrismiumDungeonFeature(Codec<NoneFeatureConfiguration> codec) {
         this(codec,
                 () -> ModBlocks.PRISMIUM_DEEPSTONE_BRICKS.get().defaultBlockState(),
-                () -> ModBlocks.CRACKED_PRISMIUM_DEEPSTONE_BRICKS.get().defaultBlockState());
+                () -> ModBlocks.CRACKED_PRISMIUM_DEEPSTONE_BRICKS.get().defaultBlockState(),
+                ModEntities.PRISMIUM_COLOSSUS);
     }
 
     /**
      * Material-parameterized constructor - see {@link #wallStateSupplier}'s
      * javadoc above for why this exists and why these are suppliers rather
-     * than plain {@code BlockState} arguments.
+     * than plain {@code BlockState} arguments. Overload kept for the
+     * v0.83.0 call site that does not also customize the boss type (defaults
+     * to the original Prism Realm {@code PRISMIUM_COLOSSUS}).
      */
     public PrismiumDungeonFeature(Codec<NoneFeatureConfiguration> codec,
             Supplier<BlockState> wallStateSupplier, Supplier<BlockState> crackedWallStateSupplier) {
+        this(codec, wallStateSupplier, crackedWallStateSupplier, ModEntities.PRISMIUM_COLOSSUS);
+    }
+
+    /**
+     * Fully-parameterized constructor (material palette + boss type) - see
+     * {@link #bossTypeSupplier}'s javadoc for why this was added.
+     */
+    public PrismiumDungeonFeature(Codec<NoneFeatureConfiguration> codec,
+            Supplier<BlockState> wallStateSupplier, Supplier<BlockState> crackedWallStateSupplier,
+            Supplier<EntityType<PrismiumColossusEntity>> bossTypeSupplier) {
         super(codec);
         this.wallStateSupplier = wallStateSupplier;
         this.crackedWallStateSupplier = crackedWallStateSupplier;
+        this.bossTypeSupplier = bossTypeSupplier;
     }
 
     @Override
@@ -303,7 +355,7 @@ public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
         placeLight(level, cx - 2, floorY + 1, cz + 2);
         placeLight(level, cx + 2, floorY + 1, cz + 2);
 
-        spawnBoss(level, cx + 0.5D, floorY + 1, cz + 0.5D);
+        spawnBoss(level, bossTypeSupplier.get(), cx + 0.5D, floorY + 1, cz + 0.5D);
 
         return true;
     }
@@ -409,8 +461,17 @@ public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
      * confirmed via the same mirror) positions the entity before it is
      * added; yaw/pitch are both left at 0 since the boss is stationary
      * until it notices a player.
+     *
+     * <p><b>Since the scheduled 2026-10-23 session</b>, takes the boss's
+     * {@code EntityType} as a parameter (from {@link #bossTypeSupplier})
+     * rather than hard-coding {@code ModEntities.PRISMIUM_COLOSSUS.get()},
+     * so the mountain registration can spawn {@code
+     * PRISMIUM_MOUNTAIN_COLOSSUS} instead - everything else about this
+     * method (the verified {@code addFreshEntityWithPassengers}/{@code
+     * absMoveTo} calls, skipping {@code finalizeSpawn}) is unchanged.
      */
-    private static void spawnBoss(WorldGenLevel level, double x, double y, double z) {
+    private static void spawnBoss(WorldGenLevel level, EntityType<PrismiumColossusEntity> bossType,
+            double x, double y, double z) {
         // Deliberately does NOT call Mob#finalizeSpawn - that method's
         // exact signature/overload set was not independently verified
         // (unlike everything else in this method), and this mob has
@@ -420,8 +481,7 @@ public class PrismiumDungeonFeature extends Feature<NoneFeatureConfiguration> {
         // come from its registered AttributeSupplier (ModEntityEvents),
         // not from finalizeSpawn's local-difficulty scaling. Skipping an
         // unverified call entirely is safer than guessing its signature.
-        PrismiumColossusEntity colossus =
-                new PrismiumColossusEntity(ModEntities.PRISMIUM_COLOSSUS.get(), level.getLevel());
+        PrismiumColossusEntity colossus = new PrismiumColossusEntity(bossType, level.getLevel());
         colossus.absMoveTo(x, y, z, 0.0F, 0.0F);
         level.addFreshEntityWithPassengers(colossus);
     }

@@ -88,10 +88,19 @@ public class ModFeatures {
     // as PRISMIUM_DUNGEON/PRISMIUM_VAULT - only the four Blocks.* constants
     // below differ, and all four are long-standing vanilla fields, so this
     // needed no new unverified API (PROGRESS.md section 1).
+    //
+    // Since the scheduled 2026-10-23 session, PRISMIUM_MOUNTAIN_DUNGEON
+    // also passes ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS as the fourth
+    // (boss-type) constructor argument - TODO53's final remaining piece,
+    // "各バイオームに固有のボス" - so the mountain dungeon's boss now
+    // matches its room's weathered-stone look instead of still spawning
+    // the Prism Realm's violet-crystal PRISMIUM_COLOSSUS. PRISMIUM_VAULT's
+    // mountain registration is unaffected (vaults have never had a boss).
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_MOUNTAIN_DUNGEON = FEATURES.register(
             "prismium_mountain_dungeon", () -> new PrismiumDungeonFeature(NoneFeatureConfiguration.CODEC,
                     () -> Blocks.MOSSY_STONE_BRICKS.defaultBlockState(),
-                    () -> Blocks.CRACKED_STONE_BRICKS.defaultBlockState()));
+                    () -> Blocks.CRACKED_STONE_BRICKS.defaultBlockState(),
+                    ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS));
 
     public static final RegistryObject<Feature<NoneFeatureConfiguration>> PRISMIUM_MOUNTAIN_VAULT = FEATURES.register(
             "prismium_mountain_vault", () -> new PrismiumVaultFeature(NoneFeatureConfiguration.CODEC,

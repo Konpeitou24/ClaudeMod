@@ -80,6 +80,11 @@ public class ModEntityEvents {
         // LivingEntity subtype can be constructed (including via its
         // spawn egg, since it is deliberately not naturally spawned yet).
         event.put(ModEntities.PRISMIUM_COLOSSUS.get(), com.claudemod.entity.PrismiumColossusEntity.createAttributes().build());
+        // Mountain-biome palette variant of the same boss (scheduled
+        // session, 2026-10-23, TODO53 follow-up) - same entity class, so
+        // the exact same AttributeSupplier is reused unchanged (this is a
+        // visual/location variant only, not a stat variant).
+        event.put(ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS.get(), com.claudemod.entity.PrismiumColossusEntity.createAttributes().build());
     }
 
     @SubscribeEvent

@@ -2,6 +2,7 @@ package com.claudemod.entity.client;
 
 import com.claudemod.ClaudeMod;
 import com.claudemod.entity.PrismiumColossusEntity;
+import com.claudemod.registry.ModEntities;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.geom.ModelLayers;
 import net.minecraft.client.renderer.entity.EntityRendererProvider;
@@ -22,11 +23,27 @@ import net.minecraft.resources.ResourceLocation;
  * render - the humanoid body model itself stays the normal Steve-proportion
  * geometry (same accepted model/hitbox mismatch precedent as
  * {@link PrismiumWispRenderer}'s javadoc).
+ *
+ * <p><b>Since the scheduled 2026-10-23 session</b>, this single renderer is
+ * also registered (see {@code ClientModEvents}) for {@code
+ * ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS} - a second {@code EntityType} that
+ * reuses this exact same {@link PrismiumColossusEntity} class (TODO53's
+ * "各バイオームに固有のボス" follow-up). Rather than writing a second
+ * near-duplicate renderer class, {@link #getTextureLocation} simply checks
+ * which {@code EntityType} the entity instance actually is and picks one of
+ * two textures accordingly - both {@code EntityType.Builder}-built types
+ * share the same model/shadow radius, so nothing else about this renderer
+ * needs to differ. This mirrors the "parameterize rather than duplicate"
+ * approach {@code PrismiumDungeonFeature}/{@code PrismiumVaultFeature}
+ * already used for their material palettes in v0.83.0.
  */
 public class PrismiumColossusRenderer extends HumanoidMobRenderer<PrismiumColossusEntity, HumanoidModel<PrismiumColossusEntity>> {
 
     private static final ResourceLocation TEXTURE =
             new ResourceLocation(ClaudeMod.MOD_ID, "textures/entity/prismium_colossus.png");
+
+    private static final ResourceLocation MOUNTAIN_TEXTURE =
+            new ResourceLocation(ClaudeMod.MOD_ID, "textures/entity/prismium_mountain_colossus.png");
 
     public PrismiumColossusRenderer(EntityRendererProvider.Context context) {
         super(context, new HumanoidModel<>(context.bakeLayer(ModelLayers.ZOMBIE)), 0.7F);
@@ -34,6 +51,9 @@ public class PrismiumColossusRenderer extends HumanoidMobRenderer<PrismiumColoss
 
     @Override
     public ResourceLocation getTextureLocation(PrismiumColossusEntity entity) {
+        if (entity.getType() == ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS.get()) {
+            return MOUNTAIN_TEXTURE;
+        }
         return TEXTURE;
     }
 }

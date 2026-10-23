@@ -69,6 +69,12 @@ public class ClientModEvents {
         // Eighth mob, this mod's first boss-tier monster (see
         // PrismiumColossusEntity's javadoc).
         event.registerEntityRenderer(ModEntities.PRISMIUM_COLOSSUS.get(), PrismiumColossusRenderer::new);
+        // Mountain-biome palette variant of the same boss (scheduled
+        // session, 2026-10-23, TODO53 follow-up) - the exact same renderer
+        // class/factory, just registered a second time for the second
+        // EntityType; PrismiumColossusRenderer#getTextureLocation picks
+        // the right texture by checking which EntityType the entity is.
+        event.registerEntityRenderer(ModEntities.PRISMIUM_MOUNTAIN_COLOSSUS.get(), PrismiumColossusRenderer::new);
     }
 
     @SubscribeEvent
