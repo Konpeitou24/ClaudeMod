@@ -11,8 +11,13 @@ import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.ai.attributes.AttributeSupplier;
 import net.minecraft.world.entity.ai.attributes.Attributes;
 import net.minecraft.world.entity.monster.Monster;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
  * Prismium Colossus - ClaudeMod's eighth mob and this mod's first boss-tier
@@ -94,6 +99,68 @@ import org.jetbrains.annotations.Nullable;
  * distinct weathered-stone/moss texture (see {@code
  * PrismiumColossusRenderer}), spawned by {@code PrismiumDungeonFeature}'s
  * mountain-biome registration instead of {@code PRISMIUM_COLOSSUS}.
+ *
+ * <p><b>Since the scheduled 2026-10-24 session</b>, a third hand-rolled
+ * behaviour was added to {@link #aiStep()}: a "ground slam" shockwave that
+ * fires periodically (see {@link #SLAM_COOLDOWN_TICKS}) once {@link
+ * #enraged} is true, pushing every nearby {@link Player} back and
+ * applying a brief Slowness, giving the "second phase" (PROGRESS.md
+ * HANDOFF.md option (w), "Prismium Colossusの第二形態・特殊攻撃の拡充")
+ * something beyond the plain Strength/Speed self-buff it had since
+ * v0.77.0. Deliberately built from only API calls this codebase already
+ * has a compiling precedent for elsewhere, rather than anything newly
+ * assumed - the exact failure mode this mod's "未確認のJava API" rule
+ * (PROGRESS.md section 1) exists to prevent:
+ * <ul>
+ *   <li>{@code Level#getEntitiesOfClass(Class, AABB, Predicate)} - same
+ *   method already called with three different {@code Class} arguments
+ *   elsewhere in this codebase ({@code ItemEntity} in {@link
+ *   com.claudemod.event.PrismiumMagnetCharmHandler}, {@code
+ *   PrismiumFamiliarEntity} in {@link com.claudemod.event.PrismiumFamiliarAuraHandler},
+ *   {@code Mob} in {@link com.claudemod.item.PrismiumPulseCharmItem}); a
+ *   fourth {@code Class} argument ({@code Player}) is the same generic
+ *   method, not a new API surface.</li>
+ *   <li>{@code Entity#getBoundingBox()}/{@code #inflate(double)} and
+ *   {@code Entity#position()} - called on {@code this} here, but already
+ *   called on a {@code Player} receiver by {@link
+ *   com.claudemod.event.PrismiumMagnetCharmHandler}; both methods are
+ *   defined on the base {@code Entity} class (that handler's own javadoc
+ *   makes exactly this "no new surface, just a new receiver" argument
+ *   already), and {@code PrismiumColossusEntity} is an {@code Entity}
+ *   just like {@code Player} is.</li>
+ *   <li>{@code Entity#getDeltaMovement()}/{@code #setDeltaMovement(Vec3)}
+ *   plus flipping the public {@code hurtMarked} field - the exact
+ *   push-and-resync pattern {@link com.claudemod.event.PrismiumMagnetCharmHandler}
+ *   already uses, just pushing a {@code Player} away from a point instead
+ *   of pulling an {@code ItemEntity} toward one.</li>
+ *   <li>{@code LivingEntity#addEffect(MobEffectInstance)} called on a
+ *   {@code Player} target rather than {@code this} - already proven both
+ *   by {@link com.claudemod.event.PrismiumFamiliarAuraHandler} (applies
+ *   Regeneration to the nearby player) and by {@link
+ *   com.claudemod.item.PrismiumPulseCharmItem} (applies Glowing to every
+ *   nearby hostile {@code Mob} it finds) - this method already compiles
+ *   on both directions (self and other), so calling it on a scanned
+ *   {@code Player} here is not new.</li>
+ *   <li>{@code MobEffects.MOVEMENT_SLOWDOWN} (vanilla Slowness) - already
+ *   a compiling field reference elsewhere in this codebase (grepped this
+ *   session to confirm rather than assumed), just newly applied to a
+ *   target other than the item/charm that originally used it.</li>
+ *   <li>{@code ParticleTypes.SONIC_BOOM} - already used by {@link
+ *   com.claudemod.item.PrismiumPulseCharmItem} for its own detection
+ *   pulse; reused here purely for its "shockwave" visual read, with no
+ *   gameplay meaning borrowed from that item.</li>
+ * </ul>
+ * No new {@code @Override} and no new unverified method signature is
+ * introduced by this feature at all - every call above already compiles
+ * somewhere else in this exact repository. Deliberately restricted to
+ * {@link Player} targets only (not every {@code LivingEntity}) so the
+ * slam cannot shove around the boss's own future allies or unrelated
+ * passive mobs, mirroring {@code PrismiumPulseCharmItem}'s own choice to
+ * scope its scan rather than grabbing every entity indiscriminately.
+ * {@code slamCooldown} is a plain {@code int} field, not persisted across
+ * save/load - the same risk-tolerance precedent {@link #enraged} already
+ * documents above (a reloaded world just starts the cooldown over, purely
+ * a combat-feel detail, not game-breaking).
  */
 public class PrismiumColossusEntity extends AbstractPrismiumMonster {
 
@@ -107,7 +174,39 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
      * the rest of a realistic fight without needing to be refreshed. */
     private static final int ENRAGE_EFFECT_DURATION_TICKS = 6000;
 
+    /** Delay (ticks) between the enrage trigger and the first ground
+     * slam, so the roar/buff has a moment to read before the first hit. */
+    private static final int SLAM_INITIAL_DELAY_TICKS = 40;
+
+    /** Ticks between ground slams once enraged; a slam that finds no
+     * player in range does not consume this cooldown (see {@link
+     * #tickGroundSlam()}), so it only ever fires when it can actually hit
+     * someone. */
+    private static final int SLAM_COOLDOWN_TICKS = 100;
+
+    /** Radius (blocks) of the ground slam's push/slow effect, centered on
+     * the boss itself - same order of magnitude as every other radius
+     * query already in this codebase (6 blocks, see {@link
+     * com.claudemod.event.PrismiumMagnetCharmHandler}/{@link
+     * com.claudemod.event.PrismiumFamiliarAuraHandler}), just slightly
+     * smaller since this is a melee-range punish rather than a
+     * companion-proximity aura. */
+    private static final double SLAM_RADIUS = 5.0D;
+
+    private static final double SLAM_KNOCKBACK_HORIZONTAL = 0.9D;
+    private static final double SLAM_KNOCKBACK_VERTICAL = 0.45D;
+
+    /** Slowness II for a short burst, reading as "staggered by the
+     * shockwave" without being a full disable. */
+    private static final int SLAM_SLOW_DURATION_TICKS = 100;
+    private static final int SLAM_SLOW_AMPLIFIER = 1;
+
     private boolean enraged;
+
+    /** Ticks remaining until the next ground slam is available. Only
+     * meaningful once {@link #enraged} is true; not persisted across
+     * save/load, same as {@link #enraged} itself. */
+    private int slamCooldown;
 
     public PrismiumColossusEntity(EntityType<? extends PrismiumColossusEntity> entityType, Level level) {
         super(entityType, level);
@@ -148,6 +247,7 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
         if (!this.level().isClientSide && this.isAlive()) {
             tickAuraParticles();
             tickEnrage();
+            tickGroundSlam();
         }
         super.aiStep();
     }
@@ -188,6 +288,7 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
         }
         if (this.getHealth() / this.getMaxHealth() <= ENRAGE_HEALTH_FRACTION) {
             this.enraged = true;
+            this.slamCooldown = SLAM_INITIAL_DELAY_TICKS;
             this.addEffect(new MobEffectInstance(
                     MobEffects.DAMAGE_BOOST, ENRAGE_EFFECT_DURATION_TICKS, 0, false, true, true));
             this.addEffect(new MobEffectInstance(
@@ -200,6 +301,69 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
                 this.playSound(SoundEvents.WITHER_HURT, 1.0F, 0.6F);
             }
         }
+    }
+
+    /**
+     * The boss's "second phase" special attack (see class javadoc for the
+     * full API-precedent breakdown): once {@link #enraged}, periodically
+     * pushes every nearby {@link Player} away from the boss and staggers
+     * them with a brief Slowness. Only ever consumes {@link
+     * #slamCooldown} when it actually finds a player to hit, so a boss
+     * left alone (nobody nearby) does not "waste" slams while idle - the
+     * first slam after a player re-enters range always lands rather than
+     * being eaten by a cooldown that ticked down in an empty room.
+     */
+    private void tickGroundSlam() {
+        if (!this.enraged) {
+            return;
+        }
+        if (this.slamCooldown > 0) {
+            this.slamCooldown--;
+            return;
+        }
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        AABB area = this.getBoundingBox().inflate(SLAM_RADIUS);
+        List<Player> nearbyPlayers = serverLevel.getEntitiesOfClass(Player.class, area, Player::isAlive);
+        if (nearbyPlayers.isEmpty()) {
+            return;
+        }
+
+        this.slamCooldown = SLAM_COOLDOWN_TICKS;
+        for (Player player : nearbyPlayers) {
+            knockBackAndStagger(player);
+        }
+
+        if (!this.isSilent()) {
+            // Same WITHER_HURT reuse rationale as tickEnrage()'s roar -
+            // a different pitch/volume gives this a distinct "impact"
+            // read without introducing a fourth SoundEvents field.
+            this.playSound(SoundEvents.WITHER_HURT, 1.0F, 0.5F);
+        }
+        serverLevel.sendParticles(ParticleTypes.SONIC_BOOM,
+                this.getX(), this.getY() + 0.1D, this.getZ(), 1, 0.0D, 0.0D, 0.0D, 0.0D);
+    }
+
+    /**
+     * Pushes {@code player} directly away from the boss's current
+     * position (horizontal push plus a small upward lift) and applies a
+     * brief Slowness. See class javadoc for why every call here already
+     * has a compiling precedent elsewhere in this codebase.
+     */
+    private void knockBackAndStagger(Player player) {
+        Vec3 away = player.position().subtract(this.position());
+        Vec3 direction = (away.x * away.x + away.z * away.z < 1.0E-4D)
+                ? new Vec3(1.0D, 0.0D, 0.0D)
+                : new Vec3(away.x, 0.0D, away.z).normalize();
+
+        Vec3 push = direction.scale(SLAM_KNOCKBACK_HORIZONTAL).add(0.0D, SLAM_KNOCKBACK_VERTICAL, 0.0D);
+        player.setDeltaMovement(player.getDeltaMovement().add(push));
+        player.hurtMarked = true;
+
+        player.addEffect(new MobEffectInstance(
+                MobEffects.MOVEMENT_SLOWDOWN, SLAM_SLOW_DURATION_TICKS, SLAM_SLOW_AMPLIFIER, false, true, true));
     }
 
     @Nullable
