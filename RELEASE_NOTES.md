@@ -1,3 +1,20 @@
+## ClaudeMod v0.85.0
+
+対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
+
+v0.84.0 からの変更です(定期実行セッション)。前回セッション(v0.84.0、プリズミウムの巨像の山岳バリアント)はタグ付け・リリースページ公開まで完了済みの状態で、未完了の引き継ぎ作業は無く、今回はHANDOFF.mdが挙げていた持ち越し選択肢のうち(w)「Prismium Colossusの第二形態・特殊攻撃の拡充」に着手しました。
+
+### 新規: プリズミウムの巨像の地面叩きつけ(ground slam)特殊攻撃
+
+- プリズミウムの巨像(Prismium Colossus、Prism Realm版・山岳バリアント版の両方)が、激昂(体力1/3以下)した後に新しい特殊攻撃を使うようになりました。周期的に地面を叩きつけ、近くにいるプレイヤーを押し飛ばし、短時間鈍足(にぶい動き)にします。これまでの激昂は力I+俊敏Iの自己バフのみだったため、ボス戦の「第二形態」に実際の攻撃パターンが追加されたのは今回が初めてです。
+- 両方のEntityType(`ModEntities.PRISMIUM_COLOSSUS`/`PRISMIUM_MOUNTAIN_COLOSSUS`)が同じ`PrismiumColossusEntity`クラスを共有しているため、新規登録・テクスチャー変更は不要で、今回のコード変更だけで両バリアントに自動的に適用されます。
+- 実装は、このMOD内で既にコンパイルが通っている呼び出しの組み合わせのみで構成しました(新規`@Override`・新規の未確認APIは一切追加していません): `Level#getEntitiesOfClass`(既存のMagnet charm/Familiarの加護/Pulse charmで実績あり)で周囲のプレイヤーを検索し、`Entity#getBoundingBox/position/getDeltaMovement/setDeltaMovement`+`hurtMarked`(既存のMagnet charmの引き寄せロジックと同じAPIを押し出す方向に転用)で吹き飛ばし、`LivingEntity#addEffect`(既存のFamiliarの加護/Pulse charmで実績あり)で`MobEffects.MOVEMENT_SLOWDOWN`(既存で実績あり)を付与します。見た目は既存で実績のある`ParticleTypes.SONIC_BOOM`(Pulse charmと共通)を再利用しました。
+- 攻撃は近くにプレイヤーがいる時だけクールダウンを消費する設計のため、ボスが一人で放置されている間に無駄に「空振り」することはありません。
+
+### 既知の問題(未検証)
+
+- このセッションもサンドボックスの制約上、実機での確認が一切できていません。(a) 攻撃の発生頻度(5秒に1回)・吹き飛ばしの強さ・鈍足の強さ(II・5秒)が体感としてちょうどよいか、(b) 吹き飛ばし方向・上昇量が不自然でないか、(c) ダンジョン内の狭い部屋(TODO9/TODO49)でこの吹き飛ばしが壁の外や床の下に押し出してしまわないか、の3点確認が必要です。既存のColossus本体・ダンジョン本体の未検証事項(TODO48/49/53参照)もそのまま該当します。
+
 ## ClaudeMod v0.84.0
 
 対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
