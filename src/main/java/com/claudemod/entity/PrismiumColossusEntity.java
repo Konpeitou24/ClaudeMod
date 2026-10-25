@@ -161,6 +161,53 @@ import java.util.List;
  * save/load - the same risk-tolerance precedent {@link #enraged} already
  * documents above (a reloaded world just starts the cooldown over, purely
  * a combat-feel detail, not game-breaking).
+ *
+ * <p><b>Since the scheduled 2026-10-25 session</b>, a fourth hand-rolled
+ * behaviour was added to {@link #aiStep()}: a "roar" ({@link #tickRoar()})
+ * that periodically blinds every nearby {@link Player} once {@link
+ * #enraged}, picking up HANDOFF.md's other carried-over option (ee)
+ * ("咆哮による一時的な視界阻害") alongside the ground slam added the prior
+ * session. Deliberately runs on its own independent cooldown/radius/timer
+ * (see {@link #ROAR_COOLDOWN_TICKS}/{@link #ROAR_INITIAL_DELAY_TICKS}/
+ * {@link #ROAR_RADIUS}) rather than being folded into the slam, so the two
+ * attacks interleave at different moments of a fight instead of always
+ * landing together. Exactly the same "only already-compiling API calls"
+ * discipline as the ground slam:
+ * <ul>
+ *   <li>{@code Level#getEntitiesOfClass(Player.class, AABB, Predicate)} -
+ *   same call {@link #tickGroundSlam()} already makes above, just with a
+ *   larger inflate radius (a roar is heard farther than a melee shockwave
+ *   is felt).</li>
+ *   <li>{@code LivingEntity#addEffect(MobEffectInstance)} on a scanned
+ *   {@code Player} - the exact same call {@link #knockBackAndStagger(Player)}
+ *   already makes above (and {@link com.claudemod.event.PrismiumFamiliarAuraHandler}/
+ *   {@link com.claudemod.item.PrismiumPulseCharmItem} before that), just
+ *   constructing a {@code MobEffectInstance} with {@link
+ *   MobEffects#BLINDNESS} instead of {@code MOVEMENT_SLOWDOWN}.</li>
+ *   <li>{@code MobEffects.BLINDNESS} - not yet referenced anywhere else in
+ *   this codebase, so (per PROGRESS.md's "未確認のJava API" rule) its
+ *   existence was independently confirmed this session via two external
+ *   javadoc mirrors rather than assumed: the legacy MCP-mapped {@code
+ *   net.minecraft.init.MobEffects} class (1.12.2 ForgeJavaDocs mirror,
+ *   field name {@code BLINDNESS} there too) and, more importantly, {@code
+ *   mappings.dev}'s 1.20.1 Mojang-mapped {@code
+ *   net.minecraft.world.effect.MobEffects} class, which lists {@code
+ *   BLINDNESS} as a public static field sitting between {@code
+ *   INVISIBILITY} and {@code NIGHT_VISION}, alongside the exact same
+ *   neighbouring names this class already uses successfully ({@code
+ *   MOVEMENT_SPEED}/{@code MOVEMENT_SLOWDOWN}/{@code DAMAGE_BOOST}) -
+ *   confirming the Mojmap name did not drift the way {@code
+ *   getEntitiesAround} once did (see this class's and {@code
+ *   PrismiumFamiliarEntity}'s "2026-09-28" PROGRESS.md entry for why a
+ *   single mirror's answer alone was not trusted here).</li>
+ *   <li>{@code ParticleTypes.WITCH} - already a compiling field reference
+ *   via {@link com.claudemod.event.PrismiumAntivenomCharmHandler} (its own
+ *   purple "hex" visual for a debuff charm); reused here purely for its
+ *   dark, curse-like read on a blinding roar, no gameplay meaning borrowed
+ *   from that handler.</li>
+ * </ul>
+ * {@code roarCooldown} is a plain {@code int} field, not persisted across
+ * save/load - same risk-tolerance precedent as {@link #slamCooldown}.
  */
 public class PrismiumColossusEntity extends AbstractPrismiumMonster {
 
@@ -201,12 +248,37 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
     private static final int SLAM_SLOW_DURATION_TICKS = 100;
     private static final int SLAM_SLOW_AMPLIFIER = 1;
 
+    /** Delay (ticks) between the enrage trigger and the first roar.
+     * Deliberately different from {@link #SLAM_INITIAL_DELAY_TICKS} so
+     * the two attacks do not always land in lockstep. */
+    private static final int ROAR_INITIAL_DELAY_TICKS = 70;
+
+    /** Ticks between roars once enraged. Like {@link #SLAM_COOLDOWN_TICKS},
+     * a roar that finds no player in range does not consume this cooldown
+     * (see {@link #tickRoar()}). */
+    private static final int ROAR_COOLDOWN_TICKS = 140;
+
+    /** Radius (blocks) of the roar's blinding effect - wider than {@link
+     * #SLAM_RADIUS} since a roar is heard/seen farther than a melee
+     * shockwave is felt. */
+    private static final double ROAR_RADIUS = 8.0D;
+
+    /** Blindness duration/amplifier for the roar - meaningful enough to
+     * matter mid-fight without being an outright stun. */
+    private static final int ROAR_BLINDNESS_DURATION_TICKS = 100;
+    private static final int ROAR_BLINDNESS_AMPLIFIER = 0;
+
     private boolean enraged;
 
     /** Ticks remaining until the next ground slam is available. Only
      * meaningful once {@link #enraged} is true; not persisted across
      * save/load, same as {@link #enraged} itself. */
     private int slamCooldown;
+
+    /** Ticks remaining until the next roar is available. Only meaningful
+     * once {@link #enraged} is true; not persisted across save/load, same
+     * as {@link #slamCooldown}. */
+    private int roarCooldown;
 
     public PrismiumColossusEntity(EntityType<? extends PrismiumColossusEntity> entityType, Level level) {
         super(entityType, level);
@@ -248,6 +320,7 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
             tickAuraParticles();
             tickEnrage();
             tickGroundSlam();
+            tickRoar();
         }
         super.aiStep();
     }
@@ -289,6 +362,7 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
         if (this.getHealth() / this.getMaxHealth() <= ENRAGE_HEALTH_FRACTION) {
             this.enraged = true;
             this.slamCooldown = SLAM_INITIAL_DELAY_TICKS;
+            this.roarCooldown = ROAR_INITIAL_DELAY_TICKS;
             this.addEffect(new MobEffectInstance(
                     MobEffects.DAMAGE_BOOST, ENRAGE_EFFECT_DURATION_TICKS, 0, false, true, true));
             this.addEffect(new MobEffectInstance(
@@ -364,6 +438,52 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
 
         player.addEffect(new MobEffectInstance(
                 MobEffects.MOVEMENT_SLOWDOWN, SLAM_SLOW_DURATION_TICKS, SLAM_SLOW_AMPLIFIER, false, true, true));
+    }
+
+    /**
+     * The boss's second "second phase" special attack (see class javadoc
+     * for the full API-precedent breakdown): once {@link #enraged},
+     * periodically blinds every nearby {@link Player} with a roar. Runs on
+     * its own independent cooldown from {@link #tickGroundSlam()} so the
+     * two attacks interleave rather than always firing together. Like the
+     * ground slam, only ever consumes {@link #roarCooldown} when it
+     * actually finds a player to hit, so an idle boss with nobody nearby
+     * does not "waste" roars while waiting.
+     */
+    private void tickRoar() {
+        if (!this.enraged) {
+            return;
+        }
+        if (this.roarCooldown > 0) {
+            this.roarCooldown--;
+            return;
+        }
+        if (!(this.level() instanceof ServerLevel serverLevel)) {
+            return;
+        }
+
+        AABB area = this.getBoundingBox().inflate(ROAR_RADIUS);
+        List<Player> nearbyPlayers = serverLevel.getEntitiesOfClass(Player.class, area, Player::isAlive);
+        if (nearbyPlayers.isEmpty()) {
+            return;
+        }
+
+        this.roarCooldown = ROAR_COOLDOWN_TICKS;
+        for (Player player : nearbyPlayers) {
+            player.addEffect(new MobEffectInstance(
+                    MobEffects.BLINDNESS, ROAR_BLINDNESS_DURATION_TICKS, ROAR_BLINDNESS_AMPLIFIER, false, true, true));
+        }
+
+        if (!this.isSilent()) {
+            // Same WITHER_HURT reuse rationale as the enrage roar/ground
+            // slam impact above - a third distinct pitch/volume gives this
+            // its own "shriek" read without introducing a fourth
+            // SoundEvents field.
+            this.playSound(SoundEvents.WITHER_HURT, 1.2F, 0.4F);
+        }
+        serverLevel.sendParticles(ParticleTypes.WITCH,
+                this.getX(), this.getY() + this.getBbHeight() * 0.75D, this.getZ(),
+                12, this.getBbWidth() * 0.5D, 0.3D, this.getBbWidth() * 0.5D, 0.02D);
     }
 
     @Nullable
