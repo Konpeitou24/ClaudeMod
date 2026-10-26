@@ -208,6 +208,50 @@ import java.util.List;
  * </ul>
  * {@code roarCooldown} is a plain {@code int} field, not persisted across
  * save/load - same risk-tolerance precedent as {@link #slamCooldown}.
+ *
+ * <p><b>Since the scheduled 2026-10-26 session</b>, a fifth hand-rolled
+ * behaviour was added to {@link #aiStep()}: {@link #tickCarapace()}, a
+ * periodic self-buff (nicknamed "carapace hardening" in PROGRESS.md) that
+ * refreshes Absorption II on the boss itself once {@link #enraged},
+ * picking up HANDOFF.md option (ff) ("Prismium Colossusの特殊攻撃をさらに
+ * 拡充する第三の手") with a *defensive* third phase mechanic rather than a
+ * third offensive debuff, so the "second phase" reads as the boss actively
+ * shoring itself up under sustained fire, not just hitting harder. Unlike
+ * {@link #tickGroundSlam()}/{@link #tickRoar()}, this does not scan for
+ * nearby players first - it is a pure self-buff, not something that lands
+ * on anyone, so there is nothing to "waste" by refreshing it on an empty
+ * room; it simply keeps the shield topped up for as long as the fight
+ * continues. Same "only already-compiling API calls" discipline as the
+ * other two attacks:
+ * <ul>
+ *   <li>{@code LivingEntity#addEffect(MobEffectInstance)} called on
+ *   {@code this} - the exact same receiver {@link #tickEnrage()} already
+ *   uses above for the one-shot Strength/Speed buff, just with a
+ *   refreshing cooldown instead of a one-time trigger.</li>
+ *   <li>{@code MobEffects.ABSORPTION} - not yet referenced by this class,
+ *   but already a compiling field reference elsewhere in this exact
+ *   codebase: {@link com.claudemod.event.PrismiumGuardianCharmHandler}
+ *   grants the player {@code MobEffects.ABSORPTION} (alongside {@code
+ *   REGENERATION}/{@code FIRE_RESISTANCE}) on its totem-of-undying-style
+ *   save, confirming both the field name and that {@code addEffect} with
+ *   this field compiles on a {@code LivingEntity} - {@code
+ *   PrismiumColossusEntity} is one too, so this is a new caller, not a new
+ *   API surface.</li>
+ *   <li>{@code ParticleTypes.TOTEM_OF_UNDYING}/{@code SoundEvents.TOTEM_USE}
+ *   - both already used by that same {@link
+ *   com.claudemod.event.PrismiumGuardianCharmHandler} to sell its "shield
+ *   just kicked in" moment; reused here for the identical reason (a
+ *   shimmering, defensive activation read), not for any totem-of-undying
+ *   gameplay meaning.</li>
+ * </ul>
+ * {@code carapaceCooldown} is a plain {@code int} field, not persisted
+ * across save/load - same risk-tolerance precedent as {@link
+ * #slamCooldown}/{@link #roarCooldown}. The refresh interval ({@link
+ * #CARAPACE_COOLDOWN_TICKS}) is deliberately shorter than the Absorption
+ * duration it grants ({@link #CARAPACE_ABSORPTION_DURATION_TICKS}) so the
+ * shield is topped up again before it would naturally expire, keeping it
+ * continuously present for the rest of an enraged fight rather than
+ * flickering on and off.
  */
 public class PrismiumColossusEntity extends AbstractPrismiumMonster {
 
@@ -268,6 +312,27 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
     private static final int ROAR_BLINDNESS_DURATION_TICKS = 100;
     private static final int ROAR_BLINDNESS_AMPLIFIER = 0;
 
+    /** Delay (ticks) between the enrage trigger and the first carapace
+     * refresh. Shortest of the three "second phase" delays, deliberately -
+     * see {@link #tickCarapace()}'s javadoc for why a defensive self-buff
+     * reads better coming online quickly rather than being staggered like
+     * the two offensive attacks. */
+    private static final int CARAPACE_INITIAL_DELAY_TICKS = 20;
+
+    /** Ticks between carapace refreshes once enraged. Shorter than {@link
+     * #CARAPACE_ABSORPTION_DURATION_TICKS} so the shield never actually
+     * runs out mid-fight (see {@link #tickCarapace()}). */
+    private static final int CARAPACE_COOLDOWN_TICKS = 200;
+
+    /** Absorption duration granted per refresh - longer than {@link
+     * #CARAPACE_COOLDOWN_TICKS} by design (see above). */
+    private static final int CARAPACE_ABSORPTION_DURATION_TICKS = 240;
+
+    /** Absorption II, matching the amplifier {@link
+     * com.claudemod.event.PrismiumGuardianCharmHandler} already grants
+     * players on its totem-of-undying-style save. */
+    private static final int CARAPACE_ABSORPTION_AMPLIFIER = 1;
+
     private boolean enraged;
 
     /** Ticks remaining until the next ground slam is available. Only
@@ -279,6 +344,11 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
      * once {@link #enraged} is true; not persisted across save/load, same
      * as {@link #slamCooldown}. */
     private int roarCooldown;
+
+    /** Ticks remaining until the next carapace refresh is available. Only
+     * meaningful once {@link #enraged} is true; not persisted across
+     * save/load, same as {@link #slamCooldown}/{@link #roarCooldown}. */
+    private int carapaceCooldown;
 
     public PrismiumColossusEntity(EntityType<? extends PrismiumColossusEntity> entityType, Level level) {
         super(entityType, level);
@@ -321,6 +391,7 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
             tickEnrage();
             tickGroundSlam();
             tickRoar();
+            tickCarapace();
         }
         super.aiStep();
     }
@@ -363,6 +434,7 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
             this.enraged = true;
             this.slamCooldown = SLAM_INITIAL_DELAY_TICKS;
             this.roarCooldown = ROAR_INITIAL_DELAY_TICKS;
+            this.carapaceCooldown = CARAPACE_INITIAL_DELAY_TICKS;
             this.addEffect(new MobEffectInstance(
                     MobEffects.DAMAGE_BOOST, ENRAGE_EFFECT_DURATION_TICKS, 0, false, true, true));
             this.addEffect(new MobEffectInstance(
@@ -484,6 +556,45 @@ public class PrismiumColossusEntity extends AbstractPrismiumMonster {
         serverLevel.sendParticles(ParticleTypes.WITCH,
                 this.getX(), this.getY() + this.getBbHeight() * 0.75D, this.getZ(),
                 12, this.getBbWidth() * 0.5D, 0.3D, this.getBbWidth() * 0.5D, 0.02D);
+    }
+
+    /**
+     * The boss's third "second phase" special behaviour (see class javadoc
+     * for the full API-precedent breakdown): once {@link #enraged},
+     * periodically refreshes Absorption II on itself so its defensive
+     * "shield" never actually runs dry mid-fight. Unlike {@link
+     * #tickGroundSlam()}/{@link #tickRoar()} this is a pure self-buff with
+     * no target to find, so it always consumes {@link #carapaceCooldown}
+     * on schedule rather than waiting for a nearby player - there is
+     * nothing to "waste" by topping up a shield in an empty room.
+     */
+    private void tickCarapace() {
+        if (!this.enraged) {
+            return;
+        }
+        if (this.carapaceCooldown > 0) {
+            this.carapaceCooldown--;
+            return;
+        }
+
+        this.carapaceCooldown = CARAPACE_COOLDOWN_TICKS;
+        this.addEffect(new MobEffectInstance(
+                MobEffects.ABSORPTION, CARAPACE_ABSORPTION_DURATION_TICKS, CARAPACE_ABSORPTION_AMPLIFIER,
+                false, true, true));
+
+        if (this.level() instanceof ServerLevel serverLevel) {
+            serverLevel.sendParticles(ParticleTypes.TOTEM_OF_UNDYING,
+                    this.getX(), this.getY() + this.getBbHeight() * 0.5D, this.getZ(),
+                    20, this.getBbWidth() * 0.5D, this.getBbHeight() * 0.4D, this.getBbWidth() * 0.5D, 0.1D);
+        }
+        if (!this.isSilent()) {
+            // Same this.playSound(SoundEvent, float, float) call already
+            // used three times above (tickEnrage/tickGroundSlam/tickRoar)
+            // for WITHER_HURT, just reusing SoundEvents.TOTEM_USE instead -
+            // that field is already proven elsewhere in this codebase (see
+            // class javadoc) and this overload needs no SoundSource.
+            this.playSound(SoundEvents.TOTEM_USE, 0.6F, 1.3F);
+        }
     }
 
     @Nullable
