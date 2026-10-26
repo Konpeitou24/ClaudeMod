@@ -1,4 +1,4 @@
-commit=67cc83e978aee1880a50cfe469f2cd8954e83c3f  run=40248439787
-region_dir=run/world/region region_files=6 chunks_scanned=2826
-FOUND claudemod:prismium_ore: chunks_with_hit=809 regions=[r.-1.-1.mca,r.-1.0.mca,r.0.-1.mca,r.0.0.mca]
-FOUND claudemod:deepslate_prismium_ore: chunks_with_hit=1035 regions=[r.-1.-1.mca,r.-1.0.mca,r.0.-1.mca,r.0.0.mca]
+commit=175f35be5701a077d3b86aceb43991de1f65506a  run=40249058121
+region_dir=run/world/region region_files=4 chunks_scanned=2025
+FOUND claudemod:prismium_ore: chunks_with_hit=473 regions=[r.-1.-1.mca,r.-1.0.mca,r.0.-1.mca,r.0.0.mca]
+FOUND claudemod:deepslate_prismium_ore: chunks_with_hit=631 regions=[r.-1.-1.mca,r.-1.0.mca,r.0.-1.mca,r.0.0.mca]
