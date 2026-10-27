@@ -1,0 +1,13 @@
+{
+    "type": "minecraft:crafting_shapeless",
+    "category": "redstone",
+    "ingredients": [
+        {
+            "item": "claudemod:prismium_core"
+        }
+    ],
+    "result": {
+        "item": "claudemod:prismium_core_button",
+        "count": 1
+    }
+}

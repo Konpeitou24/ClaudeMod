@@ -1,0 +1,16 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "redstone",
+    "pattern": [
+        "##"
+    ],
+    "key": {
+        "#": {
+            "item": "claudemod:prismium_stone"
+        }
+    },
+    "result": {
+        "item": "claudemod:prismium_stone_pressure_plate",
+        "count": 1
+    }
+}

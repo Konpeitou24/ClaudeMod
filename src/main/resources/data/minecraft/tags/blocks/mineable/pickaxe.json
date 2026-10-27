@@ -87,6 +87,22 @@
         "claudemod:prismium_stone_door",
         "claudemod:prismium_deepstone_door",
         "claudemod:prismium_bricks_door",
-        "claudemod:prismium_deepstone_bricks_door"
+        "claudemod:prismium_deepstone_bricks_door",
+        "claudemod:prismium_button",
+        "claudemod:prismium_pressure_plate",
+        "claudemod:pale_prismium_button",
+        "claudemod:pale_prismium_pressure_plate",
+        "claudemod:prismium_core_button",
+        "claudemod:prismium_core_pressure_plate",
+        "claudemod:prismium_alloy_block_button",
+        "claudemod:prismium_alloy_block_pressure_plate",
+        "claudemod:prismium_stone_button",
+        "claudemod:prismium_stone_pressure_plate",
+        "claudemod:prismium_deepstone_button",
+        "claudemod:prismium_deepstone_pressure_plate",
+        "claudemod:prismium_bricks_button",
+        "claudemod:prismium_bricks_pressure_plate",
+        "claudemod:prismium_deepstone_bricks_button",
+        "claudemod:prismium_deepstone_bricks_pressure_plate"
     ]
 }

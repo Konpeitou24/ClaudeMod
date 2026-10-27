@@ -906,6 +906,59 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_COLOSSUS_SIGIL_CHARM = ITEMS.register("prismium_colossus_sigil_charm",
             () -> new PrismiumColossusSigilCharmItem(new Item.Properties()));
 
+    // Prismium Button / Pressure Plate family (scheduled session, 2026-10-27):
+    // BlockItems for ModBlocks.*_BUTTON / *_PRESSURE_PLATE. Plain BlockItem is
+    // correct here, same reasoning as every other building-variant item in
+    // this file (no custom Item subclass needed for a plain placeable block).
+
+    public static final RegistryObject<Item> PRISMIUM_BUTTON_ITEM = ITEMS.register("prismium_button",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BUTTON.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_PRESSURE_PLATE_ITEM = ITEMS.register("prismium_pressure_plate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_PRESSURE_PLATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PALE_PRISMIUM_BUTTON_ITEM = ITEMS.register("pale_prismium_button",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_BUTTON.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PALE_PRISMIUM_PRESSURE_PLATE_ITEM = ITEMS.register("pale_prismium_pressure_plate",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_PRESSURE_PLATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_CORE_BUTTON_ITEM = ITEMS.register("prismium_core_button",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CORE_BUTTON.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_CORE_PRESSURE_PLATE_ITEM = ITEMS.register("prismium_core_pressure_plate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_CORE_PRESSURE_PLATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_BUTTON_ITEM = ITEMS.register("prismium_alloy_block_button",
+            () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK_BUTTON.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_ALLOY_BLOCK_PRESSURE_PLATE_ITEM = ITEMS.register("prismium_alloy_block_pressure_plate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_ALLOY_BLOCK_PRESSURE_PLATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_STONE_BUTTON_ITEM = ITEMS.register("prismium_stone_button",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STONE_BUTTON.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_STONE_PRESSURE_PLATE_ITEM = ITEMS.register("prismium_stone_pressure_plate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_STONE_PRESSURE_PLATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BUTTON_ITEM = ITEMS.register("prismium_deepstone_button",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BUTTON.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_PRESSURE_PLATE_ITEM = ITEMS.register("prismium_deepstone_pressure_plate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_PRESSURE_PLATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_BRICKS_BUTTON_ITEM = ITEMS.register("prismium_bricks_button",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BRICKS_BUTTON.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_BRICKS_PRESSURE_PLATE_ITEM = ITEMS.register("prismium_bricks_pressure_plate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_BRICKS_PRESSURE_PLATE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BRICKS_BUTTON_ITEM = ITEMS.register("prismium_deepstone_bricks_button",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BRICKS_BUTTON.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BRICKS_PRESSURE_PLATE_ITEM = ITEMS.register("prismium_deepstone_bricks_pressure_plate",
+            () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BRICKS_PRESSURE_PLATE.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

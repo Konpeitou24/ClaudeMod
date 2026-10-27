@@ -98,6 +98,22 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_DEEPSTONE_DOOR_ITEM.get()); // scheduled session, 2026-10-09
                         output.accept(ModItems.PRISMIUM_BRICKS_DOOR_ITEM.get()); // scheduled session, 2026-10-09
                         output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_DOOR_ITEM.get()); // scheduled session, 2026-10-09
+                        output.accept(ModItems.PRISMIUM_BUTTON_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_PRESSURE_PLATE_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PALE_PRISMIUM_BUTTON_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PALE_PRISMIUM_PRESSURE_PLATE_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_CORE_BUTTON_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_CORE_PRESSURE_PLATE_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_ALLOY_BLOCK_BUTTON_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_ALLOY_BLOCK_PRESSURE_PLATE_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_STONE_BUTTON_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_STONE_PRESSURE_PLATE_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_BUTTON_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_PRESSURE_PLATE_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_BRICKS_BUTTON_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_BRICKS_PRESSURE_PLATE_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_BUTTON_ITEM.get()); // scheduled session, 2026-10-27
+                        output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_PRESSURE_PLATE_ITEM.get()); // scheduled session, 2026-10-27
                         output.accept(ModItems.PRISMIUM_CRYSTAL_PILLAR_ITEM.get()); // scheduled session, 2026-09-25
                         output.accept(ModItems.PALE_PRISMIUM_CRYSTAL_PILLAR_ITEM.get()); // scheduled session, 2026-09-26
                         output.accept(ModItems.PRISMIUM_CORE_SLAB_ITEM.get());

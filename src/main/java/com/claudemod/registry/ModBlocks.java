@@ -5,6 +5,8 @@ import com.claudemod.block.PrismBrambleBlock;
 import com.claudemod.block.PrismVineBlock;
 import com.claudemod.block.PrismLilyBlock;
 import com.claudemod.block.PrismiumBloomBlock;
+import com.claudemod.block.PrismiumButtonBlock;
+import com.claudemod.block.PrismiumPressurePlateBlock;
 import com.claudemod.block.PrismiumCableBlock;
 import com.claudemod.block.PrismiumCellBlock;
 import com.claudemod.block.PrismiumCompressorBlock;
@@ -1661,6 +1663,159 @@ public class ModBlocks {
                     .sound(SoundType.DEEPSLATE)
                     .noOcclusion(),
                     net.minecraft.world.level.block.state.properties.BlockSetType.OAK));
+
+    // Prismium Button / Pressure Plate family (scheduled session, 2026-10-27):
+    // this mod's first "button"/"pressure plate" silhouettes, the one shape
+    // every other building-variant family (Slab/Wall/Stairs, Fence/
+    // FenceGate, TrapDoor, Door) never covered. PrismiumButtonBlock/
+    // PrismiumPressurePlateBlock (see those classes' own javadoc for the
+    // mappings.dev + Yarn mirror cross-check of vanilla's protected
+    // ButtonBlock/PressurePlateBlock constructors) are thin wrappers with no
+    // @Override, matching this mod's existing API-reuse discipline. Unlike
+    // every other building-variant family, buttons/pressure plates copy NO
+    // texture of their own (every vanilla button/pressure plate, wood or
+    // stone, reuses its parent block's existing texture verbatim - see the
+    // blockstate/model JSON for each entry below) and intentionally do NOT
+    // call requiresCorrectToolForDrops()/strength(hardness, resistance) the
+    // way every other building variant in this mod does: real vanilla
+    // buttons and pressure plates (including stone ones) break instantly
+    // with any tool or bare hand, so none of the eight families below are
+    // added to needs_iron_tool.json/needs_diamond_tool.json, including
+    // Prismium Core (a deliberate difference from PRISMIUM_CORE_TRAPDOOR/
+    // DOOR above, which do require the correct tool - matching vanilla's
+    // own actual stone_button/stone_pressure_plate behavior, not a gap).
+    // BlockSetType.STONE is used uniformly across all eight families (see
+    // PrismiumButtonBlock/PrismiumPressurePlateBlock javadoc), mirroring how
+    // BlockSetType.OAK was used uniformly for every TrapDoor/Door/FenceGate
+    // above regardless of material.
+
+    public static final RegistryObject<Block> PRISMIUM_BUTTON = BLOCKS.register("prismium_button",
+            () -> new PrismiumButtonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_PRESSURE_PLATE = BLOCKS.register("prismium_pressure_plate",
+            () -> new PrismiumPressurePlateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PALE_PRISMIUM_BUTTON = BLOCKS.register("pale_prismium_button",
+            () -> new PrismiumButtonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PALE_PRISMIUM_PRESSURE_PLATE = BLOCKS.register("pale_prismium_pressure_plate",
+            () -> new PrismiumPressurePlateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_CORE_BUTTON = BLOCKS.register("prismium_core_button",
+            () -> new PrismiumButtonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_CORE_PRESSURE_PLATE = BLOCKS.register("prismium_core_pressure_plate",
+            () -> new PrismiumPressurePlateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_ALLOY_BLOCK_BUTTON = BLOCKS.register("prismium_alloy_block_button",
+            () -> new PrismiumButtonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_ALLOY_BLOCK_PRESSURE_PLATE = BLOCKS.register("prismium_alloy_block_pressure_plate",
+            () -> new PrismiumPressurePlateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.AMETHYST)));
+
+    public static final RegistryObject<Block> PRISMIUM_STONE_BUTTON = BLOCKS.register("prismium_stone_button",
+            () -> new PrismiumButtonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_STONE_PRESSURE_PLATE = BLOCKS.register("prismium_stone_pressure_plate",
+            () -> new PrismiumPressurePlateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BUTTON = BLOCKS.register("prismium_deepstone_button",
+            () -> new PrismiumButtonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_PRESSURE_PLATE = BLOCKS.register("prismium_deepstone_pressure_plate",
+            () -> new PrismiumPressurePlateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> PRISMIUM_BRICKS_BUTTON = BLOCKS.register("prismium_bricks_button",
+            () -> new PrismiumButtonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_BRICKS_PRESSURE_PLATE = BLOCKS.register("prismium_bricks_pressure_plate",
+            () -> new PrismiumPressurePlateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.STONE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.STONE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BRICKS_BUTTON = BLOCKS.register("prismium_deepstone_bricks_button",
+            () -> new PrismiumButtonBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.DEEPSLATE)));
+
+    public static final RegistryObject<Block> PRISMIUM_DEEPSTONE_BRICKS_PRESSURE_PLATE = BLOCKS.register("prismium_deepstone_bricks_pressure_plate",
+            () -> new PrismiumPressurePlateBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.DEEPSLATE)
+                    .noCollission()
+                    .strength(0.5f)
+                    .noOcclusion()
+                    .sound(SoundType.DEEPSLATE)));
 
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);

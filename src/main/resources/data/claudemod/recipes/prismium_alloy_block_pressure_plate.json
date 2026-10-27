@@ -1,0 +1,16 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "redstone",
+    "pattern": [
+        "##"
+    ],
+    "key": {
+        "#": {
+            "item": "claudemod:prismium_alloy_block"
+        }
+    },
+    "result": {
+        "item": "claudemod:prismium_alloy_block_pressure_plate",
+        "count": 1
+    }
+}
