@@ -110,8 +110,19 @@ public final class PrismiumCompendiumFactory {
      * sitting, page 20 the two things it does for the player once tamed
      * (item carrying, the nearby-Regeneration aura) - following the same
      * "one topic/mechanic pairing per page" grouping as every earlier
-     * entry in this list. */
-    private static final int PAGE_COUNT = 20;
+     * entry in this list.
+     * Expanded again to 21 pages (scheduled session, 2026-10-28): the
+     * building-variant shapes added since the last documentation pass
+     * (Fence/FenceGate in v0.66.0/v0.67.0, TrapDoor in v0.68.0/v0.69.0,
+     * Door in v0.70.0/v0.71.0, and Button/PressurePlate recovered and
+     * released this session as v0.88.0) had never been mentioned in this
+     * book either, the same kind of documentation gap the Familiar pages
+     * closed back in 2026-10-02. Page 21 is a single short catch-all page
+     * naming all five newer shapes rather than one page per shape, since
+     * none of them need more than a one-line mention (they reuse existing
+     * vanilla block behavior with no new mechanic to explain). Lang-key
+     * change only, no new Java class or @Override. */
+    private static final int PAGE_COUNT = 21;
 
     public static ItemStack createStack() {
         ItemStack stack = new ItemStack(com.claudemod.registry.ModItems.PRISMIUM_COMPENDIUM.get());

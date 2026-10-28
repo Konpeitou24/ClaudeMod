@@ -358,6 +358,7 @@
     "book.claudemod.compendium.page18": "Wiring Diagram (3): Processing Chain\n\n[Generator]->[Cable]->[Pulverizer]->[Smelter]->[Compressor]\n\nLine machines up in the same order as the Ore -> Shard -> Ingot -> Alloy Ingot chain and cable them together - your wiring layout matches your processing flow.",
     "book.claudemod.compendium.page19": "Prismium Familiar\n\nA small tamable companion that rarely turns up in the Prism Realm. Hold a Prismium Shard and right-click it - with a bit of luck, it will take a liking to you. Once tamed, right-click it empty-handed to toggle following and sitting.",
     "book.claudemod.compendium.page20": "The Familiar's Two Gifts\n\nWhile it's following you, sneak + right-click to hand it one item to carry, and sneak + right-click again to take it back.\n\nAlso, as long as it stays nearby (within 6 blocks) and isn't sitting, it quietly grants you Regeneration.",
+    "book.claudemod.compendium.page21": "More Building Shapes\n\nThe Prismium block families also come as fences, fence gates, trapdoors, doors, buttons, and pressure plates - handy for building, wiring, and dungeon contraptions alike.",
     "gui.claudemod.prismium_chronoflame.advance": "Advance +6h",
     "gui.claudemod.prismium_chronoflame.rewind": "Rewind -6h",
     "gui.claudemod.prismium_chronoflame.ready": "Ready",

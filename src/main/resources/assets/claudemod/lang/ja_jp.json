@@ -358,6 +358,7 @@
     "book.claudemod.compendium.page18": "配線図解(3) 加工チェーン\n\n[発電機]→[ケーブル]→[粉砕機]→[精錬機]→[圧縮機]\n\n鉱石→欠片→インゴット→アロイインゴットと加工する順番のまま機械を並べてケーブルでつなぐと、配線と加工の流れが一致してわかりやすくなります。",
     "book.claudemod.compendium.page19": "プリズミウムの使い魔\n\nPrism Realmに稀に現れる、懐かせられる小さな仲間です。プリズミウムの欠片を持って近づき右クリックすると、低い確率で懐きます。懐いた後は素手で右クリックすると、追従と待機(お座り)を切り替えられます。",
     "book.claudemod.compendium.page20": "使い魔の2つの加護\n\n追従中にスニーク+右クリックでアイテムを1種類だけ預けられ、もう一度スニーク+右クリックすれば受け取れます。\n\nさらに、座らずそばに(6ブロック以内)いてくれる間は、あなたに再生の加護を授けてくれます。",
+    "book.claudemod.compendium.page21": "さらなる建材バリエーション\n\nプリズミウム系のブロックには、柵・柵の門・トラップドア・ドア・ボタン・感圧板もそろっています。建築や配線、ダンジョンの仕掛けづくりに役立ててください。",
     "gui.claudemod.prismium_chronoflame.advance": "進める +6時間",
     "gui.claudemod.prismium_chronoflame.rewind": "戻す -6時間",
     "gui.claudemod.prismium_chronoflame.ready": "準備完了",
