@@ -1817,6 +1817,52 @@ public class ModBlocks {
                     .noOcclusion()
                     .sound(SoundType.DEEPSLATE)));
 
+    // Prismium Glass / Pale Prismium Glass (scheduled session, 2026-10-29):
+    // Slab/Wall/Stairs/Pillar/Fence/TrapDoor/Door/Button/PressurePlate have
+    // now covered every "solid building material" silhouette vanilla gives
+    // a block, but all of those (and every other block in this mod so far
+    // except PRISMIUM_PORTAL) render fully opaque. This is the mod's first
+    // ordinary, player-placeable translucent full-cube block - a brand new
+    // rendering category, not just a new shape. Uses plain vanilla
+    // GlassBlock (net.minecraft.world.level.block, same package as
+    // FenceBlock/TrapDoorBlock/DoorBlock/ButtonBlock/PressurePlateBlock
+    // above) with NO custom subclass and NO new @Override: its single
+    // public constructor - GlassBlock(BlockBehaviour.Properties) extends
+    // AbstractGlassBlock - was confirmed directly via mappings.dev/1.20.1
+    // before use (lowest possible compile risk, same rationale as every
+    // other vanilla-class-reuse block in this file). .noOcclusion() is
+    // required so adjacent glass/solid faces don't get wrongly culled
+    // (same reasoning as every cutout-shaped block above), and
+    // SoundType.GLASS is already a proven compiling reference in this
+    // repo (see PRISMIUM_PORTAL below). Unlike vanilla's own silk-touch-
+    // only glass, this block's loot table intentionally always drops
+    // itself (same "drop yourself" template every other decorative block
+    // in this mod uses) - a deliberate, documented departure from vanilla
+    // parity rather than an oversight, since punishing the player for
+    // breaking a block they spent a shard crafting would be bad UX (see
+    // PROGRESS.md "4. その他"). The texture (prismium_glass.png /
+    // pale_prismium_glass.png, both newly generated with an alpha
+    // channel, see scripts/textures/gen_prismium_glass.py) needs an
+    // explicit RenderType.translucent() registration in ClientModEvents
+    // (same mechanism PRISMIUM_PORTAL already uses) or the alpha channel
+    // would render as a hard opaque cutout instead of blending. Stats
+    // (strength 0.3/0.3, no tool requirement) mirror vanilla glass, not
+    // this mod's usual tool-gated stone/ore stats, since this is meant to
+    // behave like glass (instant break by hand) rather than like masonry.
+    public static final RegistryObject<Block> PRISMIUM_GLASS = BLOCKS.register("prismium_glass",
+            () -> new net.minecraft.world.level.block.GlassBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(0.3f)
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> PALE_PRISMIUM_GLASS = BLOCKS.register("pale_prismium_glass",
+            () -> new net.minecraft.world.level.block.GlassBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .strength(0.3f)
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()));
+
     public static void register(IEventBus eventBus) {
         BLOCKS.register(eventBus);
     }

@@ -959,6 +959,14 @@ public class ModItems {
     public static final RegistryObject<Item> PRISMIUM_DEEPSTONE_BRICKS_PRESSURE_PLATE_ITEM = ITEMS.register("prismium_deepstone_bricks_pressure_plate",
             () -> new BlockItem(ModBlocks.PRISMIUM_DEEPSTONE_BRICKS_PRESSURE_PLATE.get(), new Item.Properties()));
 
+    // Prismium Glass / Pale Prismium Glass (scheduled session, 2026-10-29):
+    // BlockItems for ModBlocks.PRISMIUM_GLASS / PALE_PRISMIUM_GLASS.
+    public static final RegistryObject<Item> PRISMIUM_GLASS_ITEM = ITEMS.register("prismium_glass",
+            () -> new BlockItem(ModBlocks.PRISMIUM_GLASS.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PALE_PRISMIUM_GLASS_ITEM = ITEMS.register("pale_prismium_glass",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_GLASS.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }

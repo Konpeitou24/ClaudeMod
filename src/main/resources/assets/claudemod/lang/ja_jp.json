@@ -201,6 +201,8 @@
     "block.claudemod.prismium_deepstone_bricks_button": "プリズミウム深層岩のれんがのボタン",
     "block.claudemod.prismium_deepstone_bricks_pressure_plate": "プリズミウム深層岩のれんがの感圧板",
     "block.claudemod.prismium_deepstone_bricks_door": "プリズミウム深層岩のれんがのドア",
+    "block.claudemod.prismium_glass": "プリズミウムのガラス",
+    "block.claudemod.pale_prismium_glass": "蒼白のプリズミウムのガラス",
     "item.claudemod.prismium_rift_anchor": "プリズミウム・リフトアンカー",
     "item.claudemod.prismium_rift_anchor.usage": "右クリックで現在地(どの次元でも可)にリスポーン地点を設定します。使用すると消費されます。",
     "item.claudemod.prismium_rift_anchor.details": "ベッドや復活の輪とは違い、ブロックに縛られずどの次元でも使える使い切りのリスポーン地点登録アイテム。リフトシャードとは別物で、次元をまたいで転移する機能は無い。",

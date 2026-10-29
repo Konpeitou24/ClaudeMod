@@ -188,6 +188,19 @@ public class ClientModEvents {
             // rather than called directly on this parallel-dispatched event.
             net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
                     ModBlocks.PRISMIUM_PORTAL.get(), net.minecraft.client.renderer.RenderType.translucent());
+
+            // Scheduled session, 2026-10-29: Prismium Glass / Pale Prismium
+            // Glass (see ModBlocks.PRISMIUM_GLASS) are this mod's first
+            // ordinary, player-placeable translucent blocks (PRISMIUM_PORTAL
+            // above is the only other translucent block, but it is never
+            // obtainable as an item). Same reasoning/mechanism as
+            // PRISMIUM_PORTAL immediately above: without this call the PNG's
+            // alpha channel would render as a hard opaque cutout instead of
+            // blending like glass.
+            net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                    ModBlocks.PRISMIUM_GLASS.get(), net.minecraft.client.renderer.RenderType.translucent());
+            net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                    ModBlocks.PALE_PRISMIUM_GLASS.get(), net.minecraft.client.renderer.RenderType.translucent());
         });
     }
 }

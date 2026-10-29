@@ -201,6 +201,8 @@
     "block.claudemod.prismium_deepstone_bricks_button": "Prismium Deepstone Bricks Button",
     "block.claudemod.prismium_deepstone_bricks_pressure_plate": "Prismium Deepstone Bricks Pressure Plate",
     "block.claudemod.prismium_deepstone_bricks_door": "Prismium Deepstone Bricks Door",
+    "block.claudemod.prismium_glass": "Prismium Glass",
+    "block.claudemod.pale_prismium_glass": "Pale Prismium Glass",
     "item.claudemod.prismium_rift_anchor": "Prismium Rift Anchor",
     "item.claudemod.prismium_rift_anchor.usage": "Right-click to set your respawn point at your current location, in any dimension. Consumed on use.",
     "item.claudemod.prismium_rift_anchor.details": "A single-use respawn point setter that works in any dimension, unlike a bed or respawn anchor which are tied to a block. Unrelated to the Rift Shard - it does not teleport you anywhere.",
