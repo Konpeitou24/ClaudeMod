@@ -1,3 +1,20 @@
+## ClaudeMod v0.91.0
+
+対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
+
+v0.90.0 からの変更です(定期実行セッション)。前回追加したプリズミウムのガラス・蒼白のプリズミウムのガラスの続きとして、HANDOFF.mdが挙げていた選択肢(gg)「ガラスのパネル版」に着手しました。
+
+### 新規: プリズミウムのガラス板・蒼白のプリズミウムのガラス板
+
+- vanillaの`IronBarsBlock`(iron_bars・すべてのglass pane系統が共通で使うMojmapクラス)をそのまま再利用した、このMOD初の「隣接ブロックとの接続判定を持つ透明ブロック」です。`IronBarsBlock`自体のコンストラクタが1.20.1では`protected`のため、`PrismiumButtonBlock`/`PrismiumPressurePlateBlock`と同じ「`super(...)`を呼ぶだけの薄いpublicラッパークラス」パターンで対応しました(新規`@Override`は一切無し)。6方向の接続判定・形状・水没対応はすべて`CrossCollisionBlock`/`IronBarsBlock`側の実装をそのまま継承しています。
+- blockstate(multipart)・5種のモデル(post/side/side_alt/noside/noside_alt)は、vanillaの`glass_pane.json`系ファイルをそのまま名前空間だけ差し替えて作成しました。テクスチャーは新規に作らず、既存のプリズミウムのガラス・蒼白のプリズミウムのガラスのテクスチャーをそのまま再利用しています。
+- クラフト: プリズミウムのガラスx6(3マスx2段)→プリズミウムのガラス板x16。vanillaのガラス→板ガラスと全く同じ配置・個数です。蒼白版も同様。
+- 常時自己ドロップの仕様は元のガラスブロックと同じです。
+
+### 既知の問題(未検証)
+
+- 実機でのクラフト・設置・隣接ブロックとの接続の見た目(特に多方向への接続パターン)・半透明レンダリング・採掘感触はいずれも未検証です。
+
 ## ClaudeMod v0.90.0
 
 対応バージョン: Minecraft 1.20.1 / Forge 47.4.0 以降 (JDK 17)
