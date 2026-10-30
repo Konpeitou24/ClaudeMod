@@ -1,0 +1,6 @@
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "claudemod:block/pale_prismium_glass"
+    }
+}

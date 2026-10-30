@@ -14,6 +14,7 @@ import com.claudemod.block.PrismiumChronoflameBlock;
 import com.claudemod.block.PrismiumGeneratorBlock;
 import com.claudemod.block.PrismiumGeodeClusterBlock;
 import com.claudemod.block.PrismiumGeyserBlock;
+import com.claudemod.block.PrismiumGlassPaneBlock;
 import com.claudemod.block.PrismiumLanternBlock;
 import com.claudemod.block.PrismiumPortalBlock;
 import com.claudemod.block.PrismiumPulverizerBlock;
@@ -1858,6 +1859,50 @@ public class ModBlocks {
 
     public static final RegistryObject<Block> PALE_PRISMIUM_GLASS = BLOCKS.register("pale_prismium_glass",
             () -> new net.minecraft.world.level.block.GlassBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.ICE)
+                    .strength(0.3f)
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()));
+
+    // Prismium Glass Pane / Pale Prismium Glass Pane (scheduled session,
+    // 2026-10-30): the pane silhouette (TODO58's follow-up (gg)) applied to
+    // the two glass blocks above. Uses PrismiumGlassPaneBlock, a thin public
+    // wrapper (see that class's javadoc) around vanilla's IronBarsBlock -
+    // the single Mojmap class vanilla uses for both iron bars and every
+    // glass pane variant - because IronBarsBlock's own constructor is
+    // protected. NO custom subclass logic and NO new @Override: the
+    // six-way neighbor connection test, shape, and WATERLOGGED handling
+    // are all inherited unchanged from CrossCollisionBlock/IronBarsBlock,
+    // exactly as vanilla's own glass_pane block behaves. This is this
+    // mod's first "connects to its neighbors" transparent block reusing a
+    // vanilla connecting-block class (PrismiumCableBlock above also
+    // connects six ways, but is a fully custom BaseEntityBlock with
+    // hand-written shape/model logic, not a vanilla-class reuse). Same
+    // Properties (strength/sound/mapColor/noOcclusion) as the parent glass
+    // blocks for visual/behavioral consistency within this mod (vanilla's
+    // own glass vs. glass_pane stats differ slightly - glass_pane uses
+    // instabreak() - but this mod intentionally keeps both silhouettes
+    // identical, the same "drop yourself always" departure from vanilla
+    // parity already documented on PRISMIUM_GLASS above). blockstates/
+    // prismium_glass_pane.json (multipart) and the five per-shape models
+    // (post/side/side_alt/noside/noside_alt) are copied from vanilla's own
+    // glass_pane.json/glass_pane_*.json (raw.githubusercontent.com
+    // InventivetalentDev/minecraft-assets 1.20.1 mirror) with only the
+    // model/texture namespace swapped - both "pane" and "edge" texture
+    // slots point at the same existing prismium_glass.png/
+    // pale_prismium_glass.png (no new texture file needed; vanilla's own
+    // "edge" texture, glass_pane_top.png, differs from glass.png only in
+    // the narrow 2x2px region actually sampled by the template models, so
+    // reusing the same 16x16 texture for both slots is visually safe).
+    public static final RegistryObject<Block> PRISMIUM_GLASS_PANE = BLOCKS.register("prismium_glass_pane",
+            () -> new PrismiumGlassPaneBlock(BlockBehaviour.Properties.of()
+                    .mapColor(MapColor.COLOR_CYAN)
+                    .strength(0.3f)
+                    .sound(SoundType.GLASS)
+                    .noOcclusion()));
+
+    public static final RegistryObject<Block> PALE_PRISMIUM_GLASS_PANE = BLOCKS.register("pale_prismium_glass_pane",
+            () -> new PrismiumGlassPaneBlock(BlockBehaviour.Properties.of()
                     .mapColor(MapColor.ICE)
                     .strength(0.3f)
                     .sound(SoundType.GLASS)

@@ -201,6 +201,16 @@ public class ClientModEvents {
                     ModBlocks.PRISMIUM_GLASS.get(), net.minecraft.client.renderer.RenderType.translucent());
             net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
                     ModBlocks.PALE_PRISMIUM_GLASS.get(), net.minecraft.client.renderer.RenderType.translucent());
+
+            // Scheduled session, 2026-10-30: Prismium Glass Pane / Pale
+            // Prismium Glass Pane (see ModBlocks.PRISMIUM_GLASS_PANE) reuse
+            // the same prismium_glass.png/pale_prismium_glass.png textures
+            // as the parent glass blocks above, so they need the identical
+            // translucent registration for the same reason.
+            net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                    ModBlocks.PRISMIUM_GLASS_PANE.get(), net.minecraft.client.renderer.RenderType.translucent());
+            net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                    ModBlocks.PALE_PRISMIUM_GLASS_PANE.get(), net.minecraft.client.renderer.RenderType.translucent());
         });
     }
 }

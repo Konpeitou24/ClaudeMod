@@ -116,6 +116,8 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_DEEPSTONE_BRICKS_PRESSURE_PLATE_ITEM.get()); // scheduled session, 2026-10-27
                         output.accept(ModItems.PRISMIUM_GLASS_ITEM.get()); // scheduled session, 2026-10-29
                         output.accept(ModItems.PALE_PRISMIUM_GLASS_ITEM.get()); // scheduled session, 2026-10-29
+                        output.accept(ModItems.PRISMIUM_GLASS_PANE_ITEM.get()); // scheduled session, 2026-10-30
+                        output.accept(ModItems.PALE_PRISMIUM_GLASS_PANE_ITEM.get()); // scheduled session, 2026-10-30
                         output.accept(ModItems.PRISMIUM_CRYSTAL_PILLAR_ITEM.get()); // scheduled session, 2026-09-25
                         output.accept(ModItems.PALE_PRISMIUM_CRYSTAL_PILLAR_ITEM.get()); // scheduled session, 2026-09-26
                         output.accept(ModItems.PRISMIUM_CORE_SLAB_ITEM.get());

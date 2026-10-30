@@ -967,6 +967,15 @@ public class ModItems {
     public static final RegistryObject<Item> PALE_PRISMIUM_GLASS_ITEM = ITEMS.register("pale_prismium_glass",
             () -> new BlockItem(ModBlocks.PALE_PRISMIUM_GLASS.get(), new Item.Properties()));
 
+    // Prismium Glass Pane / Pale Prismium Glass Pane (scheduled session,
+    // 2026-10-30): BlockItems for ModBlocks.PRISMIUM_GLASS_PANE /
+    // PALE_PRISMIUM_GLASS_PANE.
+    public static final RegistryObject<Item> PRISMIUM_GLASS_PANE_ITEM = ITEMS.register("prismium_glass_pane",
+            () -> new BlockItem(ModBlocks.PRISMIUM_GLASS_PANE.get(), new Item.Properties()));
+
+    public static final RegistryObject<Item> PALE_PRISMIUM_GLASS_PANE_ITEM = ITEMS.register("pale_prismium_glass_pane",
+            () -> new BlockItem(ModBlocks.PALE_PRISMIUM_GLASS_PANE.get(), new Item.Properties()));
+
     public static void register(IEventBus eventBus) {
         ITEMS.register(eventBus);
     }
