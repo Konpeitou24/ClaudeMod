@@ -156,6 +156,7 @@ public class ModCreativeTabs {
                         output.accept(ModItems.PRISMIUM_BOOTS.get());
                         output.accept(ModItems.PRISMIUM_SHIELD.get());
                         output.accept(ModItems.PRISMIUM_BOW.get());
+                        output.accept(ModItems.PRISMIUM_CROSSBOW.get()); // scheduled session, 2026-10-31
                         output.accept(ModItems.PRISMIUM_GRAPPLING_HOOK.get());
                         output.accept(ModItems.PRISMIUM_WRAITH_SPAWN_EGG.get());
                         output.accept(ModItems.PRISMIUM_DEEP_WRAITH_SPAWN_EGG.get()); // session 47

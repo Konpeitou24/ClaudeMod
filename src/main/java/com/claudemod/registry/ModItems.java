@@ -18,6 +18,7 @@ import com.claudemod.item.PrismiumAntivenomCharmItem;
 import com.claudemod.item.PrismiumAqualungCharmItem;
 import com.claudemod.item.PrismiumBowItem;
 import com.claudemod.item.PrismiumChronoflameBlockItem;
+import com.claudemod.item.PrismiumCrossbowItem;
 import com.claudemod.item.PrismiumEmberguardItem;
 import com.claudemod.item.PrismiumFeatherstoneItem;
 import com.claudemod.item.PrismiumFrostguardCharmItem;
@@ -425,6 +426,16 @@ public class ModItems {
     // item (tools/armor/shield).
     public static final RegistryObject<Item> PRISMIUM_BOW = ITEMS.register("prismium_bow",
             () -> new PrismiumBowItem(new Item.Properties().durability(460)));
+
+    // Prismium Crossbow (scheduled session, 2026-10-31): the mod's second
+    // ranged weapon, see PrismiumCrossbowItem for why this extends vanilla
+    // CrossbowItem directly (same low-risk pattern as PrismiumBowItem
+    // extending BowItem) and why it deliberately adds no override-based
+    // gimmick. durability(560) sits above vanilla's crossbow (465),
+    // matching the "higher durability, no flat power creep" philosophy
+    // used across every other Prismium gear item.
+    public static final RegistryObject<Item> PRISMIUM_CROSSBOW = ITEMS.register("prismium_crossbow",
+            () -> new PrismiumCrossbowItem(new Item.Properties().durability(560)));
 
     // Prismium Guardian Charm (session 30): the mod's first "cheat death"
     // item. stacksTo(1) mirrors vanilla's own Totem of Undying - see

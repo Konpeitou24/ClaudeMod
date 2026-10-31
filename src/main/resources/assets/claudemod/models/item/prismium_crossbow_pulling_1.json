@@ -1,0 +1,6 @@
+{
+    "parent": "claudemod:item/prismium_crossbow",
+    "textures": {
+        "layer0": "claudemod:item/prismium_crossbow_pulling_1"
+    }
+}

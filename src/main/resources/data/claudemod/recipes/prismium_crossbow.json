@@ -1,0 +1,19 @@
+{
+    "type": "minecraft:crafting_shaped",
+    "category": "equipment",
+    "pattern": [
+        " T ",
+        "SPS",
+        "ITI"
+    ],
+    "key": {
+        "T": { "item": "minecraft:stick" },
+        "S": { "item": "minecraft:string" },
+        "P": { "item": "claudemod:prismium_shard" },
+        "I": { "item": "claudemod:prismium_ingot" }
+    },
+    "result": {
+        "item": "claudemod:prismium_crossbow",
+        "count": 1
+    }
+}

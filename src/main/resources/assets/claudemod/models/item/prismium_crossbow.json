@@ -1,0 +1,13 @@
+{
+    "parent": "minecraft:item/generated",
+    "textures": {
+        "layer0": "claudemod:item/prismium_crossbow_standby"
+    },
+    "overrides": [
+        { "predicate": { "pulling": 1 }, "model": "claudemod:item/prismium_crossbow_pulling_0" },
+        { "predicate": { "pulling": 1, "pull": 0.58 }, "model": "claudemod:item/prismium_crossbow_pulling_1" },
+        { "predicate": { "pulling": 1, "pull": 1.0 }, "model": "claudemod:item/prismium_crossbow_pulling_2" },
+        { "predicate": { "charged": 1 }, "model": "claudemod:item/prismium_crossbow_arrow" },
+        { "predicate": { "charged": 1, "firework": 1 }, "model": "claudemod:item/prismium_crossbow_firework" }
+    ]
+}

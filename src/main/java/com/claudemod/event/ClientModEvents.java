@@ -211,6 +211,43 @@ public class ClientModEvents {
                     ModBlocks.PRISMIUM_GLASS_PANE.get(), net.minecraft.client.renderer.RenderType.translucent());
             net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
                     ModBlocks.PALE_PRISMIUM_GLASS_PANE.get(), net.minecraft.client.renderer.RenderType.translucent());
+
+            // Scheduled session, 2026-10-31: Prismium Crossbow (see
+            // PrismiumCrossbowItem) needs its own "pulling"/"pull"/
+            // "charged"/"firework" item-model property registrations,
+            // exactly the same per-item requirement already documented
+            // above for Prismium Bow's "pull"/"pulling" and Prismium
+            // Shield's "blocking" - vanilla only wires these predicates up
+            // for its own Items.CROSSBOW instance, not generically for
+            // every CrossbowItem subclass. The four formulas below mirror
+            // vanilla's own registration for Items.CROSSBOW and only call
+            // CrossbowItem's confirmed-public static helpers (isCharged /
+            // getChargeDuration / containsChargedProjectile - verified
+            // against the 1.20.1 mappings.dev page for this class this
+            // session) rather than guessing at anything new.
+            ItemProperties.register(ModItems.PRISMIUM_CROSSBOW.get(), new ResourceLocation("pull"),
+                    (stack, level, entity, seed) -> {
+                        if (entity == null) {
+                            return 0.0F;
+                        } else if (net.minecraft.world.item.CrossbowItem.isCharged(stack)) {
+                            return 0.0F;
+                        } else {
+                            return (float) (stack.getUseDuration() - entity.getUseItemRemainingTicks())
+                                    / (float) net.minecraft.world.item.CrossbowItem.getChargeDuration(stack);
+                        }
+                    });
+            ItemProperties.register(ModItems.PRISMIUM_CROSSBOW.get(), new ResourceLocation("pulling"),
+                    (stack, level, entity, seed) ->
+                            entity != null && entity.isUsingItem() && entity.getUseItem() == stack
+                                    && !net.minecraft.world.item.CrossbowItem.isCharged(stack) ? 1.0F : 0.0F);
+            ItemProperties.register(ModItems.PRISMIUM_CROSSBOW.get(), new ResourceLocation("charged"),
+                    (stack, level, entity, seed) ->
+                            entity != null && net.minecraft.world.item.CrossbowItem.isCharged(stack) ? 1.0F : 0.0F);
+            ItemProperties.register(ModItems.PRISMIUM_CROSSBOW.get(), new ResourceLocation("firework"),
+                    (stack, level, entity, seed) ->
+                            entity != null && net.minecraft.world.item.CrossbowItem.isCharged(stack)
+                                    && net.minecraft.world.item.CrossbowItem.containsChargedProjectile(
+                                            stack, net.minecraft.world.item.Items.FIREWORK_ROCKET) ? 1.0F : 0.0F);
         });
     }
 }
